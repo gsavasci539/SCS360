@@ -1,0 +1,126 @@
+import {
+  BadgeCheck,
+  BellRing,
+  BookMarked,
+  BookOpenCheck,
+  Building2,
+  Bus,
+  CalendarCheck2,
+  CalendarDays,
+  ChartNoAxesCombined,
+  ClipboardList,
+  Coins,
+  CreditCard,
+  FileHeart,
+  FileSpreadsheet,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  Library,
+  Megaphone,
+  MessageSquareQuote,
+  MessageCircle,
+  ReceiptText,
+  Settings,
+  ShieldCheck,
+  ShoppingCart,
+  Users,
+  UsersRound,
+  UtensilsCrossed,
+  WalletCards,
+  type LucideIcon,
+  IdCard,
+  Cpu,
+} from "lucide-react";
+
+export interface NavigationItem { label: string; path: string; icon: LucideIcon; permission?: string; section?: string }
+export interface NavigationSection { label: string; items: NavigationItem[] }
+
+export const navigation: NavigationSection[] = [
+  {
+    label: "Yönetim",
+    items: [
+      { label: "Genel Bakış", path: "/dashboard", icon: LayoutDashboard, permission: "dashboard.view" },
+      { label: "Kurumlar", path: "/organizations", icon: Building2, permission: "org.read" },
+      { label: "Şubeler", path: "/branches", icon: GraduationCap, permission: "branch.read" },
+      { label: "Kullanıcılar", path: "/users", icon: Users, permission: "users.read" },
+      { label: "Rol ve Yetkiler", path: "/roles", icon: ShieldCheck, permission: "users.read" },
+      { label: "Personel & Nöbet", path: "/staff", icon: BadgeCheck, permission: "users.read" },
+      { label: "Öğretmen Paneli", path: "/teacher", icon: GraduationCap },
+    ],
+  },
+  {
+    label: "Eğitim",
+    items: [
+      { label: "Öğrenciler", path: "/students", icon: UsersRound, permission: "students.read" },
+      { label: "Veliler", path: "/parents", icon: BookOpenCheck, permission: "parents.read" },
+      { label: "Sınıflar & Program", path: "/classes", icon: ClipboardList, permission: "classes.read" },
+      { label: "Yoklama", path: "/attendance", icon: CalendarCheck2, permission: "attendance.read" },
+      { label: "Ödev & Notlandırma", path: "/homework", icon: BookMarked, permission: "students.read" },
+      { label: "Kütüphane & Zimmet", path: "/library", icon: Library, permission: "students.read" },
+      { label: "Günlük Karne", path: "/daily-reports", icon: FileSpreadsheet, permission: "students.read" },
+    ],
+  },
+  {
+    label: "Veli Portalı",
+    items: [
+      { label: "Genel Bakış", path: "/parent/dashboard", icon: LayoutDashboard, permission: "parent.view_children" },
+      { label: "Çocuğum", path: "/parent/children", icon: GraduationCap, permission: "parent.view_children" },
+      { label: "Akademik Durum", path: "/parent/academic", icon: BookMarked, permission: "parent.view_children" },
+      { label: "Ders Programı", path: "/parent/schedule", icon: CalendarDays, permission: "parent.view_children" },
+      { label: "Ödevler", path: "/parent/homework", icon: BookOpenCheck, permission: "parent.view_children" },
+      { label: "Ders Materyalleri", path: "/parent/materials", icon: Library, permission: "parent.view_children" },
+      { label: "Devamsızlık", path: "/parent/attendance", icon: CalendarCheck2, permission: "parent.view_attendance" },
+      { label: "Ödemeler", path: "/parent/finances", icon: CreditCard, permission: "parent.view_finances" },
+      { label: "Sağlık ve İzinler", path: "/parent/health", icon: FileHeart, permission: "parent.view_children" },
+      { label: "İletişim Geçmişi", path: "/parent/communication", icon: MessageSquareQuote, permission: "parent.view_children" },
+      { label: "Canlı Sohbet", path: "/parent/chat", icon: MessageCircle, permission: "parent.view_children" },
+      { label: "Okul Duyuruları", path: "/parent/announcements", icon: Megaphone, permission: "parent.view_children" },
+      { label: "Kulüp ve Aktiviteler", path: "/parent/activities", icon: UsersRound, permission: "parent.view_children" },
+      { label: "Haftalık Raporlar", path: "/parent/reports", icon: FileSpreadsheet, permission: "parent.view_children" },
+    ],
+  },
+  {
+    label: "İletişim",
+    items: [
+      { label: "Veli Talepleri & İlaç", path: "/parent-notices", icon: MessageSquareQuote, permission: "students.read" },
+      { label: "Randevu & PTC", path: "/appointments", icon: CalendarDays, permission: "students.read" },
+      { label: "Duyurular", path: "/announcements", icon: Megaphone, permission: "announcements.read" },
+      { label: "Bildirimler", path: "/notifications", icon: BellRing, permission: "notification.read" },
+      { label: "Giden Kutusu (Outbox)", path: "/outbox", icon: MessageSquareQuote, permission: "notification.read" },
+      { label: "Şablonlar", path: "/notifications/templates", icon: FileText, permission: "notification.read" },
+    ],
+  },
+  {
+    label: "Operasyon",
+    items: [
+      { label: "Servis & Ulaşım", path: "/transport", icon: Bus, permission: "students.read" },
+      { label: "Kantin Ürünleri", path: "/canteen", icon: UtensilsCrossed, permission: "canteen.write" },
+      { label: "Kantin Satış", path: "/canteen/sales", icon: ShoppingCart, permission: "canteen.write" },
+      { label: "Kart Bakiye Yükleme", path: "/canteen/card-balance", icon: CreditCard, permission: "canteen.read" },
+    ],
+  },
+  {
+    label: "Finans",
+    items: [
+      { label: "Borçlar", path: "/finance/debts", icon: WalletCards, permission: "debts.read" },
+      { label: "Tahsilatlar", path: "/finance/payments", icon: CreditCard, permission: "payments.read" },
+      { label: "Giderler & Harcamalar", path: "/finance/expenses", icon: Coins, permission: "finance.read" },
+      { label: "Makbuzlar", path: "/finance/receipts", icon: ReceiptText, permission: "receipt.read" },
+    ],
+  },
+  {
+    label: "Analiz",
+    items: [
+      { label: "Raporlar", path: "/reports", icon: ChartNoAxesCombined, permission: "report.read" },
+    ],
+  },
+  {
+    label: "Sistem",
+    items: [
+      { label: "RFID Kartlar", path: "/rfid-cards", icon: IdCard, permission: "settings.read" },
+      { label: "Cihazlar", path: "/devices", icon: Cpu, permission: "settings.read" },
+      { label: "Ayarlar", path: "/settings", icon: Settings, permission: "settings.read" },
+    ],
+  },
+];
