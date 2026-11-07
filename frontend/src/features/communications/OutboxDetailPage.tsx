@@ -1,6 +1,7 @@
 import { ArrowLeft, Mail, MessageSquare, Phone, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuthStore } from "../../stores/auth";
 import { ErrorState, LoadingState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { useToast } from "../../components/Toast";
@@ -12,6 +13,8 @@ export function OutboxDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const can = useAuthStore((state) => state.can);
 
   async function load() {
     setLoading(true);
@@ -31,6 +34,7 @@ export function OutboxDetailPage() {
     try {
       await api.delete(`/outbox/${id}`);
       showToast("Mesaj silindi", "Mesaj başarıyla silindi.");
+      navigate("/outbox");
     } catch (e) {
       showToast("Silinemedi", apiMessage(e), "error");
     }
@@ -39,14 +43,6 @@ export function OutboxDetailPage() {
   if (loading) return <div className="card"><LoadingState /></div>;
   if (error) return <div className="card"><ErrorState message={error} retry={load} /></div>;
   if (!data) return <div className="card"><ErrorState message="Mesaj bulunamadı" /></div>;
-
-  const getTypeIcon = () => {
-    if (data.type === "E-posta") return Mail;
-    if (data.type === "SMS") return Phone;
-    return MessageSquare;
-  };
-
-  const TypeIcon = getTypeIcon();
 
   return (
     <>
@@ -64,16 +60,16 @@ export function OutboxDetailPage() {
         <div className="card-head">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 10, color: "var(--brand)", background: "#e9f3ef" }}>
-              <TypeIcon size={20} />
+              {data.type === "E-posta" ? <Mail size={20} /> : data.type === "SMS" ? <Phone size={20} /> : <MessageSquare size={20} />}
             </div>
             <div>
               <h2>{String(data.subject)}</h2>
               <p style={{ color: "var(--muted)", fontSize: 12 }}>{String(data.type)}</p>
             </div>
           </div>
-          <button className="btn btn-danger" onClick={handleDelete}>
+          {can("notification.write") && <button className="btn btn-danger" onClick={handleDelete}>
             <Trash2 size={16} />Sil
-          </button>
+          </button>}
         </div>
         <div className="card-pad">
           <div style={{ display: "grid", gap: 16 }}>

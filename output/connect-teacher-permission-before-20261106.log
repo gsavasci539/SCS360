@@ -1,0 +1,60 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_related_parent_needs_current_send_permission_before_any_conversation_or_message[sqlite] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x000002759244FB60>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027593808410>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000002759244F4D0>, ...})
+
+    async def test_related_parent_needs_current_send_permission_before_any_conversation_or_message(legacy_assignments):
+        client, sessions, data = legacy_assignments
+        async with sessions() as db:
+            role_id = await db.scalar(sa.select(UserRole.role_id).where(UserRole.user_id == data["user"].id))
+            permission_id = await db.scalar(sa.select(Permission.id).where(Permission.code == "parent.send_message"))
+            assert permission_id is not None
+            await db.execute(sa.delete(RolePermission).where(RolePermission.role_id == role_id, RolePermission.permission_id == permission_id))
+            await db.commit()
+        body = {"student_id": str(data["children"][0].id), "teacher_id": str(data["teacher"].id),
+            "teacher_name": "Untrusted display label", "initial_message": "Current permission acceptance", "created_via": "CHATBOT"}
+        path = "/api/v1/chatbot/chat/conversations/connect-teacher"
+        denied = await client.post(path, headers=headers(data["user"]), json=body)
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"success":true,"conversation_id":"b5d0209d-b78d-4753-84d6-b92717dd75c1","participant_name":"Teacher Test","participant_role":"Legacy mathematics & Rehber ��retmeni","student_id":"bcbd51ed-6991-41a6-ab38-4b2e233416c0","last_message":"Current permission acceptance","last_message_time":"03:38","status":"ACTIVE"}}
+E       assert 201 == 403
+E        +  where 201 = <Response [201 Created]>.status_code
+
+tests\integration\test_legacy_student_teacher_assignment.py:180: AssertionError
+_ test_related_parent_needs_current_send_permission_before_any_conversation_or_message[postgresql] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x0000027594C7A990>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000275950F5EB0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027595114410>, ...})
+
+    async def test_related_parent_needs_current_send_permission_before_any_conversation_or_message(legacy_assignments):
+        client, sessions, data = legacy_assignments
+        async with sessions() as db:
+            role_id = await db.scalar(sa.select(UserRole.role_id).where(UserRole.user_id == data["user"].id))
+            permission_id = await db.scalar(sa.select(Permission.id).where(Permission.code == "parent.send_message"))
+            assert permission_id is not None
+            await db.execute(sa.delete(RolePermission).where(RolePermission.role_id == role_id, RolePermission.permission_id == permission_id))
+            await db.commit()
+        body = {"student_id": str(data["children"][0].id), "teacher_id": str(data["teacher"].id),
+            "teacher_name": "Untrusted display label", "initial_message": "Current permission acceptance", "created_via": "CHATBOT"}
+        path = "/api/v1/chatbot/chat/conversations/connect-teacher"
+        denied = await client.post(path, headers=headers(data["user"]), json=body)
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"success":true,"conversation_id":"628a5358-77b6-454e-a3d4-2bf06c807b5a","participant_name":"Teacher Test","participant_role":"Legacy mathematics & Rehber ��retmeni","student_id":"fcfb4052-c2a9-4a71-ab76-3c955312701d","last_message":"Current permission acceptance","last_message_time":"00:38","status":"ACTIVE"}}
+E       assert 201 == 403
+E        +  where 201 = <Response [201 Created]>.status_code
+
+tests\integration\test_legacy_student_teacher_assignment.py:180: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_related_parent_needs_current_send_permission_before_any_conversation_or_message[sqlite]
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_related_parent_needs_current_send_permission_before_any_conversation_or_message[postgresql]
+2 failed, 6 deselected, 20 warnings in 7.01s

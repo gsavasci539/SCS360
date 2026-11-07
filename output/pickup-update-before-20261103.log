@@ -1,0 +1,56 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot[sqlite] _
+
+pickup_client = (<httpx.AsyncClient object at 0x00000257C3D51940>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000257C4050050>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000257C3D512B0>, ...})
+
+    async def test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot(pickup_client):
+        client, _, data = pickup_client
+        auth = headers(data["actor"])
+        created = await client.post("/api/dismissal/authorizations", headers=auth, json=body(data))
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        edited = await client.put("/api/dismissal/authorizations/" + identifier, headers=auth, json=body(data, phone="05000000000"))
+        assert edited.status_code == 200 and edited.json()["data"]["updated_at"], edited.text
+        delivered = await client.post("/api/dismissal/verify-pickup", headers=auth, json={"student_id": str(data["children"][0].id),
+            "pickup_person_id": "TEST-DOC-001", "request_id": str(uuid4())})
+>       assert delivered.status_code == 200 and delivered.json()["data"]["authorized"] is True, delivered.text
+E       AssertionError: {"success":false,"message":"G�nderilen bilgileri kontrol edin","errors":[{"loc":["body","pickup_person_name"],"msg":"Field required","type":"missing"}],"detail":[{"loc":["body","pickup_person_name"],"msg":"Field required","type":"missing"}],"request_id":"041c649b-3696-41e1-9923-f050c565b7ce"}
+E       assert (422 == 200)
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+tests\integration\test_pickup_desk.py:43: AssertionError
+_ test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot[postgresql] _
+
+pickup_client = (<httpx.AsyncClient object at 0x00000257C5F9B250>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000257C5FD56E0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000257C5F9A850>, ...})
+
+    async def test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot(pickup_client):
+        client, _, data = pickup_client
+        auth = headers(data["actor"])
+        created = await client.post("/api/dismissal/authorizations", headers=auth, json=body(data))
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        edited = await client.put("/api/dismissal/authorizations/" + identifier, headers=auth, json=body(data, phone="05000000000"))
+        assert edited.status_code == 200 and edited.json()["data"]["updated_at"], edited.text
+        delivered = await client.post("/api/dismissal/verify-pickup", headers=auth, json={"student_id": str(data["children"][0].id),
+            "pickup_person_id": "TEST-DOC-001", "request_id": str(uuid4())})
+>       assert delivered.status_code == 200 and delivered.json()["data"]["authorized"] is True, delivered.text
+E       AssertionError: {"success":false,"message":"G�nderilen bilgileri kontrol edin","errors":[{"loc":["body","pickup_person_name"],"msg":"Field required","type":"missing"}],"detail":[{"loc":["body","pickup_person_name"],"msg":"Field required","type":"missing"}],"request_id":"7b75e7e7-a945-4087-b2ef-a18fd5f56717"}
+E       assert (422 == 200)
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+tests\integration\test_pickup_desk.py:43: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_pickup_desk.py::test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot[sqlite]
+FAILED tests/integration/test_pickup_desk.py::test_pickup_authorization_update_returns_generated_timestamp_and_keeps_delivery_snapshot[postgresql]
+2 failed, 4 deselected, 20 warnings in 6.84s

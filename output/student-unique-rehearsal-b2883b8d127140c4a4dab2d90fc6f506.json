@@ -1,0 +1,3274 @@
+{
+  "mode": "REHEARSAL_ONLY_NOT_MAIN_APPLIED",
+  "before_clone": "C:\\Okul360\\output\\student-unique-before-b2883b8d127140c4a4dab2d90fc6f506.db",
+  "rehearsal_clone": "C:\\Okul360\\output\\student-unique-rehearsal-b2883b8d127140c4a4dab2d90fc6f506.db",
+  "all_old_typed_values_rowids_and_counts_preserved": true,
+  "old_tables_checked": 108,
+  "rollback_restores_full_schema_data_and_fk_manifest": true,
+  "before_backup_unchanged": true,
+  "other_constraints_indices_triggers_and_inbound_sql_preserved": true,
+  "inbound_foreign_keys": [
+    [
+      "student_parents",
+      "student_id",
+      "id"
+    ],
+    [
+      "student_files",
+      "student_id",
+      "id"
+    ],
+    [
+      "attendance_records",
+      "student_id",
+      "id"
+    ],
+    [
+      "debts",
+      "student_id",
+      "id"
+    ],
+    [
+      "announcements",
+      "student_id",
+      "id"
+    ],
+    [
+      "daily_development_reports",
+      "student_id",
+      "id"
+    ],
+    [
+      "grades",
+      "student_id",
+      "id"
+    ],
+    [
+      "payments",
+      "student_id",
+      "id"
+    ],
+    [
+      "announcement_recipients",
+      "student_id",
+      "id"
+    ],
+    [
+      "receipts",
+      "student_id",
+      "id"
+    ],
+    [
+      "bus_attendance",
+      "student_id",
+      "id"
+    ],
+    [
+      "canteen_dietary_restrictions",
+      "student_id",
+      "id"
+    ],
+    [
+      "canteen_orders",
+      "student_id",
+      "id"
+    ],
+    [
+      "canteen_wallet_transactions",
+      "student_id",
+      "id"
+    ],
+    [
+      "health_records",
+      "student_id",
+      "id"
+    ],
+    [
+      "medication_schedules",
+      "student_id",
+      "id"
+    ],
+    [
+      "medication_logs",
+      "student_id",
+      "id"
+    ],
+    [
+      "infirmary_visits",
+      "student_id",
+      "id"
+    ],
+    [
+      "guidance_sessions",
+      "student_id",
+      "id"
+    ],
+    [
+      "behavioral_incidents",
+      "student_id",
+      "id"
+    ],
+    [
+      "guidance_notes",
+      "student_id",
+      "id"
+    ],
+    [
+      "pickup_authorizations",
+      "student_id",
+      "id"
+    ],
+    [
+      "pickup_logs",
+      "student_id",
+      "id"
+    ],
+    [
+      "exam_results",
+      "student_id",
+      "id"
+    ],
+    [
+      "report_cards",
+      "student_id",
+      "id"
+    ],
+    [
+      "digital_id_tokens",
+      "student_id",
+      "id"
+    ],
+    [
+      "gate_logs",
+      "student_id",
+      "id"
+    ],
+    [
+      "tutoring_sessions",
+      "student_id",
+      "id"
+    ],
+    [
+      "tutoring_requests",
+      "student_id",
+      "id"
+    ],
+    [
+      "club_memberships",
+      "student_id",
+      "id"
+    ],
+    [
+      "student_certificates",
+      "student_id",
+      "id"
+    ],
+    [
+      "student_consents",
+      "student_id",
+      "id"
+    ],
+    [
+      "student_teacher_assignments",
+      "student_id",
+      "id"
+    ],
+    [
+      "chat_conversations",
+      "student_id",
+      "id"
+    ],
+    [
+      "library_loans",
+      "student_id",
+      "id"
+    ],
+    [
+      "appointments",
+      "student_id",
+      "id"
+    ],
+    [
+      "homework_submissions",
+      "student_id",
+      "id"
+    ],
+    [
+      "parent_notices",
+      "student_id",
+      "id"
+    ],
+    [
+      "student_wallets",
+      "student_id",
+      "id"
+    ],
+    [
+      "material_submissions",
+      "student_id",
+      "id"
+    ]
+  ],
+  "old_students_ddl_sha256": "ea0a7b14028613757a07caeed4e76da480980f9276d0060706e99224697886f3",
+  "new_students_ddl_sha256": "8dd47a98a3fcf9d2d34f406028c07c6a29de80dcce65335c608795a887a64e33",
+  "new_index_sql": "CREATE UNIQUE INDEX uq_students_org_student_number_live ON students (lower(replace(organization_id,'-','')), student_number) WHERE deleted_at IS NULL",
+  "foreign_key_violations_before": 432,
+  "foreign_key_violations_after": 432,
+  "all_canonical_student_number_collision_groups": 25,
+  "unarchived_collision_groups": 0,
+  "historical_collision_groups_preserved": {
+    "groups": 25,
+    "unarchived_rows": 25,
+    "archived_rows": 25
+  },
+  "integrity_check": "ok",
+  "schema_version": "036",
+  "main_database_opened_readonly_only": true,
+  "main_repaired": false,
+  "release_ready": false,
+  "release_gate_expression_support": "intentionally unsupported until separate implementation",
+  "fresh_policy_probes": {
+    "archived_history_and_live_reuse": true,
+    "inactive_but_unarchived_conflicts": true,
+    "organization_uuid_alias_conflicts": true,
+    "restoring_conflicting_archive_rejected": true,
+    "null_numbers_distinct": true,
+    "uuid_looking_student_numbers_stay_literal": true,
+    "foreign_keys_enabled": true
+  },
+  "baseline_manifest": {
+    "additional_course_hours": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ai_chat_audit_logs": {
+      "rows": 48,
+      "typed_values_and_rowids_sha256": "7a9f226e20612b73904297bcd91fa0077e43c308e48cd4027cc906c13145da3a"
+    },
+    "alembic_version": {
+      "rows": 1,
+      "typed_values_and_rowids_sha256": "a2ac515430a62b9b3451aad64744fa226f27be651fa1bd2a6ec91df2569f605c"
+    },
+    "announcement_recipients": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "announcements": {
+      "rows": 5,
+      "typed_values_and_rowids_sha256": "2b063d87c2a5cf4ed49b5af2f8d52462ed3844460db947f7b018a62fe5934669"
+    },
+    "app_settings": {
+      "rows": 2,
+      "typed_values_and_rowids_sha256": "23ab9119b41c311ec104f23d2e7895bd26a8dee87df8fe83dcb23374e42c6079"
+    },
+    "appointment_time_slots": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "appointments": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "asset_assignments": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "attendance_records": {
+      "rows": 160,
+      "typed_values_and_rowids_sha256": "1171ee914eb2868bfbb31388f22904b28c1f93b38352785777d439c7c45e4e7d"
+    },
+    "audit_logs": {
+      "rows": 229,
+      "typed_values_and_rowids_sha256": "b4bda5c63b35aba85c09aaa4892880e17cbd89e9360f5429947ee12e1e7f3f1e"
+    },
+    "behavioral_incidents": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "branch_academic_summary": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "branch_financial_summary": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "branches": {
+      "rows": 4,
+      "typed_values_and_rowids_sha256": "42db3206506cde05ea5537285adc20acfc7fdc470345ba1e02aec726704c41f9"
+    },
+    "broadcast_jobs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bus_attendance": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bus_routes": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bus_stops": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "bus_telemetry_logs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "canteen_dietary_restrictions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "canteen_orders": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "canteen_products": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "canteen_wallet_transactions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "card_numbers": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "chat_conversations": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "chat_messages": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "class_teachers": {
+      "rows": 1,
+      "typed_values_and_rowids_sha256": "3813b4152daecf5946223816417f85cc0f28d5ef7fb57136914beaf5fdc319d3"
+    },
+    "classes": {
+      "rows": 5,
+      "typed_values_and_rowids_sha256": "55a501d7a18429436a18cac451b562db6fd4904e864f2c93810718b0b6198467"
+    },
+    "classroom_assignments": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "club_events": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "club_memberships": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "consent_documents": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "course_materials": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "daily_development_reports": {
+      "rows": 50,
+      "typed_values_and_rowids_sha256": "b9e7c1329c7d6d17fd4135f8b29cee607eb5b0df403ce3f47f0db76038c7fabb"
+    },
+    "debts": {
+      "rows": 28,
+      "typed_values_and_rowids_sha256": "c9e1d051ec68e02543930c817f9b0a9acb5b94be8f61c90b3fb3f82a4e08199f"
+    },
+    "delivery_reports": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "devices": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "digital_id_tokens": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "exam_results": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "exams": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "expenses": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gate_logs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "grades": {
+      "rows": 185,
+      "typed_values_and_rowids_sha256": "2a87b724cfff38837b66e295ab26272858fbac7d5c9e8dc761b02874f2a9cd1f"
+    },
+    "guidance_notes": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guidance_sessions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "health_records": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "homework": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "homework_submissions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "infirmary_visits": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "integration_settings": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "inventory_items": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "inventory_locations": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "library_books": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "library_loans": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "login_attempts": {
+      "rows": 232,
+      "typed_values_and_rowids_sha256": "bcab6110cb7504934097e40259802eead885b147f19004468cdba01f3daa82e0"
+    },
+    "maintenance_requests": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "material_submissions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "medication_logs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "medication_schedules": {
+      "rows": 2,
+      "typed_values_and_rowids_sha256": "6beec273432e8ca4598f1e9c106b9b68001296740939f8b1082c1bc4509060b0"
+    },
+    "message_templates": {
+      "rows": 3,
+      "typed_values_and_rowids_sha256": "da10826908fc509bebaaf87e620a5a53c5521ebe2be22961a20853850c13f5f7"
+    },
+    "notification_jobs": {
+      "rows": 11,
+      "typed_values_and_rowids_sha256": "ded76044773a65365659ede73e993dca1720a8b7b7b9445cfbe7e168ef703fd2"
+    },
+    "notification_recipients": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "operational_records": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "organization_subscriptions": {
+      "rows": 1,
+      "typed_values_and_rowids_sha256": "422c9de63ecfbaa6d5e4c6ac42b6d6b903a6ebbdfaf2923637a416552c08971e"
+    },
+    "organizations": {
+      "rows": 2,
+      "typed_values_and_rowids_sha256": "c3aa8ea93eb55352360fbaf10a5ba2ddc3d9095938838cb3f5019f89611b24d7"
+    },
+    "parent_notices": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "parents": {
+      "rows": 60,
+      "typed_values_and_rowids_sha256": "3cf060441fbd0f20f56302a1793c51ca812cd988fb95421db45aa3ae42911f5f"
+    },
+    "password_reset_tokens": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "payment_checkouts": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "payments": {
+      "rows": 11,
+      "typed_values_and_rowids_sha256": "0574b61d1995fc9c50c20eddd4b0d5cf63f1e77a96c2287453cab2c447b21db9"
+    },
+    "payroll_records": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "permissions": {
+      "rows": 146,
+      "typed_values_and_rowids_sha256": "845022152de9c6f06917557b8b79f4a8cec471d14c28ba618a00a986833b4a9a"
+    },
+    "pickup_authorizations": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "pickup_logs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "receipts": {
+      "rows": 11,
+      "typed_values_and_rowids_sha256": "730da3a195ed714124388368f3fc86e3cb471b36a29c7cd60dc4cc64a4f39589"
+    },
+    "refresh_tokens": {
+      "rows": 178,
+      "typed_values_and_rowids_sha256": "cfaca4f7a353e7a53f56b629009b3d28f84b47f1926c239e8a18297bb62262c2"
+    },
+    "report_cards": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rfid_cards": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "role_permissions": {
+      "rows": 1113,
+      "typed_values_and_rowids_sha256": "8505d15bc335e830d10672c818125caf720918d3f99d08c652e866b4db80e9b6"
+    },
+    "roles": {
+      "rows": 25,
+      "typed_values_and_rowids_sha256": "1a2c5970e96cca0e9e67290cb332b353510ec6f6ed74fe6014f12afcdd2f1f09"
+    },
+    "school_clubs": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "school_payment_merchants": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sms_providers": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "staff_timesheets": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "student_certificates": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "student_consents": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "student_files": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "student_parents": {
+      "rows": 50,
+      "typed_values_and_rowids_sha256": "503355943b24d09bf000bf7698c813ef7440643cb045e8cdf977d25d8f862d3a"
+    },
+    "student_teacher_assignments": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "student_wallets": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "students": {
+      "rows": 50,
+      "typed_values_and_rowids_sha256": "6efd5f933bd494be759c6f14de4617e23bfb29b6bc078fc45f595b557ed7e070"
+    },
+    "subscription_checkouts": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "subscription_invoices": {
+      "rows": 1,
+      "typed_values_and_rowids_sha256": "fa6f66e738a601ebe36a843de698b68714cf4971e43d9705373220a1e44e7602"
+    },
+    "subscription_plans": {
+      "rows": 1,
+      "typed_values_and_rowids_sha256": "0e37311f9b4a1e864a0c83846b778843089c22e86a35bb874bbf0e0770258c75"
+    },
+    "survey_participations": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "survey_questions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "survey_responses": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "surveys": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "teacher_availability": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "timetable_slots": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "timetables": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tutoring_requests": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tutoring_sessions": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "user_branches": {
+      "rows": 4,
+      "typed_values_and_rowids_sha256": "adec57a24e54d45fc3e549c220150b1682288f53ecb0a20121461bf80d398c41"
+    },
+    "user_device_tokens": {
+      "rows": 0,
+      "typed_values_and_rowids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "user_roles": {
+      "rows": 14,
+      "typed_values_and_rowids_sha256": "83b3b4f5b1036d547f4e6a8d4fc529f1812c75f496e6d0214e85a9f2ec119dfe"
+    },
+    "users": {
+      "rows": 13,
+      "typed_values_and_rowids_sha256": "241bbbfc424aef40ac280dcf59a7bb1b17f2c48bcfdf2ca91ceff2624f618dec"
+    }
+  },
+  "known_unrepaired_data": {
+    "invalid_uuid_cells": 43,
+    "unique_missing_parent_keys": 21
+  },
+  "exact_remaining_student_table_ddl_preserved": true,
+  "foreign_key_manifest_before_sha256": "e44638de966545661527f78827f6c1512f166a14f3845e2e4a61bc268294503a",
+  "foreign_key_manifest_after_sha256": "e44638de966545661527f78827f6c1512f166a14f3845e2e4a61bc268294503a",
+  "foreign_key_manifest_before": [
+    [
+      "ai_chat_audit_logs",
+      1,
+      "organizations",
+      2
+    ],
+    [
+      "ai_chat_audit_logs",
+      2,
+      "organizations",
+      2
+    ],
+    [
+      "ai_chat_audit_logs",
+      3,
+      "organizations",
+      2
+    ],
+    [
+      "ai_chat_audit_logs",
+      4,
+      "organizations",
+      2
+    ],
+    [
+      "ai_chat_audit_logs",
+      5,
+      "organizations",
+      2
+    ],
+    [
+      "announcements",
+      1,
+      "branches",
+      3
+    ],
+    [
+      "announcements",
+      1,
+      "organizations",
+      4
+    ],
+    [
+      "announcements",
+      1,
+      "users",
+      0
+    ],
+    [
+      "announcements",
+      2,
+      "branches",
+      3
+    ],
+    [
+      "announcements",
+      2,
+      "classes",
+      2
+    ],
+    [
+      "announcements",
+      2,
+      "organizations",
+      4
+    ],
+    [
+      "announcements",
+      2,
+      "users",
+      0
+    ],
+    [
+      "announcements",
+      3,
+      "organizations",
+      4
+    ],
+    [
+      "announcements",
+      3,
+      "users",
+      0
+    ],
+    [
+      "announcements",
+      4,
+      "branches",
+      3
+    ],
+    [
+      "announcements",
+      4,
+      "organizations",
+      4
+    ],
+    [
+      "announcements",
+      4,
+      "users",
+      0
+    ],
+    [
+      "announcements",
+      5,
+      "branches",
+      3
+    ],
+    [
+      "announcements",
+      5,
+      "classes",
+      2
+    ],
+    [
+      "announcements",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "announcements",
+      5,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      1,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      1,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      1,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      1,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      2,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      2,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      2,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      2,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      3,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      3,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      3,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      3,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      4,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      4,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      4,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      4,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      5,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      5,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      5,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      6,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      6,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      6,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      6,
+      "users",
+      0
+    ],
+    [
+      "attendance_records",
+      7,
+      "branches",
+      3
+    ],
+    [
+      "attendance_records",
+      7,
+      "classes",
+      2
+    ],
+    [
+      "attendance_records",
+      7,
+      "organizations",
+      4
+    ],
+    [
+      "attendance_records",
+      7,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      1,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      2,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      3,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      4,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      5,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      6,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      7,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      8,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      9,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      10,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      11,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      12,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      13,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      14,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      15,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      16,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      17,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      18,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      19,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      20,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      21,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      22,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      23,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      24,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      25,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      26,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      27,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      28,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      29,
+      "users",
+      0
+    ],
+    [
+      "audit_logs",
+      30,
+      "organizations",
+      2
+    ],
+    [
+      "audit_logs",
+      30,
+      "users",
+      0
+    ],
+    [
+      "branches",
+      4,
+      "organizations",
+      0
+    ],
+    [
+      "classes",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      1,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      1,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      1,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      2,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      2,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      2,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      3,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      3,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      3,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      4,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      4,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      4,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      5,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      5,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      6,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      6,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      6,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      7,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      7,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      7,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      8,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      8,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      8,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      9,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      9,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      9,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      19,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      19,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      19,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      19,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      19,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      20,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      20,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      20,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      20,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      20,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      21,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      21,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      21,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      21,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      21,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      22,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      22,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      22,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      22,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      22,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      23,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      23,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      23,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      23,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      23,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      24,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      24,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      24,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      24,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      24,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      25,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      25,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      25,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      25,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      25,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      26,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      26,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      26,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      26,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      26,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      27,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      27,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      27,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      27,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      27,
+      "users",
+      1
+    ],
+    [
+      "debts",
+      28,
+      "branches",
+      3
+    ],
+    [
+      "debts",
+      28,
+      "organizations",
+      4
+    ],
+    [
+      "debts",
+      28,
+      "students",
+      2
+    ],
+    [
+      "debts",
+      28,
+      "users",
+      0
+    ],
+    [
+      "debts",
+      28,
+      "users",
+      1
+    ],
+    [
+      "notification_jobs",
+      1,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      2,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      3,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      4,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      5,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      6,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      7,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      8,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      9,
+      "organizations",
+      2
+    ],
+    [
+      "notification_jobs",
+      10,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      1,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      1,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      2,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      2,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      3,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      3,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      4,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      4,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      5,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      5,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      6,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      6,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      7,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      7,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      8,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      8,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      9,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      9,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      10,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      10,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      11,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      11,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      12,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      12,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      13,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      13,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      14,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      14,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      15,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      15,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      16,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      16,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      17,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      17,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      18,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      18,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      19,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      19,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      20,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      20,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      21,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      21,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      22,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      22,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      23,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      23,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      24,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      24,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      25,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      25,
+      "users",
+      0
+    ],
+    [
+      "parents",
+      51,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      52,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      53,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      54,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      55,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      56,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      57,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      58,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      59,
+      "organizations",
+      2
+    ],
+    [
+      "parents",
+      60,
+      "organizations",
+      2
+    ],
+    [
+      "payments",
+      1,
+      "branches",
+      4
+    ],
+    [
+      "payments",
+      1,
+      "organizations",
+      5
+    ],
+    [
+      "payments",
+      1,
+      "users",
+      1
+    ],
+    [
+      "payments",
+      2,
+      "branches",
+      4
+    ],
+    [
+      "payments",
+      2,
+      "organizations",
+      5
+    ],
+    [
+      "payments",
+      2,
+      "users",
+      1
+    ],
+    [
+      "payments",
+      3,
+      "branches",
+      4
+    ],
+    [
+      "payments",
+      3,
+      "organizations",
+      5
+    ],
+    [
+      "payments",
+      3,
+      "users",
+      1
+    ],
+    [
+      "payments",
+      4,
+      "branches",
+      4
+    ],
+    [
+      "payments",
+      4,
+      "organizations",
+      5
+    ],
+    [
+      "payments",
+      4,
+      "users",
+      1
+    ],
+    [
+      "payments",
+      5,
+      "branches",
+      4
+    ],
+    [
+      "payments",
+      5,
+      "organizations",
+      5
+    ],
+    [
+      "payments",
+      5,
+      "users",
+      1
+    ],
+    [
+      "receipts",
+      1,
+      "branches",
+      3
+    ],
+    [
+      "receipts",
+      1,
+      "organizations",
+      4
+    ],
+    [
+      "receipts",
+      1,
+      "users",
+      0
+    ],
+    [
+      "receipts",
+      2,
+      "branches",
+      3
+    ],
+    [
+      "receipts",
+      2,
+      "organizations",
+      4
+    ],
+    [
+      "receipts",
+      2,
+      "users",
+      0
+    ],
+    [
+      "receipts",
+      3,
+      "branches",
+      3
+    ],
+    [
+      "receipts",
+      3,
+      "organizations",
+      4
+    ],
+    [
+      "receipts",
+      3,
+      "users",
+      0
+    ],
+    [
+      "receipts",
+      4,
+      "branches",
+      3
+    ],
+    [
+      "receipts",
+      4,
+      "organizations",
+      4
+    ],
+    [
+      "receipts",
+      4,
+      "users",
+      0
+    ],
+    [
+      "receipts",
+      5,
+      "branches",
+      3
+    ],
+    [
+      "receipts",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "receipts",
+      5,
+      "users",
+      0
+    ],
+    [
+      "refresh_tokens",
+      1,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      2,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      3,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      4,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      5,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      6,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      7,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      8,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      9,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      10,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      11,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      12,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      13,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      14,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      15,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      16,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      17,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      18,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      19,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      20,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      21,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      22,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      23,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      24,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      25,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      26,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      27,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      28,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      29,
+      "users",
+      1
+    ],
+    [
+      "refresh_tokens",
+      30,
+      "users",
+      1
+    ],
+    [
+      "students",
+      1,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      1,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      1,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      1,
+      "users",
+      0
+    ],
+    [
+      "students",
+      1,
+      "users",
+      1
+    ],
+    [
+      "students",
+      2,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      2,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      2,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      2,
+      "users",
+      0
+    ],
+    [
+      "students",
+      2,
+      "users",
+      1
+    ],
+    [
+      "students",
+      3,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      3,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      3,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      3,
+      "users",
+      0
+    ],
+    [
+      "students",
+      3,
+      "users",
+      1
+    ],
+    [
+      "students",
+      4,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      4,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      4,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      4,
+      "users",
+      0
+    ],
+    [
+      "students",
+      4,
+      "users",
+      1
+    ],
+    [
+      "students",
+      5,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      5,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      5,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      5,
+      "users",
+      0
+    ],
+    [
+      "students",
+      5,
+      "users",
+      1
+    ],
+    [
+      "students",
+      6,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      6,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      6,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      6,
+      "users",
+      0
+    ],
+    [
+      "students",
+      6,
+      "users",
+      1
+    ],
+    [
+      "students",
+      7,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      7,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      7,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      7,
+      "users",
+      0
+    ],
+    [
+      "students",
+      7,
+      "users",
+      1
+    ],
+    [
+      "students",
+      8,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      8,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      8,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      8,
+      "users",
+      0
+    ],
+    [
+      "students",
+      8,
+      "users",
+      1
+    ],
+    [
+      "students",
+      9,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      9,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      9,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      9,
+      "users",
+      0
+    ],
+    [
+      "students",
+      9,
+      "users",
+      1
+    ],
+    [
+      "students",
+      10,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      10,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      10,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      10,
+      "users",
+      0
+    ],
+    [
+      "students",
+      10,
+      "users",
+      1
+    ],
+    [
+      "students",
+      11,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      11,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      11,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      11,
+      "users",
+      0
+    ],
+    [
+      "students",
+      11,
+      "users",
+      1
+    ],
+    [
+      "students",
+      12,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      12,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      12,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      12,
+      "users",
+      0
+    ],
+    [
+      "students",
+      12,
+      "users",
+      1
+    ],
+    [
+      "students",
+      13,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      13,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      13,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      13,
+      "users",
+      0
+    ],
+    [
+      "students",
+      13,
+      "users",
+      1
+    ],
+    [
+      "students",
+      14,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      14,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      14,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      14,
+      "users",
+      0
+    ],
+    [
+      "students",
+      14,
+      "users",
+      1
+    ],
+    [
+      "students",
+      15,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      15,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      15,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      15,
+      "users",
+      0
+    ],
+    [
+      "students",
+      15,
+      "users",
+      1
+    ],
+    [
+      "students",
+      16,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      16,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      16,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      16,
+      "users",
+      0
+    ],
+    [
+      "students",
+      16,
+      "users",
+      1
+    ],
+    [
+      "students",
+      17,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      17,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      17,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      17,
+      "users",
+      0
+    ],
+    [
+      "students",
+      17,
+      "users",
+      1
+    ],
+    [
+      "students",
+      18,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      18,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      18,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      18,
+      "users",
+      0
+    ],
+    [
+      "students",
+      18,
+      "users",
+      1
+    ],
+    [
+      "students",
+      19,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      19,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      19,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      19,
+      "users",
+      0
+    ],
+    [
+      "students",
+      19,
+      "users",
+      1
+    ],
+    [
+      "students",
+      20,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      20,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      20,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      20,
+      "users",
+      0
+    ],
+    [
+      "students",
+      20,
+      "users",
+      1
+    ],
+    [
+      "students",
+      21,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      21,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      21,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      21,
+      "users",
+      0
+    ],
+    [
+      "students",
+      21,
+      "users",
+      1
+    ],
+    [
+      "students",
+      22,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      22,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      22,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      22,
+      "users",
+      0
+    ],
+    [
+      "students",
+      22,
+      "users",
+      1
+    ],
+    [
+      "students",
+      23,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      23,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      23,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      23,
+      "users",
+      0
+    ],
+    [
+      "students",
+      23,
+      "users",
+      1
+    ],
+    [
+      "students",
+      24,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      24,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      24,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      24,
+      "users",
+      0
+    ],
+    [
+      "students",
+      24,
+      "users",
+      1
+    ],
+    [
+      "students",
+      25,
+      "branches",
+      3
+    ],
+    [
+      "students",
+      25,
+      "classes",
+      2
+    ],
+    [
+      "students",
+      25,
+      "organizations",
+      4
+    ],
+    [
+      "students",
+      25,
+      "users",
+      0
+    ],
+    [
+      "students",
+      25,
+      "users",
+      1
+    ],
+    [
+      "user_branches",
+      1,
+      "branches",
+      1
+    ],
+    [
+      "user_branches",
+      1,
+      "users",
+      2
+    ],
+    [
+      "user_branches",
+      2,
+      "branches",
+      1
+    ],
+    [
+      "user_branches",
+      2,
+      "users",
+      2
+    ],
+    [
+      "user_branches",
+      3,
+      "branches",
+      1
+    ],
+    [
+      "user_branches",
+      3,
+      "users",
+      2
+    ],
+    [
+      "user_roles",
+      2,
+      "roles",
+      1
+    ],
+    [
+      "user_roles",
+      2,
+      "users",
+      2
+    ],
+    [
+      "user_roles",
+      3,
+      "roles",
+      1
+    ],
+    [
+      "user_roles",
+      3,
+      "users",
+      2
+    ],
+    [
+      "user_roles",
+      4,
+      "roles",
+      1
+    ],
+    [
+      "user_roles",
+      4,
+      "users",
+      2
+    ],
+    [
+      "user_roles",
+      7,
+      "users",
+      2
+    ],
+    [
+      "user_roles",
+      8,
+      "users",
+      2
+    ],
+    [
+      "users",
+      2,
+      "organizations",
+      0
+    ],
+    [
+      "users",
+      3,
+      "organizations",
+      0
+    ],
+    [
+      "users",
+      4,
+      "organizations",
+      0
+    ],
+    [
+      "users",
+      12,
+      "organizations",
+      0
+    ]
+  ]
+}

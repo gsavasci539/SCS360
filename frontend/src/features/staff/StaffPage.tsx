@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Plus, Users, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
@@ -17,13 +18,14 @@ export function StaffPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
   async function load(page = data.page) {
     setLoading(true);
     try {
-      const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/staff", {
+      const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/users", {
         params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
       });
       setData(normalize(r.data.data));
@@ -36,6 +38,10 @@ export function StaffPage() {
 
   useEffect(() => { load(1); }, []);
 
+  useEffect(() => {
+    getAnalysis("/ai/staff-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+  }, []);
+
   const filtered = useMemo(() => 
     data.items.filter((r) => JSON.stringify(r).toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))),
     [data.items, search]
@@ -43,7 +49,7 @@ export function StaffPage() {
 
   async function handleDelete(row: DataRecord) {
     try {
-      await api.delete(`/staff/${row.id}`);
+      await api.delete(`/users/${row.id}`);
       showToast("Personel silindi", "Personel başarıyla silindi.");
       await load();
     } catch (e) {
@@ -64,6 +70,45 @@ export function StaffPage() {
           </button>
         )}
       </PageHeader>
+
+      {aiAnalysis && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI Personel Analizi</h2>
+              <p>Personel yapısı ve öneriler</p>
+            </div>
+            <Users size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Personel</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_staff}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Aktif Personel</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.active_staff}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.active_staff >= aiAnalysis.total_staff * 0.9 ? "#dcfce7" : "#fef3c7" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Aktiflik Oranı</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>%{aiAnalysis.total_staff > 0 ? Math.round(aiAnalysis.active_staff / aiAnalysis.total_staff * 100) : 0}</div>
+              </div>
+            </div>
+            {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
+                {aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                    <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="card"><LoadingState /></div>
@@ -103,7 +148,7 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
 
   async function submit(values: any) {
     try {
-      await api.post("/staff", values);
+      await api.post("/users", values);
       showToast("Personel oluşturuldu", "Yeni personel başarıyla eklendi.");
       onClose();
       onSuccess();
@@ -138,7 +183,10 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
           <input {...register("phone")} />
         </Field>
         <Field label="E-posta" error={errors.email?.message as string}>
-          <input type="email" {...register("email")} />
+          <input type="email" {...register("email", { required: "E-posta zorunludur." })} />
+        </Field>
+        <Field label="Geçici şifre" required error={errors.password?.message as string}>
+          <input type="password" {...register("password", { required: "Geçici şifre zorunludur.", minLength: { value: 8, message: "Şifre en az 8 karakter olmalıdır." } })} />
         </Field>
       </form>
     </Modal>

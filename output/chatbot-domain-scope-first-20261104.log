@@ -1,0 +1,291 @@
+FFFFFF....FF....                                                         [100%]
+================================== FAILURES ===================================
+_ test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FA193770>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FA1930E0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FA191A90>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269F9FBA780>
+
+    async def test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school(platform_client, monkeypatch):
+        from app.routers import chatbot
+        operation = {"value": "summary"}
+        async def intent(query, context):
+            return ChatbotIntent(intent="PAYMENTS", operation=operation["value"], period="today", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        lower, upper = school_day_bounds(school_today())
+        async with sessions() as db:
+            debts = [Debt(organization_id=child.organization_id, branch_id=child.branch_id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=2000, paid_amount=0, due_date=school_today()) for child in [*data["children"], data["stranger"]]]
+            db.add_all(debts); await db.flush()
+            for debt, amount, when, cancelled, note in [(debts[0], 25, lower + timedelta(hours=1), False, "Own first"),
+                (debts[0], 5, upper - timedelta(microseconds=1), False, "Own last"),
+                (debts[0], 75, lower + timedelta(hours=2), True, "Cancelled secret"),
+                (debts[0], 11, lower - timedelta(microseconds=1), False, "Previous day"),
+                (debts[0], 3, upper, False, "Next day"),
+                (debts[1], 70, lower + timedelta(hours=3), False, "Sibling secret"),
+                (debts[2], 999, lower + timedelta(hours=3), False, "Foreign secret")]:
+                db.add(Payment(organization_id=debt.organization_id, branch_id=debt.branch_id, student_id=debt.student_id, debt_id=debt.id,
+                    amount=amount, payment_method=PaymentMethod.CASH, payment_date=when,
+                    cancelled_at=when if cancelled else None, received_by=data["root"].id, notes=note))
+            await db.commit()
+        body = {"query": "Bug�nk� �demeler", "role": "parent", "student_id": str(data["children"][0].id)}
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]), json=body)
+>       assert result.status_code == 200 and "30.00 TL" in result.json()["data"]["response_markdown"], result.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"intent":"PAYMENTS","response_markdown":"Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.","suggested_actions":[],"sentiment":"NEUTRAL","timestamp":"2026-11-04T14:00:19.068706"}}
+E       assert (200 == 200 and '30.00 TL' in 'Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.')
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_chatbot_finance_data.py:36: AssertionError
+_ test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FCCFC7D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FC867D90>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FC867110>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FA221C50>
+
+    async def test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school(platform_client, monkeypatch):
+        from app.routers import chatbot
+        operation = {"value": "summary"}
+        async def intent(query, context):
+            return ChatbotIntent(intent="PAYMENTS", operation=operation["value"], period="today", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        lower, upper = school_day_bounds(school_today())
+        async with sessions() as db:
+            debts = [Debt(organization_id=child.organization_id, branch_id=child.branch_id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=2000, paid_amount=0, due_date=school_today()) for child in [*data["children"], data["stranger"]]]
+            db.add_all(debts); await db.flush()
+            for debt, amount, when, cancelled, note in [(debts[0], 25, lower + timedelta(hours=1), False, "Own first"),
+                (debts[0], 5, upper - timedelta(microseconds=1), False, "Own last"),
+                (debts[0], 75, lower + timedelta(hours=2), True, "Cancelled secret"),
+                (debts[0], 11, lower - timedelta(microseconds=1), False, "Previous day"),
+                (debts[0], 3, upper, False, "Next day"),
+                (debts[1], 70, lower + timedelta(hours=3), False, "Sibling secret"),
+                (debts[2], 999, lower + timedelta(hours=3), False, "Foreign secret")]:
+                db.add(Payment(organization_id=debt.organization_id, branch_id=debt.branch_id, student_id=debt.student_id, debt_id=debt.id,
+                    amount=amount, payment_method=PaymentMethod.CASH, payment_date=when,
+                    cancelled_at=when if cancelled else None, received_by=data["root"].id, notes=note))
+            await db.commit()
+        body = {"query": "Bug�nk� �demeler", "role": "parent", "student_id": str(data["children"][0].id)}
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]), json=body)
+>       assert result.status_code == 200 and "30.00 TL" in result.json()["data"]["response_markdown"], result.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"intent":"PAYMENTS","response_markdown":"Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.","suggested_actions":[],"sentiment":"NEUTRAL","timestamp":"2026-11-04T14:00:21.055005"}}
+E       assert (200 == 200 and '30.00 TL' in 'Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.')
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_chatbot_finance_data.py:36: AssertionError
+_ test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FCCFF250>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FCCEE3F0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FCCEE060>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FCCEAD00>
+
+    async def test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="DEBT", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client; child = data["children"][0]
+        async with sessions() as db:
+            common = {"organization_id": child.organization_id, "branch_id": child.branch_id, "student_id": child.id,
+                "debt_type": DebtType.EDUCATION, "due_date": school_today()}
+            db.add_all([Debt(**common, amount=100, paid_amount=25), Debt(**common, amount=900, paid_amount=0, deleted_at=datetime.now(UTC))]); await db.commit()
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]),
+            json={"query": "Bor�lar", "role": "parent", "student_id": str(child.id)})
+        assert result.status_code == 200, result.text
+        answer = result.json()["data"]["response_markdown"]
+>       assert "Toplam bor�: 100.00 TL" in answer and "�denen: 25.00 TL" in answer and "Kalan: 75.00 TL" in answer, answer
+E       AssertionError: Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.
+E       assert ('Toplam bor�: 100.00 TL' in 'Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.')
+
+tests\integration\test_chatbot_finance_data.py:59: AssertionError
+_ test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FCCECFC0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FCEDC380>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FC8F1AE0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FC8F54F0>
+
+    async def test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="DEBT", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client; child = data["children"][0]
+        async with sessions() as db:
+            common = {"organization_id": child.organization_id, "branch_id": child.branch_id, "student_id": child.id,
+                "debt_type": DebtType.EDUCATION, "due_date": school_today()}
+            db.add_all([Debt(**common, amount=100, paid_amount=25), Debt(**common, amount=900, paid_amount=0, deleted_at=datetime.now(UTC))]); await db.commit()
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]),
+            json={"query": "Bor�lar", "role": "parent", "student_id": str(child.id)})
+        assert result.status_code == 200, result.text
+        answer = result.json()["data"]["response_markdown"]
+>       assert "Toplam bor�: 100.00 TL" in answer and "�denen: 25.00 TL" in answer and "Kalan: 75.00 TL" in answer, answer
+E       AssertionError: Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.
+E       assert ('Toplam bor�: 100.00 TL' in 'Bu bilgiyi g�r�nt�leme yetkiniz bulunmuyor.')
+
+tests\integration\test_chatbot_finance_data.py:59: AssertionError
+_ test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FCCEE3F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FCF51550>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FC8A3850>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FCE66A50>
+
+    async def test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="GRADES", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+        exam = await client.post("/api/exams", headers=root, json={"class_id": str(data["classroom"].id),
+            "title": "Ger�ek Matematik S�nav�", "exam_type": "QUIZ", "exam_date": school_today().isoformat(), "max_score": 80})
+        assert exam.status_code == 200, exam.text
+        saved = await client.post("/api/exams/bulk-grade-entry", headers=root, json={"exam_id": exam.json()["data"]["id"],
+            "grades": [{"student_id": str(child.id), "score": score} for child, score in zip(data["children"], [40, 0])]})
+        assert saved.status_code == 200, saved.text
+        parent = headers(data["user"]); child = data["children"][0]
+        grades = await client.get(f"/api/parent/child/{child.id}/grades", headers=parent)
+        assert grades.status_code == 200 and len(grades.json()["data"]) == 1, grades.text
+        assert grades.json()["data"][0]["score"] == 40 and grades.json()["data"][0]["max_score"] == 80
+        insights = await client.get(f"/api/parent/child/{child.id}/insights", headers=parent, params={"context": "academic"})
+>       assert insights.status_code == 200 and insights.json()["data"]["current_average"] == 50, insights.text
+E       AssertionError: {"success":false,"message":"Bu �zet alan�n� g�r�nt�leme yetkiniz yok","errors":[],"request_id":"5d3f122c-9b41-462b-91b0-1b8ecd8e6125"}
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_exam_grade_visibility.py:26: AssertionError
+_ test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x00000269FD112210>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FD0AF980>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FCD35040>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FE28C980>
+
+    async def test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="GRADES", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+        exam = await client.post("/api/exams", headers=root, json={"class_id": str(data["classroom"].id),
+            "title": "Ger�ek Matematik S�nav�", "exam_type": "QUIZ", "exam_date": school_today().isoformat(), "max_score": 80})
+        assert exam.status_code == 200, exam.text
+        saved = await client.post("/api/exams/bulk-grade-entry", headers=root, json={"exam_id": exam.json()["data"]["id"],
+            "grades": [{"student_id": str(child.id), "score": score} for child, score in zip(data["children"], [40, 0])]})
+        assert saved.status_code == 200, saved.text
+        parent = headers(data["user"]); child = data["children"][0]
+        grades = await client.get(f"/api/parent/child/{child.id}/grades", headers=parent)
+        assert grades.status_code == 200 and len(grades.json()["data"]) == 1, grades.text
+        assert grades.json()["data"][0]["score"] == 40 and grades.json()["data"][0]["max_score"] == 80
+        insights = await client.get(f"/api/parent/child/{child.id}/insights", headers=parent, params={"context": "academic"})
+>       assert insights.status_code == 200 and insights.json()["data"]["current_average"] == 50, insights.text
+E       AssertionError: {"success":false,"message":"Bu �zet alan�n� g�r�nt�leme yetkiniz yok","errors":[],"request_id":"11238e30-4465-41da-8511-9c01e9166daf"}
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_exam_grade_visibility.py:26: AssertionError
+_ test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000269FD0AF3E0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FC6A5A90>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269EEEA49B0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FE3B5240>
+
+    async def test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose(materials_client, monkeypatch):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            parent_role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+            for code in ("parent.view_finances", "parent.view_attendance"):
+                parent_role.permissions.append(Permission(code=code, name=code, module="parent"))
+            actor = (await db.execute(select(User).options(selectinload(User.roles), selectinload(User.branches)).where(User.id == data["teacher"].id))).scalar_one()
+            actor.roles.append(parent_role); actor.branches = [await db.get(Branch, data["branch"].id)]
+            other = Branch(organization_id=data["org"].id, name="Own child other branch"); db.add(other); await db.flush()
+            classroom = ClassRoom(organization_id=data["org"].id, branch_id=other.id, name="Own child classroom")
+            db.add(classroom); await db.flush()
+            child = Student(organization_id=data["org"].id, branch_id=other.id, class_id=classroom.id, first_name="Own", last_name="Other branch")
+            stranger = Student(organization_id=data["org"].id, branch_id=other.id, first_name="Unlinked", last_name="Other branch")
+            contact = Parent(organization_id=data["org"].id, user_id=actor.id, first_name="Teacher", last_name="Parent")
+            db.add_all([child, stranger, contact]); await db.flush()
+            db.add(StudentParent(student_id=child.id, parent_id=contact.id)); await db.commit()
+            own_debt = Debt(organization_id=data["org"].id, branch_id=other.id, student_id=child.id,
+                amount=Decimal("25.00"), paid_amount=0, debt_type=DebtType.EDUCATION, due_date=date.today())
+            staff_debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=data["children"][0].id,
+                amount=Decimal("25.00"), paid_amount=0, debt_type=DebtType.EDUCATION, due_date=date.today())
+            db.add_all([own_debt, staff_debt]); await db.commit()
+            db.add(Grade(organization_id=data["org"].id, branch_id=other.id, class_id=classroom.id, student_id=child.id,
+                subject=SubjectType.MATHEMATICS, grade_type=GradeType.EXAM, exam_date=date.today(), score=40, max_score=50))
+            await db.commit()
+        auth = headers(data["teacher"])
+        assert (await client.get(f'/api/students/{data["children"][0].id}', headers=auth)).status_code == 200
+        assert (await client.get(f"/api/students/{child.id}", headers=auth)).status_code in {403, 404}
+        portal = await client.get("/api/parent/my-children", headers=auth)
+        assert portal.status_code == 200 and [row["student_id"] for row in portal.json()["data"]] == [str(child.id)], portal.text
+        assert (await client.get(f"/api/parent/child/{child.id}/grades", headers=auth)).status_code == 200
+        academic = await client.get(f"/api/parent/child/{child.id}/insights", headers=auth, params={"context": "academic"})
+>       assert academic.status_code == 200 and academic.json()["data"]["current_grade"] == 80, academic.text
+E       AssertionError: {"success":false,"message":"Bu �zet alan�n� g�r�nt�leme yetkiniz yok","errors":[],"request_id":"ca5f0eab-4566-418d-9e56-5b47f452dcb4"}
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_parent_purpose_scope.py:71: AssertionError
+_ test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[postgresql] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000269FE8D6A80>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000269FE9CF4D0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000269FE974DD0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000269FE95F9A0>
+
+    async def test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose(materials_client, monkeypatch):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            parent_role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+            for code in ("parent.view_finances", "parent.view_attendance"):
+                parent_role.permissions.append(Permission(code=code, name=code, module="parent"))
+            actor = (await db.execute(select(User).options(selectinload(User.roles), selectinload(User.branches)).where(User.id == data["teacher"].id))).scalar_one()
+            actor.roles.append(parent_role); actor.branches = [await db.get(Branch, data["branch"].id)]
+            other = Branch(organization_id=data["org"].id, name="Own child other branch"); db.add(other); await db.flush()
+            classroom = ClassRoom(organization_id=data["org"].id, branch_id=other.id, name="Own child classroom")
+            db.add(classroom); await db.flush()
+            child = Student(organization_id=data["org"].id, branch_id=other.id, class_id=classroom.id, first_name="Own", last_name="Other branch")
+            stranger = Student(organization_id=data["org"].id, branch_id=other.id, first_name="Unlinked", last_name="Other branch")
+            contact = Parent(organization_id=data["org"].id, user_id=actor.id, first_name="Teacher", last_name="Parent")
+            db.add_all([child, stranger, contact]); await db.flush()
+            db.add(StudentParent(student_id=child.id, parent_id=contact.id)); await db.commit()
+            own_debt = Debt(organization_id=data["org"].id, branch_id=other.id, student_id=child.id,
+                amount=Decimal("25.00"), paid_amount=0, debt_type=DebtType.EDUCATION, due_date=date.today())
+            staff_debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=data["children"][0].id,
+                amount=Decimal("25.00"), paid_amount=0, debt_type=DebtType.EDUCATION, due_date=date.today())
+            db.add_all([own_debt, staff_debt]); await db.commit()
+            db.add(Grade(organization_id=data["org"].id, branch_id=other.id, class_id=classroom.id, student_id=child.id,
+                subject=SubjectType.MATHEMATICS, grade_type=GradeType.EXAM, exam_date=date.today(), score=40, max_score=50))
+            await db.commit()
+        auth = headers(data["teacher"])
+        assert (await client.get(f'/api/students/{data["children"][0].id}', headers=auth)).status_code == 200
+        assert (await client.get(f"/api/students/{child.id}", headers=auth)).status_code in {403, 404}
+        portal = await client.get("/api/parent/my-children", headers=auth)
+        assert portal.status_code == 200 and [row["student_id"] for row in portal.json()["data"]] == [str(child.id)], portal.text
+        assert (await client.get(f"/api/parent/child/{child.id}/grades", headers=auth)).status_code == 200
+        academic = await client.get(f"/api/parent/child/{child.id}/insights", headers=auth, params={"context": "academic"})
+>       assert academic.status_code == 200 and academic.json()["data"]["current_grade"] == 80, academic.text
+E       AssertionError: {"success":false,"message":"Bu �zet alan�n� g�r�nt�leme yetkiniz yok","errors":[],"request_id":"8c50d98a-3246-46b3-8d44-8a6301899728"}
+E       assert (403 == 200)
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_parent_purpose_scope.py:71: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+  C:\Okul360\backend\app\routers\exams.py:407: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    submitted_at=datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[sqlite]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[postgresql]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[sqlite]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[postgresql]
+FAILED tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+FAILED tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+FAILED tests/integration/test_parent_purpose_scope.py::test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[sqlite]
+FAILED tests/integration/test_parent_purpose_scope.py::test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[postgresql]
+8 failed, 8 passed, 24 warnings in 25.93s

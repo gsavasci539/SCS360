@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -12,6 +13,7 @@ from app.core.permissions import require_permission, PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
+from app.infrastructure.models.models import Parent, StudentParent
 
 router = APIRouter(prefix="/api/attendance", tags=["Attendance"])
 
@@ -19,7 +21,7 @@ router = APIRouter(prefix="/api/attendance", tags=["Attendance"])
 @router.post("", response_model=AttendanceResponse)
 async def create_attendance(
     attendance: AttendanceCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("attendance.write"))
 ):
     repo = AttendanceRepository()
@@ -43,11 +45,47 @@ async def list_attendance(
     class_id: Optional[UUID] = None,
     student_id: Optional[UUID] = None,
     date: Optional[datetime] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("attendance.read"))
 ):
     repo = AttendanceRepository()
     
+    # Check if user is a parent and filter to their children only
+    is_parent = "parent" in tenant.role_slugs
+    
+    if is_parent:
+        # Find parent record linked to this user
+        parent = await db.execute(
+            select(Parent).where(Parent.user_id == tenant.user_id)
+        )
+        parent = parent.scalar_one_or_none()
+        
+        if parent:
+            # Get student IDs for this parent
+            student_parents = await db.execute(
+                select(StudentParent).where(StudentParent.parent_id == parent.id)
+            )
+            student_ids = [sp.student_id for sp in student_parents.scalars().all()]
+            
+            if not student_ids:
+                return success_response([])
+            
+            # Use direct query for parent filtering
+            from app.infrastructure.models.models import AttendanceRecord
+            query = select(AttendanceRecord).where(
+                AttendanceRecord.organization_id == tenant.organization_id,
+                AttendanceRecord.student_id.in_(student_ids)
+            )
+            if date:
+                query = query.where(AttendanceRecord.attendance_date == date.date())
+            query = query.offset(skip).limit(limit)
+            result = await db.execute(query)
+            attendance = result.scalars().all()
+            return success_response(attendance)
+        else:
+            return success_response([])
+    
+    # Non-parent users use normal filtering
     if class_id and date:
         attendance = await repo.get_by_class_and_date(db, class_id, date)
     elif student_id and date:
@@ -61,7 +99,7 @@ async def list_attendance(
 @router.get("/{attendance_id}", response_model=AttendanceResponse)
 async def get_attendance(
     attendance_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("attendance.read"))
 ):
     repo = AttendanceRepository()
@@ -77,7 +115,7 @@ async def get_attendance(
 async def update_attendance(
     attendance_id: UUID,
     attendance: AttendanceUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("attendance.write"))
 ):
     repo = AttendanceRepository()
@@ -96,7 +134,7 @@ async def update_attendance(
 @router.delete("/{attendance_id}")
 async def delete_attendance(
     attendance_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("attendance.write"))
 ):
     repo = AttendanceRepository()
@@ -117,7 +155,7 @@ async def bulk_create_attendance(
     class_id: UUID,
     date: datetime,
     records: list,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Bulk create attendance records for a class (Teacher attendance taking)"""
@@ -144,8 +182,7 @@ async def bulk_create_attendance(
         student_id = record.get("student_id")
         status = record.get("status")
         check_in_time = record.get("check_in_time")
-        check_out_time = record.get("check_out_time")
-        note = record.get("note")
+        note = record.get("note") or record.get("notes")
         
         # Check if attendance already exists
         existing_result = await db.execute(
@@ -162,8 +199,7 @@ async def bulk_create_attendance(
             # Update existing record
             existing.status = status
             existing.check_in_time = check_in_time
-            existing.check_out_time = check_out_time
-            existing.note = note
+            existing.notes = note
             existing.recorded_by = current_user.id
             updated_records.append(existing)
         else:
@@ -176,8 +212,7 @@ async def bulk_create_attendance(
                 attendance_date=date.date(),
                 status=status,
                 check_in_time=check_in_time,
-                check_out_time=check_out_time,
-                note=note,
+                notes=note,
                 recorded_by=current_user.id
             )
             db.add(new_attendance)
@@ -200,7 +235,7 @@ async def bulk_create_attendance(
 async def mark_all_present(
     class_id: UUID,
     date: datetime,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Mark all students in a class as present (Quick attendance)"""

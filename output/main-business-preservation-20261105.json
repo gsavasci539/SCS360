@@ -1,0 +1,638 @@
+{
+  "backup": "C:\\Okul360\\backend\\school_management.before-035-20261105-0456.db",
+  "current": "C:\\Okul360\\backend\\school_management.db",
+  "version": "035",
+  "integrity_check": "ok",
+  "compared_old_tables": 103,
+  "business_rows_unchanged": true,
+  "excluded_auth_tables": [
+    "audit_logs",
+    "login_attempts",
+    "refresh_tokens"
+  ],
+  "excluded_user_auth_columns": [
+    "last_login_at",
+    "updated_at"
+  ],
+  "changed_tables": [],
+  "tables": [
+    {
+      "table": "organizations",
+      "rows_before": 2,
+      "rows_now": 2,
+      "same": true
+    },
+    {
+      "table": "permissions",
+      "rows_before": 146,
+      "rows_now": 146,
+      "same": true
+    },
+    {
+      "table": "card_numbers",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "devices",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "rfid_cards",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "timetable_slots",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "branches",
+      "rows_before": 4,
+      "rows_now": 4,
+      "same": true
+    },
+    {
+      "table": "roles",
+      "rows_before": 25,
+      "rows_now": 25,
+      "same": true
+    },
+    {
+      "table": "users",
+      "rows_before": 13,
+      "rows_now": 13,
+      "same": true
+    },
+    {
+      "table": "message_templates",
+      "rows_before": 3,
+      "rows_now": 3,
+      "same": true
+    },
+    {
+      "table": "role_permissions",
+      "rows_before": 1113,
+      "rows_now": 1113,
+      "same": true
+    },
+    {
+      "table": "user_roles",
+      "rows_before": 14,
+      "rows_now": 14,
+      "same": true
+    },
+    {
+      "table": "user_branches",
+      "rows_before": 4,
+      "rows_now": 4,
+      "same": true
+    },
+    {
+      "table": "password_reset_tokens",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "classes",
+      "rows_before": 5,
+      "rows_now": 5,
+      "same": true
+    },
+    {
+      "table": "expenses",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "notification_jobs",
+      "rows_before": 11,
+      "rows_now": 11,
+      "same": true
+    },
+    {
+      "table": "integration_settings",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "app_settings",
+      "rows_before": 2,
+      "rows_now": 2,
+      "same": true
+    },
+    {
+      "table": "class_teachers",
+      "rows_before": 1,
+      "rows_now": 1,
+      "same": true
+    },
+    {
+      "table": "students",
+      "rows_before": 50,
+      "rows_now": 50,
+      "same": true
+    },
+    {
+      "table": "notification_recipients",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "chat_messages",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "classroom_assignments",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "student_parents",
+      "rows_before": 50,
+      "rows_now": 50,
+      "same": true
+    },
+    {
+      "table": "student_files",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "attendance_records",
+      "rows_before": 160,
+      "rows_now": 160,
+      "same": true
+    },
+    {
+      "table": "debts",
+      "rows_before": 28,
+      "rows_now": 28,
+      "same": true
+    },
+    {
+      "table": "announcements",
+      "rows_before": 5,
+      "rows_now": 5,
+      "same": true
+    },
+    {
+      "table": "daily_development_reports",
+      "rows_before": 50,
+      "rows_now": 50,
+      "same": true
+    },
+    {
+      "table": "timetables",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "grades",
+      "rows_before": 185,
+      "rows_now": 185,
+      "same": true
+    },
+    {
+      "table": "payments",
+      "rows_before": 11,
+      "rows_now": 11,
+      "same": true
+    },
+    {
+      "table": "announcement_recipients",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "receipts",
+      "rows_before": 11,
+      "rows_now": 11,
+      "same": true
+    },
+    {
+      "table": "bus_routes",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "bus_stops",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "bus_telemetry_logs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "bus_attendance",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "canteen_products",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "canteen_dietary_restrictions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "canteen_orders",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "canteen_wallet_transactions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "health_records",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "medication_schedules",
+      "rows_before": 2,
+      "rows_now": 2,
+      "same": true
+    },
+    {
+      "table": "medication_logs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "infirmary_visits",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "guidance_sessions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "behavioral_incidents",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "guidance_notes",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "pickup_authorizations",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "pickup_logs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "exams",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "exam_results",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "report_cards",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "course_materials",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "digital_id_tokens",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "gate_logs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "sms_providers",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "broadcast_jobs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "delivery_reports",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "branch_financial_summary",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "branch_academic_summary",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "tutoring_sessions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "tutoring_requests",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "teacher_availability",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "school_clubs",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "club_memberships",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "club_events",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "student_certificates",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "staff_timesheets",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "additional_course_hours",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "payroll_records",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "inventory_items",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "inventory_locations",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "asset_assignments",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "maintenance_requests",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "survey_questions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "survey_responses",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "student_consents",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "parents",
+      "rows_before": 60,
+      "rows_now": 60,
+      "same": true
+    },
+    {
+      "table": "student_teacher_assignments",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "chat_conversations",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "ai_chat_audit_logs",
+      "rows_before": 48,
+      "rows_now": 48,
+      "same": true
+    },
+    {
+      "table": "library_books",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "library_loans",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "appointments",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "appointment_time_slots",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "homework",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "homework_submissions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "payment_checkouts",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "parent_notices",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "operational_records",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "student_wallets",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "user_device_tokens",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "material_submissions",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "surveys",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "consent_documents",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "survey_participations",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    },
+    {
+      "table": "subscription_plans",
+      "rows_before": 1,
+      "rows_now": 1,
+      "same": true
+    },
+    {
+      "table": "organization_subscriptions",
+      "rows_before": 1,
+      "rows_now": 1,
+      "same": true
+    },
+    {
+      "table": "subscription_invoices",
+      "rows_before": 1,
+      "rows_now": 1,
+      "same": true
+    },
+    {
+      "table": "subscription_checkouts",
+      "rows_before": 0,
+      "rows_now": 0,
+      "same": true
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test --project=edge
+
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\scripts\run_acceptance_server.py", line 153, in <module>
+[WebServer]     main()
+[WebServer]     ~~~~^^
+[WebServer]   File "C:\Okul360\backend\scripts\run_acceptance_server.py", line 125, in main
+[WebServer]     with tempfile.TemporaryDirectory(prefix="scs360-acceptance-", ignore_cleanup_errors=True) as folder, acceptance_database(folder) as database_url:
+[WebServer]                                                                                                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^
+[WebServer]   File "C:\Python313\Lib\contextlib.py", line 141, in __enter__
+[WebServer]     return next(self.gen)
+[WebServer]   File "C:\Okul360\backend\scripts\run_acceptance_server.py", line 111, in acceptance_database
+[WebServer]     asyncio.run(command(f'CREATE DATABASE "{name}"'))
+[WebServer]     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\runners.py", line 194, in run
+[WebServer]     return runner.run(main)
+[WebServer]            ~~~~~~~~~~^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+[WebServer]     return self._loop.run_until_complete(task)
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\base_events.py", line 720, in run_until_complete
+[WebServer]     return future.result()
+[WebServer]            ~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\scripts\run_acceptance_server.py", line 103, in command
+[WebServer]     async with connection_engine.connect() as connection:
+[WebServer]                ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\base.py", line 121, in __aenter__
+[WebServer]     return await self.start(is_ctxmanager=True)
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\engine.py", line 273, in start
+[WebServer]     await greenlet_spawn(self.sync_engine.connect)
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 201, in greenlet_spawn
+[WebServer]     result = context.throw(*sys.exc_info())
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3278, in connect
+[WebServer]     return self._connection_cls(self)
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 146, in __init__
+[WebServer]     self._dbapi_connection = engine.raw_connection()
+[WebServer]                              ~~~~~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3302, in raw_connection
+[WebServer]     return self.pool.connect()
+[WebServer]            ~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 449, in connect
+[WebServer]     return _ConnectionFairy._checkout(self)
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1263, in _checkout
+[WebServer]     fairy = _ConnectionRecord.checkout(pool)
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 712, in checkout
+[WebServer]     rec = pool._do_get()
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 179, in _do_get
+[WebServer]     with util.safe_reraise():
+[WebServer]          ~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+[WebServer]     raise exc_value.with_traceback(exc_tb)
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 177, in _do_get
+[WebServer]     return self._create_connection()
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 390, in _create_connection
+[WebServer]     return _ConnectionRecord(self)
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 674, in __init__
+[WebServer]     self.__connect()
+[WebServer]     ~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 900, in __connect
+[WebServer]     with util.safe_reraise():
+[WebServer]          ~~~~~~~~~~~~~~~~~^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+[WebServer]     raise exc_value.with_traceback(exc_tb)
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\pool\base.py", line 896, in __connect
+[WebServer]     self.dbapi_connection = connection = pool._invoke_creator(self)
+[WebServer]                                          ~~~~~~~~~~~~~~~~~~~~^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\create.py", line 643, in connect
+[WebServer]     return dialect.connect(*cargs, **cparams)
+[WebServer]            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 621, in connect
+[WebServer]     return self.loaded_dbapi.connect(*cargs, **cparams)
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py", line 949, in connect
+[WebServer]     await_only(creator_fn(*arg, **kw)),
+[WebServer]     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+[WebServer]     return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+[WebServer]            ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+[WebServer]     value = await result
+[WebServer]             ^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connection.py", line 2421, in connect
+[WebServer]     return await connect_utils._connect(
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]     ...<20 lines>...
+[WebServer]     )
+[WebServer]     ^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connect_utils.py", line 1075, in _connect
+[WebServer]     raise last_error or exceptions.TargetServerAttributeNotMatched(
+[WebServer]     ...<2 lines>...
+[WebServer]     )
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connect_utils.py", line 1049, in _connect
+[WebServer]     conn = await _connect_addr(
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^
+[WebServer]     ...<6 lines>...
+[WebServer]     )
+[WebServer]     ^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connect_utils.py", line 886, in _connect_addr
+[WebServer]     return await __connect_addr(params, True, *args)
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connect_utils.py", line 931, in __connect_addr
+[WebServer]     tr, pr = await connector
+[WebServer]              ^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\asyncpg\connect_utils.py", line 802, in _create_ssl_connection
+[WebServer]     tr, pr = await loop.create_connection(
+[WebServer]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]     ...<2 lines>...
+[WebServer]         host, port)
+[WebServer]         ^^^^^^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\base_events.py", line 1161, in create_connection
+[WebServer]     raise exceptions[0]
+[WebServer]   File "C:\Python313\Lib\asyncio\base_events.py", line 1136, in create_connection
+[WebServer]     sock = await self._connect_sock(
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]         exceptions, addrinfo, laddr_infos)
+[WebServer]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\base_events.py", line 1039, in _connect_sock
+[WebServer]     await self.sock_connect(sock, address)
+[WebServer]   File "C:\Python313\Lib\asyncio\proactor_events.py", line 726, in sock_connect
+[WebServer]     return await self._proactor.connect(sock, address)
+[WebServer]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[WebServer]   File "C:\Python313\Lib\asyncio\windows_events.py", line 804, in _poll
+[WebServer]     value = callback(transferred, key, ov)
+[WebServer]   File "C:\Python313\Lib\asyncio\windows_events.py", line 600, in finish_connect
+[WebServer]     ov.getresult()
+[WebServer]     ~~~~~~~~~~~~^^
+[WebServer] ConnectionRefusedError: [WinError 1225] Uzaktaki bilgisayar a� ba�lant�s�n� reddetti
+Error: Process from config.webServer was not able to start. Exit code: 1
+

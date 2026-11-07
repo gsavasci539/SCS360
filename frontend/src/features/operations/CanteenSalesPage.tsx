@@ -1,3 +1,5 @@
+import { getAnalysis } from "../../lib/analysis";
+import { reportClientError } from "../../lib/diagnostics";
 import { Utensils, CreditCard, AlertCircle, CheckCircle, Search, Plus, Minus, X, TrendingUp, Package } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { PageHeader, LoadingState } from "../../components/ui";
@@ -37,6 +39,27 @@ interface RfidCard {
   status: string;
 }
 
+function recordedAmount(value: unknown) {
+  const amount = typeof value === "number" ? value
+    : typeof value === "string" && /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : Number.NaN;
+  return Number.isFinite(amount) && amount >= 0 ? `${amount.toFixed(2)} TL` : "Tutar bilinmiyor";
+}
+
+function stockPresentation(status: unknown) {
+  if (status === "healthy") return { label: "İyi", background: "#dcfce7" };
+  if (status === "warning") return { label: "Uyarı", background: "#fef3c7" };
+  if (status === "critical") return { label: "Kritik", background: "#fee2e2" };
+  return { label: "Stok verisi yok", background: "#f8faf8" };
+}
+
+function recordedTrend(trend: unknown) {
+  if (trend === "increasing") return "Artış";
+  if (trend === "decreasing") return "Düşüş";
+  if (trend === "stable") return "Stabil";
+  if (trend === "recorded") return "Kayıtlı satış özeti";
+  return "Trend için veri yetersiz";
+}
+
 export function CanteenSalesPage() {
   const [products, setProducts] = useState<CanteenProduct[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -55,6 +78,153 @@ export function CanteenSalesPage() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
+  async function loadRfidCards() {
+    setCardsLoading(true);
+    try {
+      const response = await api.get<ApiResponse<RfidCard[]>>("/rfid-cards");
+      setRfidCards(response.data.data || []);
+    } catch (err) {
+      reportClientError("Failed to load RFID cards:", err);
+    } finally {
+      setCardsLoading(false);
+    }
+  }
+
+  async function loadAiAnalysis() {
+    try {
+      const response = await getAnalysis<ApiResponse<any>>("/ai/canteen-analysis");
+      if (response.data.success) {
+        setAiAnalysis(response.data.data);
+      }
+    } catch (err) {
+      // AI analysis is optional, don't fail the page if it errors
+      reportClientError("Failed to load AI analysis:", err);
+    }
+  }
+
+  const handleCardSelect = (cardNumber: string) => {
+    setStudentSearch(cardNumber);
+    setSelectedCard(cardNumber);
+  };
+
+  async function handleCardRead(cardNumber: string) {
+    setStudentSearch(cardNumber);
+    setSelectedCard(cardNumber);
+    
+    // Önce öğrenci bilgilerini al
+    setLoading(true);
+    setError("");
+    try {
+      const cardResponse = await api.post<ApiResponse<any>>("/hardware/card/balance", {
+        card_number: cardNumber.trim()
+      });
+      
+      if (cardResponse.data.success && cardResponse.data.data) {
+        const cardData = cardResponse.data.data;
+        setStudentInfo({
+          id: cardData.holder_id,
+          name: cardData.holder_name,
+          balance: cardData.balance,
+          daily_limit: cardData.daily_limit,
+          daily_spent: cardData.daily_spent,
+          dietary_restrictions: []
+        });
+        
+        // Sepette ürün varsa otomatik checkout yap
+        if (cart.length > 0) {
+          await checkoutWithCard(cardData.holder_id);
+        }
+      }
+    } catch (err) {
+      setError(apiMessage(err));
+      setStudentInfo(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function checkoutWithCard(studentId: string) {
+    if (cart.length === 0) {
+      setError("Sepet boş");
+      return;
+    }
+
+    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    
+    if (studentInfo && studentInfo.balance < total) {
+      setError(`Yetersiz bakiye. Mevcut: ${studentInfo.balance} TL, Toplam: ${total} TL`);
+      return;
+    }
+
+    if (studentInfo && studentInfo.daily_spent + total > studentInfo.daily_limit) {
+      setError(`Günlük limit aşıldı. Bugün harcanan: ${studentInfo.daily_spent} TL, Limit: ${studentInfo.daily_limit} TL`);
+      return;
+    }
+
+    setProcessing(true);
+    setError("");
+
+    try {
+      // Her ürün için sipariş oluştur
+      const orderItems = [];
+      for (const item of cart) {
+        await api.post("/canteen/pos/checkout", {
+          student_id: studentId,
+          product_id: item.product.id,
+          quantity: item.quantity,
+          payment_method: "WALLET"
+        });
+        orderItems.push(item);
+      }
+
+      // Sipariş detaylarını kaydet ve makbuzu göster
+      const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const now = new Date();
+      const orderNumber = `KAN-${now.getTime()}`;
+      
+      setLastOrder({
+        id: orderNumber,
+        order_number: orderNumber,
+        order_date: now.toISOString(),
+        order_time: now.toTimeString(),
+        items: orderItems,
+        total_amount: totalAmount,
+        payment_method: "Cüzdan",
+        student_name: studentInfo?.name || "Öğrenci",
+        student_number: studentInfo?.id,
+        branch_name: "Ana Şube",
+        organization_name: "SCS360",
+        organization_address: "İstanbul, Türkiye",
+        organization_phone: "+90 212 123 4567",
+        processed_by: "Kantin Personeli"
+      });
+
+      setSuccess("Sipariş başarıyla tamamlandı");
+      clearCart();
+      setShowReceipt(true);
+      
+      // Öğrenci bilgilerini yenile
+      const walletResponse = await api.get<ApiResponse<StudentInfo>>(`/canteen/student/${studentId}/wallet`);
+      setStudentInfo(walletResponse.data.data);
+    } catch (err) {
+      setError(apiMessage(err));
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function loadProducts() {
+    setLoading(true);
+    try {
+      const response = await api.get<ApiResponse<CanteenProduct[]>>("/canteen/products?is_available=true");
+      setProducts(response.data.data || []);
+    } catch (err) {
+      setError(apiMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     loadProducts();
@@ -75,7 +245,7 @@ export function CanteenSalesPage() {
             }
           }
         } catch (err) {
-          console.error("Error polling WiFi card reads:", err);
+          reportClientError("Error polling WiFi card reads:", err);
         }
       }
     }, 1000); // Poll every second
@@ -123,152 +293,6 @@ export function CanteenSalesPage() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [cart, studentInfo]);
-
-  const loadRfidCards = async () => {
-    setCardsLoading(true);
-    try {
-      const response = await api.get<ApiResponse<RfidCard[]>>("/rfid-cards");
-      setRfidCards(response.data.data || []);
-    } catch (err) {
-      console.error("Failed to load RFID cards:", err);
-    } finally {
-      setCardsLoading(false);
-    }
-  };
-
-  const loadAiAnalysis = async () => {
-    try {
-      const response = await api.get<ApiResponse<any>>("/ai/canteen-analysis");
-      if (response.data.success) {
-        setAiAnalysis(response.data.data);
-      }
-    } catch (err) {
-      console.error("Failed to load AI analysis:", err);
-    }
-  };
-
-  const handleCardSelect = (cardNumber: string) => {
-    setStudentSearch(cardNumber);
-    setSelectedCard(cardNumber);
-  };
-
-  const handleCardRead = async (cardNumber: string) => {
-    setStudentSearch(cardNumber);
-    setSelectedCard(cardNumber);
-    
-    // Önce öğrenci bilgilerini al
-    setLoading(true);
-    setError("");
-    try {
-      const cardResponse = await api.post<ApiResponse<any>>("/hardware/card/balance", {
-        card_number: cardNumber.trim()
-      });
-      
-      if (cardResponse.data.success && cardResponse.data.data) {
-        const cardData = cardResponse.data.data;
-        setStudentInfo({
-          id: cardData.holder_id,
-          name: cardData.holder_name,
-          balance: cardData.balance,
-          daily_limit: cardData.daily_limit,
-          daily_spent: cardData.daily_spent,
-          dietary_restrictions: []
-        });
-        
-        // Sepette ürün varsa otomatik checkout yap
-        if (cart.length > 0) {
-          await checkoutWithCard(cardData.holder_id);
-        }
-      }
-    } catch (err) {
-      setError(apiMessage(err));
-      setStudentInfo(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkoutWithCard = async (studentId: string) => {
-    if (cart.length === 0) {
-      setError("Sepet boş");
-      return;
-    }
-
-    const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-    
-    if (studentInfo && studentInfo.balance < total) {
-      setError(`Yetersiz bakiye. Mevcut: ${studentInfo.balance} TL, Toplam: ${total} TL`);
-      return;
-    }
-
-    if (studentInfo && studentInfo.daily_spent + total > studentInfo.daily_limit) {
-      setError(`Günlük limit aşıldı. Bugün harcanan: ${studentInfo.daily_spent} TL, Limit: ${studentInfo.daily_limit} TL`);
-      return;
-    }
-
-    setProcessing(true);
-    setError("");
-
-    try {
-      // Her ürün için sipariş oluştur
-      const orderItems = [];
-      for (const item of cart) {
-        await api.post("/canteen/pos/checkout", {
-          student_id: studentId,
-          product_id: item.product.id,
-          quantity: item.quantity,
-          payment_method: "WALLET"
-        });
-        orderItems.push(item);
-      }
-
-      // Sipariş detaylarını kaydet ve makbuzu göster
-      const totalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-      const orderNumber = `KAN-${Date.now()}`;
-      const now = new Date();
-      
-      setLastOrder({
-        id: orderNumber,
-        order_number: orderNumber,
-        order_date: now.toISOString(),
-        order_time: now.toTimeString(),
-        items: orderItems,
-        total_amount: totalAmount,
-        payment_method: "Cüzdan",
-        student_name: studentInfo?.name || "Öğrenci",
-        student_number: studentInfo?.id,
-        branch_name: "Ana Şube",
-        organization_name: "Okul360",
-        organization_address: "İstanbul, Türkiye",
-        organization_phone: "+90 212 123 4567",
-        processed_by: "Kantin Personeli"
-      });
-
-      setSuccess("Sipariş başarıyla tamamlandı");
-      clearCart();
-      setShowReceipt(true);
-      
-      // Öğrenci bilgilerini yenile
-      const walletResponse = await api.get<ApiResponse<StudentInfo>>(`/canteen/student/${studentId}/wallet`);
-      setStudentInfo(walletResponse.data.data);
-    } catch (err) {
-      setError(apiMessage(err));
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get<ApiResponse<CanteenProduct[]>>("/canteen/products?is_available=true");
-      setProducts(response.data.data || []);
-    } catch (err) {
-      setError(apiMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const searchStudent = async (searchTerm?: string) => {
     const termToSearch = searchTerm || studentSearch;
@@ -443,21 +467,21 @@ export function CanteenSalesPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
               <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Satış</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_sales.toFixed(2)} TL</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{recordedAmount(aiAnalysis.total_sales)}</div>
               </div>
               <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Günlük Ortalama</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.daily_average.toFixed(2)} TL</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{recordedAmount(aiAnalysis.daily_average)}</div>
               </div>
-              <div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.inventory_status === "healthy" ? "#dcfce7" : aiAnalysis.inventory_status === "warning" ? "#fef3c7" : "#fee2e2" }}>
+              <div style={{ padding: 16, borderRadius: 11, background: stockPresentation(aiAnalysis.inventory_status).background }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Stok Durumu</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.inventory_status === "healthy" ? "İyi" : aiAnalysis.inventory_status === "warning" ? "Uyarı" : "Kritik"}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{stockPresentation(aiAnalysis.inventory_status).label}</div>
               </div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Trend</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: aiAnalysis.trend === "increasing" ? "#166534" : aiAnalysis.trend === "decreasing" ? "#991b1b" : "#1b2b2e" }}>
-                {aiAnalysis.trend === "increasing" ? "Artış" : aiAnalysis.trend === "decreasing" ? "Düşüş" : "Stabil"}
+                {recordedTrend(aiAnalysis.trend)}
               </div>
             </div>
             {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (

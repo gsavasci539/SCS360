@@ -1,0 +1,33 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/api-refresh.test.ts src/test/auth-store.test.ts src/test/platform-workspace.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/api-refresh.test.ts (7 tests | 2 failed) 25ms
+   × geç dönen yenileme yeni giriş yapılan hesabı ezmez veya tekrar istek göndermez 3ms
+   × önceki oturumun geç yanıtı ve üyelik engeli yeni hesaba uygulanmaz 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/api-refresh.test.ts > geç dönen yenileme yeni giriş yapılan hesabı ezmez veya tekrar istek göndermez
+TypeError: waitFor is not a function
+ ❯ src/test/api-refresh.test.ts:79:9
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/api-refresh.test.ts > önceki oturumun geç yanıtı ve üyelik engeli yeni hesaba uygulanmaz
+TypeError: waitFor is not a function
+ ❯ src/test/api-refresh.test.ts:102:9
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 13 passed (15)
+   Start at  02:53:13
+   Duration  3.54s (transform 249ms, setup 625ms, import 540ms, tests 46ms, environment 4.43s)
+

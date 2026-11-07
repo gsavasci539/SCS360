@@ -1,0 +1,70 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_duplicate_legacy_parent_contacts_aggregate_own_children_without_merging_accounts[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x000002AC631B2CF0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002AC631B2660>, 'org': <app.infrastructure.models.models.Organization object at 0x000002AC631B0EC0>, ...})
+
+    async def test_duplicate_legacy_parent_contacts_aggregate_own_children_without_merging_accounts(materials_client):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            extra = Parent(organization_id=data["org"].id, user_id=data["user"].id, first_name="Second", last_name="Contact")
+            foreign = Parent(organization_id=data["stranger"].organization_id, user_id=data["user"].id, first_name="Corrupt", last_name="Foreign")
+            child = Student(organization_id=data["org"].id, branch_id=data["branch"].id, first_name="Extra", last_name="Child")
+            db.add_all([extra, foreign, child]); await db.flush()
+            db.add_all([StudentParent(student_id=child.id, parent_id=extra.id),
+                StudentParent(student_id=data["children"][0].id, parent_id=extra.id),
+                StudentParent(student_id=data["stranger"].id, parent_id=foreign.id)])
+            await db.commit()
+        auth = headers(data["user"])
+        children = await client.get("/api/parent/my-children", headers=auth)
+>       assert children.status_code == 200, children.text
+E       AssertionError: {"success":false,"message":"Birden fazla eski kay�t ayn� kimlikle e�le�iyor; veri e�le�tirmesi gerekli","errors":[],"request_id":"793a7ba7-b8cc-48be-b72e-da7bfca3ea9d"}
+E       assert 409 == 200
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests\integration\test_parent_purpose_scope.py:22: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  app.core.middleware:middleware.py:87 {"path": "/api/parent/my-children", "request_id": "793a7ba7-b8cc-48be-b72e-da7bfca3ea9d", "event": "ambiguous_database_record", "logger": "app.core.middleware", "level": "warning", "timestamp": "2026-11-04T04:34:40.056037Z"}
+_ test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x000002AC65452D50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002AC655E4050>, 'org': <app.infrastructure.models.models.Organization object at 0x000002AC65451950>, ...})
+
+    async def test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose(materials_client):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            parent_role = (await db.execute(select(Role).where(Role.slug == "parent"))).scalar_one()
+            actor = (await db.execute(select(User).options(selectinload(User.roles), selectinload(User.branches)).where(User.id == data["teacher"].id))).scalar_one()
+            actor.roles.append(parent_role); actor.branches = [await db.get(Branch, data["branch"].id)]
+            other = Branch(organization_id=data["org"].id, name="Own child other branch"); db.add(other); await db.flush()
+            child = Student(organization_id=data["org"].id, branch_id=other.id, first_name="Own", last_name="Other branch")
+            stranger = Student(organization_id=data["org"].id, branch_id=other.id, first_name="Unlinked", last_name="Other branch")
+            contact = Parent(organization_id=data["org"].id, user_id=actor.id, first_name="Teacher", last_name="Parent")
+            db.add_all([child, stranger, contact]); await db.flush()
+            db.add(StudentParent(student_id=child.id, parent_id=contact.id)); await db.commit()
+        auth = headers(data["teacher"])
+        assert (await client.get(f'/api/students/{data["children"][0].id}', headers=auth)).status_code == 200
+        assert (await client.get(f"/api/students/{child.id}", headers=auth)).status_code in {403, 404}
+        portal = await client.get("/api/parent/my-children", headers=auth)
+>       assert portal.status_code == 200 and [row["student_id"] for row in portal.json()["data"]] == [str(child.id)], portal.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[]}
+E       assert (200 == 200 and [] == ['c8a90ba1-9c...33846affd2eb']
+E        +  where 200 = <Response [200 OK]>.status_code
+E         
+E         Right contains one more item: 'c8a90ba1-9c9d-4cf0-beae-33846affd2eb'
+E         Use -v to get more diff)
+
+tests\integration\test_parent_purpose_scope.py:49: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_parent_purpose_scope.py::test_duplicate_legacy_parent_contacts_aggregate_own_children_without_merging_accounts[sqlite]
+FAILED tests/integration/test_parent_purpose_scope.py::test_teacher_parent_reads_own_other_branch_child_only_in_parent_purpose[sqlite]
+2 failed, 2 deselected, 20 warnings in 6.54s

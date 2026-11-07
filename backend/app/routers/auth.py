@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 @router.post("/login")
 @limiter.limit("5/minute")
-async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db, scope="function")):
     service = AuthService(db)
     ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent")
@@ -28,7 +28,7 @@ async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends
 
 
 @router.post("/refresh")
-async def refresh(body: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def refresh(body: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db, scope="function")):
     service = AuthService(db)
     ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent")
@@ -40,7 +40,7 @@ async def refresh(body: RefreshRequest, request: Request, db: AsyncSession = Dep
 async def logout(
     body: RefreshRequest,
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     service = AuthService(db)
     await service.logout(body.refresh_token, user.id)
@@ -48,7 +48,7 @@ async def logout(
 
 
 @router.get("/me")
-async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db, scope="function")):
     service = AuthService(db)
     data = await service.get_me(user)
     return success_response(data)
@@ -57,15 +57,15 @@ async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(
 @router.post("/forgot-password")
 @limiter.limit("3/minute")
 async def forgot_password(
-    request: Request, body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)
+    request: Request, body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db, scope="function")
 ):
     service = AuthService(db)
     await service.forgot_password(body.email)
-    return success_response(message="Şifre sıfırlama bağlantısı gönderildi")
+    return success_response(message="Hesap kayıtlıysa şifre sıfırlama bağlantısı gönderim kuyruğuna alındı")
 
 
 @router.post("/reset-password")
-async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db, scope="function")):
     service = AuthService(db)
     await service.reset_password(body.token, body.new_password)
     return success_response(message="Şifre başarıyla güncellendi")

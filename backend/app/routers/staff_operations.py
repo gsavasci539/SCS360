@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -28,81 +29,26 @@ class TransportCheckIn(BaseModel):
 @router.get("/transport/routes")
 async def get_transport_routes(
     branch_id: Optional[UUID] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("transport.manage"))
 ):
-    """Get transport routes for staff"""
-    from app.infrastructure.models.models import BusRoute
-    
-    query = select(BusRoute)
-    
-    if branch_id:
-        query = query.where(BusRoute.branch_id == branch_id)
-    elif tenant.branch_ids:
-        query = query.where(BusRoute.branch_id.in_(tenant.branch_ids))
-    
-    result = await db.execute(query)
-    routes = result.scalars().all()
-    
-    routes_data = []
-    for route in routes:
-        routes_data.append({
-            "route_id": str(route.id),
-            "route_name": route.route_name,
-            "vehicle_plate": route.vehicle_plate,
-            "driver_name": route.driver_name,
-            "driver_phone": route.driver_phone,
-            "capacity": route.capacity,
-            "branch_id": str(route.branch_id) if route.branch_id else None
-        })
-    
-    return success_response(routes_data)
+    from app.application.services import transport_service
+    return success_response(await transport_service.records(db, tenant, branch_id))
 
 
 @router.post("/transport/check-in")
 async def create_transport_check_in(
     check_in: TransportCheckIn,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("transport.manage"))
 ):
-    """Create a transport check-in event (student boarded or dropped off)"""
-    from app.infrastructure.models.models import BusAttendance
-    
-    # Verify access to this route
-    from app.infrastructure.models.models import BusRoute
-    route_result = await db.execute(
-        select(BusRoute).where(BusRoute.id == check_in.route_id)
-    )
-    route = route_result.scalar_one_or_none()
-    
-    if not route:
-        raise HTTPException(status_code=404, detail="Güzergah bulunamadı")
-    
-    if tenant.branch_ids and route.branch_id not in tenant.branch_ids:
-        raise HTTPException(status_code=403, detail="Bu güzergaha erişiminiz yok")
-    
-    # Create attendance record
-    new_attendance = BusAttendance(
-        route_id=check_in.route_id,
-        student_id=check_in.student_id,
-        event=check_in.event,
-        timestamp=check_in.timestamp,
-        recorded_by=current_user.id
-    )
-    
-    db.add(new_attendance)
-    await db.commit()
-    await db.refresh(new_attendance)
-    
-    return success_response({
-        "attendance_id": str(new_attendance.id),
-        "route_id": str(new_attendance.route_id),
-        "student_id": str(new_attendance.student_id),
-        "event": new_attendance.event,
-        "timestamp": new_attendance.timestamp.isoformat() if new_attendance.timestamp else None
-    }, f"Öğrenci {check_in.event} olarak kaydedildi")
+    from app.application.services import transport_service
+    if check_in.event not in {"BOARDED", "DROPPED"}:
+        raise HTTPException(status_code=422, detail="Geçersiz servis olayı")
+    return success_response(await transport_service.checkin(db, tenant, check_in.route_id,
+        check_in.student_id, check_in.event == "BOARDED", True, check_in.timestamp))
 
 
 # ==================== CANTEEN (KANTİN) ENDPOINTS ====================
@@ -120,106 +66,44 @@ class CanteenSale(BaseModel):
 @router.get("/canteen/wallet/{student_id}")
 async def get_canteen_wallet(
     student_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.manage"))
 ):
-    """Get canteen wallet balance for a student"""
-    from app.infrastructure.models.models import Student
-    
-    # Verify student access
-    student_result = await db.execute(
-        select(Student).where(Student.id == student_id)
-    )
-    student = student_result.scalar_one_or_none()
-    
-    if not student:
-        raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
-    
-    if tenant.branch_ids and student.branch_id not in tenant.branch_ids:
-        raise HTTPException(status_code=403, detail="Bu öğrenciye erişiminiz yok")
-    
-    # This would get wallet balance from database
-    # For now, returning mock data
-    return success_response({
-        "student_id": str(student.id),
-        "student_name": f"{student.first_name} {student.last_name}",
-        "balance": 150.00,  # Mock balance
-        "currency": "TRY",
-        "last_updated": datetime.utcnow().isoformat()
-    })
+    from app.application.services import canteen_wallet_service as wallets
+    return success_response(wallets.serialize(*(await wallets.wallet(db, tenant, student_id))))
 
 
 @router.post("/canteen/wallet/{student_id}/top-up")
 async def top_up_canteen_wallet(
     student_id: UUID,
     top_up: WalletTopUp,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.manage"))
 ):
-    """Top up canteen wallet for a student"""
-    from app.infrastructure.models.models import Student
-    
-    # Verify student access
-    student_result = await db.execute(
-        select(Student).where(Student.id == student_id)
-    )
-    student = student_result.scalar_one_or_none()
-    
-    if not student:
-        raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
-    
-    if tenant.branch_ids and student.branch_id not in tenant.branch_ids:
-        raise HTTPException(status_code=403, detail="Bu öğrenciye erişiminiz yok")
-    
-    # This would create a wallet top-up transaction
-    # For now, returning mock response
-    return success_response({
-        "student_id": str(student.id),
-        "amount": top_up.amount,
-        "payment_method": top_up.payment_method,
-        "new_balance": 150.00 + top_up.amount,  # Mock calculation
-        "transaction_id": str(UUID()),
-        "timestamp": datetime.utcnow().isoformat()
-    }, f"Cüzdana {top_up.amount} TL yüklendi")
+    from app.application.services import canteen_wallet_service as wallets
+    return success_response(await wallets.topup(db, tenant, student_id, top_up.amount, top_up.payment_method))
 
 
 @router.post("/canteen/transactions/sale")
 async def create_canteen_sale(
     sale: CanteenSale,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.manage"))
 ):
-    """Create a canteen sale transaction"""
-    from app.infrastructure.models.models import Student
-    
-    # Verify student access
-    student_result = await db.execute(
-        select(Student).where(Student.id == sale.student_id)
-    )
-    student = student_result.scalar_one_or_none()
-    
-    if not student:
-        raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
-    
-    if tenant.branch_ids and student.branch_id not in tenant.branch_ids:
-        raise HTTPException(status_code=403, detail="Bu öğrenciye erişiminiz yok")
-    
-    # Calculate total
-    total_amount = sum(item.get("price", 0) * item.get("qty", 1) for item in sale.items)
-    
-    # This would create a sale transaction and update wallet
-    # For now, returning mock response
-    return success_response({
-        "transaction_id": str(UUID()),
-        "student_id": str(sale.student_id),
-        "items": sale.items,
-        "total_amount": total_amount,
-        "remaining_balance": 150.00 - total_amount,  # Mock calculation
-        "timestamp": datetime.utcnow().isoformat()
-    }, f"Satış tamamlandı: {total_amount} TL")
+    from app.application.services import canteen_wallet_service as wallets
+    if not sale.items:
+        raise HTTPException(status_code=422, detail="Satış için ürün seçin")
+    results = []
+    for item in sale.items:
+        if not item.get("product_id"):
+            raise HTTPException(status_code=422, detail="Ürün kimliği gerekli")
+        results.append(await wallets.purchase(db, tenant, sale.student_id, product_id=item["product_id"],
+            quantity=int(item.get("qty", 1))))
+    return success_response({"items": results, "total_amount": sum(row["amount"] for row in results),
+        "remaining_balance": results[-1]["current_balance"]})
 
 
 # ==================== LIBRARY (KÜTÜPHANE) ENDPOINTS ====================
@@ -234,7 +118,7 @@ class LibraryBorrow(BaseModel):
 async def get_library_books(
     search: Optional[str] = None,
     available_only: bool = False,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("library.manage"))
 ):
@@ -274,7 +158,7 @@ async def get_library_books(
 @router.post("/library/borrow")
 async def create_library_borrow(
     borrow: LibraryBorrow,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("library.manage"))
 ):
@@ -335,7 +219,7 @@ async def create_library_borrow(
 @router.post("/library/return/{loan_id}")
 async def return_library_book(
     loan_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("library.manage"))
 ):

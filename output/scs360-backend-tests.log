@@ -1,0 +1,17 @@
+........................................................................ [ 91%]
+.......                                                                  [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_session_and_appointment.py::test_authorized_student_debt_payment_and_cancellation_http_lifecycle
+  C:\Okul360\backend\app\routers\expenses.py:72: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expense_data["expense_date"] = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+79 passed, 21 warnings in 121.64s (0:02:01)

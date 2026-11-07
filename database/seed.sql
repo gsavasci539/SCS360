@@ -1,5 +1,6 @@
 -- School Management System - Seed Data
--- This file contains demo data for testing and initial setup
+-- WARNING: This file contains demo data for testing and initial setup
+-- DO NOT use in production unless SEED_DEMO_DATA=true
 
 -- ============================================
 -- ORGANIZATION
@@ -130,7 +131,11 @@ INSERT INTO roles (id, organization_id, name, description, is_system) VALUES
 ('880e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440000', 'Şube Yetkilisi', 'Branch administrator', true),
 ('880e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', 'Öğretmen', 'Teacher with class access', true),
 ('880e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440000', 'Muhasebe', 'Finance and accounting', true),
-('880e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'Personel', 'Staff with limited access', true);
+('880e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'Personel', 'Staff with limited access', true),
+('880e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440000', 'Veli', 'Parent with child information access', true),
+('880e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440000', 'Yönetici', 'Manager with broad organizational access', true),
+('880e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440000', 'İdareci', 'Administrator with administrative access', true),
+('880e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440000', 'Kurum Sahibi', 'Organization owner with full access', true);
 
 -- ============================================
 -- ROLE PERMISSIONS
@@ -196,6 +201,61 @@ WHERE name IN (
     'announcements.view'
 );
 
+-- Veli - Parent focused permissions
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT '880e8400-e29b-41d4-a716-446655440007', id FROM permissions 
+WHERE name IN (
+    'auth.login', 'auth.logout', 'auth.reset_password',
+    'students.view',
+    'attendance.view',
+    'debts.view',
+    'payments.view',
+    'receipts.view', 'receipts.download',
+    'announcements.view'
+);
+
+-- Yönetici - Manager with broad organizational access
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT '880e8400-e29b-41d4-a716-446655440008', id FROM permissions 
+WHERE name IN (
+    'auth.login', 'auth.logout', 'auth.reset_password',
+    'branches.view', 'branches.edit',
+    'users.view', 'users.create', 'users.edit',
+    'students.view', 'students.create', 'students.edit',
+    'classes.view', 'classes.create', 'classes.edit', 'classes.assign_students',
+    'attendance.view', 'attendance.create', 'attendance.edit',
+    'debts.view', 'debts.create', 'debts.edit',
+    'payments.view', 'payments.create',
+    'receipts.view', 'receipts.download', 'receipts.print',
+    'announcements.view', 'announcements.create', 'announcements.send',
+    'notifications.view',
+    'reports.view', 'reports.export', 'reports.finance', 'reports.attendance'
+);
+
+-- İdareci - Administrator with administrative access
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT '880e8400-e29b-41d4-a716-446655440009', id FROM permissions 
+WHERE name IN (
+    'auth.login', 'auth.logout', 'auth.reset_password',
+    'branches.view', 'branches.edit',
+    'users.view', 'users.create', 'users.edit', 'users.assign_roles',
+    'students.view', 'students.create', 'students.edit', 'students.delete',
+    'classes.view', 'classes.create', 'classes.edit', 'classes.delete', 'classes.assign_students',
+    'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.delete',
+    'debts.view', 'debts.create', 'debts.edit', 'debts.delete',
+    'payments.view', 'payments.create', 'payments.cancel',
+    'receipts.view', 'receipts.download', 'receipts.print',
+    'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete', 'announcements.send',
+    'notifications.view', 'notifications.send',
+    'reports.view', 'reports.export', 'reports.finance', 'reports.attendance',
+    'settings.view', 'settings.edit'
+);
+
+-- Kurum Sahibi - Organization owner with full access
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT '880e8400-e29b-41d4-a716-446655440010', id FROM permissions 
+WHERE name NOT IN ('organizations.create', 'organizations.delete', 'settings.manage_roles');
+
 -- ============================================
 -- USERS
 -- ============================================
@@ -222,7 +282,11 @@ VALUES
 ('990e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440000', 'subeyetkili@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Ayşe', 'Demir', '+902123456781', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
 ('990e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', 'ogretmen@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Fatma', 'Kaya', '+902123456782', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
 ('990e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440000', 'muhasebe@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Mehmet', 'Özkan', '+902123456783', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
-('990e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'personel@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Zeynep', 'Akar', '+902123456784', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000');
+('990e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440000', 'personel@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Zeynep', 'Akar', '+902123456784', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
+('990e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440000', 'veli@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Ali', 'Yılmaz', '+905321234567', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
+('990e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440000', 'yonetici@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Murat', 'Şahin', '+902123456786', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
+('990e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440000', 'idareci@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Selim', 'Kara', '+902123456787', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000'),
+('990e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440000', 'kurumsahibi@demo.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYkX5qX1qWu', 'Hakan', 'Demirci', '+902123456788', 'ACTIVE', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440000');
 
 -- ============================================
 -- USER ROLES
@@ -234,7 +298,11 @@ INSERT INTO user_roles (user_id, role_id, branch_id) VALUES
 ('990e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440001'), -- Şube Yetkilisi - Merkez
 ('990e8400-e29b-41d4-a716-446655440004', '880e8400-e29b-41d4-a716-446655440004', '660e8400-e29b-41d4-a716-446655440001'), -- Öğretmen - Merkez
 ('990e8400-e29b-41d4-a716-446655440005', '880e8400-e29b-41d4-a716-446655440005', NULL), -- Muhasebe
-('990e8400-e29b-41d4-a716-446655440006', '880e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440001'); -- Personel - Merkez
+('990e8400-e29b-41d4-a716-446655440006', '880e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440001'), -- Personel - Merkez
+('990e8400-e29b-41d4-a716-446655440007', '880e8400-e29b-41d4-a716-446655440007', NULL), -- Veli
+('990e8400-e29b-41d4-a716-446655440008', '880e8400-e29b-41d4-a716-446655440008', '660e8400-e29b-41d4-a716-446655440001'), -- Yönetici - Merkez
+('990e8400-e29b-41d4-a716-446655440009', '880e8400-e29b-41d4-a716-446655440009', '660e8400-e29b-41d4-a716-446655440001'), -- İdareci - Merkez
+('990e8400-e29b-41d4-a716-446655440010', '880e8400-e29b-41d4-a716-446655440010', NULL); -- Kurum Sahibi
 
 -- ============================================
 -- USER BRANCHES
@@ -244,7 +312,9 @@ INSERT INTO user_branches (user_id, branch_id, is_primary) VALUES
 ('990e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440001', true),
 ('990e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440002', false),
 ('990e8400-e29b-41d4-a716-446655440004', '660e8400-e29b-41d4-a716-446655440001', true),
-('990e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440001', true);
+('990e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440001', true),
+('990e8400-e29b-41d4-a716-446655440008', '660e8400-e29b-41d4-a716-446655440001', true),
+('990e8400-e29b-41d4-a716-446655440009', '660e8400-e29b-41d4-a716-446655440001', true);
 
 -- ============================================
 -- CLASSES

@@ -1,0 +1,339 @@
+E.E.E.E.                                                                 [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_legacy_assignment_select_insert_and_chatbot_context_preserve_original_record[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000028314E9BA10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000028314E9B380>, 'org': <app.infrastructure.models.models.Organization object at 0x0000028314E99D30>, ...})
+
+    @pytest.fixture
+    async def legacy_assignments(materials_client):  # noqa: F811 - pytest imports a shared fixture
+        client, sessions, data = materials_client
+        engine = sessions.kw["bind"]
+        if engine.dialect.name == "sqlite":
+            # Only this disposable fixture's pool is affected. Checkout runs before
+            # a session starts its physical transaction, including reused connections.
+            @sa.event.listens_for(engine.sync_engine, "checkout")
+            def enforce_foreign_keys(dbapi, *_):
+                dbapi.execute("PRAGMA foreign_keys=ON")
+                assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+        identifier = uuid4()
+        async with sessions() as db:
+            if engine.dialect.name == "sqlite":
+>               assert await db.scalar(sa.text("PRAGMA foreign_keys")) == 1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_legacy_student_teacher_assignment.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:517: in scalar
+    return await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2410: in scalar
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2237: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2106: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3278: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3302: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1362: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1317: in _checkout
+    pool.dispatch.checkout(
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:497: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dbapi = <AdaptedConnection <aiosqlite.core.Connection object at 0x0000028314EC0E90>>
+_ = (<sqlalchemy.pool.base._ConnectionRecord object at 0x0000028314F1C1D0>, <sqlalchemy.pool.base._ConnectionFairy object at 0x0000028314D4F230>)
+
+    @sa.event.listens_for(engine.sync_engine, "checkout")
+    def enforce_foreign_keys(dbapi, *_):
+        dbapi.execute("PRAGMA foreign_keys=ON")
+>       assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'coroutine' object is not subscriptable
+
+tests\integration\test_legacy_student_teacher_assignment.py:36: TypeError
+_ ERROR at setup of test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000028316964050>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002831622FBB0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000028316D31E00>, ...})
+
+    @pytest.fixture
+    async def legacy_assignments(materials_client):  # noqa: F811 - pytest imports a shared fixture
+        client, sessions, data = materials_client
+        engine = sessions.kw["bind"]
+        if engine.dialect.name == "sqlite":
+            # Only this disposable fixture's pool is affected. Checkout runs before
+            # a session starts its physical transaction, including reused connections.
+            @sa.event.listens_for(engine.sync_engine, "checkout")
+            def enforce_foreign_keys(dbapi, *_):
+                dbapi.execute("PRAGMA foreign_keys=ON")
+                assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+        identifier = uuid4()
+        async with sessions() as db:
+            if engine.dialect.name == "sqlite":
+>               assert await db.scalar(sa.text("PRAGMA foreign_keys")) == 1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_legacy_student_teacher_assignment.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:517: in scalar
+    return await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2410: in scalar
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2237: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2106: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3278: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3302: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1362: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1317: in _checkout
+    pool.dispatch.checkout(
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:497: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dbapi = <AdaptedConnection <aiosqlite.core.Connection object at 0x0000028316C0AE00>>
+_ = (<sqlalchemy.pool.base._ConnectionRecord object at 0x0000028316326F90>, <sqlalchemy.pool.base._ConnectionFairy object at 0x0000028316CCAA50>)
+
+    @sa.event.listens_for(engine.sync_engine, "checkout")
+    def enforce_foreign_keys(dbapi, *_):
+        dbapi.execute("PRAGMA foreign_keys=ON")
+>       assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'coroutine' object is not subscriptable
+
+tests\integration\test_legacy_student_teacher_assignment.py:36: TypeError
+_ ERROR at setup of test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000028316CB6520>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000028316370350>, 'org': <app.infrastructure.models.models.Organization object at 0x0000028317D97150>, ...})
+
+    @pytest.fixture
+    async def legacy_assignments(materials_client):  # noqa: F811 - pytest imports a shared fixture
+        client, sessions, data = materials_client
+        engine = sessions.kw["bind"]
+        if engine.dialect.name == "sqlite":
+            # Only this disposable fixture's pool is affected. Checkout runs before
+            # a session starts its physical transaction, including reused connections.
+            @sa.event.listens_for(engine.sync_engine, "checkout")
+            def enforce_foreign_keys(dbapi, *_):
+                dbapi.execute("PRAGMA foreign_keys=ON")
+                assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+        identifier = uuid4()
+        async with sessions() as db:
+            if engine.dialect.name == "sqlite":
+>               assert await db.scalar(sa.text("PRAGMA foreign_keys")) == 1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_legacy_student_teacher_assignment.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:517: in scalar
+    return await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2410: in scalar
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2237: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2106: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3278: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3302: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1362: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1317: in _checkout
+    pool.dispatch.checkout(
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:497: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dbapi = <AdaptedConnection <aiosqlite.core.Connection object at 0x0000028317E75C50>>
+_ = (<sqlalchemy.pool.base._ConnectionRecord object at 0x0000028317F04D10>, <sqlalchemy.pool.base._ConnectionFairy object at 0x0000028317FE91F0>)
+
+    @sa.event.listens_for(engine.sync_engine, "checkout")
+    def enforce_foreign_keys(dbapi, *_):
+        dbapi.execute("PRAGMA foreign_keys=ON")
+>       assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'coroutine' object is not subscriptable
+
+tests\integration\test_legacy_student_teacher_assignment.py:36: TypeError
+_ ERROR at setup of test_related_parent_needs_current_send_permission_before_any_conversation_or_message[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000028316C0B130>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002831905FE70>, 'org': <app.infrastructure.models.models.Organization object at 0x0000028316DB9EF0>, ...})
+
+    @pytest.fixture
+    async def legacy_assignments(materials_client):  # noqa: F811 - pytest imports a shared fixture
+        client, sessions, data = materials_client
+        engine = sessions.kw["bind"]
+        if engine.dialect.name == "sqlite":
+            # Only this disposable fixture's pool is affected. Checkout runs before
+            # a session starts its physical transaction, including reused connections.
+            @sa.event.listens_for(engine.sync_engine, "checkout")
+            def enforce_foreign_keys(dbapi, *_):
+                dbapi.execute("PRAGMA foreign_keys=ON")
+                assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+        identifier = uuid4()
+        async with sessions() as db:
+            if engine.dialect.name == "sqlite":
+>               assert await db.scalar(sa.text("PRAGMA foreign_keys")) == 1
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_legacy_student_teacher_assignment.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:517: in scalar
+    return await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2410: in scalar
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2237: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2106: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3278: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:146: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:3302: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1362: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\pool\base.py:1317: in _checkout
+    pool.dispatch.checkout(
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:497: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+dbapi = <AdaptedConnection <aiosqlite.core.Connection object at 0x00000283191B0F30>>
+_ = (<sqlalchemy.pool.base._ConnectionRecord object at 0x0000028317DFBAD0>, <sqlalchemy.pool.base._ConnectionFairy object at 0x0000028317FEAFF0>)
+
+    @sa.event.listens_for(engine.sync_engine, "checkout")
+    def enforce_foreign_keys(dbapi, *_):
+        dbapi.execute("PRAGMA foreign_keys=ON")
+>       assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'coroutine' object is not subscriptable
+
+tests\integration\test_legacy_student_teacher_assignment.py:36: TypeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_legacy_student_teacher_assignment.py::test_legacy_assignment_select_insert_and_chatbot_context_preserve_original_record[sqlite]
+tests/integration/test_legacy_student_teacher_assignment.py::test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[sqlite]
+tests/integration/test_legacy_student_teacher_assignment.py::test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[sqlite]
+tests/integration/test_legacy_student_teacher_assignment.py::test_related_parent_needs_current_send_permission_before_any_conversation_or_message[sqlite]
+  C:\Okul360\backend\tests\integration\test_legacy_student_teacher_assignment.py:36: RuntimeWarning: coroutine 'Cursor.fetchone' was never awaited
+    assert dbapi.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/integration/test_legacy_student_teacher_assignment.py::test_legacy_assignment_select_insert_and_chatbot_context_preserve_original_record[sqlite]
+ERROR tests/integration/test_legacy_student_teacher_assignment.py::test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[sqlite]
+ERROR tests/integration/test_legacy_student_teacher_assignment.py::test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[sqlite]
+ERROR tests/integration/test_legacy_student_teacher_assignment.py::test_related_parent_needs_current_send_permission_before_any_conversation_or_message[sqlite]
+4 passed, 24 warnings, 4 errors in 24.59s

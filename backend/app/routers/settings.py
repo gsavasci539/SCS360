@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -27,7 +28,7 @@ class AppSettingUpdate(BaseModel):
 @router.get("")
 @require_permission("settings.view")
 async def get_settings(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get all application settings"""
@@ -56,7 +57,7 @@ async def get_settings(
 @require_permission("settings.view")
 async def get_setting(
     key: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get a specific setting"""
@@ -95,7 +96,7 @@ async def get_setting(
 @require_permission("settings.update")
 async def create_setting(
     setting: AppSettingCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Create a new setting"""
@@ -136,7 +137,7 @@ async def create_setting(
 async def update_setting(
     key: str,
     setting: AppSettingUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Update a setting"""
@@ -173,7 +174,7 @@ async def update_setting(
 @require_permission("settings.update")
 async def delete_setting(
     key: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Delete a setting"""

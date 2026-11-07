@@ -1,0 +1,24 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_assigned_driver_name_and_edit_do_not_require_global_staff_access[sqlite] _
+tests\integration\test_bus_scope.py:128: in test_assigned_driver_name_and_edit_do_not_require_global_staff_access
+    assert routes[str(own.id)]["driver_name"] == "Assigned Driver"
+E   AssertionError: assert None == 'Assigned Driver'
+_ test_assigned_driver_name_and_edit_do_not_require_global_staff_access[postgresql] _
+tests\integration\test_bus_scope.py:128: in test_assigned_driver_name_and_edit_do_not_require_global_staff_access
+    assert routes[str(own.id)]["driver_name"] == "Assigned Driver"
+E   AssertionError: assert None == 'Assigned Driver'
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_bus_scope.py::test_assigned_driver_name_and_edit_do_not_require_global_staff_access[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_assigned_driver_name_and_edit_do_not_require_global_staff_access[postgresql]
+2 failed, 10 deselected, 20 warnings in 4.92s

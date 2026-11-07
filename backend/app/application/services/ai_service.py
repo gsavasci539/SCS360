@@ -70,13 +70,13 @@ class AIService:
         """
         if not historical_grades:
             return {
-                "predicted_grade": 70.0,
-                "confidence": 50,
-                "trend": "stable",
-                "current_average": 70.0,
-                "risk_level": "medium",
-                "learning_style": "consistent",
-                "peer_percentile": 50,
+                "predicted_grade": None,
+                "confidence": 0,
+                "trend": "insufficient_data",
+                "current_average": None,
+                "risk_level": "unknown",
+                "learning_style": "unknown",
+                "peer_percentile": None,
                 "recommendations": ["Yeterli veri yok"],
                 "factors": {
                     "grades_impact": 70,
@@ -90,12 +90,10 @@ class AIService:
                 "subject_performance": {},
                 "strengths": [],
                 "weaknesses": [],
-                "behavioral_analysis": {
-                    "score": 70.0,
-                    "assessment": "good"
-                },
-                "social_interaction": "moderate",
-                "learning_potential": "moderate"
+                "behavioral_analysis": None,
+                "social_interaction": "unknown",
+                "learning_potential": "unknown",
+                "analysis_type": "insufficient_data"
             }
         
         # Calculate weighted prediction
@@ -164,17 +162,10 @@ class AIService:
             recommendations.append("Öğrenci ek desteğe ihtiyaç duyuyor")
         
         # Peer comparison (based on average grade)
-        peer_percentile = min(max(int((avg_grade / 100) * 100), 10), 90)
+        peer_percentile = None
         
         # Subject-wise performance (simplified - using overall average)
-        subjects = ["Matematik", "Fen Bilimleri", "Türkçe", "Sosyal Bilgiler", "İngilizce"]
         subject_performance = {}
-        for subject in subjects:
-            # Add some variation based on subject hash
-            subject_hash = int(hashlib.md5(f"{student_id}{subject}".encode()).hexdigest()[:8], 16) % 1000
-            variation = (subject_hash % 21) - 10  # -10 to +10
-            subject_grade = max(min(avg_grade + variation, 100), 40)
-            subject_performance[subject] = round(subject_grade, 1)
         
         # Strengths and weaknesses based on subject performance
         sorted_subjects = sorted(subject_performance.items(), key=lambda x: x[1], reverse=True)
@@ -192,8 +183,7 @@ class AIService:
         else:
             behavioral_assessment = "concerning"
         
-        # Social interaction (mock data)
-        social_interaction = "moderate"
+        social_interaction = "unknown"
         
         # Learning potential
         learning_potential = "high" if trend == "improving" and attendance_rate > 85 else "moderate" if trend == "stable" else "limited"
@@ -204,7 +194,7 @@ class AIService:
             "trend": trend,
             "current_average": round(avg_grade, 1),
             "risk_level": risk_level,
-            "learning_style": learning_style,
+            "learning_style": "unknown",
             "peer_percentile": peer_percentile,
             "recommendations": recommendations,
             "factors": {
@@ -219,12 +209,10 @@ class AIService:
             "subject_performance": subject_performance,
             "strengths": strengths,
             "weaknesses": weaknesses,
-            "behavioral_analysis": {
-                "score": round(behavioral_score, 1),
-                "assessment": behavioral_assessment
-            },
+            "behavioral_analysis": None,
             "social_interaction": social_interaction,
-            "learning_potential": learning_potential
+            "learning_potential": "unknown",
+            "analysis_type": "historical_estimate"
         }
     
     async def analyze_attendance_patterns(
@@ -393,7 +381,8 @@ class AIService:
         current_date = datetime.now()
         
         for month in range(forecast_months):
-            forecast_date = current_date + timedelta(days=30 * (month + 1))
+            from dateutil.relativedelta import relativedelta
+            forecast_date = current_date + relativedelta(months=month + 1)
             month_key = forecast_date.strftime("%Y-%m")
             
             # Apply trend factor
@@ -404,9 +393,7 @@ class AIService:
             else:
                 trend_factor = 1.0
             
-            # Add some randomness for realism
-            variation = random.uniform(0.9, 1.1)
-            predicted_amount = recent_avg * Decimal(str(trend_factor * variation))
+            predicted_amount = recent_avg * Decimal(str(trend_factor))
             
             forecast.append({
                 "month": month_key,
@@ -663,7 +650,7 @@ class AIService:
         total_parents = len(parents_data)
         active_parents = len([
             p for p in parents_data
-            if str(p.get("status").value if hasattr(p.get("status"), "value") else p.get("status") or "ACTIVE").upper() == "ACTIVE"
+            if str(p.get("status", "ACTIVE")).upper() == "ACTIVE"
         ])
         
         # Communication rate (parents who have recent communication)

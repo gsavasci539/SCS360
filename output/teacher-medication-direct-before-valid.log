@@ -1,0 +1,68 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link[sqlite] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000020926555550>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000020926554EC0>, 'nurse': <app.infrastructure.models.models.User object at 0x00000209265F3ED0>, ...})
+
+    async def test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link(infirmary_client):
+        from app.infrastructure.models.models import Student, StudentTeacherAssignment
+        client, sessions, data = infirmary_client
+        async with sessions() as db:
+            direct = Student(first_name="Direct", last_name="Clinic", organization_id=data["org"].id, branch_id=data["branch"].id)
+            db.add(direct); await db.flush()
+            for child in (direct, data["stranger"]):
+                db.add(StudentTeacherAssignment(student_id=child.id, teacher_id=data["teacher"].id, subject_name="Clinic teacher"))
+                db.add(MedicationSchedule(student_id=child.id, medication_name="Direct clinic" if child == direct else "Private clinic",
+                    dosage="Test instruction", frequency="10:00", start_date=school_today()))
+            await db.commit()
+        response = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]))
+        assert response.status_code == 200, response.text
+>       assert {row["medicine_name"] for row in response.json()["data"]} == {"Direct clinic"}, response.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[]}
+E       assert set() == {'Direct clinic'}
+E         
+E         Extra items in the right set:
+E         'Direct clinic'
+E         Use -v to get more diff
+
+tests\integration\test_infirmary_workflow.py:184: AssertionError
+_ test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link[postgresql] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000020928D00F50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000020928C31CD0>, 'nurse': <app.infrastructure.models.models.User object at 0x000002092888A7A0>, ...})
+
+    async def test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link(infirmary_client):
+        from app.infrastructure.models.models import Student, StudentTeacherAssignment
+        client, sessions, data = infirmary_client
+        async with sessions() as db:
+            direct = Student(first_name="Direct", last_name="Clinic", organization_id=data["org"].id, branch_id=data["branch"].id)
+            db.add(direct); await db.flush()
+            for child in (direct, data["stranger"]):
+                db.add(StudentTeacherAssignment(student_id=child.id, teacher_id=data["teacher"].id, subject_name="Clinic teacher"))
+                db.add(MedicationSchedule(student_id=child.id, medication_name="Direct clinic" if child == direct else "Private clinic",
+                    dosage="Test instruction", frequency="10:00", start_date=school_today()))
+            await db.commit()
+        response = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]))
+        assert response.status_code == 200, response.text
+>       assert {row["medicine_name"] for row in response.json()["data"]} == {"Direct clinic"}, response.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[]}
+E       assert set() == {'Direct clinic'}
+E         
+E         Extra items in the right set:
+E         'Direct clinic'
+E         Use -v to get more diff
+
+tests\integration\test_infirmary_workflow.py:184: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_infirmary_workflow.py::test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link[sqlite]
+FAILED tests/integration/test_infirmary_workflow.py::test_teacher_medication_reader_includes_direct_student_assignment_without_cross_institution_link[postgresql]
+2 failed, 14 deselected, 20 warnings in 8.15s

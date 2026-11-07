@@ -1,0 +1,123 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test e2e/parent-purpose.spec.ts
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [15228]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "3c57136b-5ddc-414c-a8f7-b4d28c537fcc", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.28, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:37.769833Z"}
+[WebServer] (node:20884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:9812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "7b0320ec-bae2-4855-8630-f6777166f313", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 2117.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:43.653787Z"}
+[WebServer] {"request_id": "ed03a052-0f14-4dbf-aac8-69b393e23e1a", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 552.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.052589Z"}
+[WebServer] {"request_id": "b024cca0-942c-4a53-b0b7-facfe0a49c48", "method": "GET", "path": "/api/organizations", "status": 200, "duration_ms": 25.65, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.089533Z"}
+[WebServer] {"request_id": "5d956394-bf08-4e27-bb7d-e441c31afe26", "method": "GET", "path": "/api/branches", "status": 200, "duration_ms": 30.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.135910Z"}
+[WebServer] {"request_id": "647ea76f-a6ce-4e1c-823c-fb01d2cacd88", "method": "GET", "path": "/api/users/options", "status": 200, "duration_ms": 37.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.183226Z"}
+[WebServer] {"request_id": "41e68658-9838-4ece-9710-f534b36486a8", "method": "POST", "path": "/api/users", "status": 200, "duration_ms": 339.65, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.534110Z"}
+[WebServer] {"request_id": "ca4d7639-15cd-4efc-a23c-da4aac95182b", "method": "PUT", "path": "/api/users/02ec2521-0880-4723-8169-f7bc04ce5b6f/access", "status": 200, "duration_ms": 38.48, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.582192Z"}
+[WebServer] {"request_id": "24845bba-cbe6-488e-9341-e066e6736541", "method": "POST", "path": "/api/classes", "status": 200, "duration_ms": 180.64, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.773194Z"}
+[WebServer] {"request_id": "00de9a2a-924a-43c1-bd3a-c835247c6937", "method": "POST", "path": "/api/branches", "status": 200, "duration_ms": 21.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.803512Z"}
+[WebServer] {"request_id": "4b4903e9-7d7b-46f5-b084-b10873da8c7e", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 37.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.851832Z"}
+[WebServer] {"request_id": "ace30b2f-c302-4bb9-8787-414c3e22fcc3", "method": "POST", "path": "/api/students/2e74ae61-4547-4c53-898f-e0985902e505/parents", "status": 200, "duration_ms": 53.91, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.916018Z"}
+[WebServer] {"request_id": "ca00020f-8da6-4798-9081-7ffe2038db1a", "method": "PUT", "path": "/api/parents/9dd238f3-c109-4339-aac3-1d6bfec4886d/account", "status": 200, "duration_ms": 70.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:45.994563Z"}
+[WebServer] {"request_id": "dfc6a82f-6e1d-490f-bee5-302ea9f1374a", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 488.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:47.683427Z"}
+[WebServer] {"request_id": "981116e3-e2ff-4ddb-a28f-24f072d3e8be", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 123.52, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:48.502673Z"}
+[WebServer] {"request_id": "061ac4fb-5752-4dc0-b8b2-3525d68dd512", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 78.12, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:48.585255Z"}
+[WebServer] {"request_id": "e07afcf1-5166-492a-aa4c-5364102f9d2f", "method": "GET", "path": "/api/parent/child/2e74ae61-4547-4c53-898f-e0985902e505/today-status", "status": 200, "duration_ms": 353.98, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:48.951092Z"}
+[WebServer] {"request_id": "03b5b69f-0751-46ce-acd2-b51c45902a30", "method": "GET", "path": "/api/parent/child/2e74ae61-4547-4c53-898f-e0985902e505/financial-invoices", "status": 200, "duration_ms": 357.1, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:48.974191Z"}
+[WebServer] {"request_id": "82580e4b-dba9-43ec-81aa-d24cf5aae653", "method": "GET", "path": "/api/parent/child/2e74ae61-4547-4c53-898f-e0985902e505/insights", "status": 200, "duration_ms": 568.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:49.221077Z"}
+[WebServer] {"request_id": "72bc5616-55cd-49e2-88e1-7e405bb7e46d", "method": "GET", "path": "/api/parent/child/2e74ae61-4547-4c53-898f-e0985902e505/timeline", "status": 200, "duration_ms": 159.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T04:52:49.434192Z"}
+  x  1 [edge] › e2e\parent-purpose.spec.ts:3:1 › teacher guardian sees their other branch child in parent pages while staff scope stays restricted (21.2s)
+
+
+  1) [edge] › e2e\parent-purpose.spec.ts:3:1 › teacher guardian sees their other branch child in parent pages while staff scope stays restricted 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/teacher$/
+    Received string:  "http://127.0.0.1:5176/parent/dashboard"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 15000ms
+        5 × locator resolved to <html lang="tr">…</html>
+          - unexpected value "http://127.0.0.1:5176/login"
+        28 × locator resolved to <html lang="tr">…</html>
+           - unexpected value "http://127.0.0.1:5176/parent/dashboard"
+
+
+      23 |   const linked = await request.put(`/api/parents/${(await contact.json()).data.id}/account`, { headers, data: { user_id: accountId } }); expect(linked.status()).toBe(200);
+      24 |   await page.goto("/login"); await page.getByLabel("E-posta adresi", { exact: true }).fill(email); await page.getByLabel("Şifre", { exact: true }).fill(password);
+    > 25 |   await page.getByRole("button", { name: "Giriş yap", exact: true }).click(); await expect(page).toHaveURL(/\/teacher$/); await expect(page.getByText(teaching, { exact: true })).toBeVisible();
+         |                                                                                                  ^
+      26 |   const failures: string[] = [];
+      27 |   page.on("response", (response) => { if (response.url().includes("/api/") && response.status() >= 400) failures.push(`${response.status()} ${new URL(response.url()).pathname}`); });
+      28 |   await page.setViewportSize({ width: 390, height: 844 }); await page.goto("/parent/academic");
+        at C:\Okul360\frontend\e2e\parent-purpose.spec.ts:25:98
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\parent-purpose-teacher-gua-98134-taff-scope-stays-restricted-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\parent-purpose-teacher-gua-98134-taff-scope-stays-restricted-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\parent-purpose-teacher-gua-98134-taff-scope-stays-restricted-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\parent-purpose-teacher-gua-98134-taff-scope-stays-restricted-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\parent-purpose.spec.ts:3:1 › teacher guardian sees their other branch child in parent pages while staff scope stays restricted 

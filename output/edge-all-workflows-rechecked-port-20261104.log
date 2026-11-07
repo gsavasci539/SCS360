@@ -1,0 +1,859 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test --project=edge
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [22108]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "c6d67425-a591-4296-928f-8544648c967b", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T03:41:15.968235Z"}
+[WebServer] (node:21308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:25096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 25 tests using 1 worker
+
+(node:17652) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   1 [edge] › e2e\acceptance.spec.ts:6:1 › pickup desk verifies registered identity preserves delivery history and revokes grants on mobile (121ms)
+(node:23832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   2 [edge] › e2e\acceptance.spec.ts:39:1 › student credentials download private QR and gate entry exit revocation persist on mobile (87ms)
+(node:9804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   3 [edge] › e2e\acceptance.spec.ts:69:1 › infirmary files visits follow-ups and dose logs persist and parent rejection stays rejected (83ms)
+(node:1056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   4 [edge] › e2e\acceptance.spec.ts:114:1 › tutoring teacher availability request approval booking and attendance persist on mobile (74ms)
+(node:23272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   5 [edge] › e2e\acceptance.spec.ts:148:1 › payroll timesheets additional hours drafts and approval use real persisted amounts (97ms)
+(node:24340) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   6 [edge] › e2e\acceptance.spec.ts:178:1 › guidance sessions notes and incident resolutions persist with actual counters (72ms)
+(node:15344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   7 [edge] › e2e\acceptance.spec.ts:212:1 › published anonymous survey accepts parent and staff answers and displays real results (102ms)
+(node:13704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   8 [edge] › e2e\acceptance.spec.ts:257:1 › consent document is read and decided by its linked guardian with persistent version (89ms)
+(node:21832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x   9 [edge] › e2e\acceptance.spec.ts:297:1 › inventory forms persist locations, assets, assignments, returns and maintenance (125ms)
+(node:7908) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  10 [edge] › e2e\acceptance.spec.ts:335:1 › club enrollment, events and certificate downloads persist for admin and linked parent (136ms)
+(node:25160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  11 [edge] › e2e\acceptance.spec.ts:380:1 › parent daily timeline displays a saved teacher report and opens its detail page (93ms)
+(node:11124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  12 [edge] › e2e\acceptance.spec.ts:413:1 › parent submits an excuse and admin reviews the persisted request (101ms)
+(node:15704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  13 [edge] › e2e\acceptance.spec.ts:443:1 › material upload and authenticated downloads work for admin and linked parent (82ms)
+(node:21044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  14 [edge] › e2e\acceptance.spec.ts:502:1 › SCS360 brand identity renders in login, sidebar and browser icon (72ms)
+(node:12112) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  15 [edge] › e2e\acceptance.spec.ts:525:1 › chatbot quick question submits immediately with paginated staff student options (86ms)
+(node:18792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  16 [edge] › e2e\acceptance.spec.ts:547:1 › admin visible pages load with real API responses (70ms)
+(node:22444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  17 [edge] › e2e\acceptance.spec.ts:571:1 › parent sees database grades and announcements on mobile width (89ms)
+(node:22532) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  18 [edge] › e2e\acceptance.spec.ts:597:1 › homework create button persists and detail page opens (72ms)
+(node:11816) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  19 [edge] › e2e\acceptance.spec.ts:614:1 › parent and teacher exchange persistent messages for the same child (101ms)
+(node:10728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  20 [edge] › e2e\acceptance.spec.ts:643:1 › parent uploads homework and teacher downloads and grades it (76ms)
+(node:18412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  21 [edge] › e2e\parent-account.spec.ts:5:1 › new school owner can create a parent login and link the contact without changing other schools (120ms)
+(node:9620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  22 [edge] › e2e\public-site.spec.ts:7:1 › public pricing, pending signup, verified purchase and selected-school platform workspace work on mobile (76ms)
+(node:17064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  23 [edge] › e2e\saas.spec.ts:12:1 › SaaS platform provisions an owner, expired sessions reach billing, verified renewal restores access on mobile (103ms)
+(node:25180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  24 [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile (71ms)
+(node:16708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  25 [edge] › e2e\transport-management.spec.ts:3:1 › selected school route stop and boarding management persist on mobile (103ms)
+
+
+  1) [edge] › e2e\acceptance.spec.ts:6:1 › pickup desk verifies registered identity preserves delivery history and revokes grants on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-pickup-desk-ver-d6025-nd-revokes-grants-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-pickup-desk-ver-d6025-nd-revokes-grants-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-pickup-desk-ver-d6025-nd-revokes-grants-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [edge] › e2e\acceptance.spec.ts:39:1 › student credentials download private QR and gate entry exit revocation persist on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-student-credent-8cdae-evocation-persist-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-student-credent-8cdae-evocation-persist-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-student-credent-8cdae-evocation-persist-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [edge] › e2e\acceptance.spec.ts:69:1 › infirmary files visits follow-ups and dose logs persist and parent rejection stays rejected 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-infirmary-files-e8f4a-nt-rejection-stays-rejected-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-infirmary-files-e8f4a-nt-rejection-stays-rejected-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-infirmary-files-e8f4a-nt-rejection-stays-rejected-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [edge] › e2e\acceptance.spec.ts:114:1 › tutoring teacher availability request approval booking and attendance persist on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [edge] › e2e\acceptance.spec.ts:148:1 › payroll timesheets additional hours drafts and approval use real persisted amounts 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-payroll-timeshe-e63f8--use-real-persisted-amounts-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-payroll-timeshe-e63f8--use-real-persisted-amounts-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-payroll-timeshe-e63f8--use-real-persisted-amounts-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [edge] › e2e\acceptance.spec.ts:178:1 › guidance sessions notes and incident resolutions persist with actual counters 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-guidance-sessio-13da0-ersist-with-actual-counters-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-guidance-sessio-13da0-ersist-with-actual-counters-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-guidance-sessio-13da0-ersist-with-actual-counters-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [edge] › e2e\acceptance.spec.ts:212:1 › published anonymous survey accepts parent and staff answers and displays real results 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [edge] › e2e\acceptance.spec.ts:257:1 › consent document is read and decided by its linked guardian with persistent version 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-consent-documen-157ec-ian-with-persistent-version-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-consent-documen-157ec-ian-with-persistent-version-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-consent-documen-157ec-ian-with-persistent-version-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [edge] › e2e\acceptance.spec.ts:297:1 › inventory forms persist locations, assets, assignments, returns and maintenance 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-inventory-forms-6f925-nts-returns-and-maintenance-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-inventory-forms-6f925-nts-returns-and-maintenance-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-inventory-forms-6f925-nts-returns-and-maintenance-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) [edge] › e2e\acceptance.spec.ts:335:1 › club enrollment, events and certificate downloads persist for admin and linked parent 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-club-enrollment-1e7bb-for-admin-and-linked-parent-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-club-enrollment-1e7bb-for-admin-and-linked-parent-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-club-enrollment-1e7bb-for-admin-and-linked-parent-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) [edge] › e2e\acceptance.spec.ts:380:1 › parent daily timeline displays a saved teacher report and opens its detail page 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-parent-daily-ti-2514a-t-and-opens-its-detail-page-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-daily-ti-2514a-t-and-opens-its-detail-page-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-daily-ti-2514a-t-and-opens-its-detail-page-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) [edge] › e2e\acceptance.spec.ts:413:1 › parent submits an excuse and admin reviews the persisted request 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-parent-submits--909b0-views-the-persisted-request-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-submits--909b0-views-the-persisted-request-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-submits--909b0-views-the-persisted-request-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) [edge] › e2e\acceptance.spec.ts:443:1 › material upload and authenticated downloads work for admin and linked parent 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-material-upload-90620-for-admin-and-linked-parent-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-material-upload-90620-for-admin-and-linked-parent-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-material-upload-90620-for-admin-and-linked-parent-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) [edge] › e2e\acceptance.spec.ts:502:1 › SCS360 brand identity renders in login, sidebar and browser icon 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-SCS360-brand-id-d529f-in-sidebar-and-browser-icon-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-SCS360-brand-id-d529f-in-sidebar-and-browser-icon-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-SCS360-brand-id-d529f-in-sidebar-and-browser-icon-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) [edge] › e2e\acceptance.spec.ts:525:1 › chatbot quick question submits immediately with paginated staff student options 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-chatbot-quick-q-234fd-nated-staff-student-options-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-chatbot-quick-q-234fd-nated-staff-student-options-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-chatbot-quick-q-234fd-nated-staff-student-options-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) [edge] › e2e\acceptance.spec.ts:547:1 › admin visible pages load with real API responses ─────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-admin-visible-pages-load-with-real-API-responses-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-admin-visible-pages-load-with-real-API-responses-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-admin-visible-pages-load-with-real-API-responses-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  17) [edge] › e2e\acceptance.spec.ts:571:1 › parent sees database grades and announcements on mobile width 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-parent-sees-dat-77a82-nouncements-on-mobile-width-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-sees-dat-77a82-nouncements-on-mobile-width-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-sees-dat-77a82-nouncements-on-mobile-width-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  18) [edge] › e2e\acceptance.spec.ts:597:1 › homework create button persists and detail page opens 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-homework-create-b482e-sists-and-detail-page-opens-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-homework-create-b482e-sists-and-detail-page-opens-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-homework-create-b482e-sists-and-detail-page-opens-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  19) [edge] › e2e\acceptance.spec.ts:614:1 › parent and teacher exchange persistent messages for the same child 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-parent-and-teac-6235b-messages-for-the-same-child-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-and-teac-6235b-messages-for-the-same-child-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-and-teac-6235b-messages-for-the-same-child-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  20) [edge] › e2e\acceptance.spec.ts:643:1 › parent uploads homework and teacher downloads and grades it 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  21) [edge] › e2e\parent-account.spec.ts:5:1 › new school owner can create a parent login and link the contact without changing other schools 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\parent-account-new-school--edba5-hout-changing-other-schools-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\parent-account-new-school--edba5-hout-changing-other-schools-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\parent-account-new-school--edba5-hout-changing-other-schools-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  22) [edge] › e2e\public-site.spec.ts:7:1 › public pricing, pending signup, verified purchase and selected-school platform workspace work on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\public-site-public-pricing-7b685-rm-workspace-work-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\public-site-public-pricing-7b685-rm-workspace-work-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\public-site-public-pricing-7b685-rm-workspace-work-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  23) [edge] › e2e\saas.spec.ts:12:1 › SaaS platform provisions an owner, expired sessions reach billing, verified renewal restores access on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\saas-SaaS-platform-provisi-6ee29-l-restores-access-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\saas-SaaS-platform-provisi-6ee29-l-restores-access-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\saas-SaaS-platform-provisi-6ee29-l-restores-access-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  24) [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25) [edge] › e2e\transport-management.spec.ts:3:1 › selected school route stop and boarding management persist on mobile 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+       at fixtures.ts:7
+
+       5 |   independentLoginWindow: [async ({ request }, use) => {
+       6 |     const response = await request.post("/__acceptance/reset-limits");
+    >  7 |     expect(response.ok()).toBe(true);
+         |                           ^
+       8 |     await use();
+       9 |   }, { auto: true }],
+      10 | });
+        at Object.base.extend.independentLoginWindow.auto (C:\Okul360\frontend\e2e\fixtures.ts:7:27)
+
+    Error Context: test-results\transport-management-selec-54f67-anagement-persist-on-mobile-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\transport-management-selec-54f67-anagement-persist-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\transport-management-selec-54f67-anagement-persist-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  25 failed
+    [edge] › e2e\acceptance.spec.ts:6:1 › pickup desk verifies registered identity preserves delivery history and revokes grants on mobile 
+    [edge] › e2e\acceptance.spec.ts:39:1 › student credentials download private QR and gate entry exit revocation persist on mobile 
+    [edge] › e2e\acceptance.spec.ts:69:1 › infirmary files visits follow-ups and dose logs persist and parent rejection stays rejected 
+    [edge] › e2e\acceptance.spec.ts:114:1 › tutoring teacher availability request approval booking and attendance persist on mobile 
+    [edge] › e2e\acceptance.spec.ts:148:1 › payroll timesheets additional hours drafts and approval use real persisted amounts 
+    [edge] › e2e\acceptance.spec.ts:178:1 › guidance sessions notes and incident resolutions persist with actual counters 
+    [edge] › e2e\acceptance.spec.ts:212:1 › published anonymous survey accepts parent and staff answers and displays real results 
+    [edge] › e2e\acceptance.spec.ts:257:1 › consent document is read and decided by its linked guardian with persistent version 
+    [edge] › e2e\acceptance.spec.ts:297:1 › inventory forms persist locations, assets, assignments, returns and maintenance 
+    [edge] › e2e\acceptance.spec.ts:335:1 › club enrollment, events and certificate downloads persist for admin and linked parent 
+    [edge] › e2e\acceptance.spec.ts:380:1 › parent daily timeline displays a saved teacher report and opens its detail page 
+    [edge] › e2e\acceptance.spec.ts:413:1 › parent submits an excuse and admin reviews the persisted request 
+    [edge] › e2e\acceptance.spec.ts:443:1 › material upload and authenticated downloads work for admin and linked parent 
+    [edge] › e2e\acceptance.spec.ts:502:1 › SCS360 brand identity renders in login, sidebar and browser icon 
+    [edge] › e2e\acceptance.spec.ts:525:1 › chatbot quick question submits immediately with paginated staff student options 
+    [edge] › e2e\acceptance.spec.ts:547:1 › admin visible pages load with real API responses ───────
+    [edge] › e2e\acceptance.spec.ts:571:1 › parent sees database grades and announcements on mobile width 
+    [edge] › e2e\acceptance.spec.ts:597:1 › homework create button persists and detail page opens ──
+    [edge] › e2e\acceptance.spec.ts:614:1 › parent and teacher exchange persistent messages for the same child 
+    [edge] › e2e\acceptance.spec.ts:643:1 › parent uploads homework and teacher downloads and grades it 
+    [edge] › e2e\parent-account.spec.ts:5:1 › new school owner can create a parent login and link the contact without changing other schools 
+    [edge] › e2e\public-site.spec.ts:7:1 › public pricing, pending signup, verified purchase and selected-school platform workspace work on mobile 
+    [edge] › e2e\saas.spec.ts:12:1 › SaaS platform provisions an owner, expired sessions reach billing, verified renewal restores access on mobile 
+    [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile 
+    [edge] › e2e\transport-management.spec.ts:3:1 › selected school route stop and boarding management persist on mobile 

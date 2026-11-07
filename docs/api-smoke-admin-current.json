@@ -1,0 +1,827 @@
+[
+  {
+    "role": "super_admin",
+    "path": "/api/health",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ready",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/organizations",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/branches",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/users",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/roles",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/permissions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/staff-operations/transport/routes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/staff-operations/library/books",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/admin/students",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/students",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/classes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/attendance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/debts",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/payments",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/receipts",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/charts",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/recent-activity",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/upcoming-events",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/financial-summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/attendance-summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/owner/dashboard/overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/owner/branches/metrics-comparison",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dashboard/owner/financial-trends",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/reports/debts",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/reports/overdue-debts",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/reports/class-occupancy",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/reports/branch-performance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/reports/attendance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/notifications/templates",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/settings/integrations",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/announcements",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/notifications",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/settings",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/daily-reports/",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/daily-reports",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/homework/",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/homework",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/homework/classes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/homework/submissions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/rfid-cards",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/card-numbers",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/card-numbers/available",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/devices",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/parent-notices",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/outbox/",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/outbox",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/expenses",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/appointments",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/transport/routes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/canteen/transactions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/library/books",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/library/loans",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/staff/duty-rosters",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/staff/leave-requests",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/parent/notices",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/finance/analytics",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/notifications/unread-count",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/finance/expenses",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/security/digital-ids",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/security/gate-logs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/security/gate-logs/stats",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/timetable/slots",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/timetable/classroom-assignments",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/exams",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/materials",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/materials/stats/summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/canteen/products",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/canteen/dietary-restrictions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/canteen/orders",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/infirmary/health-records",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/infirmary/medication-schedules",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/infirmary/medication-logs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/infirmary/infirmary-visits",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/infirmary/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/guidance/sessions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/guidance/incidents",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/guidance/notes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/bus/routes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/bus/stops",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/bus/attendance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dismissal/authorizations",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dismissal/logs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/dismissal/today-pickups",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/communications/sms-providers",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/communications/broadcast-jobs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/communications/delivery-reports",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/communications/message-templates",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/hq/financial-consolidation",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/tutoring/sessions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/tutoring/requests",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/tutoring/availability",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/clubs/clubs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/clubs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/clubs/memberships",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/clubs/events",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/clubs/certificates",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/payroll/timesheets",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/payroll/additional-hours",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/payroll/records",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/inventory/items",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/inventory/locations",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/inventory/assignments",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/inventory/maintenance-requests",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/surveys/surveys",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/surveys/questions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/surveys/responses",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/consents/documents",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/consents/student-consents",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/consents/consent-summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/messages/conversations",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/parent/my-children",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/parents",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/teacher/my-classes",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/teacher/today-schedule",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/teacher/pending-tasks",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/teacher/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/appointments/my-appointments",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/library/loans/overdue",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/hardware/devices",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/hardware/wifi/card-reads",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-academic-predictions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-attendance-predictions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-financial-predictions",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-parent-sentiment",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-operational-optimization",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/insights-report",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-homework-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/ai-daily-reports-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/attendance-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/payment-forecast",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/canteen-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/students-overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/parents-overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/parent-satisfaction",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/academic-performance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/communication-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/inventory-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/staff-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/library-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/payroll-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/health-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/transport-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/tutoring-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/surveys-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/guidance-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/clubs-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/classes-overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/student-performance-trends",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/organization-health",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/executive-summary",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/comparative-analysis",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/resource-utilization",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/staff-productivity",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/risk-management",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/ai/operational-metrics",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/role-config",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/ai/audit-logs",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/ai/analytics/overview",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/ai/analytics/trends",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/ai/analytics/intent-performance",
+    "status": 200
+  },
+  {
+    "role": "super_admin",
+    "path": "/api/v1/chatbot/ai/conversation/my-stats",
+    "status": 200
+  }
+]

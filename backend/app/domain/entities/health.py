@@ -1,7 +1,7 @@
 from datetime import datetime, date, time
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, DateTime, Date, Time, ForeignKey, Boolean, Numeric, JSON, func
+from sqlalchemy import String, DateTime, Date, Time, ForeignKey, Boolean, Numeric, JSON, Index, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -40,6 +40,7 @@ class MedicationSchedule(Base):
     end_date: Mapped[date] = mapped_column(Date, nullable=True)
     parent_notes: Mapped[str] = mapped_column(String(1000), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    request_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -48,12 +49,13 @@ class MedicationSchedule(Base):
 
 class MedicationLog(Base):
     __tablename__ = "medication_logs"
-    __table_args__ = {"extend_existing": True}
+    __table_args__ = (Index("uq_medication_log_dose", "schedule_id", "scheduled_date", "scheduled_time", unique=True), {"extend_existing": True})
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     schedule_id: Mapped[UUID] = mapped_column(ForeignKey("medication_schedules.id"), nullable=False)
     student_id: Mapped[UUID] = mapped_column(ForeignKey("students.id"), nullable=False)
     scheduled_time: Mapped[time] = mapped_column(Time, nullable=False)
+    scheduled_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     given_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="SCHEDULED")
     given_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=True)

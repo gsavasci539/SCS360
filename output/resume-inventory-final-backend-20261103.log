@@ -1,0 +1,34 @@
+......FF                                                                 [100%]
+================================== FAILURES ===================================
+__ test_inventory_pages_use_bounded_queries_for_many_related_records[sqlite] __
+tests\integration\test_inventory_workflows.py:135: in test_inventory_pages_use_bounded_queries_for_many_related_records
+    assert len((await db.execute(select(AssetAssignment).where(AssetAssignment.item_id == UUID(item["id"]), AssetAssignment.status == "ASSIGNED"))).scalars().all()) == 1
+                                                                                               ^^^^
+E   NameError: name 'item' is not defined
+---------------------------- Captured stdout call -----------------------------
+2026-11-03 08:03:44 [info     ] request_completed              duration_ms=34.14 method=GET path=/api/inventory/items request_id=89db2a0a-3713-4dab-9b2e-cdf3e1649a23 status=200
+2026-11-03 08:03:44 [info     ] request_completed              duration_ms=33.52 method=GET path=/api/inventory/assignments request_id=e8a3995c-a365-43f0-b8ba-2c0b2ddd1920 status=200
+2026-11-03 08:03:44 [info     ] request_completed              duration_ms=35.77 method=GET path=/api/inventory/maintenance-requests request_id=f96c1284-77e3-427c-a044-f4ec679b642d status=200
+_ test_inventory_pages_use_bounded_queries_for_many_related_records[postgresql] _
+tests\integration\test_inventory_workflows.py:135: in test_inventory_pages_use_bounded_queries_for_many_related_records
+    assert len((await db.execute(select(AssetAssignment).where(AssetAssignment.item_id == UUID(item["id"]), AssetAssignment.status == "ASSIGNED"))).scalars().all()) == 1
+                                                                                               ^^^^
+E   NameError: name 'item' is not defined
+---------------------------- Captured stdout call -----------------------------
+2026-11-03 08:03:47 [info     ] request_completed              duration_ms=37.83 method=GET path=/api/inventory/items request_id=28eba7b9-8b87-4ee6-9ac2-54e17e07c133 status=200
+2026-11-03 08:03:47 [info     ] request_completed              duration_ms=29.53 method=GET path=/api/inventory/assignments request_id=ee54f2a8-19f6-4cfc-b7fe-b405eee11afb status=200
+2026-11-03 08:03:47 [info     ] request_completed              duration_ms=27.24 method=GET path=/api/inventory/maintenance-requests request_id=1b93e04a-d276-4f81-8747-a1101776ca9e status=200
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_inventory_workflows.py::test_inventory_pages_use_bounded_queries_for_many_related_records[sqlite]
+FAILED tests/integration/test_inventory_workflows.py::test_inventory_pages_use_bounded_queries_for_many_related_records[postgresql]
+2 failed, 6 passed, 20 warnings in 19.07s

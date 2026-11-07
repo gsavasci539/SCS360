@@ -2,21 +2,25 @@
 Live Bus Telemetry Module API
 Handles bus routes, stops, telemetry logs, and attendance
 """
-from datetime import datetime, date, time
-from typing import Optional, List
-from uuid import UUID
+from __future__ import annotations
+from app.core.dates import school_today, school_datetime
+from datetime import UTC, datetime, date, time
+from typing import Literal, Optional, List
+from uuid import UUID, uuid4
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
+from app.core.permissions import PermissionChecker
+from app.core.tenant import TenantContext
 from app.domain.entities import User, Branch
+from app.application.services import bus_service
 
 router = APIRouter(prefix="/api/bus", tags=["Bus"])
 
@@ -25,21 +29,43 @@ router = APIRouter(prefix="/api/bus", tags=["Bus"])
 
 class BusRouteCreate(BaseModel):
     branch_id: UUID
-    route_name: str = Field(..., max_length=255)
+    route_name: str = Field(..., min_length=1, max_length=255)
     route_number: Optional[str] = Field(None, max_length=50)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=1000)
     driver_id: Optional[UUID] = None
     vehicle_plate: Optional[str] = Field(None, max_length=20)
-    capacity: int = Field(default=40, ge=1)
-    status: str = Field(default="ACTIVE", description="ACTIVE, MAINTENANCE, OUT_OF_SERVICE")
+    capacity: int = Field(default=40, ge=1, le=2147483647)
+    status: Literal["ACTIVE", "MAINTENANCE", "OUT_OF_SERVICE"] = "ACTIVE"
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma işlemi tekrarında aynı UUID")
+    expected_updated_at: Optional[datetime] = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value):
+        return value.upper() if isinstance(value, str) else value
+
+    @field_validator("route_name")
+    @classmethod
+    def nonblank_name(cls, value):
+        if not value.strip():
+            raise ValueError("Rota adı boş olamaz")
+        return value
 
 class BusStopCreate(BaseModel):
     route_id: UUID
-    stop_name: str = Field(..., max_length=255)
-    stop_order: int = Field(..., ge=1)
+    stop_name: str = Field(..., min_length=1, max_length=255)
+    stop_order: int = Field(..., ge=1, le=2147483647)
     latitude: Optional[Decimal] = Field(None, ge=-90, le=90)
     longitude: Optional[Decimal] = Field(None, ge=-180, le=180)
     estimated_arrival: Optional[time] = None
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma işlemi tekrarında aynı UUID")
+
+    @field_validator("estimated_arrival")
+    @classmethod
+    def local_clock(cls, value):
+        if value is not None and value.tzinfo is not None:
+            raise ValueError("Durak saati okul yerel saati olarak girilmeli")
+        return value
 
 class TelemetryLogCreate(BaseModel):
     route_id: UUID
@@ -48,23 +74,43 @@ class TelemetryLogCreate(BaseModel):
     speed: Optional[Decimal] = Field(None, ge=0, le=200)
     heading: Optional[Decimal] = Field(None, ge=0, le=360)
     ignition_status: bool = Field(default=True)
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı konum kaydı tekrarında aynı UUID")
 
 class BusAttendanceCreate(BaseModel):
     route_id: UUID
     student_id: UUID
     stop_id: Optional[UUID] = None
-    attendance_date: date = Field(default_factory=lambda: date.today())
+    attendance_date: date = Field(default_factory=lambda: school_today())
     pickup_time: Optional[time] = None
     dropoff_time: Optional[time] = None
-    status: str = Field(default="PRESENT", description="PRESENT, ABSENT, LATE")
-    notes: Optional[str] = None
+    status: Literal["PRESENT", "ABSENT", "LATE"] = "PRESENT"
+    notes: Optional[str] = Field(None, max_length=500)
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value):
+        return value.upper() if isinstance(value, str) else value
+
+    @field_validator("pickup_time", "dropoff_time")
+    @classmethod
+    def local_clock(cls, value):
+        if value is not None and value.tzinfo is not None:
+            raise ValueError("Biniş/iniş saati okul yerel saati olarak girilmeli")
+        return value
 
 
 class TransportCheckInCreate(BaseModel):
     route_id: UUID
     student_id: UUID
-    event: str = Field(..., description="BOARDED, DROPPED")
-    timestamp: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    event: Literal["BOARDED", "DROPPED"]
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı biniş/iniş tekrarında aynı UUID")
+    timestamp: datetime = Field(default_factory=lambda: school_datetime(datetime.now(UTC)),
+        description="Saat dilimli zaman okul saatine çevrilir; saat dilimi yoksa okul yerel saati kabul edilir.")
+
+    @field_validator("event", mode="before")
+    @classmethod
+    def normalize_event(cls, value):
+        return value.upper() if isinstance(value, str) else value
 
 
 # ==================== Bus Routes Endpoints ====================
@@ -73,9 +119,10 @@ class TransportCheckInCreate(BaseModel):
 async def get_bus_routes(
     branch_id: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
+    search: str = Query("", max_length=100),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
     """Get bus routes with filtering"""
@@ -88,120 +135,47 @@ async def get_bus_routes(
         conditions.append(BusRoute.branch_id == branch_id)
     if status:
         conditions.append(BusRoute.status == status.upper())
+    if search.strip():
+        from sqlalchemy import or_
+        conditions.append(or_(BusRoute.route_name.ilike(f"%{search.strip()}%"), BusRoute.vehicle_plate.ilike(f"%{search.strip()}%")))
     
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(BusRoute.route_number).limit(limit).offset(offset)
+    query = query.order_by(BusRoute.route_number, BusRoute.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     routes = result.scalars().all()
     
-    enriched_routes = []
-    for route in routes:
-        # Get branch name
-        branch_name = None
-        if route.branch_id:
-            branch_result = await db.execute(
-                select(Branch).where(Branch.id == route.branch_id)
-            )
-            branch = branch_result.scalar_one_or_none()
-            if branch:
-                branch_name = branch.name
-        
-        # Get driver name
-        driver_name = None
-        if route.driver_id:
-            driver_result = await db.execute(
-                select(User).where(User.id == route.driver_id)
-            )
-            driver = driver_result.scalar_one_or_none()
-            if driver:
-                driver_name = f"{driver.first_name} {driver.last_name}"
-        
-        enriched_routes.append({
-            "id": str(route.id),
-            "branch_id": str(route.branch_id),
-            "branch_name": branch_name,
-            "route_name": route.route_name,
-            "route_number": route.route_number,
-            "description": route.description,
-            "driver_id": str(route.driver_id) if route.driver_id else None,
-            "driver_name": driver_name,
-            "vehicle_plate": route.vehicle_plate,
-            "capacity": route.capacity,
-            "status": route.status,
-            "created_at": route.created_at.isoformat(),
-            "updated_at": route.updated_at.isoformat()
-        })
-    
-    return success_response(enriched_routes)
+    return success_response(await bus_service.route_rows(db, routes))
+
+
+@router.get("/options")
+async def bus_options(branch_id: Optional[UUID] = None, route_id: Optional[UUID] = None, student_id: Optional[UUID] = None,
+    search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
+    return success_response(await bus_service.options(db, branch_id, route_id, student_id, search.strip()))
+
+
+@router.get("/summary")
+async def bus_summary(route_id: Optional[UUID] = None, attendance_date: Optional[date] = None,
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
+    return success_response(await bus_service.summary(db, route_id, attendance_date))
+
+
+@router.get("/routes/{route_id}")
+async def bus_route(route_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
+    return success_response((await bus_service.route_rows(db, [await bus_service.route(db, route_id)]))[0])
 
 
 @router.post("/routes")
-async def create_bus_route(
-    route: BusRouteCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Create a new bus route"""
-    from app.domain.entities.bus import BusRoute
-    
-    new_route = BusRoute(
-        branch_id=route.branch_id,
-        route_name=route.route_name,
-        route_number=route.route_number,
-        description=route.description,
-        driver_id=route.driver_id,
-        vehicle_plate=route.vehicle_plate,
-        capacity=route.capacity,
-        status=route.status.upper()
-    )
-    db.add(new_route)
-    await db.commit()
-    await db.refresh(new_route)
-    
-    return success_response({
-        "id": str(new_route.id),
-        "route_name": new_route.route_name,
-        "status": new_route.status,
-        "created_at": new_route.created_at.isoformat()
-    })
+async def create_bus_route(route: BusRouteCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.create_route(db, tenant, route))
 
 
 @router.put("/routes/{route_id}")
-async def update_bus_route(
-    route_id: UUID,
-    route: BusRouteCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Update a bus route"""
-    from app.domain.entities.bus import BusRoute
-    
-    result = await db.execute(
-        select(BusRoute).where(BusRoute.id == route_id)
-    )
-    existing_route = result.scalar_one_or_none()
-    
-    if not existing_route:
-        raise HTTPException(status_code=404, detail="Route not found")
-    
-    existing_route.branch_id = route.branch_id
-    existing_route.route_name = route.route_name
-    existing_route.route_number = route.route_number
-    existing_route.description = route.description
-    existing_route.driver_id = route.driver_id
-    existing_route.vehicle_plate = route.vehicle_plate
-    existing_route.capacity = route.capacity
-    existing_route.status = route.status.upper()
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(existing_route.id),
-        "updated_at": existing_route.updated_at.isoformat()
-    })
+async def update_bus_route(route_id: UUID, route: BusRouteCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.update_route(db, tenant, route_id, route))
 
 
 # ==================== Bus Stops Endpoints ====================
@@ -209,7 +183,8 @@ async def update_bus_route(
 @router.get("/stops")
 async def get_bus_stops(
     route_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
     """Get bus stops"""
@@ -220,7 +195,7 @@ async def get_bus_stops(
     if route_id:
         query = query.where(BusStop.route_id == route_id)
     
-    query = query.order_by(BusStop.stop_order)
+    query = query.order_by(BusStop.stop_order, BusStop.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     stops = result.scalars().all()
@@ -232,103 +207,61 @@ async def get_bus_stops(
             "route_id": str(stop.route_id),
             "stop_name": stop.stop_name,
             "stop_order": stop.stop_order,
-            "latitude": float(stop.latitude) if stop.latitude else None,
-            "longitude": float(stop.longitude) if stop.longitude else None,
+            "latitude": float(stop.latitude) if stop.latitude is not None else None,
+            "longitude": float(stop.longitude) if stop.longitude is not None else None,
             "estimated_arrival": stop.estimated_arrival.strftime("%H:%M") if stop.estimated_arrival else None,
-            "created_at": stop.created_at.isoformat()
+            "created_at": bus_service.iso(stop.created_at)
         })
     
     return success_response(enriched_stops)
 
 
 @router.post("/stops")
-async def create_bus_stop(
-    stop: BusStopCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Create a new bus stop"""
-    from app.domain.entities.bus import BusStop
-    
-    new_stop = BusStop(
-        route_id=stop.route_id,
-        stop_name=stop.stop_name,
-        stop_order=stop.stop_order,
-        latitude=stop.latitude,
-        longitude=stop.longitude,
-        estimated_arrival=stop.estimated_arrival
-    )
-    db.add(new_stop)
-    await db.commit()
-    await db.refresh(new_stop)
-    
-    return success_response({
-        "id": str(new_stop.id),
-        "stop_name": new_stop.stop_name,
-        "stop_order": new_stop.stop_order,
-        "created_at": new_stop.created_at.isoformat()
-    })
+async def create_bus_stop(stop: BusStopCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.create_stop(db, tenant, stop))
+
+
+@router.put("/stops/{stop_id}")
+async def update_bus_stop(stop_id: UUID, stop: BusStopCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.update_stop(db, tenant, stop_id, stop))
 
 
 # ==================== Telemetry Endpoints ====================
 
 @router.post("/telemetry")
-async def submit_telemetry(
-    telemetry: TelemetryLogCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Submit bus telemetry data"""
-    from app.domain.entities.bus import BusTelemetryLog
-    
-    new_log = BusTelemetryLog(
-        route_id=telemetry.route_id,
-        latitude=telemetry.latitude,
-        longitude=telemetry.longitude,
-        speed=telemetry.speed,
-        heading=telemetry.heading,
-        ignition_status=telemetry.ignition_status
-    )
-    db.add(new_log)
-    await db.commit()
-    await db.refresh(new_log)
-    
-    # TODO: Check geofence and trigger parent notifications if needed
-    
-    return success_response({
-        "id": str(new_log.id),
-        "recorded_at": new_log.recorded_at.isoformat()
-    })
+async def submit_telemetry(telemetry: TelemetryLogCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.create_telemetry(db, tenant, telemetry))
 
 
 @router.get("/telemetry/{route_id}/latest")
 async def get_latest_telemetry(
     route_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
-    """Get latest telemetry for a route"""
+    """Get latest telemetry for a route, or an empty result."""
+    await bus_service.route(db, route_id)
     from app.domain.entities.bus import BusTelemetryLog
     
     result = await db.execute(
         select(BusTelemetryLog).where(
             BusTelemetryLog.route_id == route_id
-        ).order_by(BusTelemetryLog.recorded_at.desc()).limit(1)
+        ).order_by(BusTelemetryLog.recorded_at.desc(), BusTelemetryLog.id.desc()).limit(1)
     )
     telemetry = result.scalar_one_or_none()
     
     if not telemetry:
-        raise HTTPException(status_code=404, detail="No telemetry data found")
+        return success_response(None)
     
     return success_response({
         "id": str(telemetry.id),
         "route_id": str(telemetry.route_id),
-        "latitude": float(telemetry.latitude) if telemetry.latitude else None,
-        "longitude": float(telemetry.longitude) if telemetry.longitude else None,
-        "speed": float(telemetry.speed) if telemetry.speed else None,
-        "heading": float(telemetry.heading) if telemetry.heading else None,
+        "latitude": float(telemetry.latitude) if telemetry.latitude is not None else None,
+        "longitude": float(telemetry.longitude) if telemetry.longitude is not None else None,
+        "speed": float(telemetry.speed) if telemetry.speed is not None else None,
+        "heading": float(telemetry.heading) if telemetry.heading is not None else None,
         "ignition_status": telemetry.ignition_status,
-        "recorded_at": telemetry.recorded_at.isoformat()
+        "recorded_at": bus_service.iso(telemetry.recorded_at)
     })
 
 
@@ -339,10 +272,15 @@ async def get_telemetry_history(
     end_time: Optional[datetime] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
     """Get telemetry history for a route"""
+    await bus_service.route(db, route_id)
+    start_time = bus_service.utc(start_time) if start_time else None
+    end_time = bus_service.utc(end_time) if end_time else None
+    if start_time and end_time and start_time > end_time:
+        raise HTTPException(422, "Başlangıç bitişten sonra olamaz")
     from app.domain.entities.bus import BusTelemetryLog
     
     query = select(BusTelemetryLog).where(BusTelemetryLog.route_id == route_id)
@@ -356,7 +294,7 @@ async def get_telemetry_history(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(BusTelemetryLog.recorded_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(BusTelemetryLog.recorded_at.desc(), BusTelemetryLog.id.desc()).limit(limit).offset(offset)
     
     result = await db.execute(query)
     telemetry_logs = result.scalars().all()
@@ -366,12 +304,12 @@ async def get_telemetry_history(
         history.append({
             "id": str(log.id),
             "route_id": str(log.route_id),
-            "latitude": float(log.latitude) if log.latitude else None,
-            "longitude": float(log.longitude) if log.longitude else None,
-            "speed": float(log.speed) if log.speed else None,
-            "heading": float(log.heading) if log.heading else None,
+            "latitude": float(log.latitude) if log.latitude is not None else None,
+            "longitude": float(log.longitude) if log.longitude is not None else None,
+            "speed": float(log.speed) if log.speed is not None else None,
+            "heading": float(log.heading) if log.heading is not None else None,
             "ignition_status": log.ignition_status,
-            "recorded_at": log.recorded_at.isoformat()
+            "recorded_at": bus_service.iso(log.recorded_at)
         })
     
     return success_response(history)
@@ -386,7 +324,7 @@ async def get_bus_attendance(
     attendance_date: Optional[date] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
     """Get bus attendance records"""
@@ -406,99 +344,30 @@ async def get_bus_attendance(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(BusAttendance.date.desc(), BusAttendance.pickup_time).limit(limit).offset(offset)
+    query = query.order_by(BusAttendance.date.desc(), BusAttendance.pickup_time, BusAttendance.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     attendance_records = result.scalars().all()
     
-    enriched_records = []
-    for record in attendance_records:
-        # Get student name
-        student_name = None
-        if record.student_id:
-            student_result = await db.execute(
-                select(Student).where(Student.id == record.student_id)
-            )
-            student = student_result.scalar_one_or_none()
-            if student:
-                student_name = f"{student.first_name} {student.last_name}"
-        
-        enriched_records.append({
-            "id": str(record.id),
-            "route_id": str(record.route_id),
-            "student_id": str(record.student_id),
-            "student_name": student_name,
-            "stop_id": str(record.stop_id) if record.stop_id else None,
-            "date": record.date.isoformat(),
-            "pickup_time": record.pickup_time.strftime("%H:%M") if record.pickup_time else None,
-            "dropoff_time": record.dropoff_time.strftime("%H:%M") if record.dropoff_time else None,
-            "status": record.status,
-            "notes": record.notes,
-            "created_at": record.created_at.isoformat()
-        })
-    
-    return success_response(enriched_records)
+    return success_response(await bus_service.attendance_rows(db, attendance_records))
 
 
 @router.post("/attendance")
-async def create_bus_attendance(
-    attendance: BusAttendanceCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Create bus attendance record"""
-    from app.domain.entities.bus import BusAttendance
-    
-    # Check if record already exists for this student, route, and date
-    existing_result = await db.execute(
-        select(BusAttendance).where(
-            and_(
-                BusAttendance.route_id == attendance.route_id,
-                BusAttendance.student_id == attendance.student_id,
-                BusAttendance.date == attendance.attendance_date
-            )
-        )
-    )
-    existing = existing_result.scalar_one_or_none()
-    
-    if existing:
-        existing.stop_id = attendance.stop_id
-        existing.pickup_time = attendance.pickup_time
-        existing.dropoff_time = attendance.dropoff_time
-        existing.status = attendance.status
-        existing.notes = attendance.notes
-    else:
-        new_attendance = BusAttendance(
-            route_id=attendance.route_id,
-            student_id=attendance.student_id,
-            stop_id=attendance.stop_id,
-            date=attendance.attendance_date,
-            pickup_time=attendance.pickup_time,
-            dropoff_time=attendance.dropoff_time,
-            status=attendance.status,
-            notes=attendance.notes
-        )
-        db.add(new_attendance)
-    
-    await db.commit()
-    
-    return success_response({
-        "message": "Bus attendance recorded successfully",
-        "date": attendance.attendance_date.isoformat(),
-        "status": attendance.status
-    })
+async def create_bus_attendance(attendance: BusAttendanceCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.record_attendance(db, tenant, attendance))
 
 
 @router.get("/routes/{route_id}/students")
 async def get_route_students(
     route_id: UUID,
     attendance_date: date = Query(..., description="Date to get students for"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
 ):
     """Get students assigned to a route with their attendance status"""
     from app.domain.entities.bus import BusAttendance
     from app.domain.entities import Student
+
 
     # This is a simplified version - in real app would have a route_students table
     # For now, we'll get all students with attendance for this route on the given date
@@ -534,65 +403,5 @@ async def get_route_students(
 
 
 @router.post("/check-in")
-async def transport_check_in(
-    check_in: TransportCheckInCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("bus.write"))
-):
-    """Process transport check-in (BOARDED/DROPPED) for student"""
-    from app.domain.entities.bus import BusAttendance
-    from app.domain.entities import Student
-
-    # Verify student exists
-    student_result = await db.execute(
-        select(Student).where(Student.id == check_in.student_id)
-    )
-    student = student_result.scalar_one_or_none()
-
-    if not student:
-        raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
-
-    # Get or create attendance record for today
-    today = check_in.timestamp.date()
-    attendance_result = await db.execute(
-        select(BusAttendance).where(
-            and_(
-                BusAttendance.route_id == check_in.route_id,
-                BusAttendance.student_id == check_in.student_id,
-                BusAttendance.date == today
-            )
-        )
-    )
-    attendance = attendance_result.scalar_one_or_none()
-
-    if not attendance:
-        # Create new attendance record
-        attendance = BusAttendance(
-            route_id=check_in.route_id,
-            student_id=check_in.student_id,
-            date=today,
-            status="PRESENT"
-        )
-        db.add(attendance)
-
-    # Update based on event type
-    if check_in.event.upper() == "BOARDED":
-        attendance.pickup_time = check_in.timestamp.time()
-        attendance.status = "PRESENT"
-    elif check_in.event.upper() == "DROPPED":
-        attendance.dropoff_time = check_in.timestamp.time()
-    else:
-        raise HTTPException(status_code=400, detail="Geçersiz olay türü. BOARDED veya DROPPED olmalı")
-
-    await db.commit()
-    await db.refresh(attendance)
-
-    return success_response({
-        "route_id": str(attendance.route_id),
-        "student_id": str(attendance.student_id),
-        "event": check_in.event.upper(),
-        "timestamp": check_in.timestamp.isoformat(),
-        "pickup_time": attendance.pickup_time.strftime("%H:%M:%S") if attendance.pickup_time else None,
-        "dropoff_time": attendance.dropoff_time.strftime("%H:%M:%S") if attendance.dropoff_time else None,
-        "status": attendance.status
-    }, f"Öğrenci {check_in.event.upper()} olarak işaretlendi")
+async def transport_check_in(check_in: TransportCheckInCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.check_in(db, tenant, check_in))

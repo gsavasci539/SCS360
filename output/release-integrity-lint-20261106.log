@@ -1,0 +1,35 @@
+app\core\release_integrity.py:47:12: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+   |
+45 |     if isinstance(value, float) and not math.isfinite(value) or isinstance(value, Decimal) and not value.is_finite():
+46 |         raise ValueError("unsupported unique value")
+47 |     if not isinstance(value, (str, int, float, bool, bytes, Decimal, date, datetime)):
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ UP038
+48 |         raise ValueError("unsupported unique type")
+49 |     return (type(value).__name__, value)
+   |
+   = help: Convert to `X | Y`
+
+app\core\release_integrity.py:130:20: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+    |
+128 |         if table.schema in {None, schema} and table.name in physical:
+129 |             uuid_key_columns[table.name].update(column.name for column in table.c
+130 |                 if isinstance(column.type, (CustomUUID, Uuid)) and column.name in physical[table.name])
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ UP038
+131 |     report["tables_checked"] = len(tables)
+132 |     if expected_revision is not None:
+    |
+    = help: Convert to `X | Y`
+
+app\core\release_integrity.py:151:20: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
+    |
+149 |             _issue(report, "model_columns", "missing_model_columns", table=table.name, columns=sorted(missing), count=len(missing))
+150 |         for column in table.c:
+151 |             if not isinstance(column.type, (CustomUUID, Uuid)) or not (column.primary_key or column.foreign_keys) or column.name in missing:
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ UP038
+152 |                 continue
+153 |             values = (await connection.exec_driver_sql("SELECT " + quote(column.name) + " FROM " + table_sql(table.name)
+    |
+    = help: Convert to `X | Y`
+
+Found 6 errors (3 fixed, 3 remaining).
+No fixes available (3 hidden fixes can be enabled with the `--unsafe-fixes` option).

@@ -1,0 +1,417 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/dismissal.test.tsx (4 tests | 1 failed) 1871ms
+   × başarısız yetki oluşturma tekrarında aynı UUID ve taslak korunur 1118ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/dismissal.test.tsx > başarısız yetki oluşturma tekrarında aynı UUID ve taslak korunur
+Error: expect(element).toBeEnabled()
+
+Received element is not enabled:
+  <button
+  class="btn btn-primary"
+/>
+
+Ignored nodes: comments, script, style
+<html>
+  <head />
+  <body>
+    <div>
+      <header
+        class="page-head"
+      >
+        <div>
+          <div
+            class="eyebrow"
+          >
+            Güvenlik
+          </div>
+          <h1>
+            Öğrenci Teslim Masası
+          </h1>
+          <p>
+            Yetkili yetişkinler, kimlik kontrolü ve kaydedilmiş öğrenci teslimleri.
+          </p>
+        </div>
+      </header>
+      <section
+        aria-label="Teslim kapsamı"
+        class="card card-pad dismissal-workspace"
+        style="margin-top: 18px;"
+      >
+        <div
+          class="toolbar"
+          style="flex-wrap: wrap;"
+        >
+          <label>
+            Teslim öğrencisi ara
+            <input
+              class="filter-select"
+              value=""
+            />
+          </label>
+          <label>
+            Teslim öğrencisi
+            <select
+              aria-label="Teslim öğrencisi"
+              class="filter-select"
+            >
+              <option
+                value=""
+              >
+                Tüm öğrenciler
+              </option>
+              <option
+                value="child"
+              >
+                Deniz Kabul
+              </option>
+            </select>
+          </label>
+          <label>
+            Teslim geçmişi günü
+            <input
+              class="filter-select"
+              max="2026-11-03"
+              type="date"
+              value="2026-11-03"
+            />
+          </label>
+        </div>
+      </section>
+      <div
+        aria-label="Teslim özeti"
+        class="card card-pad"
+        style="margin-top: 18px;"
+      >
+        Bugün geçerli yetki: 
+        300
+         · Seçili gün teslim kaydı: 
+        215
+         · Teslim edilen öğrenci: 
+        201
+      </div>
+      <section
+        aria-label="Teslim işlemleri"
+        class="card card-pad dismissal-workspace"
+        style="margin-top: 18px;"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 24px;"
+        >
+          <form
+            aria-label="Teslim yetkisi oluştur"
+            id="pickup-grant-form"
+          >
+            <h2>
+              Teslim yetkisi
+            </h2>
+            <fieldset
+              style="border: 0px; padding: 0px; display: grid; gap: 10px;"
+            >
+              <label>
+                Yetkili yetişkin adı
+                <input
+                  class="filter-select"
+                  maxlength="255"
+                  name="authorized_person_name"
+                  required=""
+                  value=""
+                />
+              </label>
+              <label>
+                Yetkili kimlik belgesi numarası
+                <input
+                  class="filter-select"
+                  maxlength="50"
+                  name="authorized_person_id"
+                  required=""
+                  value=""
+                />
+              </label>
+              <label>
+                Öğrenciye yakınlığı
+                <input
+                  class="filter-select"
+                  maxlength="100"
+                  name="relationship"
+                  value=""
+                />
+              </label>
+              <label>
+                Yetkili telefonu
+                <input
+                  class="filter-select"
+                  maxlength="20"
+                  name="phone"
+                  value=""
+                />
+              </label>
+              <label>
+                Yetkili fotoğraf bağlantısı
+                <input
+                  class="filter-select"
+                  maxlength="500"
+                  name="photo_url"
+                  value=""
+                />
+              </label>
+              <label>
+                Yetki başlangıcı
+                <input
+                  class="filter-select"
+                  name="valid_from"
+                  required=""
+                  type="date"
+                  value="2026-11-03"
+                />
+              </label>
+              <label>
+                Yetki bitişi
+                <input
+                  class="filter-select"
+                  name="valid_until"
+                  type="date"
+                  value=""
+                />
+              </label>
+              <label>
+                Yetki notu
+                <textarea
+                  class="filter-select"
+                  maxlength="1000"
+                  name="notes"
+                />
+              </label>
+              <button
+                class="btn btn-primary"
+              >
+                Teslim yetkisini kaydet
+              </button>
+            </fieldset>
+          </form>
+          <form
+            aria-label="Öğrenci teslimini kaydet"
+          >
+            <h2>
+              Kimlik ile teslim
+            </h2>
+            <p>
+              Kimlik belgesindeki numarayı kontrol ederek girin. Kayıtlı yetişkinin adı teslim sonucunda gösterilir.
+            </p>
+            <fieldset
+              style="border: 0px; padding: 0px; display: grid; gap: 10px;"
+            >
+              <label>
+                Teslim alanın kimlik belgesi numarası
+                <input
+                  autocomplete="off"
+                  class="filter-select"
+                  maxlength="50"
+                  name="pickup_person_id"
+                  required=""
+                />
+              </label>
+              <button
+                class="btn btn-primary"
+              >
+                Kimliği doğrula ve teslimi kaydet
+              </button>
+            </fieldset>
+          </form>
+        </div>
+      </section>
+      <section
+        aria-busy="false"
+        aria-label="Teslim yetkileri"
+        class="card card-pad dismissal-workspace"
+        style="margin-top: 18px;"
+      >
+        <h2>
+          Teslim yetkileri
+        </h2>
+        <div
+          style="overflow-x: auto;"
+        >
+          <table
+            class="data-table"
+          >
+            <thead>
+              <tr>
+                <th>
+                  Öğrenci / yetişkin
+                </th>
+                <th>
+                  Kimlik
+                </th>
+                <th>
+                  Geçerlilik
+                </th>
+                <th>
+                  Durum
+                </th>
+                <th>
+                  Ayrıntı ve işlemler
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a
+                    data-discover="true"
+                    href="/dismissal?student=child"
+                  >
+                    Deniz Kabul
+                  </a>
+                  <br />
+                  Yetkili Yetişkin
+                </td>
+                <td>
+                  •••• -001
+                </td>
+                <td>
+                  03 Kas 2026
+                   – 
+                  Bitiş girilmedi
+                </td>
+                <td>
+                  <span
+                    class="badge badge-success"
+                  >
+                    Aktif
+                  </span>
+                </td>
+                <td>
+                  <details>
+                    <summary>
+                      Yetkiyi aç
+                    </summary>
+                    <p
+                      class="dismissal-notes"
+                    >
+                      Kimlik: 
+                      TEST-DOC-001
+                    </p>
+                    <p>
+                      Yakınlık: 
+                      Belirtilmedi
+                    </p>
+                    <p>
+                      Telefon: 
+                      Belirtilmedi
+                    </p>
+                    <p
+                      class="dismissal-notes"
+                    >
+                      Fotoğraf bağlantısı: 
+                      /private/preserved.svg
+                    </p>
+                    <p>
+                      Oluşturan: 
+                      Kayıtlı yetkili / eski kayıt
+                    </p>
+                    <div
+                      style="display: grid; gap: 8px;"
+                    >
+                      <button
+                        class="btn btn-secondary"
+                      >
+                        Yetkiyi düzenle
+                      </button>
+                      <button
+                        class="btn btn-secondary"
+                      >
+                        Teslim yetkisini iptal et
+                      </button>
+                    </div>
+                  </details>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div
+          aria-label="Teslim yetkileri sayfaları"
+          class="toolbar"
+        >
+          <button
+            class="btn btn-secondary"
+            disabled=""
+          >
+            Önceki
+          </button>
+          <span>
+            Sayfa 
+            1
+          </span>
+          <button
+            class="btn btn-secondary"
+            disabled=""
+          >
+            Sonraki
+          </button>
+        </div>
+      </section>
+      <section
+        aria-busy="false"
+        aria-label="Teslim geçmişi"
+        class="card card-pad dismissal-workspace"
+        style="margin-top: 18px;"
+      >
+        <h2>
+          Teslim geçmişi
+        </h2>
+        <p>
+          Seçili günde teslim kaydı yok.
+        </p>
+        <div
+          aria-label="Teslim geçmişi sayfaları"
+          class="toolbar"
+        >
+          <button
+            class="btn btn-secondary"
+            disabled=""
+          >
+            Önceki
+          </button>
+          <span>
+            Sayfa 
+            1
+          </span>
+          <button
+            class="btn btn-secondary"
+            disabled=""
+          >
+            Sonraki
+          </button>
+        </div>
+      </section>
+      <div
+        aria-live="polite"
+        class="toast-region"
+      />
+    </div>
+  </body>
+</html>
+ ❯ src/test/dismissal.test.tsx:33:101
+     31|   vi.mocked(api.post).mockRejectedValueOnce(new Error("timeout")); ope…
+     32|   const form = screen.getByRole("form", { name: "Teslim yetkisi oluştu…
+     33|   await waitFor(() => expect(within(form).getByRole("button", { name: …
+       |                                                                                                     ^
+     34|   fireEvent.change(within(form).getByLabelText("Yetkili yetişkin adı")…
+     35|   fireEvent.change(within(form).getByLabelText("Yetkili kimlik belgesi…
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 7 passed (8)
+   Start at  18:45:14
+   Duration  7.94s (transform 762ms, setup 1.19s, import 2.52s, tests 3.19s, environment 7.28s)
+

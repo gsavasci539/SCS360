@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/subscription-checkout.test.tsx src/test/saas-pages.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  02:47:55
+   Duration  4.15s (transform 539ms, setup 532ms, import 1.18s, tests 1.39s, environment 4.17s)
+

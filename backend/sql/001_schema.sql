@@ -1,4 +1,4 @@
--- EduPanel PostgreSQL Schema v1.0.0
+-- SCS360 PostgreSQL Schema v1.0.0
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE user_status AS ENUM ('ACTIVE', 'PASSIVE', 'BLOCKED');

@@ -1,0 +1,780 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/academic-summary.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/academic-summary.test.tsx (3 tests | 3 failed) 3127ms
+   × gerçek kayıt özeti ve eksik değerlendirmeyi gösterir; tahmin veya güven yüzdesi uydurmaz 1090ms
+   × başarısız analiz boş başarı gibi görünmez ve yeniden denenebilir 1014ms
+   × izinli analiz yoksa istekte bulunmadan açık bir boş durum gösterir 1018ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/academic-summary.test.tsx > gerçek kayıt özeti ve eksik değerlendirmeyi gösterir; tahmin veya güven yüzdesi uydurmaz
+TestingLibraryElementError: Unable to find role="heading" and name "Kayıtlı not analizi"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <div
+        class="tabs"
+      >
+        <button
+          class="tab active"
+        >
+          Akademik AI
+        </button>
+      </div>
+      <div
+        class="tab-content"
+      >
+        <div
+          class="card"
+        >
+          <div
+            class="card-head"
+          >
+            <div>
+              <h2>
+                Akademik Tahminler
+              </h2>
+              <p>
+                AI destekli akademik performans tahminleri - 
+              </p>
+            </div>
+          </div>
+          <div
+            style="padding: 0px 21px 21px;"
+          >
+            <div
+              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;"
+            >
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Analiz Edilen
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+                >
+                  1
+                </div>
+              </div>
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Riskli Öğrenci
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(220, 38, 38);"
+                >
+                  1
+                </div>
+              </div>
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Güven Eşiği
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+                >
+                  0
+                  %
+                </div>
+              </div>
+            </div>
+            <div
+              style="margin-bottom: 24px;"
+            >
+              <h3
+                style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+              >
+                AI Tespit Edilen Riskli Öğrenciler
+              </h3>
+              <div
+                style="padding: 12px; border-radius: 8px; background: rgb(254, 226, 226); margin-bottom: 8px; border-left: 4px solid rgb(220, 38, 38);"
+              >
+                <div
+                  style="display: flex; justify-content: space-between; margin-bottom: 4px;"
+                >
+                  <span
+                    style="font-size: 13px; font-weight: 600;"
+                  >
+                    Gerçek Öğrenci
+                  </span>
+                  <span
+                    style="font-size: 12px; font-weight: 700; color: rgb(220, 38, 38);"
+                  >
+                    25
+                  </span>
+                </div>
+                <div
+                  style="font-size: 11px; color: rgb(110, 123, 125);"
+                >
+                  Tahmin: 
+                   | Trend: 
+                  veri yetersiz
+                   | Güven: %
+                  0
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <div
+        class="tabs"
+      >
+        <button
+          class="tab active"
+        >
+          Akademik AI
+        </button>
+      </div>
+      <div
+        class="tab-content"
+      >
+        <div
+          class="card"
+        >
+          <div
+            class="card-head"
+          >
+            <div>
+              <h2>
+                Akademik Tahminler
+              </h2>
+              <p>
+                AI destekli akademik performans tahminleri - 
+              </p>
+            </div>
+          </div>
+          <div
+            style="padding: 0px 21px 21px;"
+          >
+            <div
+              style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;"
+            >
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Analiz Edilen
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+                >
+                  1
+                </div>
+              </div>
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Riskli Öğrenci
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(220, 38, 38);"
+                >
+                  1
+                </div>
+              </div>
+              <div
+                style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248); border: 1px solid rgb(229, 231, 235);"
+              >
+                <div
+                  style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+                >
+                  Güven Eşiği
+                </div>
+                <div
+                  style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+                >
+                  0
+                  %
+                </div>
+              </div>
+            </div>
+            <div
+              style="margin-bottom: 24px;"
+            >
+              <h3
+                style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+              >
+                AI Tespit Edilen Riskli Öğrenciler
+              </h3>
+              <div
+                style="padding: 12px; border-radius: 8px; background: rgb(254, 226, 226); margin-bottom: 8px; border-left: 4px solid rgb(220, 38, 38);"
+              >
+                <div
+                  style="display: flex; justify-content: space-between; margin-bottom: 4px;"
+                >
+                  <span
+                    style="font-size: 13px; font-weight: 600;"
+                  >
+                    Gerçek Öğrenci
+                  </span>
+                  <span
+                    style="font-size: 12px; font-weight: 700; color: rgb(220, 38, 38);"
+                  >
+                    25
+                  </span>
+                </div>
+                <div
+                  style="font-size: 11px; color: rgb(110, 123, 125);"
+                >
+                  Tahmin: 
+                   | Trend: 
+                  veri yetersiz
+                   | Güven: %
+                  0
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/academic-summary.test.tsx:20:23
+     18| it("gerçek kayıt özeti ve eksik değerlendirmeyi gösterir; tahmin veya …
+     19|   render(<AIAnalyticsPage />);
+     20|   expect(await screen.findByRole("heading", { name: "Kayıtlı not anali…
+       |                       ^
+     21|   expect(screen.getByText("Gerçek Öğrenci")).toBeInTheDocument();
+     22|   expect(screen.getByText(/1 öğrenci için seçili dönemde değerlendirme…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/test/academic-summary.test.tsx > başarısız analiz boş başarı gibi görünmez ve yeniden denenebilir
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <div
+        class="tabs"
+      >
+        <button
+          class="tab active"
+        >
+          Akademik AI
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <div
+        class="tabs"
+      >
+        <button
+          class="tab active"
+        >
+          Akademik AI
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/academic-summary.test.tsx:33:23
+     31| it("başarısız analiz boş başarı gibi görünmez ve yeniden denenebilir",…
+     32|   vi.mocked(getAnalysis).mockRejectedValueOnce(new Error("timeout")); …
+     33|   expect(await screen.findByRole("alert")).toHaveTextContent("Akademik…
+       |                       ^
+     34|   fireEvent.click(screen.getByRole("button", { name: "Tekrar dene" }));
+     35|   expect(await screen.findByText("Gerçek Öğrenci")).toBeInTheDocument(…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/test/academic-summary.test.tsx > izinli analiz yoksa istekte bulunmadan açık bir boş durum gösterir
+TestingLibraryElementError: Unable to find an element with the text: Yetkiniz kapsamında analiz bulunmuyor. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <p>
+        Bu hesap için görüntülenebilir analiz alanı bulunmuyor.
+      </p>
+      <div
+        class="tabs"
+      />
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <h1>
+          AI Analitiği
+        </h1>
+        <p>
+          Yapay zeka destekli analizler ve tahminler
+        </p>
+      </div>
+    </header>
+    <div
+      class="page-content"
+    >
+      <div
+        style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;"
+      >
+        <select
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); font-size: 13px; color: rgb(27, 43, 46);"
+        >
+          <option
+            value="7"
+          >
+            Son 7 gün
+          </option>
+          <option
+            value="30"
+          >
+            Son 30 gün
+          </option>
+          <option
+            value="90"
+          >
+            Son 90 gün
+          </option>
+        </select>
+        <button
+          style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); font-size: 13px; color: rgb(27, 43, 46); cursor: pointer; display: flex; align-items: center; gap: 6px;"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-refresh-cw"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
+            />
+            <path
+              d="M21 3v5h-5"
+            />
+            <path
+              d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
+            />
+            <path
+              d="M8 16H3v5"
+            />
+          </svg>
+          Yenile
+        </button>
+      </div>
+      <p>
+        Bu hesap için görüntülenebilir analiz alanı bulunmuyor.
+      </p>
+      <div
+        class="tabs"
+      />
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/academic-summary.test.tsx:41:23
+     39| it("izinli analiz yoksa istekte bulunmadan açık bir boş durum gösterir…
+     40|   vi.mocked(canAnalyze).mockReturnValue(false); render(<AIAnalyticsPag…
+     41|   expect(await screen.findByText("Yetkiniz kapsamında analiz bulunmuyo…
+       |                       ^
+     42|   expect(getAnalysis).not.toHaveBeenCalled();
+     43| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+   Start at  13:26:40
+   Duration  14.71s (transform 469ms, setup 769ms, import 4.63s, tests 3.13s, environment 5.43s)
+

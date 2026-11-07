@@ -1,0 +1,93 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [16116]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "2ea25de0-81eb-4754-99ac-c108f9dcb508", "method": "GET", "path": "/health", "status": 200, "duration_ms": 10.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:18.277927Z"}
+[WebServer] (node:4892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:11576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:4456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "93df759a-57ac-4dd8-84ff-87882013ba62", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1279.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:25.402033Z"}
+[WebServer] {"request_id": "e25b6d54-ba7a-45c4-a4ca-14e44a9fdae3", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 145.98, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:26.349856Z"}
+[WebServer] {"request_id": "1a1b887b-1ec3-4337-b1ef-01f1e3aa7874", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 235.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:26.454026Z"}
+[WebServer] {"request_id": "8c44daba-dd5e-4fd9-a189-1700ebafd7aa", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 244.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:26.454552Z"}
+[WebServer] {"request_id": "2df0792b-d50a-4a0e-b286-6120cdd0d0fd", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 272.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:26.499762Z"}
+[WebServer] {"request_id": "08ed01d9-1c4e-4170-b563-b27dca44c250", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 481.65, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:12:26.719526Z"}
+  x  1 [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile (25.6s)
+
+
+  1) [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile 
+
+    TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Etüt öğrencisi', { exact: true })
+
+
+      10 |   page.on("response", (response) => { if (response.url().includes("/api/") && response.status() >= 400) failures.push(`${response.status()} ${new URL(response.url()).pathname}`); });
+      11 |   await page.goto("/tutoring");
+    > 12 |   await page.getByLabel("Etüt öğrencisi", { exact: true }).selectOption({ label: "Deniz Kabul" });
+         |                                                            ^
+      13 |   await page.getByLabel("Etüt öğretmeni", { exact: true }).selectOption({ label: "Teacher Kabul" });
+      14 |   const window = page.getByRole("form", { name: "Müsaitlik oluştur", exact: true });
+      15 |   await window.getByRole("button", { name: "Müsaitliği kaydet", exact: true }).click();
+        at C:\Okul360\frontend\e2e\acceptance.spec.ts:12:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile 

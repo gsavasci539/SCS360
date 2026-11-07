@@ -1,4 +1,5 @@
-import { Plus, ArrowLeft, BookOpen, Edit, Trash2 } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Plus, ArrowLeft, BookOpen, Edit, Trash2, Brain, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DataTable } from "../../components/DataTable";
@@ -8,6 +9,7 @@ import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { useForm } from "react-hook-form";
+import { HomeworkSubmissions } from "./HomeworkSubmissions";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
@@ -18,16 +20,25 @@ export function HomeworkPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [homeworkAI, setHomeworkAI] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
   async function load(page = data.page) {
     setLoading(true);
+    setError("");
     try {
-      const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/homework", {
-        params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
-      });
-      setData(normalize(r.data.data));
+      const [r, aiResult] = await Promise.allSettled([
+        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/homework", {
+          params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
+        }),
+        getAnalysis("/ai/ai-homework-analysis").catch(() => null)
+      ]);
+      if (r.status === "rejected") throw r.reason;
+      setData(normalize(r.value.data.data));
+      if (aiResult.status === "fulfilled" && aiResult.value) {
+        setHomeworkAI(aiResult.value.data.data);
+      }
     } catch (e) {
       setError(apiMessage(e));
     } finally {
@@ -59,12 +70,65 @@ export function HomeworkPage() {
         title="Ödev & Notlandırma"
         description="Ödev atamalarını ve notları yönetin."
       >
-        {can("academic.write") && (
+        {can("homework.write") && (
           <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
             <Plus size={16} />Yeni ödev
           </button>
         )}
       </PageHeader>
+
+      {homeworkAI && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI Ödev Analizi</h2>
+              <p>Ödev performansı ve ders bazlı insights - {homeworkAI.ai_model}</p>
+            </div>
+            <Brain size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Toplam Ödev</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{homeworkAI.homework_stats?.total || 0}</div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Ortalama Puan</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{homeworkAI.homework_stats?.avg_score || 0}</div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Tamamlama Oranı</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{homeworkAI.homework_stats?.completion_rate || 0}</div>
+              </div>
+            </div>
+            {homeworkAI.subject_insights && homeworkAI.subject_insights.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Ders Bazlı Analiz</h3>
+                {homeworkAI.subject_insights.slice(0, 3).map((insight: any, index: number) => (
+                  <div key={index} style={{ padding: 10, borderRadius: 6, background: index === 0 ? "#fee2e2" : "#f8faf8", marginBottom: 6, borderLeft: `3px solid ${insight.performance === "zayıf" ? "#dc2626" : insight.performance === "normal" ? "#ca8a04" : "#16a34a"}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{insight.subject}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{insight.avg_score} puan</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6e7b7d" }}>{insight.total} ödev • {insight.performance}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {homeworkAI.recommendations && homeworkAI.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>AI Önerileri</h3>
+                {homeworkAI.recommendations.map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 6, padding: 8, borderRadius: 6, background: "#f0fdf4" }}>
+                    <TrendingUp size={16} color="#176b5b" />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="card"><LoadingState /></div>
@@ -87,8 +151,8 @@ export function HomeworkPage() {
           total={data.total}
           onPage={load}
           detailBase="/homework"
-          canEdit={can("academic.write")}
-          onDelete={can("academic.write") ? handleDelete : undefined}
+          canEdit={false}
+          onDelete={can("homework.write") ? handleDelete : undefined}
         />
       )}
 
@@ -100,6 +164,12 @@ export function HomeworkPage() {
 function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const { showToast } = useToast();
+  const [classes, setClasses] = useState<DataRecord[]>([]);
+  useEffect(() => {
+    if (open) api.get<ApiResponse<DataRecord[]>>("/homework/classes")
+      .then((response) => setClasses(response.data.data))
+      .catch((reason) => showToast("Sınıflar yüklenemedi", apiMessage(reason), "error"));
+  }, [open, showToast]);
 
   async function submit(values: any) {
     try {
@@ -129,7 +199,9 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
           <input {...register("subject")} />
         </Field>
         <Field label="Sınıf" error={errors.class_id?.message as string}>
-          <input {...register("class_id")} />
+          <select {...register("class_id")}><option value="">Sınıf seçin</option>
+            {classes.map((row) => <option key={String(row.id)} value={String(row.id)}>{String(row.name)}</option>)}
+          </select>
         </Field>
         <Field label="Son teslim tarihi" error={errors.due_date?.message as string}>
           <input type="date" {...register("due_date")} />
@@ -149,6 +221,7 @@ export function HomeworkDetailPage() {
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const { showToast } = useToast();
+  const can = useAuthStore((state) => state.can);
 
   async function load() {
     setLoading(true);
@@ -187,12 +260,12 @@ export function HomeworkDetailPage() {
         description="Ödev bilgileri ve detayları."
       >
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-secondary" onClick={() => setEditOpen(true)}>
+          {can("homework.write") && <button className="btn btn-secondary" onClick={() => setEditOpen(true)}>
             <Edit size={16} />Düzenle
-          </button>
-          <button className="btn btn-danger" onClick={handleDelete}>
+          </button>}
+          {can("homework.write") && <button className="btn btn-danger" onClick={handleDelete}>
             <Trash2 size={16} />Sil
-          </button>
+          </button>}
           <Link to="/homework" className="btn btn-secondary">
             <ArrowLeft size={16} />Geri Dön
           </Link>
@@ -236,6 +309,10 @@ export function HomeworkDetailPage() {
         </div>
       </div>
 
+      <div className="card card-pad" style={{ marginTop: 18 }}>
+        <h2>Ödev teslimleri</h2>
+        <HomeworkSubmissions homeworkId={String(data.id)} canGrade={can("homework.write")} />
+      </div>
       <EditModal open={editOpen} data={data} onClose={() => setEditOpen(false)} onSuccess={() => load()} />
     </>
   );

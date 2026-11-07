@@ -1,0 +1,164 @@
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_ test_finance_summary_uses_real_completed_history_and_scoped_open_debts[sqlite] _
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C275B4D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C27A2FD0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C275AE40>, ...})
+
+    async def test_finance_summary_uses_real_completed_history_and_scoped_open_debts(finance_client):
+        client, sessions, data = finance_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            def debt(amount, paid, **values):
+                return Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                    amount=Decimal(amount), paid_amount=Decimal(paid), due_date=school_today() + timedelta(days=1), **values)
+            active = debt("100", "25")
+            db.add_all([active, debt("777", "222", status=DebtStatus.CANCELLED),
+                debt("300", "100", deleted_at=now)])
+            await db.flush()
+            def payment(amount, **values):
+                return Payment(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_id=active.id, amount=Decimal(amount),
+                    payment_method=PaymentMethod.CASH, payment_date=now, received_by=data["accountant"].id, **values)
+            db.add_all([payment("25", status="completed"), payment("900", status="pending"),
+                payment("800", status="cancelled"), payment("100", status="completed", cancelled_at=now)])
+            foreign = Debt(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                student_id=data["stranger"].id, debt_type=DebtType.EDUCATION, amount=1000, paid_amount=100,
+                due_date=school_today())
+            db.add(foreign)
+            await db.commit()
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]), params={"months": 3})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_finance", result
+E       AssertionError: {'analysis_type': 'historical_estimate', 'collection_rate': 0.0, 'monthly_forecast': [{'confidence': 70, 'month': '202...edicted_amount': 0.0}, {'confidence': 60, 'month': '2027-02', 'predicted_amount': 0.0}], 'outstanding_debt': 75.0, ...}
+E       assert 'historical_estimate' == 'recorded_finance'
+E         
+E         - recorded_finance
+E         + historical_estimate
+
+tests\integration\test_financial_summary_data.py:40: AssertionError
+_ test_finance_summary_uses_real_completed_history_and_scoped_open_debts[postgresql] _
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C5266850>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C4F0E650>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C5265E50>, ...})
+
+    async def test_finance_summary_uses_real_completed_history_and_scoped_open_debts(finance_client):
+        client, sessions, data = finance_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            def debt(amount, paid, **values):
+                return Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                    amount=Decimal(amount), paid_amount=Decimal(paid), due_date=school_today() + timedelta(days=1), **values)
+            active = debt("100", "25")
+            db.add_all([active, debt("777", "222", status=DebtStatus.CANCELLED),
+                debt("300", "100", deleted_at=now)])
+            await db.flush()
+            def payment(amount, **values):
+                return Payment(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_id=active.id, amount=Decimal(amount),
+                    payment_method=PaymentMethod.CASH, payment_date=now, received_by=data["accountant"].id, **values)
+            db.add_all([payment("25", status="completed"), payment("900", status="pending"),
+                payment("800", status="cancelled"), payment("100", status="completed", cancelled_at=now)])
+            foreign = Debt(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                student_id=data["stranger"].id, debt_type=DebtType.EDUCATION, amount=1000, paid_amount=100,
+                due_date=school_today())
+            db.add(foreign)
+            await db.commit()
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]), params={"months": 3})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_finance", result
+E       AssertionError: {'analysis_type': 'historical_estimate', 'collection_rate': 0.0, 'monthly_forecast': [{'confidence': 70, 'month': '202...edicted_amount': 0.0}, {'confidence': 60, 'month': '2027-02', 'predicted_amount': 0.0}], 'outstanding_debt': 75.0, ...}
+E       assert 'historical_estimate' == 'recorded_finance'
+E         
+E         - recorded_finance
+E         + historical_estimate
+
+tests\integration\test_financial_summary_data.py:40: AssertionError
+___ test_empty_finance_summary_is_unknown_and_months_are_validated[sqlite] ____
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C53B5F90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C539C7C0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C53E0770>, ...})
+
+    async def test_empty_finance_summary_is_unknown_and_months_are_validated(finance_client):
+        client, _, data = finance_client
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["collection_rate"] is None and result["risk_assessment"] == "unknown", result
+E       AssertionError: {'analysis_type': 'historical_estimate', 'collection_rate': 0, 'monthly_forecast': [], 'recommendations': ['�deme ge�mi�i yok - tahmin yap�lam�yor'], ...}
+E       assert (0 is None)
+
+tests\integration\test_financial_summary_data.py:56: AssertionError
+_ test_empty_finance_summary_is_unknown_and_months_are_validated[postgresql] __
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C53E1350>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C5425D60>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C539F570>, ...})
+
+    async def test_empty_finance_summary_is_unknown_and_months_are_validated(finance_client):
+        client, _, data = finance_client
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["collection_rate"] is None and result["risk_assessment"] == "unknown", result
+E       AssertionError: {'analysis_type': 'historical_estimate', 'collection_rate': 0, 'monthly_forecast': [], 'recommendations': ['�deme ge�mi�i yok - tahmin yap�lam�yor'], ...}
+E       assert (0 is None)
+
+tests\integration\test_financial_summary_data.py:56: AssertionError
+__ test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved[sqlite] ___
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C53E1CD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C5451470>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C546A950>, ...})
+
+    async def test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved(finance_client):
+        client, sessions, data = finance_client
+        async with sessions() as db:
+            row = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100,
+                paid_amount=Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity"),
+                due_date=school_today())
+            db.add(row); await db.commit()
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["requires_review"] is True
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'requires_review'
+
+tests\integration\test_financial_summary_data.py:75: KeyError
+_ test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved[postgresql] _
+
+finance_client = (<httpx.AsyncClient object at 0x00000256C5652F90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x00000256C5736E10>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000256C5625E50>, ...})
+
+    async def test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved(finance_client):
+        client, sessions, data = finance_client
+        async with sessions() as db:
+            row = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100,
+                paid_amount=Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity"),
+                due_date=school_today())
+            db.add(row); await db.commit()
+        reply = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["requires_review"] is True
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'requires_review'
+
+tests\integration\test_financial_summary_data.py:75: KeyError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_financial_summary_data.py::test_finance_summary_uses_real_completed_history_and_scoped_open_debts[sqlite]
+FAILED tests/integration/test_financial_summary_data.py::test_finance_summary_uses_real_completed_history_and_scoped_open_debts[postgresql]
+FAILED tests/integration/test_financial_summary_data.py::test_empty_finance_summary_is_unknown_and_months_are_validated[sqlite]
+FAILED tests/integration/test_financial_summary_data.py::test_empty_finance_summary_is_unknown_and_months_are_validated[postgresql]
+FAILED tests/integration/test_financial_summary_data.py::test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved[sqlite]
+FAILED tests/integration/test_financial_summary_data.py::test_nonfinite_legacy_ledger_is_explicitly_unknown_and_preserved[postgresql]
+6 failed, 20 warnings in 15.91s

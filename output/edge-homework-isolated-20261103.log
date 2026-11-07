@@ -1,0 +1,71 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [8936]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "ef8d16f0-a700-4629-9dde-70ec991bb2ec", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:51:53.450591Z"}
+[WebServer] (node:7120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:18372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:14896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "eb30598d-c36d-4884-b099-82538b4a9d6e", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 2141.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:01.772169Z"}
+[WebServer] {"request_id": "a1c46d22-3a95-45ee-9ed6-bb818dd0f037", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 111.83, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:02.739558Z"}
+[WebServer] {"request_id": "77b74387-a661-464a-88e4-4762e44f34fe", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 50.95, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:02.802039Z"}
+[WebServer] {"request_id": "35a0aca1-9c70-4a98-a87f-8cca11f9035b", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 274.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:02.904406Z"}
+[WebServer] {"request_id": "dbeae7bf-8333-473e-971e-ff7c999224f6", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 81.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:02.994021Z"}
+[WebServer] {"request_id": "b5757ed8-3bf5-4f78-b719-9d2bc3e8f5ea", "method": "GET", "path": "/api/homework/classes", "status": 200, "duration_ms": 273.24, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:03.075210Z"}
+[WebServer] {"request_id": "5329dbdd-29eb-4111-b873-2f5718ba2a6b", "method": "POST", "path": "/api/homework", "status": 200, "duration_ms": 99.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:03.316980Z"}
+[WebServer] {"request_id": "a31015ce-6a81-465b-a3c8-9751aad44077", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 55.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:03.399701Z"}
+[WebServer] {"request_id": "7b8f02d6-6013-43f2-888e-f5a39ffa0c68", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 53.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:03.419686Z"}
+[WebServer] {"request_id": "2bc60f11-21f5-4fcd-98eb-50400ff5cc69", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 312.5, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:04.419540Z"}
+[WebServer] {"request_id": "f2a02416-7f93-4e5f-b84f-8bd4a0207304", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 329.54, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:04.435104Z"}
+[WebServer] {"request_id": "0830a80c-9397-45fa-b092-903b8e774011", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 39.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:04.472076Z"}
+[WebServer] {"request_id": "b01d591c-42c3-4063-bf71-77f1b38698f3", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 44.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:04.492248Z"}
+[WebServer] {"request_id": "10105089-9cf0-42ae-b141-7fff292a0f88", "method": "GET", "path": "/api/homework/f94301c8-8258-46cb-973f-90c0812f6ecb", "status": 200, "duration_ms": 66.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:05.001935Z"}
+[WebServer] {"request_id": "38a369ec-6168-4008-9cfd-2a860afaa07c", "method": "GET", "path": "/api/homework/f94301c8-8258-46cb-973f-90c0812f6ecb", "status": 200, "duration_ms": 44.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:05.053989Z"}
+[WebServer] {"request_id": "3a42fddc-9b5d-47d8-9ee5-6cf9525554f5", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 102.48, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T13:52:05.146035Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:447:1 › homework create button persists and detail page opens (8.2s)
+
+  1 passed (25.7s)

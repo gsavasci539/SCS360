@@ -11,6 +11,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Index,
     Numeric,
     String,
     Text,
@@ -19,63 +20,15 @@ from sqlalchemy import (
     func,
     JSON,
     TypeDecorator,
+    text as sql_text,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from app.core.database import Base
 
 
-class CustomUUID(TypeDecorator):
-    """Platform-independent UUID type.
-    
-    Uses PostgreSQL's UUID type when available, otherwise uses String(36).
-    """
-    impl = String(36)
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == "postgresql":
-            return dialect.type_descriptor(PG_UUID(as_uuid=True))
-        else:
-            return dialect.type_descriptor(String(36))
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return None
-        elif dialect.name == "postgresql":
-            return value
-        else:
-            # Convert UUID to string without hyphens for SQLite for consistency
-            if isinstance(value, uuid.UUID):
-                return str(value).replace('-', '')
-            # If it's already a string, remove hyphens for consistency
-            if isinstance(value, str):
-                return value.replace('-', '')
-            return str(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return None
-        elif dialect.name == "postgresql":
-            return value
-        else:
-            if not isinstance(value, uuid.UUID):
-                try:
-                    # Handle both 32-character UUIDs (without hyphens) and 36-character UUIDs (with hyphens)
-                    if isinstance(value, str):
-                        # Remove hyphens if present for consistent handling
-                        value = value.replace('-', '')
-                        if len(value) == 32:
-                            value = uuid.UUID(value)
-                        else:
-                            value = uuid.UUID(value)
-                    else:
-                        value = uuid.UUID(value)
-                except (ValueError, TypeError, AttributeError):
-                    return None
-            return value
-
+from app.core.uuid_type import CustomUUID
 
 class UserStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
@@ -318,6 +271,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(20))
+    avatar_url: Mapped[str | None] = mapped_column(String(500))
     position: Mapped[str | None] = mapped_column(String(100))
     department: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[UserStatus] = mapped_column(Enum(UserStatus), default=UserStatus.ACTIVE)
@@ -408,6 +362,7 @@ class ClassRoom(Base, TimestampMixin, SoftDeleteMixin):
     description: Mapped[str | None] = mapped_column(Text)
     capacity: Mapped[int] = mapped_column(Integer, default=20)
     academic_year: Mapped[str | None] = mapped_column(String(20))
+    teacher_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     updated_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
@@ -430,6 +385,7 @@ class Parent(Base, TimestampMixin, SoftDeleteMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     relation_type: Mapped[ParentRelationType] = mapped_column(
@@ -459,6 +415,7 @@ class Student(Base, TimestampMixin, SoftDeleteMixin):
     gender: Mapped[GenderType | None] = mapped_column(Enum(GenderType))
     birth_date: Mapped[date | None] = mapped_column(Date)
     enrollment_date: Mapped[date] = mapped_column(Date, server_default=func.current_date())
+    address: Mapped[str | None] = mapped_column(String(500))
     status: Mapped[StudentStatus] = mapped_column(Enum(StudentStatus), default=StudentStatus.ACTIVE)
     photo_url: Mapped[str | None] = mapped_column(String(500))
     health_notes: Mapped[str | None] = mapped_column(Text)
@@ -652,6 +609,8 @@ class NotificationJob(Base, TimestampMixin):
     max_retries: Mapped[int] = mapped_column(Integer, default=3)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lock_token: Mapped[uuid.UUID | None] = mapped_column(CustomUUID)
     reference_type: Mapped[str | None] = mapped_column(String(50))
     reference_id: Mapped[uuid.UUID | None] = mapped_column(CustomUUID)
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
@@ -672,6 +631,7 @@ class NotificationRecipient(Base, TimestampMixin):
     provider_response: Mapped[dict | None] = mapped_column(JSON)
     error_message: Mapped[str | None] = mapped_column(Text)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     job: Mapped["NotificationJob"] = relationship(back_populates="recipients")
 
@@ -818,13 +778,45 @@ class ChatMessage(Base, TimestampMixin):
     __tablename__ = "chat_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chat_conversations.id", ondelete="CASCADE"))
     sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    receiver_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    sender_role: Mapped[str | None] = mapped_column(String(20))  # 'PARENT', 'TEACHER', 'SYSTEM'
+    recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     class_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("classes.id", ondelete="CASCADE"))
     content: Mapped[str] = mapped_column(Text, nullable=False)
     attachment_url: Mapped[str | None] = mapped_column(String(500))
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatConversation(Base, TimestampMixin):
+    __tablename__ = "chat_conversations"
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"))
+    parent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    teacher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    subject_context: Mapped[str] = mapped_column(String(150), nullable=False)
+    last_message: Mapped[str | None] = mapped_column(Text)
+    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    parent_unread_count: Mapped[int] = mapped_column(Integer, default=0)
+    teacher_unread_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_via: Mapped[str] = mapped_column(String(30), default="CHATBOT")  # 'CHATBOT' or 'DIRECT'
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class StudentTeacherAssignment(Base):
+    __tablename__ = "student_teacher_assignments"
+    __table_args__ = (UniqueConstraint("student_id", "teacher_id", "subject_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"))
+    teacher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    subject_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_primary_adviser: Mapped[bool] = mapped_column(Boolean, default=False)
+    office_hours: Mapped[str | None] = mapped_column(String(50), default="08:30 - 17:30")
+    academic_year: Mapped[str | None] = mapped_column(String(20), default="2025-2026")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class TimetableSlot(Base, TimestampMixin):
@@ -877,5 +869,220 @@ class Grade(Base, TimestampMixin):
     exam_date: Mapped[date] = mapped_column(Date)
     term: Mapped[str | None] = mapped_column(String(20))  # e.g., "2024-2025", "Fall 2024"
     notes: Mapped[str | None] = mapped_column(Text)
+
+
+class SentimentType(str, enum.Enum):
+    POSITIVE = "POSITIVE"
+    NEUTRAL = "NEUTRAL"
+    QUESTION = "QUESTION"
+    CRITICAL = "CRITICAL"
+
+
+class FeedbackStatus(str, enum.Enum):
+    VERIFIED = "VERIFIED"
+    CORRECTED = "CORRECTED"
+    NEEDS_REVIEW = "NEEDS_REVIEW"
+
+
+class AiChatAuditLog(Base, TimestampMixin):
+    """Chatbot conversation audit log for LLM fine-tuning and analytics."""
+    __tablename__ = "ai_chat_audit_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    user_query: Mapped[str] = mapped_column(Text, nullable=False)
+    ai_response: Mapped[str] = mapped_column(Text, nullable=False)
+    detected_intent: Mapped[str] = mapped_column(String(50), nullable=True)
+    topic_category: Mapped[str] = mapped_column(String(100), nullable=True)
+    sentiment: Mapped[SentimentType] = mapped_column(Enum(SentimentType), default=SentimentType.NEUTRAL)
+    quality_rating: Mapped[int] = mapped_column(Integer, default=0)  # 1-5 rating
+    feedback_status: Mapped[FeedbackStatus] = mapped_column(Enum(FeedbackStatus), default=FeedbackStatus.NEEDS_REVIEW)
+    corrected_response: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_count: Mapped[int] = mapped_column(Integer, default=0)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    is_fine_tuning_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    meta_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     updated_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+
+class LibraryBook(Base, TimestampMixin):
+    __tablename__ = "library_books"
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    title: Mapped[str] = mapped_column(String(255))
+    author: Mapped[str] = mapped_column(String(255))
+    category: Mapped[str | None] = mapped_column(String(100))
+    isbn: Mapped[str | None] = mapped_column(String(32))
+    barcode: Mapped[str | None] = mapped_column(String(100))
+    total_copies: Mapped[int] = mapped_column(Integer, default=1)
+    available_copies: Mapped[int] = mapped_column(Integer, default=1)
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    publication_year: Mapped[int | None] = mapped_column(Integer)
+    description: Mapped[str | None] = mapped_column(Text)
+    location: Mapped[str | None] = mapped_column(String(255))
+
+
+class LibraryLoan(Base, TimestampMixin):
+    __tablename__ = "library_loans"
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    book_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("library_books.id"))
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id"))
+    borrow_date: Mapped[date] = mapped_column(Date, default=date.today)
+    due_date: Mapped[date] = mapped_column(Date)
+    return_date: Mapped[date | None] = mapped_column(Date)
+    loaned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    returned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    borrowed_date = synonym("borrow_date")
+    returned_date = synonym("return_date")
+
+
+# Both established API spellings use the same persistent records.
+Book = LibraryBook
+BookLoan = LibraryLoan
+
+
+class Appointment(Base, TimestampMixin, SoftDeleteMixin):
+    __tablename__ = "appointments"
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    teacher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id"))
+    parent_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    slot_datetime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    duration_minutes: Mapped[int] = mapped_column(Integer, default=30)
+    status: Mapped[str] = mapped_column(String(30), default="CONFIRMED")
+    parent_note: Mapped[str | None] = mapped_column(Text)
+    teacher_note: Mapped[str | None] = mapped_column(Text)
+
+
+class TimeSlot(Base, TimestampMixin):
+    __tablename__ = "appointment_time_slots"
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    teacher_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    date: Mapped[date] = mapped_column(Date)
+    start_time: Mapped[time] = mapped_column(Time)
+    end_time: Mapped[time] = mapped_column(Time)
+    is_available: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class OperationalRecord(Base, TimestampMixin):
+    __tablename__ = "operational_records"
+    __table_args__ = (UniqueConstraint("organization_id", "kind", "reference_key"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("branches.id"))
+    class_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("classes.id"))
+    staff_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    kind: Mapped[str] = mapped_column(String(30))
+    reference_key: Mapped[str | None] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(30), default="ACTIVE")
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class StudentWallet(Base, TimestampMixin):
+    __tablename__ = "student_wallets"
+
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id"), primary_key=True)
+    balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    daily_limit: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    spent_date: Mapped[date | None] = mapped_column(Date)
+    today_spent: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    restricted_categories: Mapped[list] = mapped_column(JSON, default=list)
+    restricted_allergens: Mapped[list] = mapped_column(JSON, default=list)
+
+
+class UserDeviceToken(Base, TimestampMixin):
+    __tablename__ = "user_device_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    token: Mapped[str] = mapped_column(Text)
+
+
+class SchoolPaymentMerchant(Base, TimestampMixin):
+    __tablename__ = "school_payment_merchants"
+    __table_args__ = (Index("uq_school_payment_merchant_current_org", "organization_id", unique=True,
+        sqlite_where=sql_text("is_current = 1"), postgresql_where=sql_text("is_current IS TRUE")),)
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    environment: Mapped[str] = mapped_column(String(10))
+    credentials_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    updated_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class PaymentCheckout(Base, TimestampMixin):
+    __tablename__ = "payment_checkouts"
+    __table_args__ = (UniqueConstraint("merchant_scope", "provider_payment_id", name="uq_payment_checkout_merchant_provider"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    debt_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("debts.id"))
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="TRY")
+    token_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    provider_payment_id: Mapped[str | None] = mapped_column(String(100))
+    payment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("payments.id"), unique=True)
+    status: Mapped[str] = mapped_column(String(30), default="PENDING")
+    merchant_account_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("school_payment_merchants.id"), nullable=True)
+    merchant_scope: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    merchant_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    checkout_secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    paid_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    paid_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    verified_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    review_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ParentNotice(Base, TimestampMixin, SoftDeleteMixin):
+    __tablename__ = "parent_notices"
+
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id"))
+    type: Mapped[str] = mapped_column(String(50))
+    description: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(30), default="PENDING")
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class Homework(Base, TimestampMixin, SoftDeleteMixin):
+    __tablename__ = "homework"
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
+    class_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("classes.id"))
+    title: Mapped[str] = mapped_column(String(255))
+    subject: Mapped[str | None] = mapped_column(String(100))
+    description: Mapped[str | None] = mapped_column(Text)
+    due_date: Mapped[date | None] = mapped_column(Date)
+    attachment_url: Mapped[str | None] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(30), default="ACTIVE")
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class HomeworkSubmission(Base, TimestampMixin):
+    __tablename__ = "homework_submissions"
+    __table_args__ = (UniqueConstraint("homework_id", "student_id"),)
+    id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    homework_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("homework.id"))
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id"))
+    submission_text: Mapped[str | None] = mapped_column(Text)
+    attachment_file_name: Mapped[str | None] = mapped_column(String(255))
+    attachment_file_size_mb: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    status: Mapped[str] = mapped_column(String(30), default="SUBMITTED")
+    score: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    teacher_feedback: Mapped[str | None] = mapped_column(Text)

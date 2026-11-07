@@ -1,0 +1,4 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+{"revision": "028", "backup": "C:\\Okul360\\backend\\school_management.before-material-submissions-20261103-021922.db", "existing_table_counts_preserved": true, "new_tables": ["material_submissions"]}

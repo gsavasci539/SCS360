@@ -1,0 +1,114 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/student-payment-page.test.tsx (2 tests | 1 failed) 1784ms
+   × kurum sağlayıcısı açık değilse kart tahsilatı formu ve istek göndermez 1036ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/student-payment-page.test.tsx > kurum sağlayıcısı açık değilse kart tahsilatı formu ve istek göndermez
+TestingLibraryElementError: Unable to find an element with the text: /Bu kurumda online ödeme açık değil/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <main
+      class="saas-workspace"
+      style="max-width: 680px; padding: 20px; margin: 30px auto;"
+    >
+      <section
+        class="card card-pad"
+      >
+        <h1>
+          Öğrenci ödemesi
+        </h1>
+        <p>
+          Okul ödemesi
+        </p>
+        <p>
+          Güncel kalan tutar: 
+          ₺250
+        </p>
+        <p>
+          Bu kurumda yeni online ödeme açık değil. Mevcut ödeme kaydınızın sonucu ayrıca kontrol edilebilir.
+        </p>
+        <section
+          aria-label="Güvenli öğrenci ödemesi"
+        >
+          <p>
+            Bu borç için yeni online ödeme açılamıyor. Kurumunuzla iletişime geçin.
+          </p>
+        </section>
+        <p>
+          <a
+            data-discover="true"
+            href="/finance/payments/new"
+          >
+            Çalışma alanına dön
+          </a>
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <main
+      class="saas-workspace"
+      style="max-width: 680px; padding: 20px; margin: 30px auto;"
+    >
+      <section
+        class="card card-pad"
+      >
+        <h1>
+          Öğrenci ödemesi
+        </h1>
+        <p>
+          Okul ödemesi
+        </p>
+        <p>
+          Güncel kalan tutar: 
+          ₺250
+        </p>
+        <p>
+          Bu kurumda yeni online ödeme açık değil. Mevcut ödeme kaydınızın sonucu ayrıca kontrol edilebilir.
+        </p>
+        <section
+          aria-label="Güvenli öğrenci ödemesi"
+        >
+          <p>
+            Bu borç için yeni online ödeme açılamıyor. Kurumunuzla iletişime geçin.
+          </p>
+        </section>
+        <p>
+          <a
+            data-discover="true"
+            href="/finance/payments/new"
+          >
+            Çalışma alanına dön
+          </a>
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/student-payment-page.test.tsx:34:16
+     32| it("kurum sağlayıcısı açık değilse kart tahsilatı formu ve istek gönde…
+     33|   vi.mocked(api.get).mockResolvedValue({ data: { data: { ...debt, onli…
+     34|   await screen.findByText(/Bu kurumda online ödeme açık değil/); expec…
+       |                ^
+     35|   await waitFor(() => expect(api.post).not.toHaveBeenCalled());
+     36| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 18 passed (19)
+   Start at  04:51:18
+   Duration  23.67s (transform 1.22s, setup 3.46s, import 3.28s, tests 4.63s, environment 30.58s)
+

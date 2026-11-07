@@ -1,0 +1,56 @@
+..FF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[sqlite] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x0000019A035AB9D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019A03ACEF10>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000019A03A61220>, ...})
+
+    async def test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries(legacy_assignments):
+        client, sessions, data = legacy_assignments
+        base = "/api/v1/chatbot"
+        own = f'{base}/students/{data["children"][0].id}/teachers'
+        listed = await client.get(own, headers=headers(data["user"]))
+        assert listed.status_code == 200, listed.text
+        teachers = listed.json()["data"]["teachers"]
+        assert [row["teacher_id"] for row in teachers] == [str(data["teacher"].id)]
+        assert teachers[0]["subject"] == "Legacy mathematics"
+        foreign = await client.get(f'{base}/students/{data["stranger"].id}/teachers', headers=headers(data["user"]))
+>       assert foreign.status_code == 403, foreign.text
+E       AssertionError: {"success":false,"message":"Student not found","errors":[],"detail":"Student not found","request_id":"2adb1ca3-8b0d-491d-b37a-c0010988553d"}
+E       assert 404 == 403
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_legacy_student_teacher_assignment.py:83: AssertionError
+_ test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[postgresql] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x0000019A03931220>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019A0621BA70>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000019A040218C0>, ...})
+
+    async def test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries(legacy_assignments):
+        client, sessions, data = legacy_assignments
+        base = "/api/v1/chatbot"
+        own = f'{base}/students/{data["children"][0].id}/teachers'
+        listed = await client.get(own, headers=headers(data["user"]))
+        assert listed.status_code == 200, listed.text
+        teachers = listed.json()["data"]["teachers"]
+        assert [row["teacher_id"] for row in teachers] == [str(data["teacher"].id)]
+        assert teachers[0]["subject"] == "Legacy mathematics"
+        foreign = await client.get(f'{base}/students/{data["stranger"].id}/teachers', headers=headers(data["user"]))
+>       assert foreign.status_code == 403, foreign.text
+E       AssertionError: {"success":false,"message":"Student not found","errors":[],"detail":"Student not found","request_id":"67152e7b-3897-4da8-a441-1cc8754e5afa"}
+E       assert 404 == 403
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_legacy_student_teacher_assignment.py:83: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[sqlite]
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_parent_teacher_list_and_connect_keep_student_and_actor_access_boundaries[postgresql]
+2 failed, 2 passed, 20 warnings in 11.55s

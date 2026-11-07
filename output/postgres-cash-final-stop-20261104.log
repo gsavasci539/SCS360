@@ -1,0 +1,4 @@
+pg_ctl: server is running (PID: 6456)
+C:/Program Files/PostgreSQL/16/bin/postgres.exe "-D" "C:/Okul360/output/postgres-acceptance-20261102" "-h" "127.0.0.1" "-p" "55436"
+waiting for server to shut down........ done
+server stopped

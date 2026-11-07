@@ -1,0 +1,100 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [15836]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "a8f5e4af-b88b-42e4-94c2-3117618afef0", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:44.403835Z"}
+[WebServer] (node:23200) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:10124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:21296) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "52ca435f-b17e-4a1b-a1c1-f07fbeab3363", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 2576.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:50.472138Z"}
+[WebServer] {"request_id": "2c1cc44e-bfd0-4bb9-9301-1c3e31ab52be", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 627.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:51.928105Z"}
+[WebServer] {"request_id": "4163c439-2f52-44ff-92d0-c20555415587", "method": "POST", "path": "/api/platform/plans", "status": 200, "duration_ms": 28.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:51.969338Z"}
+[WebServer] {"request_id": "1f010e06-0dd6-4a89-b2ef-8a6f3d471deb", "method": "POST", "path": "/api/platform/tenants", "status": 200, "duration_ms": 510.66, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:52.495762Z"}
+[WebServer] {"request_id": "10238369-652a-4493-a388-504265e77e3d", "method": "POST", "path": "/api/branches", "status": 200, "duration_ms": 44.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:52.551551Z"}
+[WebServer] {"request_id": "619d71af-19ae-4db2-89f4-7f4b5b7acaef", "method": "POST", "path": "/api/classes", "status": 200, "duration_ms": 39.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:52.603306Z"}
+[WebServer] {"request_id": "006a6610-ef79-45d9-b645-7f35c3f36968", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 64.93, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:52.679537Z"}
+[WebServer] {"request_id": "a09840ec-2df3-4782-b63c-54112f1995d2", "method": "POST", "path": "/api/users", "status": 200, "duration_ms": 444.85, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:53.135606Z"}
+[WebServer] {"request_id": "014a529a-f52b-406a-80ba-a6583ab61b84", "method": "GET", "path": "/api/users/profile-options", "status": 422, "duration_ms": 18.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T10:42:53.164834Z"}
+  x  1 [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions (5.3s)
+
+
+  1) [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 422
+
+      22 |   const email = `grade-parent-${suffix}@acceptance.example.com`;
+      23 |   const account = await post("/api/users", { first_name: "Akademik", last_name: "Veli", email, password }, auth);
+    > 24 |   const profile = await request.get("/api/users/profile-options", { headers: auth }); expect(profile.status()).toBe(200);
+         |                                                                                                                ^
+      25 |   const parentRole = (await profile.json()).data.roles.find((row: { slug: string; organization_id: string }) => row.slug === "parent" && row.organization_id === school.organization_id);
+      26 |   expect(parentRole).toBeTruthy(); expect((await request.put(`/api/users/${account.id}/access`, { headers: auth, data: { role_ids: [parentRole.id], branch_ids: [] } })).status()).toBe(200);
+      27 |   const contact = await post("/api/parents", { organization_id: school.organization_id, first_name: "Akademik", last_name: "Veli", receive_notifications: false }, auth);
+        at C:\Okul360\frontend\e2e\academic-records.spec.ts:24:112
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions 

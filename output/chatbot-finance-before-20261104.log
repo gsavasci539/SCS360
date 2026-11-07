@@ -1,0 +1,146 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x0000026FE8E274D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000026FE8E26E40>, 'org': <app.infrastructure.models.models.Organization object at 0x0000026FE8E257F0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000026FE8BC3360>
+
+    async def test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school(platform_client, monkeypatch):
+        from app.routers import chatbot
+        operation = {"value": "summary"}
+        async def intent(query, context):
+            return ChatbotIntent(intent="PAYMENTS", operation=operation["value"], period="today", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        lower, upper = school_day_bounds(school_today())
+        async with sessions() as db:
+            debts = [Debt(organization_id=child.organization_id, branch_id=child.branch_id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=2000, paid_amount=0, due_date=school_today()) for child in [*data["children"], data["stranger"]]]
+            db.add_all(debts); await db.flush()
+            for debt, amount, when, cancelled, note in [(debts[0], 25, lower + timedelta(hours=1), False, "Own first"),
+                (debts[0], 5, upper - timedelta(microseconds=1), False, "Own last"),
+                (debts[0], 75, lower + timedelta(hours=2), True, "Cancelled secret"),
+                (debts[0], 11, lower - timedelta(microseconds=1), False, "Previous day"),
+                (debts[0], 3, upper, False, "Next day"),
+                (debts[1], 70, lower + timedelta(hours=3), False, "Sibling secret"),
+                (debts[2], 999, lower + timedelta(hours=3), False, "Foreign secret")]:
+                db.add(Payment(organization_id=debt.organization_id, branch_id=debt.branch_id, student_id=debt.student_id, debt_id=debt.id,
+                    amount=amount, payment_method=PaymentMethod.CASH, payment_date=when,
+                    cancelled_at=when if cancelled else None, received_by=data["root"].id, notes=note))
+            await db.commit()
+        body = {"query": "Bug�nk� �demeler", "role": "parent", "student_id": str(data["children"][0].id)}
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]), json=body)
+>       assert result.status_code == 200 and "30.00 TL" in result.json()["data"]["response_markdown"], result.text
+E       AssertionError: {"success":true,"message":"\u0130\u015flem ba\u015far\u0131l\u0131","data":{"intent":"PAYMENTS","response_markdown":"\U0001f4b3 **\xd6deme \xd6zeti (Bug\xfcn)**\\n\\nToplam \xf6deme: 0.00 TL","suggested_actions":[{"label":"\U0001f4b3 \xd6deme Detaylar\u0131","action_tag":"VIEW_PAYMENTS"}],"sentiment":"NEUTRAL","timestamp":"2026-11-04T13:52:48.197786"}}
+E       assert (200 == 200 and '30.00 TL' in '\U0001f4b3 **\xd6deme \xd6zeti (Bug\xfcn)**\\n\\nToplam \xf6deme: 0.00 TL')
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_chatbot_finance_data.py:36: AssertionError
+_ test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x0000026FEB467ED0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000026FEB467890>, 'org': <app.infrastructure.models.models.Organization object at 0x0000026FEB466C10>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000026FE8FAEE50>
+
+    async def test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school(platform_client, monkeypatch):
+        from app.routers import chatbot
+        operation = {"value": "summary"}
+        async def intent(query, context):
+            return ChatbotIntent(intent="PAYMENTS", operation=operation["value"], period="today", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        lower, upper = school_day_bounds(school_today())
+        async with sessions() as db:
+            debts = [Debt(organization_id=child.organization_id, branch_id=child.branch_id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=2000, paid_amount=0, due_date=school_today()) for child in [*data["children"], data["stranger"]]]
+            db.add_all(debts); await db.flush()
+            for debt, amount, when, cancelled, note in [(debts[0], 25, lower + timedelta(hours=1), False, "Own first"),
+                (debts[0], 5, upper - timedelta(microseconds=1), False, "Own last"),
+                (debts[0], 75, lower + timedelta(hours=2), True, "Cancelled secret"),
+                (debts[0], 11, lower - timedelta(microseconds=1), False, "Previous day"),
+                (debts[0], 3, upper, False, "Next day"),
+                (debts[1], 70, lower + timedelta(hours=3), False, "Sibling secret"),
+                (debts[2], 999, lower + timedelta(hours=3), False, "Foreign secret")]:
+                db.add(Payment(organization_id=debt.organization_id, branch_id=debt.branch_id, student_id=debt.student_id, debt_id=debt.id,
+                    amount=amount, payment_method=PaymentMethod.CASH, payment_date=when,
+                    cancelled_at=when if cancelled else None, received_by=data["root"].id, notes=note))
+            await db.commit()
+        body = {"query": "Bug�nk� �demeler", "role": "parent", "student_id": str(data["children"][0].id)}
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]), json=body)
+>       assert result.status_code == 200 and "30.00 TL" in result.json()["data"]["response_markdown"], result.text
+E       AssertionError: {"success":true,"message":"\u0130\u015flem ba\u015far\u0131l\u0131","data":{"intent":"PAYMENTS","response_markdown":"\U0001f4b3 **\xd6deme \xd6zeti (Bug\xfcn)**\\n\\nToplam \xf6deme: 0.00 TL","suggested_actions":[{"label":"\U0001f4b3 \xd6deme Detaylar\u0131","action_tag":"VIEW_PAYMENTS"}],"sentiment":"NEUTRAL","timestamp":"2026-11-04T13:52:50.842948"}}
+E       assert (200 == 200 and '30.00 TL' in '\U0001f4b3 **\xd6deme \xd6zeti (Bug\xfcn)**\\n\\nToplam \xf6deme: 0.00 TL')
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_chatbot_finance_data.py:36: AssertionError
+_ test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x0000026FEB92F610>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000026FEB8E88A0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000026FEB8E8770>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000026FEB9E18B0>
+
+    async def test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="DEBT", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client; child = data["children"][0]
+        async with sessions() as db:
+            common = {"organization_id": child.organization_id, "branch_id": child.branch_id, "student_id": child.id,
+                "debt_type": DebtType.EDUCATION, "due_date": school_today()}
+            db.add_all([Debt(**common, amount=100, paid_amount=25), Debt(**common, amount=900, paid_amount=0, deleted_at=datetime.now(UTC))]); await db.commit()
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]),
+            json={"query": "Bor�lar", "role": "parent", "student_id": str(child.id)})
+        assert result.status_code == 200, result.text
+        answer = result.json()["data"]["response_markdown"]
+>       assert "Toplam bor�: 100.00 TL" in answer and "�denen: 25.00 TL" in answer and "Kalan: 75.00 TL" in answer, answer
+E       AssertionError: \U0001f4b3 **Bor\xe7 Durumu**
+E         
+E         - Toplam bor�: 975.00 TL
+E         - �denen: 25.00 TL
+E         - Kalan: 975.00 TL
+E       assert ('Toplam bor\xe7: 100.00 TL' in '\U0001f4b3 **Bor\xe7 Durumu**\\n\\n- Toplam bor\xe7: 975.00 TL\\n- \xd6denen: 25.00 TL\\n- Kalan: 975.00 TL')
+
+tests\integration\test_chatbot_finance_data.py:59: AssertionError
+_ test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x0000026FEB8EA2C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000026FEBA88050>, 'org': <app.infrastructure.models.models.Organization object at 0x0000026FEB4F38A0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000026FEB4D7BB0>
+
+    async def test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="DEBT", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client; child = data["children"][0]
+        async with sessions() as db:
+            common = {"organization_id": child.organization_id, "branch_id": child.branch_id, "student_id": child.id,
+                "debt_type": DebtType.EDUCATION, "due_date": school_today()}
+            db.add_all([Debt(**common, amount=100, paid_amount=25), Debt(**common, amount=900, paid_amount=0, deleted_at=datetime.now(UTC))]); await db.commit()
+        result = await client.post("/api/v1/chatbot/process-query", headers=headers(data["user"]),
+            json={"query": "Bor�lar", "role": "parent", "student_id": str(child.id)})
+        assert result.status_code == 200, result.text
+        answer = result.json()["data"]["response_markdown"]
+>       assert "Toplam bor�: 100.00 TL" in answer and "�denen: 25.00 TL" in answer and "Kalan: 75.00 TL" in answer, answer
+E       AssertionError: \U0001f4b3 **Bor\xe7 Durumu**
+E         
+E         - Toplam bor�: 975.00 TL
+E         - �denen: 25.00 TL
+E         - Kalan: 975.00 TL
+E       assert ('Toplam bor\xe7: 100.00 TL' in '\U0001f4b3 **Bor\xe7 Durumu**\\n\\n- Toplam bor\xe7: 975.00 TL\\n- \xd6denen: 25.00 TL\\n- Kalan: 975.00 TL')
+
+tests\integration\test_chatbot_finance_data.py:59: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[sqlite]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_payment_period_and_selected_child_exclude_cancellations_other_children_and_school[postgresql]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[sqlite]
+FAILED tests/integration/test_chatbot_finance_data.py::test_chatbot_debt_original_paid_and_remaining_amounts_are_distinct_and_deleted_rows_are_ignored[postgresql]
+4 failed, 20 warnings in 11.40s

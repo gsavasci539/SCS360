@@ -39,7 +39,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   transition: transform .24s ease;
 }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 22px; }
-.brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: #f1b65f; color: var(--navy); box-shadow: inset 0 -4px 8px rgba(92, 54, 10, .12); }
+.brand-mark { display: block; flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; object-fit: contain; }
+.receipt-brand { display: flex; justify-content: center; align-items: center; gap: 9px; margin-bottom: 12px; color: #163b3b; font: 800 17px/1 "Manrope", sans-serif; letter-spacing: -.4px; }
+.receipt-brand .brand-mark { border-radius: 9px; }
 .brand-title { font: 800 20px/1 "Manrope", sans-serif; letter-spacing: -.5px; }
 .brand-subtitle { margin-top: 5px; color: #9eb2af; font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; }
 .branch-pill { display: flex; align-items: center; gap: 10px; margin: 0 6px 20px; padding: 11px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: rgba(255,255,255,.055); }
@@ -109,7 +111,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .search input { width: 100%; height: 40px; padding: 0 13px 0 40px; border: 1px solid var(--line); border-radius: 11px; outline: 0; background: #fafbf9; }
 .search input:focus { border-color: #7db7a9; box-shadow: 0 0 0 3px rgba(23,107,91,.08); }
 .filter-select { height: 40px; padding: 0 34px 0 12px; border: 1px solid var(--line); border-radius: 11px; color: #425255; background: white; }
+.saas-workspace form, .saas-workspace fieldset, .account-workspace form, .account-workspace fieldset { min-width: 0; }
+.saas-workspace label, .account-workspace label:has(.filter-select) { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.saas-workspace .filter-select, .account-workspace .filter-select { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.saas-workspace form .btn, .account-workspace form .btn { white-space: normal; width: 100%; padding-block: 10px; }
 .table-wrap { overflow-x: auto; }
+.inventory-workspace, .inventory-workspace form { min-width: 0; }
+.inventory-workspace .toolbar > label { display: grid; gap: 6px; flex: 1 1 220px; min-width: 0; }
+.inventory-workspace .filter-select { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th { padding: 11px 18px; color: #7e8b8c; background: #f8faf8; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-align: left; text-transform: uppercase; white-space: nowrap; }
 .data-table td { padding: 14px 18px; border-top: 1px solid #edf0ed; color: #354648; font-size: 13px; vertical-align: middle; }
@@ -142,6 +151,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .field label span { color: var(--danger); }
 .field input, .field select, .field textarea { width: 100%; min-height: 43px; padding: 10px 12px; border: 1px solid #d9e1dc; border-radius: 11px; outline: none; color: var(--ink); background: #fbfcfb; transition: .15s ease; }
 .field textarea { min-height: 100px; resize: vertical; }
+.field input[type="checkbox"] { width: 24px; height: 24px; min-height: 24px; padding: 0; accent-color: var(--brand); cursor: pointer; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: #79ad9f; background: white; box-shadow: 0 0 0 3px rgba(23,107,91,.075); }
 .field-error { color: var(--danger); font-size: 11px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--line); }
@@ -155,7 +165,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .spinner { width: 30px; height: 30px; border: 3px solid #dfe8e3; border-top-color: var(--brand); border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.modal-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(12,29,31,.55); backdrop-filter: blur(4px); }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(12,29,31,.55); backdrop-filter: blur(4px); }
 .modal { width: min(500px, 100%); max-height: 90vh; overflow: auto; border-radius: 20px; background: white; box-shadow: 0 28px 80px rgba(0,0,0,.2); }
 .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 21px; border-bottom: 1px solid var(--line); }
 .modal-head h2 { margin: 0; font: 700 18px "Manrope", sans-serif; }
@@ -163,7 +173,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .modal-body { padding: 21px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 15px 21px 21px; }
 
-.toast-region { position: fixed; z-index: 120; right: 22px; bottom: 22px; display: grid; gap: 9px; width: min(370px, calc(100% - 32px)); }
+.toast-region { position: fixed; z-index: 1100; right: 22px; bottom: 22px; display: grid; gap: 9px; width: min(370px, calc(100% - 32px)); }
 .toast { display: flex; gap: 11px; align-items: flex-start; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: white; box-shadow: var(--shadow); animation: toast-in .22s ease; }
 .toast-success { border-left: 4px solid var(--success); }
 .toast-error { border-left: 4px solid var(--danger); }
@@ -391,3 +401,29 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .parent-animate-in {
   animation: fadeInUp 0.5s ease forwards;
 }
+
+.guidance-workspace label { display: grid; gap: 6px; }
+.guidance-workspace label:has(input[type="checkbox"]) { display: flex; gap: 8px; align-items: center; }
+.guidance-workspace .filter-select { width: 100%; min-width: 0; }
+.payroll-workspace label { display: grid; gap: 6px; }
+.payroll-workspace .filter-select { width: 100%; min-width: 0; }
+.tutoring-workspace label { display: grid; gap: 6px; }
+.tutoring-workspace .filter-select { width: 100%; min-width: 0; }
+.tutoring-workspace { min-width: 0; }
+.tutoring-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.health-workspace label { display: grid; gap: 6px; }
+.health-workspace .filter-select { width: 100%; min-width: 0; }
+.health-workspace { min-width: 0; }
+.health-workspace .health-checkbox { display: flex; gap: 8px; align-items: center; }
+.health-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
+.security-workspace label { display: grid; gap: 6px; }
+.security-workspace .filter-select { width: 100%; min-width: 0; }
+.security-workspace { min-width: 0; }
+.security-code { overflow-wrap: anywhere; white-space: pre-wrap; }
+.dismissal-workspace label { display: grid; gap: 6px; }
+.dismissal-workspace .filter-select { width: 100%; min-width: 0; }
+.dismissal-workspace { min-width: 0; }
+.dismissal-notes { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.payroll-filters .toolbar > label { display: grid; gap: 6px; flex: 1 1 180px; min-width: 0; }
+.payroll-filters .filter-select { width: 100%; min-width: 0; }

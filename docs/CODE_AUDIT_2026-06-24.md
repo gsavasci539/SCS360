@@ -51,7 +51,7 @@ bağlı değil; eski mimariyle yeni birleşik katman aynı repository'de birlikt
 - Büyük `core_modules.py` ve `dashboard_reports.py` dosyalarını bounded-context router/service'lerine böl.
 - Pydantic `dict` body'leri typed schema'lara taşı.
 - Liste/bulk endpoint'lerde N+1 ve döngü içi sorguları toplu sorgulara dönüştür.
-- Marka adını `EduPanel` / `Okul360` arasında tekleştir.
+- Tüm bileşenlerde ürün markasını `SCS360` olarak kullan.
 
 ## Dosya Envanteri ve Modül Analizi
 
@@ -567,7 +567,7 @@ npm run build                                  # TypeScript + Vite; dist'i yenid
 docker compose config                          # env interpolation ve compose doğrulama
 docker compose build --pull                    # temiz image build
 trivy fs --scanners vuln,secret,misconfig .    # filesystem/dependency/misconfig
-trivy image edupanel-backend:<immutable-tag>   # image taraması
+trivy image scs360-backend:<immutable-tag>   # image taraması
 gitleaks detect --source . --no-banner         # secret scan
 ```
 

@@ -1,4 +1,4 @@
-"""Clear demo data from EduPanel database."""
+"""Clear demo data from SCS360 database."""
 
 import asyncio
 from uuid import UUID

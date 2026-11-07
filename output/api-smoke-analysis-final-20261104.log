@@ -1,0 +1,14 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Completed role: super_admin; checks: 195
+Completed role: teacher; checks: 390
+Completed role: accountant; checks: 585
+Completed role: canteen_staff; checks: 780
+Completed role: org_admin; checks: 975
+Completed role: branch_manager; checks: 1170
+Completed role: staff; checks: 1365
+Completed role: parent; checks: 1560
+Completed role: manager; checks: 1755
+Completed role: administrator; checks: 1950
+Completed role: owner; checks: 2145
+{"checks": 2145, "statuses": {"200": 1075, "403": 1070}, "report": "C:\\Okul360\\docs\\api-smoke-results.json"}

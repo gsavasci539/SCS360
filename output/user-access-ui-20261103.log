@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/user-access.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  21:59:48
+   Duration  18.84s (transform 961ms, setup 1.22s, import 2.42s, tests 4.32s, environment 9.63s)
+

@@ -1,0 +1,1591 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/transport.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/transport.test.tsx (2 tests | 2 failed) 2090ms
+   × API sözleşmesindeki plaka, rota durumu ve katılım tarihini gösterir 1067ms
+   × kayıtlı rota özeti analiz sağlayıcısına bağımlı değildir 1020ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/transport.test.tsx > API sözleşmesindeki plaka, rota durumu ve katılım tarihini gösterir
+TestingLibraryElementError: Unable to find an element with the text: 34 SCS 360. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Ulaşım
+        </div>
+        <h1>
+          Servis Yönetimi
+        </h1>
+        <p>
+          Okul servis rotaları ve öğrenci katılımı
+        </p>
+      </div>
+    </header>
+    <div
+      class="card"
+      style="margin-bottom: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <div>
+          <h2>
+            AI Servis Analizi
+          </h2>
+          <p>
+            Rota ve katılım önerileri
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="20"
+          stroke="#176b5b"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;"
+        >
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              1
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Aktif Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Kapasite
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              24
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3
+            style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+          >
+            AI Önerileri
+          </h3>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-trending-up"
+              fill="none"
+              height="16"
+              stroke="#176b5b"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              style="flex-shrink: 0; margin-top: 2px;"
+              viewBox="0 0 24 24"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 7h6v6"
+              />
+              <path
+                d="m22 7-8.5 8.5-5-5L2 17"
+              />
+            </svg>
+            <span
+              style="font-size: 13px;"
+            >
+              Sabit öneri
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Servis Rotaları
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Rota Adı
+              </th>
+              <th>
+                Plaka
+              </th>
+              <th>
+                Sürücü
+              </th>
+              <th>
+                Kapasite
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bus"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 6v6"
+                  />
+                  <path
+                    d="M15 6v6"
+                  />
+                  <path
+                    d="M2 12h19.6"
+                  />
+                  <path
+                    d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+                  />
+                  <circle
+                    cx="7"
+                    cy="18"
+                    r="2"
+                  />
+                  <path
+                    d="M9 18h5"
+                  />
+                  <circle
+                    cx="16"
+                    cy="18"
+                    r="2"
+                  />
+                </svg>
+                 
+                Kuzey rotası
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                null
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-users"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+                  <path
+                    d="M16 3.128a4 4 0 0 1 0 7.744"
+                  />
+                  <path
+                    d="M22 21v-2a4 4 0 0 0-3-3.87"
+                  />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
+                </svg>
+                 
+                24
+              </td>
+              <td>
+                <span
+                  class="badge badge-neutral"
+                >
+                  Pasif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Son Katılımlar
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                Rota
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Kabul
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                 
+                undefined
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Geldi
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Ulaşım
+        </div>
+        <h1>
+          Servis Yönetimi
+        </h1>
+        <p>
+          Okul servis rotaları ve öğrenci katılımı
+        </p>
+      </div>
+    </header>
+    <div
+      class="card"
+      style="margin-bottom: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <div>
+          <h2>
+            AI Servis Analizi
+          </h2>
+          <p>
+            Rota ve katılım önerileri
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="20"
+          stroke="#176b5b"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;"
+        >
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              1
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Aktif Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Kapasite
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              24
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3
+            style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+          >
+            AI Önerileri
+          </h3>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-trending-up"
+              fill="none"
+              height="16"
+              stroke="#176b5b"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              style="flex-shrink: 0; margin-top: 2px;"
+              viewBox="0 0 24 24"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 7h6v6"
+              />
+              <path
+                d="m22 7-8.5 8.5-5-5L2 17"
+              />
+            </svg>
+            <span
+              style="font-size: 13px;"
+            >
+              Sabit öneri
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Servis Rotaları
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Rota Adı
+              </th>
+              <th>
+                Plaka
+              </th>
+              <th>
+                Sürücü
+              </th>
+              <th>
+                Kapasite
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bus"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 6v6"
+                  />
+                  <path
+                    d="M15 6v6"
+                  />
+                  <path
+                    d="M2 12h19.6"
+                  />
+                  <path
+                    d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+                  />
+                  <circle
+                    cx="7"
+                    cy="18"
+                    r="2"
+                  />
+                  <path
+                    d="M9 18h5"
+                  />
+                  <circle
+                    cx="16"
+                    cy="18"
+                    r="2"
+                  />
+                </svg>
+                 
+                Kuzey rotası
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                null
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-users"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+                  <path
+                    d="M16 3.128a4 4 0 0 1 0 7.744"
+                  />
+                  <path
+                    d="M22 21v-2a4 4 0 0 0-3-3.87"
+                  />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
+                </svg>
+                 
+                24
+              </td>
+              <td>
+                <span
+                  class="badge badge-neutral"
+                >
+                  Pasif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Son Katılımlar
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                Rota
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Kabul
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                 
+                undefined
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Geldi
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/transport.test.tsx:18:16
+     16| it("API sözleşmesindeki plaka, rota durumu ve katılım tarihini gösteri…
+     17|   render(<BusPage />);
+     18|   await screen.findByText("34 SCS 360");
+       |                ^
+     19|   const tables = screen.getAllByRole("table");
+     20|   expect(within(tables[0]).getByText("Aktif")).toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/transport.test.tsx > kayıtlı rota özeti analiz sağlayıcısına bağımlı değildir
+TestingLibraryElementError: Unable to find a label with the text of: Listelenen servis rotalarının özeti
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Ulaşım
+        </div>
+        <h1>
+          Servis Yönetimi
+        </h1>
+        <p>
+          Okul servis rotaları ve öğrenci katılımı
+        </p>
+      </div>
+    </header>
+    <div
+      class="card"
+      style="margin-bottom: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <div>
+          <h2>
+            AI Servis Analizi
+          </h2>
+          <p>
+            Rota ve katılım önerileri
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="20"
+          stroke="#176b5b"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;"
+        >
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              1
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Aktif Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Kapasite
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              24
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3
+            style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+          >
+            AI Önerileri
+          </h3>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-trending-up"
+              fill="none"
+              height="16"
+              stroke="#176b5b"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              style="flex-shrink: 0; margin-top: 2px;"
+              viewBox="0 0 24 24"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 7h6v6"
+              />
+              <path
+                d="m22 7-8.5 8.5-5-5L2 17"
+              />
+            </svg>
+            <span
+              style="font-size: 13px;"
+            >
+              Sabit öneri
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Servis Rotaları
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Rota Adı
+              </th>
+              <th>
+                Plaka
+              </th>
+              <th>
+                Sürücü
+              </th>
+              <th>
+                Kapasite
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bus"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 6v6"
+                  />
+                  <path
+                    d="M15 6v6"
+                  />
+                  <path
+                    d="M2 12h19.6"
+                  />
+                  <path
+                    d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+                  />
+                  <circle
+                    cx="7"
+                    cy="18"
+                    r="2"
+                  />
+                  <path
+                    d="M9 18h5"
+                  />
+                  <circle
+                    cx="16"
+                    cy="18"
+                    r="2"
+                  />
+                </svg>
+                 
+                Kuzey rotası
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                null
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-users"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+                  <path
+                    d="M16 3.128a4 4 0 0 1 0 7.744"
+                  />
+                  <path
+                    d="M22 21v-2a4 4 0 0 0-3-3.87"
+                  />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
+                </svg>
+                 
+                24
+              </td>
+              <td>
+                <span
+                  class="badge badge-neutral"
+                >
+                  Pasif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Son Katılımlar
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                Rota
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Kabul
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                 
+                undefined
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Geldi
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Ulaşım
+        </div>
+        <h1>
+          Servis Yönetimi
+        </h1>
+        <p>
+          Okul servis rotaları ve öğrenci katılımı
+        </p>
+      </div>
+    </header>
+    <div
+      class="card"
+      style="margin-bottom: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <div>
+          <h2>
+            AI Servis Analizi
+          </h2>
+          <p>
+            Rota ve katılım önerileri
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="20"
+          stroke="#176b5b"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;"
+        >
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              1
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Aktif Rota
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              0
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Kapasite
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              24
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3
+            style="font-size: 14px; font-weight: 700; margin-bottom: 12px;"
+          >
+            AI Önerileri
+          </h3>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start;"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-trending-up"
+              fill="none"
+              height="16"
+              stroke="#176b5b"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              style="flex-shrink: 0; margin-top: 2px;"
+              viewBox="0 0 24 24"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M16 7h6v6"
+              />
+              <path
+                d="m22 7-8.5 8.5-5-5L2 17"
+              />
+            </svg>
+            <span
+              style="font-size: 13px;"
+            >
+              Sabit öneri
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Servis Rotaları
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Rota Adı
+              </th>
+              <th>
+                Plaka
+              </th>
+              <th>
+                Sürücü
+              </th>
+              <th>
+                Kapasite
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-bus"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M8 6v6"
+                  />
+                  <path
+                    d="M15 6v6"
+                  />
+                  <path
+                    d="M2 12h19.6"
+                  />
+                  <path
+                    d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+                  />
+                  <circle
+                    cx="7"
+                    cy="18"
+                    r="2"
+                  />
+                  <path
+                    d="M9 18h5"
+                  />
+                  <circle
+                    cx="16"
+                    cy="18"
+                    r="2"
+                  />
+                </svg>
+                 
+                Kuzey rotası
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                null
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-users"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+                  <path
+                    d="M16 3.128a4 4 0 0 1 0 7.744"
+                  />
+                  <path
+                    d="M22 21v-2a4 4 0 0 0-3-3.87"
+                  />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  />
+                </svg>
+                 
+                24
+              </td>
+              <td>
+                <span
+                  class="badge badge-neutral"
+                >
+                  Pasif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      class="card"
+      style="margin-top: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Son Katılımlar
+        </h2>
+        <span
+          class="badge badge-green"
+        >
+          1
+        </span>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                Rota
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Kabul
+              </td>
+              <td>
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin"
+                  fill="none"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="14"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                 
+                undefined
+              </td>
+              <td>
+                undefined
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Geldi
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/transport.test.tsx:29:32
+     27| it("kayıtlı rota özeti analiz sağlayıcısına bağımlı değildir", async (…
+     28|   render(<BusPage />);
+     29|   const summary = await screen.findByLabelText("Listelenen servis rota…
+       |                                ^
+     30|   expect(summary).toHaveTextContent("Aktif rota: 1");
+     31|   expect(summary).toHaveTextContent("Kapasite: 24");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  19:22:42
+   Duration  5.57s (transform 179ms, setup 311ms, import 486ms, tests 2.09s, environment 2.26s)
+

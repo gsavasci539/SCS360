@@ -1,0 +1,14 @@
+
+> scs360-frontend@1.0.0 build
+> tsc -b && vite build
+
+src/features/finance/FinancePages.tsx(2,45): error TS6133: 'ReceiptText' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(2,58): error TS6133: 'Save' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(2,64): error TS6133: 'XCircle' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(2,85): error TS6133: 'DollarSign' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(3,21): error TS6133: 'useMemo' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(4,1): error TS6133: 'useForm' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(5,16): error TS6133: 'useNavigate' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(9,22): error TS6133: 'Field' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(9,43): error TS6133: 'Modal' is declared but its value is never read.
+src/features/finance/FinancePages.tsx(12,1): error TS6133: 'useAuthStore' is declared but its value is never read.

@@ -1,0 +1,20 @@
+{
+  "mode": "DDL_COMPILATION_ONLY_NO_DATABASE_OR_APPLICATION_CHANGE",
+  "requires_real_model_migration_gate_and_data_acceptance": true,
+  "dialects": {
+    "sqlite": {
+      "index_count": 1,
+      "table_and_index_ddl": [
+        "\nCREATE TABLE students (\n\tid VARCHAR(36) NOT NULL, \n\torganization_id VARCHAR(36) NOT NULL, \n\tstudent_number VARCHAR(50), \n\tdeleted_at DATETIME, \n\tPRIMARY KEY (id)\n)\n\n",
+        "CREATE UNIQUE INDEX uq_students_org_student_number_live ON students (lower(replace(organization_id, '-', '')), student_number) WHERE deleted_at IS NULL"
+      ]
+    },
+    "postgresql": {
+      "index_count": 1,
+      "table_and_index_ddl": [
+        "\nCREATE TABLE students (\n\tid UUID NOT NULL, \n\torganization_id UUID NOT NULL, \n\tstudent_number VARCHAR(50), \n\tdeleted_at TIMESTAMP WITHOUT TIME ZONE, \n\tPRIMARY KEY (id)\n)\n\n",
+        "CREATE UNIQUE INDEX uq_students_org_student_number_live ON students (organization_id, student_number) WHERE deleted_at IS NULL"
+      ]
+    }
+  }
+}

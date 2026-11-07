@@ -1,0 +1,110 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[sqlite] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x0000025EB13E3B60>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000025EB279C2D0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000025EB13E34D0>, ...})
+
+    async def test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key(legacy_assignments):
+        from app.application.services import parent_data_service, teacher_chat_service
+        from app.core.tenant import TenantContext
+    
+        client, sessions, data = legacy_assignments
+        async with sessions() as db:
+            parent = await db.scalar(sa.select(Parent).where(Parent.user_id == data["user"].id))
+            assert parent.id != data["user"].id
+            other = User(id=parent.id, organization_id=data["org"].id, email="other-guardian@assignment.invalid",
+                password_hash="unused", first_name="Other", last_name="Guardian")
+            db.add(other)
+            await db.flush()
+            role_id = await db.scalar(sa.select(UserRole.role_id).where(UserRole.user_id == data["user"].id))
+            db.add(UserRole(user_id=other.id, role_id=role_id))
+            other_parent = Parent(user_id=other.id, organization_id=data["org"].id, first_name="Other", last_name="Guardian")
+            db.add(other_parent)
+            await db.flush()
+            db.add(StudentParent(parent_id=other_parent.id, student_id=data["children"][0].id))
+            shared = dict(student_id=data["children"][0].id, teacher_id=data["teacher"].id, is_active=True,
+                subject_context="Disposable existing conversation")
+            foreign = ChatConversation(parent_id=other.id, created_at=datetime(2023, 1, 1, tzinfo=UTC),
+                last_message="Other guardian private history", **shared)
+            oldest = ChatConversation(parent_id=data["user"].id, created_at=datetime(2024, 1, 1, tzinfo=UTC), **shared)
+            duplicate = ChatConversation(parent_id=data["user"].id, created_at=datetime(2025, 1, 1, tzinfo=UTC),
+                last_message="Preserve duplicate legacy thread", **shared)
+            db.add_all([foreign, oldest, duplicate])
+            await db.flush()
+            db.add(ChatMessage(conversation_id=foreign.id, sender_id=other.id, recipient_id=data["teacher"].id,
+                sender_role="PARENT", content="Other guardian private history", is_read=False))
+            await db.commit()
+        body = {"student_id": str(data["children"][0].id), "teacher_id": str(data["teacher"].id),
+            "teacher_name": "Untrusted display label", "initial_message": "Current guardian own history", "created_via": "CHATBOT"}
+        path = "/api/v1/chatbot/chat/conversations/connect-teacher"
+        for _ in range(2):
+            reply = await client.post(path, headers=headers(data["user"]), json=body)
+            assert reply.status_code == 201, reply.text
+>           assert reply.json()["data"]["conversation_id"] == str(oldest.id)
+E           AssertionError: assert 'ad4d52ba-57b...-bd5137aa38a8' == '12d44b88-2f5...-2cf194a47a03'
+E             
+E             - 12d44b88-2f5b-414a-9089-2cf194a47a03
+E             + ad4d52ba-57b6-4c70-90f9-bd5137aa38a8
+
+tests\integration\test_legacy_student_teacher_assignment.py:151: AssertionError
+_ test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[postgresql] _
+
+legacy_assignments = (<httpx.AsyncClient object at 0x0000025EB3C16E90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000025EB40832F0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000025EB40987D0>, ...})
+
+    async def test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key(legacy_assignments):
+        from app.application.services import parent_data_service, teacher_chat_service
+        from app.core.tenant import TenantContext
+    
+        client, sessions, data = legacy_assignments
+        async with sessions() as db:
+            parent = await db.scalar(sa.select(Parent).where(Parent.user_id == data["user"].id))
+            assert parent.id != data["user"].id
+            other = User(id=parent.id, organization_id=data["org"].id, email="other-guardian@assignment.invalid",
+                password_hash="unused", first_name="Other", last_name="Guardian")
+            db.add(other)
+            await db.flush()
+            role_id = await db.scalar(sa.select(UserRole.role_id).where(UserRole.user_id == data["user"].id))
+            db.add(UserRole(user_id=other.id, role_id=role_id))
+            other_parent = Parent(user_id=other.id, organization_id=data["org"].id, first_name="Other", last_name="Guardian")
+            db.add(other_parent)
+            await db.flush()
+            db.add(StudentParent(parent_id=other_parent.id, student_id=data["children"][0].id))
+            shared = dict(student_id=data["children"][0].id, teacher_id=data["teacher"].id, is_active=True,
+                subject_context="Disposable existing conversation")
+            foreign = ChatConversation(parent_id=other.id, created_at=datetime(2023, 1, 1, tzinfo=UTC),
+                last_message="Other guardian private history", **shared)
+            oldest = ChatConversation(parent_id=data["user"].id, created_at=datetime(2024, 1, 1, tzinfo=UTC), **shared)
+            duplicate = ChatConversation(parent_id=data["user"].id, created_at=datetime(2025, 1, 1, tzinfo=UTC),
+                last_message="Preserve duplicate legacy thread", **shared)
+            db.add_all([foreign, oldest, duplicate])
+            await db.flush()
+            db.add(ChatMessage(conversation_id=foreign.id, sender_id=other.id, recipient_id=data["teacher"].id,
+                sender_role="PARENT", content="Other guardian private history", is_read=False))
+            await db.commit()
+        body = {"student_id": str(data["children"][0].id), "teacher_id": str(data["teacher"].id),
+            "teacher_name": "Untrusted display label", "initial_message": "Current guardian own history", "created_via": "CHATBOT"}
+        path = "/api/v1/chatbot/chat/conversations/connect-teacher"
+        for _ in range(2):
+            reply = await client.post(path, headers=headers(data["user"]), json=body)
+            assert reply.status_code == 201, reply.text
+>           assert reply.json()["data"]["conversation_id"] == str(oldest.id)
+E           AssertionError: assert '16d5238f-5ae...-ae2a91c05fe0' == '0628fee6-fb2...-0b3ca25f52be'
+E             
+E             - 0628fee6-fb2b-46bd-94ca-0b3ca25f52be
+E             + 16d5238f-5ae5-4ecb-b8ec-ae2a91c05fe0
+
+tests\integration\test_legacy_student_teacher_assignment.py:151: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[sqlite]
+FAILED tests/integration/test_legacy_student_teacher_assignment.py::test_connect_reuses_oldest_account_thread_and_never_another_guardians_contact_key[postgresql]
+2 failed, 4 deselected, 20 warnings in 8.81s

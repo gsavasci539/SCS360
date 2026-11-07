@@ -1,0 +1,21 @@
+tests\integration\test_settings_canonical_models.py:45:127: B023 Function definition does not bind loop variable `model`
+   |
+43 |         for model, shadow in ((AppSetting, {"key", "value"}),
+44 |             (IntegrationSetting, {"integration_type", "provider_name", "settings"})):
+45 |             columns = await db.run_sync(lambda session: {value["name"] for value in inspect(session.connection()).get_columns(model.__tablename__)})
+   |                                                                                                                               ^^^^^ B023
+46 |             assert not shadow & columns
+47 |             assert not shadow & set(model.__table__.c.keys())
+   |
+
+tests\integration\test_settings_canonical_models.py:93:127: B023 Function definition does not bind loop variable `table`
+   |
+91 |         for table, shadow in (("app_settings", ("key", "value")),
+92 |             ("integration_settings", ("integration_type", "provider_name", "settings"))):
+93 |             columns = await db.run_sync(lambda session: {value["name"] for value in inspect(session.connection()).get_columns(table)})
+   |                                                                                                                               ^^^^^ B023
+94 |             for column in shadow:
+95 |                 if column in columns:
+   |
+
+Found 3 errors (1 fixed, 2 remaining).

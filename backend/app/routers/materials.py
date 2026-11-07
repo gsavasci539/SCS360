@@ -2,28 +2,71 @@
 Course Materials & Digital Library Module API
 Handles file uploads, course materials management, and digital library
 """
-from datetime import datetime, date
-from typing import Optional, List
-from uuid import UUID
-import os
+from __future__ import annotations
+from datetime import UTC, datetime, date
+from typing import Optional
+from uuid import UUID, uuid4
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.infrastructure.models.models import ClassRoom as Class
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
+from app.core.permissions import PermissionChecker
+from app.core.tenant import TenantContext
 from app.domain.entities import (
     CourseMaterial, User
 )
+from app.domain.entities.materials import MaterialSubmission
+from app.infrastructure.models.models import Student
+from sqlalchemy.exc import IntegrityError
+from app.application.services import material_file_service
+from app.infrastructure.storage.uploads import read_upload
+from app.core.exceptions import ValidationException
+from app.core.student_access import uses_relationship_scope
 
 router = APIRouter(prefix="/api/materials", tags=["Materials"])
 
-# File upload configuration
-UPLOAD_DIR = "uploads/materials"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+MATERIAL_EXTENSIONS = {
+    "PDF": {"pdf"}, "VIDEO": {"mp4", "avi", "mov", "mkv"},
+    "AUDIO": {"mp3", "wav", "ogg"}, "DOCUMENT": {"doc", "docx", "txt", "rtf"},
+    "PRESENTATION": {"ppt", "pptx"}, "IMAGE": {"jpg", "jpeg", "png", "gif", "bmp"},
+    "OTHER": {"zip", "rar"},
+}
+MaterialType = Literal["PDF", "VIDEO", "AUDIO", "DOCUMENT", "PRESENTATION", "IMAGE", "OTHER"]
+MaterialVisibility = Literal["PUBLIC", "CLASS_ONLY", "TEACHER_ONLY"]
+
+
+async def _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until):
+    if visible_from and visible_until and visible_from > visible_until:
+        raise ValidationException("Görünürlük bitiş tarihi başlangıçtan önce olamaz")
+    if visibility == "CLASS_ONLY" and not class_id:
+        raise ValidationException("Sınıfa özel materyal için sınıf seçilmeli")
+    if class_id and not (await db.execute(select(Class.id).where(Class.id == class_id))).scalar_one_or_none():
+        raise ValidationException("Erişilebilir bir sınıf seçilmeli")
+    if not (await db.execute(select(User.id).where(User.id == teacher_id))).scalar_one_or_none():
+        raise ValidationException("Erişilebilir bir öğretmen seçilmeli")
+    if uses_relationship_scope(tenant) and teacher_id != tenant.user_id:
+        raise ValidationException("Öğretmen yalnız kendi adına materyal yükleyebilir")
+
+
+def _staff_filter(tenant):
+    if uses_relationship_scope(tenant):
+        from sqlalchemy import or_
+        return or_(CourseMaterial.visibility != "TEACHER_ONLY", CourseMaterial.teacher_id == tenant.user_id,
+            CourseMaterial.created_by == tenant.user_id)
+    return True
+
+
+def _write_filter(tenant):
+    if uses_relationship_scope(tenant):
+        from sqlalchemy import or_
+        return or_(CourseMaterial.teacher_id == tenant.user_id, CourseMaterial.created_by == tenant.user_id)
+    return True
 
 
 # ==================== Schemas ====================
@@ -33,10 +76,10 @@ class CourseMaterialCreate(BaseModel):
     subject_id: Optional[UUID] = None
     teacher_id: Optional[UUID] = None
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
-    material_type: str = Field(..., description="PDF, VIDEO, AUDIO, DOCUMENT, PRESENTATION, IMAGE, OTHER")
-    unit_topic: Optional[str] = None
-    visibility: str = Field(default="CLASS_ONLY", description="PUBLIC, CLASS_ONLY, TEACHER_ONLY, SPECIFIC_STUDENTS")
+    description: Optional[str] = Field(None, max_length=1000)
+    material_type: MaterialType
+    unit_topic: Optional[str] = Field(None, max_length=255)
+    visibility: MaterialVisibility = "CLASS_ONLY"
     visible_from: Optional[date] = None
     visible_until: Optional[date] = None
 
@@ -68,13 +111,13 @@ class CourseMaterialResponse(BaseModel):
 class MaterialSubmissionCreate(BaseModel):
     material_id: UUID
     student_id: UUID
-    submission_text: Optional[str] = None
-    file_url: Optional[str] = None
+    submission_text: Optional[str] = Field(None, max_length=10000)
+    file_url: Optional[str] = Field(None, max_length=500)
 
 
 class MaterialGradingCreate(BaseModel):
     grade: float = Field(..., ge=0, le=100)
-    feedback: Optional[str] = None
+    feedback: Optional[str] = Field(None, max_length=10000)
 
 
 # ==================== Course Materials Endpoints ====================
@@ -88,11 +131,11 @@ async def get_course_materials(
     is_active: Optional[bool] = Query(True),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.read"))
 ):
     """Get course materials with filtering"""
-    query = select(CourseMaterial)
+    query = select(CourseMaterial).where(_staff_filter(tenant))
     
     conditions = []
     if class_id:
@@ -156,7 +199,7 @@ async def get_course_materials(
             "title": material.title,
             "description": material.description,
             "material_type": material.material_type,
-            "file_url": material.file_url,
+            "file_url": material_file_service.download_url(material.id),
             "file_size": material.file_size,
             "file_name": material.file_name,
             "unit_topic": material.unit_topic,
@@ -180,72 +223,48 @@ async def upload_course_material(
     subject_id: Optional[UUID] = Query(None),
     teacher_id: Optional[UUID] = Query(None),
     title: str = Query(..., min_length=1, max_length=255),
-    description: Optional[str] = Query(None),
-    material_type: str = Query(..., description="PDF, VIDEO, AUDIO, DOCUMENT, PRESENTATION, IMAGE, OTHER"),
-    unit_topic: Optional[str] = Query(None),
-    visibility: str = Query("CLASS_ONLY", description="PUBLIC, CLASS_ONLY, TEACHER_ONLY, SPECIFIC_STUDENTS"),
+    description: Optional[str] = Query(None, max_length=1000),
+    material_type: MaterialType = Query(...),
+    unit_topic: Optional[str] = Query(None, max_length=255),
+    visibility: MaterialVisibility = Query("CLASS_ONLY"),
     visible_from: Optional[date] = Query(None),
     visible_until: Optional[date] = Query(None),
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Upload a course material file"""
-    # Validate file type
-    allowed_extensions = {
-        'PDF': ['.pdf'],
-        'VIDEO': ['.mp4', '.avi', '.mov', '.mkv'],
-        'AUDIO': ['.mp3', '.wav', '.ogg'],
-        'DOCUMENT': ['.doc', '.docx', '.txt', '.rtf'],
-        'PRESENTATION': ['.ppt', '.pptx'],
-        'IMAGE': ['.jpg', '.jpeg', '.png', '.gif', '.bmp'],
-        'OTHER': ['.zip', '.rar']
-    }
-    
-    file_extension = os.path.splitext(file.filename)[1].lower()
-    material_type_upper = material_type.upper()
-    
-    if material_type_upper in allowed_extensions:
-        if file_extension not in allowed_extensions[material_type_upper]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid file type for {material_type}. Allowed: {allowed_extensions[material_type_upper]}"
-            )
-    
-    # Save file
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    safe_filename = f"{timestamp}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    
-    try:
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
-        
-        file_size = len(content)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+    title = title.strip()
+    if not title:
+        raise ValidationException("Materyal başlığı gerekli")
+    teacher_id = teacher_id or tenant.user_id
+    await _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until)
+    name, content = await read_upload(file, MATERIAL_EXTENSIONS[material_type])
+    material_id = uuid4()
     
     # Create database record
     new_material = CourseMaterial(
+        id=material_id,
         class_id=class_id,
         subject_id=subject_id,
         teacher_id=teacher_id,
         title=title,
         description=description,
-        material_type=material_type_upper,
-        file_url=f"/uploads/materials/{safe_filename}",
-        file_size=file_size,
-        file_name=file.filename,
+        material_type=material_type,
+        file_url=material_file_service.download_url(material_id),
+        file_size=len(content),
+        file_name=name,
         unit_topic=unit_topic,
         visibility=visibility.upper(),
         visible_from=visible_from,
         visible_until=visible_until,
         download_count=0,
-        is_active=True
+        is_active=True,
+        created_by=tenant.user_id,
     )
     db.add(new_material)
-    await db.commit()
+    await db.flush()
+    await material_file_service.save_content(material_id, content)
     await db.refresh(new_material)
     
     return success_response({
@@ -263,21 +282,27 @@ async def upload_course_material(
 async def update_course_material(
     material_id: UUID,
     material: CourseMaterialCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Update a course material"""
     result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id)
+        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant))
     )
     existing_material = result.scalar_one_or_none()
     
     if not existing_material:
         raise HTTPException(status_code=404, detail="Material not found")
+
+    await _validate_scope(db, tenant, material.class_id, material.teacher_id or tenant.user_id,
+        material.visibility, material.visible_from, material.visible_until)
+    if existing_material.material_type != material.material_type:
+        raise ValidationException("Dosya türü yüklenen dosyadan bağımsız değiştirilemez")
     
     existing_material.class_id = material.class_id
     existing_material.subject_id = material.subject_id
-    existing_material.teacher_id = material.teacher_id
+    existing_material.teacher_id = material.teacher_id or tenant.user_id
+    existing_material.updated_by = tenant.user_id
     existing_material.title = material.title
     existing_material.description = material.description
     existing_material.material_type = material.material_type.upper()
@@ -299,29 +324,21 @@ async def update_course_material(
 @router.delete("/{material_id}")
 async def delete_course_material(
     material_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Delete a course material"""
     result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id)
+        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant))
     )
     material = result.scalar_one_or_none()
     
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
     
-    # Delete file from filesystem
-    try:
-        if material.file_url and material.file_url.startswith("/uploads/materials/"):
-            file_path = os.path.join(UPLOAD_DIR, os.path.basename(material.file_url))
-            if os.path.exists(file_path):
-                os.remove(file_path)
-    except Exception as e:
-        # Log error but continue with database deletion
-        pass
-    
-    await db.delete(material)
+    # Preserve submission references and audit history when removing a material.
+    material.is_active = False
+    material.updated_by = tenant.user_id
     await db.commit()
     
     return success_response({"message": "Material deleted successfully"})
@@ -330,35 +347,44 @@ async def delete_course_material(
 @router.post("/{material_id}/download")
 async def download_course_material(
     material_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.read"))
 ):
-    """Record a download and increment counter"""
+    """Return the authenticated download URL; actual downloads update the counter."""
     result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id)
+        select(CourseMaterial).where(CourseMaterial.id == material_id,
+            CourseMaterial.is_active.is_(True), _staff_filter(tenant))
     )
     material = result.scalar_one_or_none()
     
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
     
-    # Increment download counter
-    material.download_count = (material.download_count or 0) + 1
-    
-    await db.commit()
-    
     return success_response({
         "id": str(material.id),
-        "file_url": material.file_url,
+        "file_url": material_file_service.download_url(material.id),
         "download_count": material.download_count
     })
+
+
+@router.get("/{material_id}/file")
+async def get_material_file(
+    material_id: UUID,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("material.read")),
+):
+    material = (await db.execute(select(CourseMaterial).where(CourseMaterial.id == material_id,
+        CourseMaterial.is_active.is_(True), _staff_filter(tenant)))).scalar_one_or_none()
+    if material is None:
+        raise HTTPException(status_code=404, detail="Materyal bulunamadı")
+    return await material_file_service.file_response(db, material)
 
 
 @router.get("/stats/summary")
 async def get_materials_stats(
     class_id: Optional[UUID] = Query(None),
     teacher_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.read"))
 ):
     """Get materials statistics"""
@@ -404,15 +430,21 @@ async def get_materials_stats(
 async def submit_material(
     material_id: UUID,
     submission: MaterialSubmissionCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Submit a material assignment"""
-    from app.infrastructure.models.models import MaterialSubmission, Student
+    if submission.material_id != material_id:
+        raise ValidationException("Materyal kimliği istek yoluyla eşleşmiyor")
+    if not (submission.submission_text or "").strip():
+        raise ValidationException("Teslim açıklaması gerekli")
+    if submission.file_url:
+        raise ValidationException("Dosya bağlantısı yerine metin teslimi kullanın")
     
     # Verify material exists
     material_result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id)
+        select(CourseMaterial).where(CourseMaterial.id == material_id,
+            CourseMaterial.is_active.is_(True), _write_filter(tenant))
     )
     material = material_result.scalar_one_or_none()
     
@@ -427,6 +459,8 @@ async def submit_material(
     
     if not student:
         raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
+    if material.visibility == "TEACHER_ONLY" or (material.class_id and material.visibility != "PUBLIC" and student.class_id != material.class_id):
+        raise ValidationException("Materyal bu öğrenciye açık değil")
     
     # Check if student already submitted
     existing_result = await db.execute(
@@ -440,20 +474,26 @@ async def submit_material(
     existing = existing_result.scalar_one_or_none()
     
     if existing:
-        raise HTTPException(status_code=400, detail="Bu materyal zaten teslim edildi")
+        raise HTTPException(status_code=409, detail="Bu materyal zaten teslim edildi")
     
     # Create submission
     new_submission = MaterialSubmission(
+        organization_id=student.organization_id,
+        branch_id=student.branch_id,
         material_id=material_id,
         student_id=submission.student_id,
         submission_text=submission.submission_text,
         file_url=submission.file_url,
         status="SUBMITTED",
-        submitted_at=datetime.utcnow()
+        submitted_at=datetime.now(UTC)
     )
     
-    db.add(new_submission)
-    await db.commit()
+    try:
+        async with db.begin_nested():
+            db.add(new_submission)
+            await db.flush()
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Bu materyal zaten teslim edildi")
     await db.refresh(new_submission)
     
     return success_response({
@@ -468,15 +508,14 @@ async def submit_material(
 @router.get("/{material_id}/submissions")
 async def get_material_submissions(
     material_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.read"))
 ):
     """Get all submissions for a material"""
-    from app.infrastructure.models.models import MaterialSubmission, Student
     
     # Verify material exists
     material_result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id)
+        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant))
     )
     material = material_result.scalar_one_or_none()
     
@@ -519,14 +558,14 @@ async def get_material_submissions(
 async def grade_material_submission(
     submission_id: UUID,
     grading: MaterialGradingCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Grade a material submission"""
-    from app.infrastructure.models.models import MaterialSubmission
     
     result = await db.execute(
-        select(MaterialSubmission).where(MaterialSubmission.id == submission_id)
+        select(MaterialSubmission).join(CourseMaterial, CourseMaterial.id == MaterialSubmission.material_id)
+        .where(MaterialSubmission.id == submission_id, _write_filter(tenant))
     )
     submission = result.scalar_one_or_none()
     
@@ -536,7 +575,7 @@ async def grade_material_submission(
     submission.grade = grading.grade
     submission.feedback = grading.feedback
     submission.status = "GRADED"
-    submission.graded_at = datetime.utcnow()
+    submission.graded_at = datetime.now(UTC)
     
     await db.commit()
     

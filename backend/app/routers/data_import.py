@@ -1,3 +1,4 @@
+from app.core.dates import school_today
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -18,17 +19,23 @@ router = APIRouter(prefix="/api/import", tags=["Import"])
 async def parse_excel_file(file: UploadFile) -> list[dict]:
     """Parse Excel file and return data as list of dictionaries"""
     try:
-        contents = await file.read()
+        from app.core.config import get_settings
+        limit = get_settings().max_upload_size_bytes
+        contents = await file.read(limit + 1)
+        if len(contents) > limit:
+            raise HTTPException(status_code=413, detail="İçe aktarma dosyası boyut sınırını aşıyor")
         
         # Try to read as Excel
         try:
-            df = pd.read_excel(io.BytesIO(contents), engine="openpyxl")
-        except:
+            df = pd.read_excel(io.BytesIO(contents), engine="openpyxl", dtype=str)
+        except Exception:
             # Fallback to CSV if Excel fails
-            df = pd.read_csv(io.BytesIO(contents))
+            df = pd.read_csv(io.BytesIO(contents), dtype=str)
         
         # Convert to list of dictionaries
         data = df.to_dict("records")
+        if len(data) > 5000:
+            raise HTTPException(status_code=413, detail="Bir dosyada en fazla 5000 satır içe aktarılabilir")
         
         # Clean up None values
         cleaned_data = []
@@ -41,6 +48,8 @@ async def parse_excel_file(file: UploadFile) -> list[dict]:
                 cleaned_data.append(cleaned_row)
         
         return cleaned_data
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Dosya okuma hatası: {str(e)}")
 
@@ -48,302 +57,98 @@ async def parse_excel_file(file: UploadFile) -> list[dict]:
 @router.post("/students")
 async def import_students(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("student.write"))
 ):
-    """Import students from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: first_name, last_name, student_number, date_of_birth, gender, address, phone, email
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("first_name") or not row.get("last_name"):
-                errors.append(f"Satır {idx}: Ad ve soyad zorunludur")
-                continue
-            
-            # Create student record (in-memory for now)
-            student = {
-                "first_name": row.get("first_name"),
-                "last_name": row.get("last_name"),
-                "student_number": row.get("student_number"),
-                "date_of_birth": row.get("date_of_birth"),
-                "gender": row.get("gender"),
-                "address": row.get("address"),
-                "phone": row.get("phone"),
-                "email": row.get("email"),
-                "status": "ACTIVE"
-            }
-            imported.append(student)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} öğrenci içe aktarıldı")
+    result = await import_rows(db, tenant, "students", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/parents")
 async def import_parents(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("student.write"))
 ):
-    """Import parents from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: first_name, last_name, relationship, phone, email, address
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("first_name") or not row.get("last_name") or not row.get("relationship") or not row.get("phone"):
-                errors.append(f"Satır {idx}: Ad, soyad, yakınlık ve telefon zorunludur")
-                continue
-            
-            # Create parent record (in-memory for now)
-            parent = {
-                "first_name": row.get("first_name"),
-                "last_name": row.get("last_name"),
-                "relationship": row.get("relationship"),
-                "phone": row.get("phone"),
-                "email": row.get("email"),
-                "address": row.get("address"),
-                "status": "ACTIVE"
-            }
-            imported.append(parent)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} veli içe aktarıldı")
+    result = await import_rows(db, tenant, "parents", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/classes")
 async def import_classes(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("class.write"))
 ):
-    """Import classes from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: name, code, capacity, academic_year
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("name") or not row.get("code") or not row.get("capacity"):
-                errors.append(f"Satır {idx}: Sınıf adı, kod ve kapasite zorunludur")
-                continue
-            
-            # Create class record (in-memory for now)
-            class_record = {
-                "name": row.get("name"),
-                "code": row.get("code"),
-                "capacity": int(row.get("capacity", 0)),
-                "academic_year": row.get("academic_year"),
-                "status": "ACTIVE"
-            }
-            imported.append(class_record)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} sınıf içe aktarıldı")
+    result = await import_rows(db, tenant, "classes", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/organizations")
 async def import_organizations(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("org.write"))
 ):
-    """Import organizations from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: name, legal_name, tax_number, phone, email, city, address
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("name"):
-                errors.append(f"Satır {idx}: Kurum adı zorunludur")
-                continue
-            
-            # Create organization record (in-memory for now)
-            org = {
-                "name": row.get("name"),
-                "legal_name": row.get("legal_name"),
-                "tax_number": row.get("tax_number"),
-                "phone": row.get("phone"),
-                "email": row.get("email"),
-                "city": row.get("city"),
-                "address": row.get("address"),
-                "is_active": True
-            }
-            imported.append(org)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} kurum içe aktarıldı")
+    result = await import_rows(db, tenant, "organizations", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/branches")
 async def import_branches(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("branch.write"))
 ):
-    """Import branches from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: name, code, capacity, phone, email, city, address
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("name") or not row.get("code") or not row.get("capacity"):
-                errors.append(f"Satır {idx}: Şube adı, kod ve kapasite zorunludur")
-                continue
-            
-            # Create branch record (in-memory for now)
-            branch = {
-                "name": row.get("name"),
-                "code": row.get("code"),
-                "capacity": int(row.get("capacity", 0)),
-                "phone": row.get("phone"),
-                "email": row.get("email"),
-                "city": row.get("city"),
-                "address": row.get("address"),
-                "is_active": True
-            }
-            imported.append(branch)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} şube içe aktarıldı")
+    result = await import_rows(db, tenant, "branches", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/library")
 async def import_library(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("resource.write"))
 ):
-    """Import library books from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: title, author, isbn, category, total_count
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("title") or not row.get("author"):
-                errors.append(f"Satır {idx}: Kitap adı ve yazar zorunludur")
-                continue
-            
-            # Create book record (in-memory for now)
-            book = {
-                "title": row.get("title"),
-                "author": row.get("author"),
-                "isbn": row.get("isbn"),
-                "category": row.get("category"),
-                "total_count": int(row.get("total_count", 1)),
-                "available_count": int(row.get("total_count", 1)),
-                "status": "ACTIVE"
-            }
-            imported.append(book)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} kitap içe aktarıldı")
+    result = await import_rows(db, tenant, "library", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/canteen")
 async def import_canteen(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("resource.write"))
 ):
-    """Import canteen products from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: name, category, price, calories, is_available
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("name") or not row.get("category") or not row.get("price"):
-                errors.append(f"Satır {idx}: Ürün adı, kategori ve fiyat zorunludur")
-                continue
-            
-            # Create product record (in-memory for now)
-            product = {
-                "name": row.get("name"),
-                "category": row.get("category"),
-                "price": float(row.get("price", 0)),
-                "calories": int(row.get("calories", 0)),
-                "is_available": row.get("is_available", True) if isinstance(row.get("is_available"), bool) else str(row.get("is_available", "true")).lower() == "true",
-                "status": "ACTIVE"
-            }
-            imported.append(product)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} kantin ürünü içe aktarıldı")
+    result = await import_rows(db, tenant, "canteen", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")
 
 
 @router.post("/rfid-cards")
 async def import_rfid_cards(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -406,7 +211,7 @@ async def import_rfid_cards(
                 holder_name=holder_name,
                 organization_id=org_id,
                 branch_id=branch_id,
-                issue_date=datetime.now().date(),
+                issue_date=school_today(),
                 status="ACTIVE"
             )
             
@@ -426,7 +231,7 @@ async def import_rfid_cards(
 @router.post("/card-numbers")
 async def import_card_numbers(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -507,41 +312,11 @@ async def import_card_numbers(
 @router.post("/debts")
 async def import_debts(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("finance.write"))
 ):
-    """Import debts from Excel file"""
+    from app.application.services.import_service import import_rows
     data = await parse_excel_file(file)
-    
-    # Expected columns: student_number, debt_type, amount, due_date, academic_year, description
-    imported = []
-    errors = []
-    
-    for idx, row in enumerate(data, start=1):
-        try:
-            # Validate required fields
-            if not row.get("student_number") or not row.get("debt_type") or not row.get("amount") or not row.get("due_date"):
-                errors.append(f"Satır {idx}: Öğrenci no, borç türü, tutar ve vade tarihi zorunludur")
-                continue
-            
-            # Create debt record (in-memory for now)
-            debt = {
-                "student_number": row.get("student_number"),
-                "debt_type": row.get("debt_type"),
-                "amount": float(row.get("amount", 0)),
-                "remaining_amount": float(row.get("amount", 0)),
-                "due_date": row.get("due_date"),
-                "academic_year": row.get("academic_year"),
-                "description": row.get("description"),
-                "status": "PENDING"
-            }
-            imported.append(debt)
-        except Exception as e:
-            errors.append(f"Satır {idx}: {str(e)}")
-    
-    return success_response({
-        "imported": len(imported),
-        "errors": errors,
-        "data": imported
-    }, f"{len(imported)} borç içe aktarıldı")
+    result = await import_rows(db, tenant, "debts", data)
+    return success_response(result, f"{result['imported']} kayıt içe aktarıldı")

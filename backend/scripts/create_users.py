@@ -1,5 +1,5 @@
 """
-Create demo users for all roles in EduPanel.
+Create demo users for all roles in SCS360.
 This script creates test users for OWNER, ADMIN, TEACHER, PARENT, and STAFF roles.
 """
 
@@ -121,7 +121,7 @@ async def create_demo_users():
         print("\n1. Creating OWNER user...")
         owner_user = await create_user(
             db,
-            email="owner@okul360.com",
+            email="owner@scs360.com",
             password="Owner123*",
             first_name="Kurucu",
             last_name="Yönetici",
@@ -132,8 +132,8 @@ async def create_demo_users():
         # ADMIN users
         print("\n2. Creating ADMIN users...")
         admin_users = [
-            ("admin@okul360.com", "Admin123*", "Sistem", "Yöneticisi"),
-            ("admin2@okul360.com", "Admin123*", "Okul", "Müdürü"),
+            ("admin@scs360.com", "Admin123*", "Sistem", "Yöneticisi"),
+            ("admin2@scs360.com", "Admin123*", "Okul", "Müdürü"),
         ]
         for email, password, first, last in admin_users:
             await create_user(
@@ -143,9 +143,9 @@ async def create_demo_users():
         # TEACHER users
         print("\n3. Creating TEACHER users...")
         teacher_users = [
-            ("teacher1@okul360.com", "Teacher123*", "Ayşe", "Yılmaz"),
-            ("teacher2@okul360.com", "Teacher123*", "Mehmet", "Kaya"),
-            ("teacher3@okul360.com", "Teacher123*", "Zeynep", "Demir"),
+            ("teacher1@scs360.com", "Teacher123*", "Ayşe", "Yılmaz"),
+            ("teacher2@scs360.com", "Teacher123*", "Mehmet", "Kaya"),
+            ("teacher3@scs360.com", "Teacher123*", "Zeynep", "Demir"),
         ]
         for i, (email, password, first, last) in enumerate(teacher_users):
             teacher = await create_user(
@@ -165,9 +165,9 @@ async def create_demo_users():
         # PARENT users
         print("\n4. Creating PARENT users...")
         parent_users = [
-            ("parent1@okul360.com", "Parent123*", "Ahmet", "Veli"),
-            ("parent2@okul360.com", "Parent123*", "Fatma", "Anne"),
-            ("parent3@okul360.com", "Parent123*", "Ali", "Baba"),
+            ("parent1@scs360.com", "Parent123*", "Ahmet", "Veli"),
+            ("parent2@scs360.com", "Parent123*", "Fatma", "Anne"),
+            ("parent3@scs360.com", "Parent123*", "Ali", "Baba"),
         ]
         for email, password, first, last in parent_users:
             parent_user = await create_user(
@@ -204,9 +204,9 @@ async def create_demo_users():
         # STAFF users
         print("\n5. Creating STAFF users...")
         staff_users = [
-            ("staff1@okul360.com", "Staff123*", "Personel", "Güvenlik"),
-            ("staff2@okul360.com", "Staff123*", "Personel", "Temizlik"),
-            ("staff3@okul360.com", "Staff123*", "Personel", "Mutfak"),
+            ("staff1@scs360.com", "Staff123*", "Personel", "Güvenlik"),
+            ("staff2@scs360.com", "Staff123*", "Personel", "Temizlik"),
+            ("staff3@scs360.com", "Staff123*", "Personel", "Mutfak"),
         ]
         for email, password, first, last in staff_users:
             await create_user(
@@ -216,11 +216,11 @@ async def create_demo_users():
         await db.commit()
         print("\n✓ All demo users created successfully!")
         print("\n=== Demo User Credentials ===")
-        print("OWNER: owner@okul360.com / Owner123*")
-        print("ADMIN: admin@okul360.com / Admin123*")
-        print("TEACHER: teacher1@okul360.com / Teacher123*")
-        print("PARENT: parent1@okul360.com / Parent123*")
-        print("STAFF: staff1@okul360.com / Staff123*")
+        print("OWNER: owner@scs360.com / Owner123*")
+        print("ADMIN: admin@scs360.com / Admin123*")
+        print("TEACHER: teacher1@scs360.com / Teacher123*")
+        print("PARENT: parent1@scs360.com / Parent123*")
+        print("STAFF: staff1@scs360.com / Staff123*")
         print("==============================")
 
 

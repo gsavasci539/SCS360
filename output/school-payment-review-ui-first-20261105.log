@@ -1,0 +1,140 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/school-payment-review.test.tsx (7 tests | 1 failed) 1935ms
+   × rejects malformed review metadata and keeps a pure parent out without requests 1028ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/school-payment-review.test.tsx > rejects malformed review metadata and keeps a pure parent out without requests
+TestingLibraryElementError: Unable to find role="alert"
+
+Ignored nodes: comments, script, style
+<body
+  style=""
+>
+  <div>
+    <div
+      class="state"
+    >
+      <div>
+        <div
+          class="state-icon"
+          style="margin: auto; color: rgb(195, 75, 75); background: rgb(255, 240, 239);"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-circle-alert"
+            fill="none"
+            height="23"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="23"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <line
+              x1="12"
+              x2="12"
+              y1="8"
+              y2="12"
+            />
+            <line
+              x1="12"
+              x2="12.01"
+              y1="16"
+              y2="16"
+            />
+          </svg>
+        </div>
+        <h3>
+          Veriler yüklenemedi
+        </h3>
+        <p>
+          Online ödeme incelemesi için finans yetkisi ve kurum çalışma alanı gerekir.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body
+  style=""
+>
+  <div>
+    <div
+      class="state"
+    >
+      <div>
+        <div
+          class="state-icon"
+          style="margin: auto; color: rgb(195, 75, 75); background: rgb(255, 240, 239);"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-circle-alert"
+            fill="none"
+            height="23"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="23"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+            />
+            <line
+              x1="12"
+              x2="12"
+              y1="8"
+              y2="12"
+            />
+            <line
+              x1="12"
+              x2="12.01"
+              y1="16"
+              y2="16"
+            />
+          </svg>
+        </div>
+        <h3>
+          Veriler yüklenemedi
+        </h3>
+        <p>
+          Online ödeme incelemesi için finans yetkisi ve kurum çalışma alanı gerekir.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/school-payment-review.test.tsx:79:31
+     77|   open(); expect(await screen.findByText("Online ödeme detayı doğrulan…
+     78|   vi.mocked(api.get).mockClear(); useAuthStore.setState({ user: { ...u…
+     79|   open(); expect(await screen.findByRole("alert")).toHaveTextContent("…
+       |                               ^
+     80| });
+     81|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  10:36:06
+   Duration  5.37s (transform 218ms, setup 222ms, import 486ms, tests 1.94s, environment 2.18s)
+

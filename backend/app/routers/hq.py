@@ -14,7 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
+from app.core.permissions import PermissionChecker
+from app.core.tenant import TenantContext
 from app.domain.entities import Branch
 
 router = APIRouter(prefix="/api/hq", tags=["HQ"])
@@ -54,7 +55,7 @@ async def get_financial_consolidation(
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
     branch_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.read"))
 ):
     """Get financial consolidation across branches"""
@@ -137,7 +138,7 @@ async def get_financial_consolidation(
 @router.post("/financial-summaries")
 async def create_financial_summary(
     summary: BranchFinancialSummaryCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.write"))
 ):
     """Create or update a branch financial summary"""
@@ -193,7 +194,7 @@ async def create_financial_summary(
 async def get_financial_comparison(
     year: int = Query(..., description="Year to compare"),
     period: str = Query("MONTHLY", description="Period type"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.read"))
 ):
     """Get financial comparison across branches"""
@@ -240,7 +241,7 @@ async def get_financial_comparison(
 async def get_academic_comparison(
     year: int = Query(..., description="Year to compare"),
     semester: Optional[str] = Query(None, description="Semester to filter"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.read"))
 ):
     """Get academic comparison across branches"""
@@ -283,7 +284,7 @@ async def get_academic_comparison(
 @router.post("/academic-summaries")
 async def create_academic_summary(
     summary: BranchAcademicSummaryCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.write"))
 ):
     """Create or update a branch academic summary"""
@@ -336,7 +337,7 @@ async def create_academic_summary(
 @router.get("/dashboard")
 async def get_hq_dashboard(
     year: int = Query(..., description="Dashboard year"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("hq.read"))
 ):
     """Get HQ dashboard summary with key metrics"""

@@ -1,0 +1,78 @@
+FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+_______ test_bus_options_summary_and_empty_location_are_scoped[sqlite] ________
+tests\integration\test_bus_workflow.py:19: in test_bus_options_summary_and_empty_location_are_scoped
+    assert choices.status_code == 200, choices.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"dfeeb7fc-4dac-4a7c-b7db-8e68b8a867ff"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_____ test_bus_options_summary_and_empty_location_are_scoped[postgresql] ______
+tests\integration\test_bus_workflow.py:19: in test_bus_options_summary_and_empty_location_are_scoped
+    assert choices.status_code == 200, choices.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"44793cd0-4678-4761-9a36-4ca9c1de8a02"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+______ test_bus_creates_retry_once_and_preserve_zero_coordinates[sqlite] ______
+tests\integration\test_bus_workflow.py:43: in test_bus_creates_retry_once_and_preserve_zero_coordinates
+    assert replies[0].json()["data"]["id"] == replies[1].json()["data"]["id"]
+E   AssertionError: assert '275f2d39-5e2...-7fdd46859624' == '6cd3258b-034...-9a056ddecc11'
+E     
+E     - 6cd3258b-0340-48c0-ba3f-9a056ddecc11
+E     + 275f2d39-5e2c-465d-9995-7fdd46859624
+____ test_bus_creates_retry_once_and_preserve_zero_coordinates[postgresql] ____
+tests\integration\test_bus_workflow.py:43: in test_bus_creates_retry_once_and_preserve_zero_coordinates
+    assert replies[0].json()["data"]["id"] == replies[1].json()["data"]["id"]
+E   AssertionError: assert '76bd6eed-f48...-91fd0052cdea' == 'ed00658b-675...-07f88b9daf83'
+E     
+E     - ed00658b-6758-463b-9bb6-07f88b9daf83
+E     + 76bd6eed-f483-4634-b56b-91fd0052cdea
+_ test_route_ownership_cannot_move_history_and_stop_edit_keeps_route[sqlite] __
+tests\integration\test_bus_workflow.py:72: in test_route_ownership_cannot_move_history_and_stop_edit_keeps_route
+    assert foreign.status_code == 403, foreign.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"b6246d66-e85a-4eb7-92aa-d6301b3456d7","updated_at":"2026-11-03T17:02:13"}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_route_ownership_cannot_move_history_and_stop_edit_keeps_route[postgresql] _
+tests\integration\test_bus_workflow.py:72: in test_route_ownership_cannot_move_history_and_stop_edit_keeps_route
+    assert foreign.status_code == 403, foreign.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"59d20fc7-424f-4f6f-b142-2ca5af22bf13","updated_at":"2026-11-03T17:02:14.639990+00:00"}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding[sqlite] _
+tests\integration\test_bus_workflow.py:94: in test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding
+    assert first.json()["data"] == again.json()["data"]
+E   AssertionError: assert {'dropoff_tim...897b013', ...} == {'dropoff_tim...897b013', ...}
+E     
+E     Omitting 6 identical items, use -vv to show
+E     Differing items:
+E     {'timestamp': '2026-11-03T20:02:16.848018+03:00'} != {'timestamp': '2026-11-03T20:02:16.907391+03:00'}
+E     Use -v to get more diff
+_ test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding[postgresql] _
+tests\integration\test_bus_workflow.py:94: in test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding
+    assert first.json()["data"] == again.json()["data"]
+E   AssertionError: assert {'dropoff_tim...6268c1a', ...} == {'dropoff_tim...6268c1a', ...}
+E     
+E     Omitting 6 identical items, use -vv to show
+E     Differing items:
+E     {'timestamp': '2026-11-03T20:02:18.575709+03:00'} != {'timestamp': '2026-11-03T20:02:18.617309+03:00'}
+E     Use -v to get more diff
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_bus_workflow.py::test_bus_options_summary_and_empty_location_are_scoped[sqlite]
+FAILED tests/integration/test_bus_workflow.py::test_bus_options_summary_and_empty_location_are_scoped[postgresql]
+FAILED tests/integration/test_bus_workflow.py::test_bus_creates_retry_once_and_preserve_zero_coordinates[sqlite]
+FAILED tests/integration/test_bus_workflow.py::test_bus_creates_retry_once_and_preserve_zero_coordinates[postgresql]
+FAILED tests/integration/test_bus_workflow.py::test_route_ownership_cannot_move_history_and_stop_edit_keeps_route[sqlite]
+FAILED tests/integration/test_bus_workflow.py::test_route_ownership_cannot_move_history_and_stop_edit_keeps_route[postgresql]
+FAILED tests/integration/test_bus_workflow.py::test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding[sqlite]
+FAILED tests/integration/test_bus_workflow.py::test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boarding[postgresql]
+8 failed, 20 warnings in 14.55s

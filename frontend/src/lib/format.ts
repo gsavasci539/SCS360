@@ -26,13 +26,27 @@ export const statusLabels: Record<string, string> = {
   PARTIALLY_PAID: "Kısmi ödendi", OVERDUE: "Gecikmiş", CANCELLED: "İptal", FAILED: "Başarısız",
   BLOCKED: "Bloke", ABSENT: "Gelmedi", EXCUSED: "İzinli", LATE: "Geç geldi", HALF_DAY: "Yarım gün",
   DRAFT: "Taslak", draft: "Taslak", GRADUATED: "Mezun", LEFT: "Ayrıldı",
+  INACTIVE: "Pasif", SCHEDULED: "Planlandı", PAST: "Tarihi geçti", RECORDED: "Kaydedildi",
+  PARTICIPATION: "Katılım", ACHIEVEMENT: "Başarı", GIVEN: "Verildi",
+  ASSIGNED: "Zimmetli", RETURNED: "İade edildi", RESOLVED: "Çözüldü", LOW: "Düşük", MEDIUM: "Normal", HIGH: "Yüksek", URGENT: "Acil",
+  APPROVED: "Onaylandı", REJECTED: "Reddedildi", REVIEW_REQUIRED: "İnceleme gerekli",
+  CLOSED: "Kapalı", COMPLETED: "Tamamlandı",
+  SKIPPED: "Atlandı", PARTIAL: "Kısmen kaydedildi", EMERGENCY: "Acil",
+  IN: "Giriş", OUT: "Çıkış", EXPIRED: "Süresi doldu", REVOKED: "İptal edildi", AUTHORIZED: "Doğrulandı", UNAUTHORIZED: "Eşleşmedi", NOT_ISSUED: "Oluşturulmadı",
+  FUTURE: "Henüz başlamadı",
+  PLATFORM: "Platform", LEGACY: "Paket tanımlanmamış", GRACE: "Ödeme ek süresinde", PAST_DUE: "Üyelik ödemesi bekleniyor",
+  PENDING_PAYMENT: "İlk ödeme bekleniyor",
+  SUSPENDED: "Hesap kapalı", UNCONFIGURED: "Üyelik kurulumu bekleniyor", UNASSIGNED: "Kurum bağlantısı yok", NOT_STARTED: "Üyelik henüz başlamadı",
+  PAYMENT_REVIEW: "Ödeme inceleniyor", PAID_REVIEW: "Ödendi, inceleme bekliyor", REVIEW: "İncelemede",
+  INITIALIZING: "Ödeme hazırlanıyor", REFUNDED: "İade kaydedildi",
+  STANDARD: "Standart", RESTRICTED: "Kısıtlı", CONFIDENTIAL: "Gizli", MINOR: "Düşük", MODERATE: "Orta", SEVERE: "Yüksek", CRITICAL: "Kritik",
 };
 
 export const statusTone = (status: unknown) => {
   const s = String(status || "").toUpperCase();
   if (["ACTIVE", "PAID", "SENT", "PRESENT"].includes(s)) return "success";
-  if (["PENDING", "PARTIALLY_PAID", "LATE", "DRAFT"].includes(s)) return "warning";
-  if (["FAILED", "OVERDUE", "BLOCKED", "ABSENT", "CANCELLED"].includes(s)) return "danger";
+  if (["PENDING", "PARTIALLY_PAID", "LATE", "DRAFT", "GRACE", "PAYMENT_REVIEW", "PAID_REVIEW", "REVIEW_REQUIRED"].includes(s)) return "warning";
+  if (["FAILED", "OVERDUE", "BLOCKED", "ABSENT", "CANCELLED", "PAST_DUE", "SUSPENDED"].includes(s)) return "danger";
   if (["EXCUSED", "HALF_DAY"].includes(s)) return "info";
   return "neutral";
 };

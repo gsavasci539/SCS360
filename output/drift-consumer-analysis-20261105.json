@@ -1,0 +1,488 @@
+{
+  "mode": "SQLite URI mode=ro + query_only; SELECT LIMIT 0 and metadata/count queries only; no DML or provider calls",
+  "version": "036",
+  "models": [
+    {
+      "model": "app.infrastructure.models.models.AppSetting",
+      "table": "app_settings",
+      "mapper_column_attrs": {
+        "id": [
+          "id"
+        ],
+        "organization_id": [
+          "organization_id"
+        ],
+        "setting_key": [
+          "setting_key"
+        ],
+        "setting_value": [
+          "setting_value"
+        ],
+        "description": [
+          "description"
+        ],
+        "updated_by": [
+          "updated_by"
+        ],
+        "created_at": [
+          "created_at"
+        ],
+        "updated_at": [
+          "updated_at"
+        ]
+      },
+      "combined_table_columns": [
+        "id",
+        "organization_id",
+        "setting_key",
+        "setting_value",
+        "description",
+        "updated_by",
+        "created_at",
+        "updated_at",
+        "key",
+        "value"
+      ],
+      "physical_columns": [
+        "id",
+        "organization_id",
+        "setting_key",
+        "setting_value",
+        "description",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ],
+      "missing_mapped_columns": [],
+      "select_sql_no_values": "SELECT app_settings.id, app_settings.organization_id, app_settings.setting_key, app_settings.setting_value, app_settings.description, app_settings.updated_by, app_settings.created_at, app_settings.updated_at \nFROM app_settings\n LIMIT 0 OFFSET 0",
+      "readonly_main_probe": "select_limit_zero_ok",
+      "row_count": 2
+    },
+    {
+      "model": "app.domain.entities.app_setting.AppSetting",
+      "table": "app_settings",
+      "mapper_column_attrs": {
+        "id": [
+          "id"
+        ],
+        "organization_id": [
+          "organization_id"
+        ],
+        "setting_key": [
+          "setting_key"
+        ],
+        "setting_value": [
+          "setting_value"
+        ],
+        "description": [
+          "description"
+        ],
+        "updated_by": [
+          "updated_by"
+        ],
+        "created_at": [
+          "created_at"
+        ],
+        "updated_at": [
+          "updated_at"
+        ],
+        "key": [
+          "key"
+        ],
+        "value": [
+          "value"
+        ]
+      },
+      "combined_table_columns": [
+        "id",
+        "organization_id",
+        "setting_key",
+        "setting_value",
+        "description",
+        "updated_by",
+        "created_at",
+        "updated_at",
+        "key",
+        "value"
+      ],
+      "physical_columns": [
+        "id",
+        "organization_id",
+        "setting_key",
+        "setting_value",
+        "description",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ],
+      "missing_mapped_columns": [
+        "key",
+        "value"
+      ],
+      "select_sql_no_values": "SELECT app_settings.id, app_settings.organization_id, app_settings.setting_key, app_settings.setting_value, app_settings.description, app_settings.updated_by, app_settings.created_at, app_settings.updated_at, app_settings.\"key\", app_settings.value \nFROM app_settings\n LIMIT 0 OFFSET 0",
+      "readonly_main_probe": "no such column: app_settings.key",
+      "row_count": 2
+    },
+    {
+      "model": "app.infrastructure.models.models.IntegrationSetting",
+      "table": "integration_settings",
+      "mapper_column_attrs": {
+        "id": [
+          "id"
+        ],
+        "organization_id": [
+          "organization_id"
+        ],
+        "provider": [
+          "provider"
+        ],
+        "config": [
+          "config"
+        ],
+        "is_active": [
+          "is_active"
+        ],
+        "updated_by": [
+          "updated_by"
+        ],
+        "created_at": [
+          "created_at"
+        ],
+        "updated_at": [
+          "updated_at"
+        ]
+      },
+      "combined_table_columns": [
+        "id",
+        "organization_id",
+        "provider",
+        "config",
+        "is_active",
+        "updated_by",
+        "created_at",
+        "updated_at",
+        "integration_type",
+        "provider_name",
+        "settings"
+      ],
+      "physical_columns": [
+        "id",
+        "organization_id",
+        "provider",
+        "config",
+        "is_active",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ],
+      "missing_mapped_columns": [],
+      "select_sql_no_values": "SELECT integration_settings.id, integration_settings.organization_id, integration_settings.provider, integration_settings.config, integration_settings.is_active, integration_settings.updated_by, integration_settings.created_at, integration_settings.updated_at \nFROM integration_settings\n LIMIT 0 OFFSET 0",
+      "readonly_main_probe": "select_limit_zero_ok",
+      "row_count": 0
+    },
+    {
+      "model": "app.domain.entities.integration_setting.IntegrationSetting",
+      "table": "integration_settings",
+      "mapper_column_attrs": {
+        "id": [
+          "id"
+        ],
+        "organization_id": [
+          "organization_id"
+        ],
+        "provider": [
+          "provider"
+        ],
+        "config": [
+          "config"
+        ],
+        "is_active": [
+          "is_active"
+        ],
+        "updated_by": [
+          "updated_by"
+        ],
+        "created_at": [
+          "created_at"
+        ],
+        "updated_at": [
+          "updated_at"
+        ],
+        "integration_type": [
+          "integration_type"
+        ],
+        "provider_name": [
+          "provider_name"
+        ],
+        "settings": [
+          "settings"
+        ]
+      },
+      "combined_table_columns": [
+        "id",
+        "organization_id",
+        "provider",
+        "config",
+        "is_active",
+        "updated_by",
+        "created_at",
+        "updated_at",
+        "integration_type",
+        "provider_name",
+        "settings"
+      ],
+      "physical_columns": [
+        "id",
+        "organization_id",
+        "provider",
+        "config",
+        "is_active",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ],
+      "missing_mapped_columns": [
+        "integration_type",
+        "provider_name",
+        "settings"
+      ],
+      "select_sql_no_values": "SELECT integration_settings.id, integration_settings.organization_id, integration_settings.provider, integration_settings.config, integration_settings.is_active, integration_settings.updated_by, integration_settings.created_at, integration_settings.updated_at, integration_settings.integration_type, integration_settings.provider_name, integration_settings.settings \nFROM integration_settings\n LIMIT 0 OFFSET 0",
+      "readonly_main_probe": "no such column: integration_settings.integration_type",
+      "row_count": 0
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentTeacherAssignment",
+      "table": "student_teacher_assignments",
+      "mapper_column_attrs": {
+        "id": [
+          "id"
+        ],
+        "student_id": [
+          "student_id"
+        ],
+        "teacher_id": [
+          "teacher_id"
+        ],
+        "subject_name": [
+          "subject_name"
+        ],
+        "is_primary_adviser": [
+          "is_primary_adviser"
+        ],
+        "office_hours": [
+          "office_hours"
+        ],
+        "academic_year": [
+          "academic_year"
+        ],
+        "created_at": [
+          "created_at"
+        ],
+        "updated_at": [
+          "updated_at"
+        ]
+      },
+      "combined_table_columns": [
+        "id",
+        "student_id",
+        "teacher_id",
+        "subject_name",
+        "is_primary_adviser",
+        "office_hours",
+        "academic_year",
+        "created_at",
+        "updated_at"
+      ],
+      "physical_columns": [
+        "id",
+        "student_id",
+        "teacher_id",
+        "subject_name",
+        "is_primary_adviser",
+        "office_hours",
+        "academic_year",
+        "created_at"
+      ],
+      "missing_mapped_columns": [
+        "updated_at"
+      ],
+      "select_sql_no_values": "SELECT student_teacher_assignments.id, student_teacher_assignments.student_id, student_teacher_assignments.teacher_id, student_teacher_assignments.subject_name, student_teacher_assignments.is_primary_adviser, student_teacher_assignments.office_hours, student_teacher_assignments.academic_year, student_teacher_assignments.created_at, student_teacher_assignments.updated_at \nFROM student_teacher_assignments\n LIMIT 0 OFFSET 0",
+      "readonly_main_probe": "no such column: student_teacher_assignments.updated_at",
+      "row_count": 0
+    }
+  ],
+  "compiled_inserts_not_executed": [
+    {
+      "model": "app.infrastructure.models.models.AppSetting",
+      "compiled_not_executed_sql": "INSERT INTO app_settings (id, organization_id, setting_key, setting_value) VALUES (?, ?, ?, ?)",
+      "required_combined_table_columns_not_supplied": [
+        "key",
+        "value"
+      ]
+    },
+    {
+      "model": "app.infrastructure.models.models.IntegrationSetting",
+      "compiled_not_executed_sql": "INSERT INTO integration_settings (id, organization_id, provider, config, is_active) VALUES (?, ?, ?, ?, ?)",
+      "required_combined_table_columns_not_supplied": [
+        "integration_type",
+        "provider_name",
+        "settings"
+      ]
+    }
+  ],
+  "registered_routes": [
+    {
+      "path": "/api/settings/integrations",
+      "methods": [
+        "PUT"
+      ],
+      "endpoint": "app.routers.dashboard_reports.update_integrations",
+      "source_line": 916
+    },
+    {
+      "path": "/api/settings",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.dashboard_reports.get_settings",
+      "source_line": 1320
+    },
+    {
+      "path": "/api/settings",
+      "methods": [
+        "PUT"
+      ],
+      "endpoint": "app.routers.dashboard_reports.update_settings",
+      "source_line": 1333
+    },
+    {
+      "path": "/api/settings/integrations",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.dashboard_reports.get_integrations",
+      "source_line": 1363
+    },
+    {
+      "path": "/api/parent/chatbot",
+      "methods": [
+        "POST"
+      ],
+      "endpoint": "app.routers.parent_portal.parent_chatbot",
+      "source_line": 26
+    },
+    {
+      "path": "/api/v1/chatbot/role-config",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_role_chat_config",
+      "source_line": 417
+    },
+    {
+      "path": "/api/v1/chatbot/ai/chat",
+      "methods": [
+        "POST"
+      ],
+      "endpoint": "app.routers.chatbot.handle_chat_message",
+      "source_line": 664
+    },
+    {
+      "path": "/api/v1/chatbot/process-query",
+      "methods": [
+        "POST"
+      ],
+      "endpoint": "app.routers.chatbot.process_query",
+      "source_line": 680
+    },
+    {
+      "path": "/api/v1/chatbot/chat/conversations/connect-teacher",
+      "methods": [
+        "POST"
+      ],
+      "endpoint": "app.routers.chatbot.connect_teacher",
+      "source_line": 804
+    },
+    {
+      "path": "/api/v1/chatbot/ai/audit-logs",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_audit_logs",
+      "source_line": 1067
+    },
+    {
+      "path": "/api/v1/chatbot/ai/export-dataset",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.export_fine_tuning_dataset",
+      "source_line": 1201
+    },
+    {
+      "path": "/api/v1/chatbot/ai/analytics/overview",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_analytics_overview",
+      "source_line": 1263
+    },
+    {
+      "path": "/api/v1/chatbot/ai/analytics/trends",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_analytics_trends",
+      "source_line": 1367
+    },
+    {
+      "path": "/api/v1/chatbot/ai/analytics/intent-performance",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_intent_performance",
+      "source_line": 1432
+    },
+    {
+      "path": "/api/v1/chatbot/ai/conversation/my-stats",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_my_conversation_stats",
+      "source_line": 1566
+    },
+    {
+      "path": "/api/v1/chatbot/students/{student_id}/teachers",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_student_teachers",
+      "source_line": 702
+    },
+    {
+      "path": "/api/v1/chatbot/ai/audit-logs/{log_id}/verify",
+      "methods": [
+        "PUT"
+      ],
+      "endpoint": "app.routers.chatbot.update_audit_log_feedback",
+      "source_line": 1158
+    },
+    {
+      "path": "/api/v1/chatbot/ai/conversation/history/{session_id}",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_conversation_history",
+      "source_line": 1483
+    },
+    {
+      "path": "/api/v1/chatbot/ai/conversation/summary/{session_id}",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.chatbot.get_session_summary",
+      "source_line": 1526
+    }
+  ],
+  "legacy_settings_module_loaded_by_app": false
+}

@@ -1,0 +1,7 @@
+*** Begin Patch
+*** Update File: C:/Okul360/frontend/src/features/finance/PaymentListPage.tsx
+@@
+     <PageHeader eyebrow="Finans" title="Tahsilatlar" description="Ödeme geçmişini arayın, makbuzları inceleyin ve seçilen işlemi yönetin.">
++      {(can("finance.read") || can("finance.write")) && <Link className="btn btn-secondary" to="/finance/online-payments">Online ödeme incelemesi</Link>}
+       {(can("finance.write") || can("finance.collect_payment")) && <Link className="btn btn-primary" to="/finance/payments/new"><ReceiptText size={16} />Tahsilat al</Link>}
+*** End Patch

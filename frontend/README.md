@@ -1,4 +1,4 @@
-# Okul360 Frontend
+# SCS360 Frontend
 
 Material Dashboard veya hazır admin tema kullanmadan geliştirilmiş React + TypeScript yönetim panelidir. FastAPI backend'inin `/api` sözleşmesine bağlıdır.
 

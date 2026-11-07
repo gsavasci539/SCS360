@@ -1,4 +1,5 @@
-import { Utensils, AlertCircle, CheckCircle, Upload, Plus, Edit, Trash2, X } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Utensils, AlertCircle, CheckCircle, Upload, Plus, Edit, Trash2, X, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui";
 import { ExcelImport } from "../../components/ExcelImport";
@@ -26,6 +27,7 @@ export function CanteenPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CanteenProduct | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -53,6 +55,10 @@ export function CanteenPage() {
       }
     }
     load();
+  }, []);
+
+  useEffect(() => {
+    getAnalysis("/ai/canteen-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
   }, []);
 
   const openAddModal = () => {
@@ -142,6 +148,44 @@ export function CanteenPage() {
           </button>
         </div>
       </PageHeader>
+      {aiAnalysis && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI Kantin Analizi</h2>
+              <p>Ürün durumu ve öneriler</p>
+            </div>
+            <Utensils size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Ürün</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{products.length}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Mevcut</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{products.filter(p => p.is_available).length}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Diyet Kısıtlaması</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{restrictions.length}</div>
+              </div>
+            </div>
+            {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
+                {aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                    <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="card" style={{ marginTop: 18 }}>
         <div className="card-head">
           <h2>Kantin Ürünleri</h2>

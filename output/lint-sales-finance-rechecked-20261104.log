@@ -1,0 +1,10 @@
+
+> scs360-frontend@1.0.0 lint
+> eslint .
+
+
+C:\Okul360\frontend\src\features\ai\AIAnalyticsPage.tsx
+  7:10  error  'money' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+

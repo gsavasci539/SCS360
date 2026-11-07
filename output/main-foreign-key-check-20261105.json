@@ -1,0 +1,21 @@
+{
+  "foreign_key_violation_count": 432,
+  "by_table": {
+    "ai_chat_audit_logs": 5,
+    "user_roles": 8,
+    "receipts": 15,
+    "attendance_records": 28,
+    "branches": 1,
+    "students": 125,
+    "parents": 60,
+    "classes": 1,
+    "users": 4,
+    "refresh_tokens": 30,
+    "debts": 77,
+    "announcements": 16,
+    "user_branches": 6,
+    "notification_jobs": 10,
+    "audit_logs": 31,
+    "payments": 15
+  }
+}

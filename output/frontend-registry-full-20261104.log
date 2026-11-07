@@ -1,0 +1,129 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/resource-form-options.test.tsx (4 tests | 1 failed) 2386ms
+   × yalnız öğrenci yazma yetkisiyle kayıt sonrası yasak genel listeye yönlenmez 526ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/resource-form-options.test.tsx > yalnız öğrenci yazma yetkisiyle kayıt sonrası yasak genel listeye yönlenmez
+AssertionError: expected "vi.fn()" to be called with arguments: [ '/students/student/form', …(1) ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+-   "/students/student/form",
+-   ObjectContaining {
+-     "signal": Any<AbortSignal>,
++   "/students/organization-options",
++   {
++     "params": {
++       "branch_id": undefined,
++       "organization_id": "school",
++       "page": 1,
++       "page_size": 50,
++       "search": undefined,
++       "selected_id": "school",
++       "student_id": undefined,
++     },
++     "signal": AbortSignal {
++       Symbol(kEvents): Map {},
++       Symbol(events.maxEventTargetListeners): 0,
++       Symbol(events.maxEventTargetListenersWarned): false,
++       Symbol(kHandlers): Map {},
++       Symbol(kAborted): true,
++       Symbol(kReason): AbortError {
++         "message": "This operation was aborted",
++       },
++       Symbol(kComposite): false,
++     },
+    },
+  ]
+
+  2nd vi.fn() call:
+
+  [
+-   "/students/student/form",
+-   ObjectContaining {
+-     "signal": Any<AbortSignal>,
++   "/students/branch-options",
++   {
++     "params": {
++       "branch_id": undefined,
++       "organization_id": "school",
++       "page": 1,
++       "page_size": 50,
++       "search": undefined,
++       "selected_id": undefined,
++       "student_id": undefined,
++     },
++     "signal": AbortSignal {
++       Symbol(kEvents): Map {},
++       Symbol(events.maxEventTargetListeners): 0,
++       Symbol(events.maxEventTargetListenersWarned): false,
++       Symbol(kHandlers): Map {},
++       Symbol(kAborted): true,
++       Symbol(kReason): AbortError {
++         "message": "This operation was aborted",
++       },
++       Symbol(kComposite): false,
++     },
+    },
+  ]
+
+  3rd vi.fn() call:
+
+  [
+-   "/students/student/form",
+-   ObjectContaining {
+-     "signal": Any<AbortSignal>,
++   "/students/class-options",
++   {
++     "params": {
++       "branch_id": undefined,
++       "organization_id": "school",
++       "page": 1,
++       "page_size": 50,
++       "search": undefined,
++       "selected_id": undefined,
++       "student_id": undefined,
++     },
++     "signal": AbortSignal {
++       Symbol(kEvents): Map {},
++       Symbol(events.maxEventTargetListeners): 0,
++       Symbol(events.maxEventTargetListenersWarned): false,
++       Symbol(kHandlers): Map {},
++       Symbol(kAborted): true,
++       Symbol(kReason): AbortError {
++         "message": "This operation was aborted",
++       },
++       Symbol(kComposite): false,
++     },
+    },
+  ]
+
+
+Number of calls: 3
+
+ ❯ src/test/resource-form-options.test.tsx:69:19
+     67|   expect(await screen.findByRole("heading", { name: "Öğrenci düzenle" …
+     68|   expect(screen.queryByText("Liste")).not.toBeInTheDocument();
+     69|   expect(api.get).toHaveBeenCalledWith("/students/student/form", expec…
+       |                   ^
+     70| });
+     71|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 42 passed (43)
+      Tests  1 failed | 207 passed (208)
+   Start at  12:45:40
+   Duration  94.72s (transform 2.99s, setup 14.46s, import 23.19s, tests 37.15s, environment 95.84s)
+

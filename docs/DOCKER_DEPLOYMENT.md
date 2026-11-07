@@ -1,5 +1,7 @@
 # Docker and Deployment Plan
 
+> Historical design document. For the current ports, environment variables, migrations, bootstrap, HTTPS and provider acceptance steps, use [Üretim kurulumu ve mobil bağlantı](URETIM_KURULUMU_VE_MOBIL.md). The examples below are not the current release procedure.
+
 ## Overview
 
 This document outlines the Docker containerization strategy and deployment procedures for the School Management System.

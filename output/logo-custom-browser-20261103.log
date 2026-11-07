@@ -1,0 +1,62 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test --grep brand identity
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [18596]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "675c02c5-dcbb-439a-92c7-99276e6bd464", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:41.585120Z"}
+[WebServer] (node:21764) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24992) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:16716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "40372aa8-272f-4b16-ad4e-1b7818128297", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1740.23, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:54.693017Z"}
+[WebServer] {"request_id": "a2ab0402-c836-484f-9899-db99aa52c20a", "method": "GET", "path": "/api/ai/insights-report", "status": 200, "duration_ms": 150.92, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:54.967811Z"}
+[WebServer] {"request_id": "3dda8b12-bb83-4c2f-bfa4-df4eb9418573", "method": "GET", "path": "/api/dashboard/summary", "status": 200, "duration_ms": 238.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:55.029098Z"}
+[WebServer] {"request_id": "d5084cad-5b0a-4bd0-a200-504db812fd4c", "method": "GET", "path": "/api/dashboard/charts", "status": 200, "duration_ms": 260.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:55.065982Z"}
+[WebServer] {"request_id": "8cdf6da2-eb48-42ab-a1ec-a6f00ce725f5", "method": "GET", "path": "/api/ai/insights-report", "status": 200, "duration_ms": 99.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:55.079719Z"}
+[WebServer] {"request_id": "11f00ce0-89c6-4a37-a3c7-d8142f7769fc", "method": "GET", "path": "/api/dashboard/summary", "status": 200, "duration_ms": 83.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:55.122217Z"}
+[WebServer] {"request_id": "12d5ebea-aa6d-4239-9b87-8133ae8595ab", "method": "GET", "path": "/api/dashboard/charts", "status": 200, "duration_ms": 65.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T22:48:55.149245Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:23:1 › SCS360 brand identity renders in login, sidebar and browser icon (10.3s)
+
+  1 passed (27.2s)

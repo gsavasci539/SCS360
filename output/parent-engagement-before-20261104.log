@@ -1,0 +1,441 @@
+FFFFFFFF..FFFFF                                                          [100%]
+================================== FAILURES ===================================
+_ test_parent_overview_counts_records_and_preferences_without_inventing_mood[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F545E3230>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F5455AE90>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F545E2BA0>, ...})
+
+    async def test_parent_overview_counts_records_and_preferences_without_inventing_mood(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            existing = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            existing.email, existing.receive_notifications = "private-parent@example.invalid", True
+            db.add_all([
+                Parent(organization_id=data["org"].id, first_name="Blank", last_name="Contact",
+                    phone=" \t", email=" \n", receive_notifications=False),
+                Parent(organization_id=data["org"].id, first_name="WhatsApp", last_name="Contact",
+                    whatsapp_phone=" 05555555555 ", receive_notifications=False),
+                Parent(organization_id=data["org"].id, first_name="Deleted", last_name="Contact",
+                    phone="05554443322", deleted_at=now),
+                Parent(organization_id=data["stranger"].organization_id, first_name="Foreign", last_name="Private",
+                    phone="09999999999")])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_parent_engagement" and result["ai_model"] is None, result
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'analysis_type'
+
+tests\integration\test_parent_engagement_data.py:48: KeyError
+_ test_parent_overview_counts_records_and_preferences_without_inventing_mood[postgresql] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F570C4E10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F570B0770>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F570C4550>, ...})
+
+    async def test_parent_overview_counts_records_and_preferences_without_inventing_mood(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            existing = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            existing.email, existing.receive_notifications = "private-parent@example.invalid", True
+            db.add_all([
+                Parent(organization_id=data["org"].id, first_name="Blank", last_name="Contact",
+                    phone=" \t", email=" \n", receive_notifications=False),
+                Parent(organization_id=data["org"].id, first_name="WhatsApp", last_name="Contact",
+                    whatsapp_phone=" 05555555555 ", receive_notifications=False),
+                Parent(organization_id=data["org"].id, first_name="Deleted", last_name="Contact",
+                    phone="05554443322", deleted_at=now),
+                Parent(organization_id=data["stranger"].organization_id, first_name="Foreign", last_name="Private",
+                    phone="09999999999")])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_parent_engagement" and result["ai_model"] is None, result
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'analysis_type'
+
+tests\integration\test_parent_engagement_data.py:48: KeyError
+_ test_parent_overview_reads_recipient_results_not_job_or_consent_counts[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F57014B90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F56C4A690>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F570B3100>, ...})
+
+    async def test_parent_overview_reads_recipient_results_not_job_or_consent_counts(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.EMAIL, status=NotificationStatus.SENT, subject="PRIVATE subject", body="PRIVATE body")
+            other = NotificationJob(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                channel=NotificationChannel.EMAIL, status=NotificationStatus.SENT, body="foreign body")
+            no_recipients = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.SMS, status=NotificationStatus.SENT, body="Not delivery evidence")
+            db.add_all([job, other, no_recipients]); await db.flush()
+            def recipient(status, **values):
+                return NotificationRecipient(notification_job_id=job.id, parent_id=parent.id,
+                    recipient_address="private@example.invalid", status=status, created_at=now, **values)
+            db.add_all([recipient(NotificationStatus.SENT, sent_at=now), recipient(NotificationStatus.FAILED),
+                recipient(NotificationStatus.PENDING), recipient(NotificationStatus.CANCELLED), recipient(NotificationStatus.SENT),
+                recipient(NotificationStatus.SENT, sent_at=now+timedelta(days=1)),
+                NotificationRecipient(notification_job_id=job.id, parent_id=parent.id, recipient_address="old@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now-timedelta(days=40), created_at=now-timedelta(days=40)),
+                NotificationRecipient(notification_job_id=job.id, parent_id=parent.id, recipient_address="future@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now+timedelta(days=1), created_at=now+timedelta(days=1)),
+                NotificationRecipient(notification_job_id=other.id, parent_id=parent.id, recipient_address="corrupt-cross-org@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now, created_at=now),
+                NotificationRecipient(notification_job_id=job.id, user_id=data["accountant"].id, recipient_address="staff@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now, created_at=now)])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]), params={"days": 30})
+        assert reply.status_code == 200, reply.text
+>       result = reply.json()["data"]; metrics = result["communication_metrics"]
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'communication_metrics'
+
+tests\integration\test_parent_engagement_data.py:89: KeyError
+_ test_parent_overview_reads_recipient_results_not_job_or_consent_counts[postgresql] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F570B0C30>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F545D1310>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F56C498C0>, ...})
+
+    async def test_parent_overview_reads_recipient_results_not_job_or_consent_counts(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.EMAIL, status=NotificationStatus.SENT, subject="PRIVATE subject", body="PRIVATE body")
+            other = NotificationJob(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                channel=NotificationChannel.EMAIL, status=NotificationStatus.SENT, body="foreign body")
+            no_recipients = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.SMS, status=NotificationStatus.SENT, body="Not delivery evidence")
+            db.add_all([job, other, no_recipients]); await db.flush()
+            def recipient(status, **values):
+                return NotificationRecipient(notification_job_id=job.id, parent_id=parent.id,
+                    recipient_address="private@example.invalid", status=status, created_at=now, **values)
+            db.add_all([recipient(NotificationStatus.SENT, sent_at=now), recipient(NotificationStatus.FAILED),
+                recipient(NotificationStatus.PENDING), recipient(NotificationStatus.CANCELLED), recipient(NotificationStatus.SENT),
+                recipient(NotificationStatus.SENT, sent_at=now+timedelta(days=1)),
+                NotificationRecipient(notification_job_id=job.id, parent_id=parent.id, recipient_address="old@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now-timedelta(days=40), created_at=now-timedelta(days=40)),
+                NotificationRecipient(notification_job_id=job.id, parent_id=parent.id, recipient_address="future@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now+timedelta(days=1), created_at=now+timedelta(days=1)),
+                NotificationRecipient(notification_job_id=other.id, parent_id=parent.id, recipient_address="corrupt-cross-org@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now, created_at=now),
+                NotificationRecipient(notification_job_id=job.id, user_id=data["accountant"].id, recipient_address="staff@example.invalid",
+                    status=NotificationStatus.SENT, sent_at=now, created_at=now)])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]), params={"days": 30})
+        assert reply.status_code == 200, reply.text
+>       result = reply.json()["data"]; metrics = result["communication_metrics"]
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'communication_metrics'
+
+tests\integration\test_parent_engagement_data.py:89: KeyError
+_ test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F5720B5C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F583D9630>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F57258650>, ...})
+
+    async def test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            parent.deleted_at = datetime.now(UTC); await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["registration_metrics"]["total_records"] == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'registration_metrics'
+
+tests\integration\test_parent_engagement_data.py:106: KeyError
+_ test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates[postgresql] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F570A5010>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F584CF290>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F583A4320>, ...})
+
+    async def test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            parent.deleted_at = datetime.now(UTC); await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["registration_metrics"]["total_records"] == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'registration_metrics'
+
+tests\integration\test_parent_engagement_data.py:106: KeyError
+_ test_parent_overview_respects_branch_scope_without_double_counting_multiple_children[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F571FE360>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CE620>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F585E4F30>, ...})
+
+    async def test_parent_overview_respects_branch_scope_without_double_counting_multiple_children(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        async with sessions() as db:
+            branch = Branch(organization_id=data["org"].id, name="Other branch")
+            db.add(branch); await db.flush()
+            student = Student(organization_id=data["org"].id, branch_id=branch.id, first_name="Other", last_name="Student")
+            parent = Parent(organization_id=data["org"].id, first_name="Other", last_name="Parent", email="other@example.invalid")
+            db.add_all([student, parent]); await db.flush()
+            db.add(StudentParent(student_id=student.id, parent_id=parent.id))
+            staff = (await db.execute(select(User).options(selectinload(User.branches))
+                .where(User.id == data["accountant"].id))).scalar_one()
+            staff.branches = [data["branch"]]
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+>       assert reply.json()["data"]["registration_metrics"]["total_records"] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'registration_metrics'
+
+tests\integration\test_parent_engagement_data.py:130: KeyError
+_ test_parent_overview_respects_branch_scope_without_double_counting_multiple_children[postgresql] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F571FE030>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CD0D0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F586758B0>, ...})
+
+    async def test_parent_overview_respects_branch_scope_without_double_counting_multiple_children(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        async with sessions() as db:
+            branch = Branch(organization_id=data["org"].id, name="Other branch")
+            db.add(branch); await db.flush()
+            student = Student(organization_id=data["org"].id, branch_id=branch.id, first_name="Other", last_name="Student")
+            parent = Parent(organization_id=data["org"].id, first_name="Other", last_name="Parent", email="other@example.invalid")
+            db.add_all([student, parent]); await db.flush()
+            db.add(StudentParent(student_id=student.id, parent_id=parent.id))
+            staff = (await db.execute(select(User).options(selectinload(User.branches))
+                .where(User.id == data["accountant"].id))).scalar_one()
+            staff.branches = [data["branch"]]
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+>       assert reply.json()["data"]["registration_metrics"]["total_records"] == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'registration_metrics'
+
+tests\integration\test_parent_engagement_data.py:130: KeyError
+____ test_parent_overview_query_failure_is_retryable_and_sanitized[sqlite] ____
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F583A74D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CEFC0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F5891F930>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016F586451D0>
+
+    async def test_parent_overview_query_failure_is_retryable_and_sanitized(parent_analytics_client, monkeypatch):
+        from app.application.services import parent_engagement
+        client, _, data = parent_analytics_client
+        async def unavailable(*args, **kwargs):
+            raise SQLAlchemyError("PRIVATE SELECT and database credentials")
+        monkeypatch.setattr(parent_engagement, "summary", unavailable)
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+>       assert reply.status_code == 503 and reply.json()["success"] is False, reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"ai_model":"Sentiment Analysis v1.0","sentiment_analysis":{"overall_sentiment":"pozitif","sentiment_score":70.0,"confidence":0.75},"engagement_metrics":{"total_parents":1,"engaged_parents":1,"parents_with_contact":1,"communication_frequency":0},"key_indicators":["�leti�im s�kl��� art�r�lmal�"],"recommendations":["D�zenli bildirim g�nderin"]}}
+E       assert (200 == 503)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_parent_engagement_data.py:158: AssertionError
+__ test_parent_overview_query_failure_is_retryable_and_sanitized[postgresql] __
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F583A6990>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CDFF0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F583FE350>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016F58644590>
+
+    async def test_parent_overview_query_failure_is_retryable_and_sanitized(parent_analytics_client, monkeypatch):
+        from app.application.services import parent_engagement
+        client, _, data = parent_analytics_client
+        async def unavailable(*args, **kwargs):
+            raise SQLAlchemyError("PRIVATE SELECT and database credentials")
+        monkeypatch.setattr(parent_engagement, "summary", unavailable)
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+>       assert reply.status_code == 503 and reply.json()["success"] is False, reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"ai_model":"Sentiment Analysis v1.0","sentiment_analysis":{"overall_sentiment":"pozitif","sentiment_score":70.0,"confidence":0.75},"engagement_metrics":{"total_parents":1,"engaged_parents":1,"parents_with_contact":1,"communication_frequency":0},"key_indicators":["�leti�im s�kl��� art�r�lmal�"],"recommendations":["D�zenli bildirim g�nderin"]}}
+E       assert (200 == 503)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_parent_engagement_data.py:158: AssertionError
+_ test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F54716890>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CF540>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F5839B610>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016F57162120>
+
+    async def test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate(parent_analytics_client, monkeypatch):
+        from app.application.services import parent_engagement
+        from app.core.config import get_settings
+        client, sessions, data = parent_analytics_client
+        instant = datetime(2026, 12, 31, 21, 30, tzinfo=UTC)
+        monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")
+        monkeypatch.setattr(parent_engagement, "utc_now", lambda: instant)
+        start, end = school_day_bounds(school_today(instant))
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.EMAIL, body="private")
+            db.add(job); await db.flush()
+            db.add_all([NotificationRecipient(notification_job_id=job.id, parent_id=parent.id,
+                recipient_address="private@example.invalid", status=NotificationStatus.FAILED, created_at=created)
+                for created in (start-timedelta(microseconds=1), start, instant, end)])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]), params={"days": 1})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["as_of"] == result["period_start"] == "2027-01-01"
+               ^^^^^^^^^^^^^^^
+E       KeyError: 'as_of'
+
+tests\integration\test_parent_engagement_data.py:182: KeyError
+_ test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate[postgresql] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F5874B230>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F571CDA70>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F586347D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016F5881B620>
+
+    async def test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate(parent_analytics_client, monkeypatch):
+        from app.application.services import parent_engagement
+        from app.core.config import get_settings
+        client, sessions, data = parent_analytics_client
+        instant = datetime(2026, 12, 31, 21, 30, tzinfo=UTC)
+        monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")
+        monkeypatch.setattr(parent_engagement, "utc_now", lambda: instant)
+        start, end = school_day_bounds(school_today(instant))
+        async with sessions() as db:
+            parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+            job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.EMAIL, body="private")
+            db.add(job); await db.flush()
+            db.add_all([NotificationRecipient(notification_job_id=job.id, parent_id=parent.id,
+                recipient_address="private@example.invalid", status=NotificationStatus.FAILED, created_at=created)
+                for created in (start-timedelta(microseconds=1), start, instant, end)])
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]), params={"days": 1})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["as_of"] == result["period_start"] == "2027-01-01"
+               ^^^^^^^^^^^^^^^
+E       KeyError: 'as_of'
+
+tests\integration\test_parent_engagement_data.py:182: KeyError
+_ test_parent_overview_preserves_old_keys_and_unknown_recipient_statuses[sqlite] _
+
+parent_analytics_client = (<httpx.AsyncClient object at 0x0000016F58A50870>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000016F586B4F70>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000016F588C4C30>, ...})
+
+    @pytest.mark.parametrize("portal_db", ["sqlite"], indirect=True)
+    async def test_parent_overview_preserves_old_keys_and_unknown_recipient_statuses(parent_analytics_client):
+        client, sessions, data = parent_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            db.add(Parent(id="legacy-parent-key", organization_id=data["org"].id, first_name="Old", last_name="Contact",
+                phone="05001112233", receive_notifications=False))
+            job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+                channel=NotificationChannel.EMAIL, body="private")
+            db.add(job); await db.flush()
+            db.add(NotificationRecipient(id="legacy-recipient-key", notification_job_id=job.id,
+                parent_id="legacy-parent-key", recipient_address="legacy@example.invalid", created_at=now))
+            await db.commit()
+            await db.execute(text("UPDATE parents SET relation_type = :value WHERE id = :key"), {"value": "LEGACY_KIND", "key": "legacy-parent-key"})
+            await db.execute(text("UPDATE parents SET receive_notifications = :value WHERE id = :key"), {"value": "LEGACY_CONSENT", "key": "legacy-parent-key"})
+            await db.execute(text("UPDATE notification_recipients SET status = :value WHERE id = :key"), {"value": "LEGACY_STATUS", "key": "legacy-recipient-key"})
+            await db.commit()
+        reply = await client.get("/api/ai/ai-parent-sentiment", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["registration_metrics"]["total_records"] == 2
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'registration_metrics'
+
+tests\integration\test_parent_engagement_data.py:208: KeyError
+---------------------------- Captured stderr call -----------------------------
+Parent sentiment error: 'LEGACY_KIND' is not among the defined enum values. Enum name: parentrelationtype. Possible values: MOTHER, FATHER, GUARDIAN, OTHER
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1625, in _object_value_for_elem
+    return self._object_lookup[elem]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'LEGACY_KIND'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Okul360\backend\app\routers\ai_analytics.py", line 252, in get_ai_parent_sentiment
+    parent_result = await db.execute(
+                    ^^^^^^^^^^^^^^^^^
+        select(Parent).where(Parent.organization_id == organization_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 308, in orm_execute_statement
+    return cls.orm_setup_cursor_result(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<4 lines>...
+        result,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 600, in orm_setup_cursor_result
+    return loading.instances(result, querycontext)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 261, in instances
+    _prebuffered = list(chunks(None))
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\loading.py", line 219, in chunks
+    fetch = cursor._raw_all_rows()
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ~~~~~~~~^^^^^
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib\\sqlalchemy\\cyextension\\resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1745, in process
+    value = self._object_value_for_elem(value)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\sqltypes.py", line 1627, in _object_value_for_elem
+    raise LookupError(
+    ...<7 lines>...
+    ) from err
+LookupError: 'LEGACY_KIND' is not among the defined enum values. Enum name: parentrelationtype. Possible values: MOTHER, FATHER, GUARDIAN, OTHER
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_counts_records_and_preferences_without_inventing_mood[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_counts_records_and_preferences_without_inventing_mood[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_reads_recipient_results_not_job_or_consent_counts[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_reads_recipient_results_not_job_or_consent_counts[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_empty_parent_overview_reports_known_zero_counts_but_unknown_rates[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_respects_branch_scope_without_double_counting_multiple_children[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_respects_branch_scope_without_double_counting_multiple_children[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_query_failure_is_retryable_and_sanitized[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_query_failure_is_retryable_and_sanitized[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate[sqlite]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_communication_period_uses_school_day_bounds_and_keeps_a_real_zero_success_rate[postgresql]
+FAILED tests/integration/test_parent_engagement_data.py::test_parent_overview_preserves_old_keys_and_unknown_recipient_statuses[sqlite]
+13 failed, 2 passed, 20 warnings in 42.81s

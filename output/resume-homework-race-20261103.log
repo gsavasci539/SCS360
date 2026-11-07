@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/homework-submissions.test.tsx src/test/api-refresh.test.ts src/test/club-workspace.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  3 passed (3)
+      Tests  9 passed (9)
+   Start at  07:10:33
+   Duration  8.16s (transform 422ms, setup 953ms, import 1.41s, tests 3.19s, environment 8.25s)
+

@@ -1,0 +1,1173 @@
+FFFFFFFFFFFF                                                             [100%]
+================================== FAILURES ===================================
+_ test_nested_credentials_are_masked_without_changing_public_json_types[sqlite] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F666447E00>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F666447770>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F6664A1E00>, ...})
+
+    async def test_nested_credentials_are_masked_without_changing_public_json_types(settings_client):
+        client, sessions, data = settings_client
+        config = {"apiKey": "private-camel-key", "AUTHORIZATION": "private-bearer",
+            "credentials": {"login": "private-login"},
+            "options": {"enabled": False, "zero": 0, "labels": [None, "public"],
+                "auth": {"clientSecret": "private-client", "private-key": "private-pem"}},
+            "accounts": [{"name": "public-name", "accessToken": "private-access", "password": "private-password"}]}
+        saved = await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": config, "is_active": False})
+        assert saved.status_code == 200, saved.text
+        response = await client.get("/api/settings/integrations", headers=auth(data["reader"]))
+        assert response.status_code == 200, response.text
+>       assert "private-" not in response.text
+E       assert 'private-' not in '{"success":...sword"}]}}]}'
+E         
+E         'private-' is contained here:
+E           "apiKey":"private-camel-key","AUTHORIZATION":"private-bearer","credentials":{"login":"private-login"},"options":{"enabled":false,"zero":0,"labels":[null,"public"],"auth":{"clientSecret":"private-client","private-key":"private-pem"}},"accounts":[{"name":"public-name","accessToken":"private-access","password":"private-password"}]}}]}
+E         ?           ++++++++
+
+tests\integration\test_integration_config_safety.py:29: AssertionError
+_ test_nested_credentials_are_masked_without_changing_public_json_types[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F668EAB250>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F668EAA850>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F668EB8350>, ...})
+
+    async def test_nested_credentials_are_masked_without_changing_public_json_types(settings_client):
+        client, sessions, data = settings_client
+        config = {"apiKey": "private-camel-key", "AUTHORIZATION": "private-bearer",
+            "credentials": {"login": "private-login"},
+            "options": {"enabled": False, "zero": 0, "labels": [None, "public"],
+                "auth": {"clientSecret": "private-client", "private-key": "private-pem"}},
+            "accounts": [{"name": "public-name", "accessToken": "private-access", "password": "private-password"}]}
+        saved = await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": config, "is_active": False})
+        assert saved.status_code == 200, saved.text
+        response = await client.get("/api/settings/integrations", headers=auth(data["reader"]))
+        assert response.status_code == 200, response.text
+>       assert "private-" not in response.text
+E       assert 'private-' not in '{"success":...sword"}]}}]}'
+E         
+E         'private-' is contained here:
+E           "apiKey":"private-camel-key","AUTHORIZATION":"private-bearer","credentials":{"login":"private-login"},"options":{"enabled":false,"zero":0,"labels":[null,"public"],"auth":{"clientSecret":"private-client","private-key":"private-pem"}},"accounts":[{"name":"public-name","accessToken":"private-access","password":"private-password"}]}}]}
+E         ?           ++++++++
+
+tests\integration\test_integration_config_safety.py:29: AssertionError
+_ test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state[sqlite] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F669009F90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F668FB2FD0>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F66900CA50>, ...})
+
+    async def test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state(settings_client):
+        client, sessions, data = settings_client
+        original = {"host": "smtp.example.invalid", "password": "private-pass", "apiKey": "private-api",
+            "options": {"clientSecret": "private-nested", "retry": 0, "enabled": False, "note": None},
+            "accounts": [{"label": "account", "token": "private-list"}]}
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "is_active": False, "config": original})).status_code == 200
+        view = (await client.get("/api/settings/integrations", headers=auth(data["writer"]))).json()["data"][0]
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": view["config"]})).status_code == 200
+>       assert (await stored(sessions)).config == original
+E       AssertionError: assert {'accounts': ...try': 0}, ...} == {'accounts': ...try': 0}, ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'password': '***'} != {'password': 'private-pass'}
+E         Use -v to get more diff
+
+tests\integration\test_integration_config_safety.py:52: AssertionError
+_ test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F668FB36F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F669002580>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F66900E550>, ...})
+
+    async def test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state(settings_client):
+        client, sessions, data = settings_client
+        original = {"host": "smtp.example.invalid", "password": "private-pass", "apiKey": "private-api",
+            "options": {"clientSecret": "private-nested", "retry": 0, "enabled": False, "note": None},
+            "accounts": [{"label": "account", "token": "private-list"}]}
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "is_active": False, "config": original})).status_code == 200
+        view = (await client.get("/api/settings/integrations", headers=auth(data["writer"]))).json()["data"][0]
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": view["config"]})).status_code == 200
+>       assert (await stored(sessions)).config == original
+E       AssertionError: assert {'accounts': ...try': 0}, ...} == {'accounts': ...try': 0}, ...}
+E         
+E         Omitting 4 identical items, use -vv to show
+E         Differing items:
+E         {'password': '***'} != {'password': 'private-pass'}
+E         Use -v to get more diff
+
+tests\integration\test_integration_config_safety.py:52: AssertionError
+_ test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically[sqlite] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F669094510>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F669114550>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F669117450>, ...})
+
+    async def test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically(settings_client):
+        client, sessions, data = settings_client
+        original = {"host": "keep.example.invalid", "accounts": [{"name": "one", "token": "private-one"}]}
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": original})).status_code == 200
+        for patch in ({"host": "must-not-save", "accounts": [{"name": "changed", "token": "***"}]},
+            {"accounts": [{"name": "one", "token": "***"}, {"token": "***"}]},
+            {"newSecret": "***"}):
+            rejected = await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+                json={"provider": "SMTP", "config": patch})
+>           assert rejected.status_code == 422, rejected.text
+E           AssertionError: {"success":true,"message":"Entegrasyon ayarlar� g�ncellendi","data":null}
+E           assert 200 == 422
+E            +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_integration_config_safety.py:76: AssertionError
+_ test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F66A175A30>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66A1999A0>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F669116050>, ...})
+
+    async def test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically(settings_client):
+        client, sessions, data = settings_client
+        original = {"host": "keep.example.invalid", "accounts": [{"name": "one", "token": "private-one"}]}
+        assert (await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": original})).status_code == 200
+        for patch in ({"host": "must-not-save", "accounts": [{"name": "changed", "token": "***"}]},
+            {"accounts": [{"name": "one", "token": "***"}, {"token": "***"}]},
+            {"newSecret": "***"}):
+            rejected = await client.put("/api/settings/integrations", headers=auth(data["writer"]),
+                json={"provider": "SMTP", "config": patch})
+>           assert rejected.status_code == 422, rejected.text
+E           AssertionError: {"success":true,"message":"Entegrasyon ayarlar� g�ncellendi","data":null}
+E           assert 200 == 422
+E            +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_integration_config_safety.py:76: AssertionError
+_ test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced[sqlite] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F669003130>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66A1727B0>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F66A23EB50>, ...})
+
+    async def test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced(settings_client):
+        client, sessions, data = settings_client
+        async with sessions() as db:
+            row = IntegrationSetting(organization_id=data["org"].id, provider="SMTP", config={}, is_active=False)
+            db.add(row)
+            await db.commit()
+            identifier = row.id
+        for legacy in ([{"apiKey": "legacy-private"}], None, "legacy-private", 42, False):
+            async with sessions() as db:
+                row = await db.get(IntegrationSetting, identifier)
+                row.config = legacy
+                await db.commit()
+>           response = await client.get("/api/settings/integrations", headers=auth(data["reader"]))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_integration_config_safety.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tenant = TenantContext(user_id=UUID('e3593444-a9dc-4460-9a0b-2d4a65410df8'), organization_id=UUID('06b7d88d-c84a-4cc3-9681-fae6...ons={'settings.read'}, role_slugs={'settings_reader'}, is_super_admin=False, platform_admin=False, parent_portal=False)
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x000001F668EFF290>
+
+    @router.get("/api/settings/integrations")
+    async def get_integrations(
+        tenant: TenantContext = Depends(PermissionChecker("settings.read")),
+        db: AsyncSession = Depends(get_db, scope="function"),
+    ):
+        result = await db.execute(
+            select(IntegrationSetting).where(
+                IntegrationSetting.organization_id == tenant.organization_id
+            )
+        )
+        integrations = result.scalars().all()
+        return success_response(
+            [
+                {
+                    "id": str(i.id),
+                    "provider": i.provider.value,
+                    "is_active": i.is_active,
+                    "config": {
+                        k: "***" if any(secret in k.lower() for secret in ("password", "token", "secret", "api_key")) else v
+>                       for k, v in i.config.items()
+                                    ^^^^^^^^^^^^^^
+                    },
+                }
+                for i in integrations
+            ]
+        )
+E       AttributeError: 'list' object has no attribute 'items'
+
+app\routers\dashboard_reports.py:1382: AttributeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/settings/integrations", "request_id": "2d3d7c0c-fb53-4b49-b7fb-71bdba05906b", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-06T00:46:26.306979Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\dashboard_reports.py", line 1382, in get_integrations
+    for k, v in i.config.items()
+                ^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'items'
+_ test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F66A241BF0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66A51C050>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F66A3B1E50>, ...})
+
+    async def test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced(settings_client):
+        client, sessions, data = settings_client
+        async with sessions() as db:
+            row = IntegrationSetting(organization_id=data["org"].id, provider="SMTP", config={}, is_active=False)
+            db.add(row)
+            await db.commit()
+            identifier = row.id
+        for legacy in ([{"apiKey": "legacy-private"}], None, "legacy-private", 42, False):
+            async with sessions() as db:
+                row = await db.get(IntegrationSetting, identifier)
+                row.config = legacy
+                await db.commit()
+>           response = await client.get("/api/settings/integrations", headers=auth(data["reader"]))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_integration_config_safety.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tenant = TenantContext(user_id=UUID('d73aee08-e0dd-4447-866d-62a770211956'), organization_id=UUID('c57c74be-d21d-40bf-845d-3106...ons={'settings.read'}, role_slugs={'settings_reader'}, is_super_admin=False, platform_admin=False, parent_portal=False)
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x000001F66A552F30>
+
+    @router.get("/api/settings/integrations")
+    async def get_integrations(
+        tenant: TenantContext = Depends(PermissionChecker("settings.read")),
+        db: AsyncSession = Depends(get_db, scope="function"),
+    ):
+        result = await db.execute(
+            select(IntegrationSetting).where(
+                IntegrationSetting.organization_id == tenant.organization_id
+            )
+        )
+        integrations = result.scalars().all()
+        return success_response(
+            [
+                {
+                    "id": str(i.id),
+                    "provider": i.provider.value,
+                    "is_active": i.is_active,
+                    "config": {
+                        k: "***" if any(secret in k.lower() for secret in ("password", "token", "secret", "api_key")) else v
+>                       for k, v in i.config.items()
+                                    ^^^^^^^^^^^^^^
+                    },
+                }
+                for i in integrations
+            ]
+        )
+E       AttributeError: 'list' object has no attribute 'items'
+
+app\routers\dashboard_reports.py:1382: AttributeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/settings/integrations", "request_id": "75060aed-0a45-4413-9abe-2f73a7664663", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-06T00:46:29.166298Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\dashboard_reports.py", line 1382, in get_integrations
+    for k, v in i.config.items()
+                ^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'items'
+_ test_invalid_config_and_non_boolean_activation_return_422_without_records[sqlite] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F66A23FC50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66A220F50>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F669114750>, ...})
+
+    async def test_invalid_config_and_non_boolean_activation_return_422_without_records(settings_client):
+        client, sessions, data = settings_client
+        for payload in ({"provider": "SMTP", "config": []}, {"provider": "SMTP", "config": None},
+            {"provider": "SMTP", "config": "private-invalid"},
+            *({"provider": "SMTP", "config": {}, "is_active": active} for active in (None, "false", 0, 1, [], {}))):
+            response = await client.put("/api/settings/integrations", headers=auth(data["writer"]), json=payload)
+>           assert response.status_code == 422, response.text
+E           AssertionError: {"success":true,"message":"Entegrasyon ayarlar� g�ncellendi","data":null}
+E           assert 200 == 422
+E            +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_integration_config_safety.py:113: AssertionError
+_ test_invalid_config_and_non_boolean_activation_return_422_without_records[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F66900CF50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F668F1CF70>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F668986950>, ...})
+
+    async def test_invalid_config_and_non_boolean_activation_return_422_without_records(settings_client):
+        client, sessions, data = settings_client
+        for payload in ({"provider": "SMTP", "config": []}, {"provider": "SMTP", "config": None},
+            {"provider": "SMTP", "config": "private-invalid"},
+            *({"provider": "SMTP", "config": {}, "is_active": active} for active in (None, "false", 0, 1, [], {}))):
+            response = await client.put("/api/settings/integrations", headers=auth(data["writer"]), json=payload)
+>           assert response.status_code == 422, response.text
+E           AssertionError: {"success":true,"message":"Entegrasyon ayarlar� g�ncellendi","data":null}
+E           assert 200 == 422
+E            +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_integration_config_safety.py:113: AssertionError
+_ test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record[sqlite] _
+
+self = <sqlalchemy.engine.base.Connection object at 0x000001F66A7ED9D0>
+dialect = <sqlalchemy.dialects.sqlite.aiosqlite.SQLiteDialect_aiosqlite object at 0x000001F6689CCF50>
+context = <sqlalchemy.dialects.sqlite.aiosqlite.SQLiteExecutionContext_aiosqlite object at 0x000001F66A7EFE90>
+statement = <sqlalchemy.dialects.sqlite.base.SQLiteCompiler object at 0x000001F66A3B3E50>
+parameters = [('9b68b35d-b69b-4bef-aefa-4c2507250b1a', '65f33c02-6226-4a05-abb1-d5ceb261376e', 'SMTP', '{"host": "smtp.example.invalid"}', 1, '33ca4906-b8a3-43ae-97e6-ec051dee5df1')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:147: in execute
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:298: in _handle_exception
+    raise error
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:129: in execute
+    self.await_(_cursor.execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+.venv\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = <_queue.SimpleQueue object at 0x000001F66A837100>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               sqlite3.IntegrityError: UNIQUE constraint failed: integration_settings.organization_id, integration_settings.provider
+
+.venv\Lib\site-packages\aiosqlite\core.py:63: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+settings_client = (<httpx.AsyncClient object at 0x000001F668EDB3E0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66903C370>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F669116B50>, ...})
+
+    async def test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record(settings_client):
+        client, sessions, data = settings_client
+>       replies = await asyncio.gather(*(client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": patch}) for patch in ({"host": "smtp.example.invalid"}, {"port": 2525})))
+
+tests\integration\test_integration_config_safety.py:124: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1896: in put
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:134: in app
+    async with AsyncExitStack() as function_stack:
+               ^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:768: in __aexit__
+    raise exc
+C:\Python313\Lib\contextlib.py:751: in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:221: in __aexit__
+    await anext(self.gen)
+tests\integration\test_material_files.py:35: in override_db
+    await db.commit()
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2028: in commit
+    trans.commit(_to_root=True)
+<string>:2: in commit
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1313: in commit
+    self._prepare_impl()
+<string>:2: in _prepare_impl
+    ???
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1288: in _prepare_impl
+    self.session.flush()
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4352: in flush
+    self._flush(objects)
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4487: in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:146: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4448: in _flush
+    flush_context.execute()
+.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py:466: in execute
+    rec.execute(self)
+.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+.venv\Lib\site-packages\sqlalchemy\orm\persistence.py:93: in save_obj
+    _emit_insert_statements(
+.venv\Lib\site-packages\sqlalchemy\orm\persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1418: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1640: in _execute_clauseelement
+    ret = self._execute_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1846: in _execute_context
+    return self._exec_single_context(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:2355: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+.venv\Lib\site-packages\sqlalchemy\engine\default.py:941: in do_execute
+    cursor.execute(statement, parameters)
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:147: in execute
+    self._adapt_connection._handle_exception(error)
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:298: in _handle_exception
+    raise error
+.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py:129: in execute
+    self.await_(_cursor.execute(operation, parameters))
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+.venv\Lib\site-packages\aiosqlite\cursor.py:40: in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+.venv\Lib\site-packages\aiosqlite\cursor.py:32: in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\aiosqlite\core.py:160: in _execute
+    return await future
+           ^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+tx = <_queue.SimpleQueue object at 0x000001F66A837100>
+
+    def _connection_worker_thread(tx: _TxQueue):
+        """
+        Execute function calls on a separate thread.
+    
+        :meta private:
+        """
+        while True:
+            # Continues running until all queue items are processed,
+            # even after connection is closed (so we can finalize all
+            # futures)
+    
+            future, function = tx.get()
+    
+            try:
+                LOG.debug("executing %s", function)
+>               result = function()
+                         ^^^^^^^^^^
+E               sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: integration_settings.organization_id, integration_settings.provider
+E               [SQL: INSERT INTO integration_settings (id, organization_id, provider, config, is_active, updated_by) VALUES (?, ?, ?, ?, ?, ?) RETURNING created_at, updated_at]
+E               [parameters: ('9b68b35d-b69b-4bef-aefa-4c2507250b1a', '65f33c02-6226-4a05-abb1-d5ceb261376e', 'SMTP', '{"host": "smtp.example.invalid"}', 1, '33ca4906-b8a3-43ae-97e6-ec051dee5df1')]
+E               (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+.venv\Lib\site-packages\aiosqlite\core.py:63: IntegrityError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/settings/integrations", "request_id": "fbe083da-9156-40c6-9a38-3558ec67eefd", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-06T00:46:36.759081Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 147, in execute
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 298, in _handle_exception
+    raise error
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 129, in execute
+    self.await_(_cursor.execute(operation, parameters))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+    result = function()
+sqlite3.IntegrityError: UNIQUE constraint failed: integration_settings.organization_id, integration_settings.provider
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 134, in app
+    async with AsyncExitStack() as function_stack:
+               ~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\contextlib.py", line 768, in __aexit__
+    raise exc
+  File "C:\Python313\Lib\contextlib.py", line 751, in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "C:\Okul360\backend\tests\integration\test_material_files.py", line 35, in override_db
+    await db.commit()
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1009, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2028, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4352, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4487, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4448, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+        statement,
+        params,
+        execution_options=execution_options,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 147, in execute
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 298, in _handle_exception
+    raise error
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\dialects\sqlite\aiosqlite.py", line 129, in execute
+    self.await_(_cursor.execute(operation, parameters))
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\cursor.py", line 40, in execute
+    await self._execute(self._cursor.execute, sql, parameters)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\cursor.py", line 32, in _execute
+    return await self._conn._execute(fn, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\core.py", line 160, in _execute
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\aiosqlite\core.py", line 63, in _connection_worker_thread
+    result = function()
+sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: integration_settings.organization_id, integration_settings.provider
+[SQL: INSERT INTO integration_settings (id, organization_id, provider, config, is_active, updated_by) VALUES (?, ?, ?, ?, ?, ?) RETURNING created_at, updated_at]
+[parameters: ('9b68b35d-b69b-4bef-aefa-4c2507250b1a', '65f33c02-6226-4a05-abb1-d5ceb261376e', 'SMTP', '{"host": "smtp.example.invalid"}', 1, '33ca4906-b8a3-43ae-97e6-ec051dee5df1')]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+_ test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record[postgresql] _
+
+settings_client = (<httpx.AsyncClient object at 0x000001F66902C6E0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...t at 0x000001F66A6B4F50>, 'foreign_writer': <app.infrastructure.models.models.User object at 0x000001F66900CA50>, ...})
+
+    async def test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record(settings_client):
+        client, sessions, data = settings_client
+        replies = await asyncio.gather(*(client.put("/api/settings/integrations", headers=auth(data["writer"]),
+            json={"provider": "SMTP", "config": patch}) for patch in ({"host": "smtp.example.invalid"}, {"port": 2525})))
+        assert [reply.status_code for reply in replies] == [200, 200], [reply.text for reply in replies]
+        row = await stored(sessions)
+>       assert row.config == {"host": "smtp.example.invalid", "port": 2525} and row.is_active is False
+E       AssertionError: assert ({'port': 2525} == {'host': 'smt... 'port': 2525}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Right contains 1 more item:
+E         {'host': 'smtp.example.invalid'}
+E         Use -v to get more diff)
+
+tests\integration\test_integration_config_safety.py:128: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_integration_config_safety.py::test_nested_credentials_are_masked_without_changing_public_json_types[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_nested_credentials_are_masked_without_changing_public_json_types[postgresql]
+FAILED tests/integration/test_integration_config_safety.py::test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_masked_roundtrip_and_narrow_patch_keep_credentials_options_and_inactive_state[postgresql]
+FAILED tests/integration/test_integration_config_safety.py::test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_masked_array_edits_and_masks_without_stored_secrets_are_rejected_atomically[postgresql]
+FAILED tests/integration/test_integration_config_safety.py::test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_malformed_legacy_root_requires_review_and_cannot_be_silently_replaced[postgresql]
+FAILED tests/integration/test_integration_config_safety.py::test_invalid_config_and_non_boolean_activation_return_422_without_records[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_invalid_config_and_non_boolean_activation_return_422_without_records[postgresql]
+FAILED tests/integration/test_integration_config_safety.py::test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record[sqlite]
+FAILED tests/integration/test_integration_config_safety.py::test_simultaneous_first_provider_patches_preserve_both_changes_in_one_record[postgresql]
+12 failed, 20 warnings in 31.37s

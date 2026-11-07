@@ -1,4 +1,4 @@
-# EduPanel Backend
+# SCS360 Backend
 
 FastAPI tabanlı okul yönetim sistemi backend API.
 

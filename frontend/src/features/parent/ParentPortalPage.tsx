@@ -1,23 +1,38 @@
+import { ParentSchoolCheckout, ParentCheckoutReturn } from "./ParentSchoolCheckout";
+import { useSearchParams } from "react-router-dom";
 import { CalendarCheck2, CreditCard, FileHeart, GraduationCap, HeartPulse, UsersRound, Activity, Clock, CheckCircle, XCircle, Wallet, MessageCircle, Bell, BookOpen, Brain, Lightbulb } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import type { ApiResponse, DataRecord } from "../../types/api";
 import { ChatInterface } from "./ChatInterface";
+import { HomeworkSubmissions } from "../academic/HomeworkSubmissions";
+import { downloadFile } from "../../lib/download";
+import { ParentExcuseRequests } from "../communications/ExcuseRequests";
+import { ParentDayTimeline } from "./ParentDayTimeline";
+import { ParentCertificates } from "./ParentCertificates";
+import { ParentReportCards } from "./ParentReportCards";
+import { ParentConsents } from "./ParentConsents";
+import { ParentSurveys } from "./ParentSurveys";
+import { useAuthStore } from "../../stores/auth";
 
-type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat";
+type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 
 const today = new Date();
 const unwrap = <T,>(response: { data: ApiResponse<T> }) => response.data.data;
 
 export function ParentPortalPage({ view }: { view: View }) {
+  const canMakePayment = useAuthStore((state) => state.can("parent.make_payment"));
+  const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
+  const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
+  const [medicineSubmitting, setMedicineSubmitting] = useState(false);
   const [children, setChildren] = useState<DataRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [status, setStatus] = useState<DataRecord | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
   const [finances, setFinances] = useState<DataRecord | null>(null);
   const [medicineRequests, setMedicineRequests] = useState<DataRecord[]>([]);
-  const [medicine, setMedicine] = useState({ medicine_name: "", dosage: "", time_to_give: "" });
+  const [medicine, setMedicine] = useState({ medicine_name: "", dosage: "", time_to_give: "", instructions: "" });
   const [requestMessage, setRequestMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,6 +43,21 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [schedule, setSchedule] = useState<DataRecord[]>([]);
   const [homework, setHomework] = useState<DataRecord[]>([]);
   const [materials, setMaterials] = useState<DataRecord[]>([]);
+  const [materialError, setMaterialError] = useState("");
+  const [downloadingMaterial, setDownloadingMaterial] = useState("");
+
+  async function downloadMaterial(material: DataRecord) {
+    setMaterialError("");
+    setDownloadingMaterial(String(material.id));
+    try {
+      await downloadFile(`/parent/child/${selectedId}/materials/${material.id}/download`,
+        String(material.file_name || material.title || "materyal"));
+    } catch (err) {
+      setMaterialError(apiMessage(err));
+    } finally {
+      setDownloadingMaterial("");
+    }
+  }
   const [communications, setCommunications] = useState<DataRecord[]>([]);
   const [announcements, setAnnouncements] = useState<DataRecord[]>([]);
   const [activities, setActivities] = useState<DataRecord[]>([]);
@@ -43,15 +73,13 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [teachers, setTeachers] = useState<DataRecord[]>([]);
   const [chatTeacherId, setChatTeacherId] = useState("");
   const [chatTeacherName, setChatTeacherName] = useState("");
-  const [paymentModal, setPaymentModal] = useState<{
-    open: boolean;
-    debtId: string;
-    amount: number;
-    paymentUrl?: string;
-    checkoutContent?: string;
-    paymentStatus?: 'pending' | 'success' | 'failed';
-    message?: string;
-  }>({ open: false, debtId: '', amount: 0 });
+  const [paymentModal, setPaymentModal] = useState<{ debtId: string; amount: number; childName: string } | null>(null);
+  const [paymentSearch, setPaymentSearch] = useSearchParams();
+  const paymentController = useRef<AbortController | null>(null), paymentChild = useRef(selectedId);
+  useLayoutEffect(() => { paymentChild.current = selectedId; paymentController.current?.abort(); }, [selectedId]);
+  useEffect(() => { setPaymentModal(null); return () => paymentController.current?.abort(); }, [selectedId]);
+  
+  
 
   useEffect(() => {
     api.get<ApiResponse<DataRecord[]>>("/parent/my-children")
@@ -66,10 +94,16 @@ export function ParentPortalPage({ view }: { view: View }) {
 
   useEffect(() => {
     if (!selectedId) return;
+    let cancelled = false;
     setLoading(true); setError("");
+    setStatus(null); setAttendance(null); setFinances(null); setMedicineRequests([]);
+    setGrades([]); setSchedule([]); setHomework([]); setMaterials([]); setCommunications([]);
+    setAnnouncements([]); setActivities([]); setWeeklyReports([]); setTeachers([]);
+    setChatTeacherId(""); setAiRecommendations(null);
     const requests: Promise<unknown>[] = [api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`)];
     if (view === "attendance") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, { params: { year: today.getFullYear(), month: today.getMonth() + 1 } }));
-    if (view === "finances" || view === "dashboard") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/financial-invoices`));
+    if (view === "finances" || (view === "dashboard" && canReadFinances)) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/financial-invoices`));
+    else if (view === "dashboard") requests.push(Promise.resolve({ data: { data: null } }));
     if (view === "health") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/medicine-requests`));
     if (view === "academic") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/grades`));
     if (view === "schedule") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/schedule`));
@@ -85,9 +119,12 @@ export function ParentPortalPage({ view }: { view: View }) {
     if (view === "announcements") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/announcements`));
     if (view === "activities") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/activities`));
     if (view === "reports") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/weekly-reports`));
-    if (view === "dashboard") requests.push(api.get(`/ai/student-performance/${selectedId}`).catch(() => null));
+    
+    // Consent decisions depend on the document, not a student performance score.
+    requests.push(view === "consents" || view === "surveys" ? Promise.resolve(null) : api.get(`/parent/child/${selectedId}/insights`, { params: { context: view } }).catch(() => null));
     
     Promise.all(requests).then((responses) => {
+      if (cancelled) return;
       setStatus(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
       if (view === "attendance") setAttendance(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
       if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
@@ -96,13 +133,22 @@ export function ParentPortalPage({ view }: { view: View }) {
       if (view === "schedule") setSchedule(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
       if (view === "homework") setHomework(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
       if (view === "materials") setMaterials(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "announcements") setAnnouncements(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "activities") setActivities(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "reports") setWeeklyReports(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "chat") setTeachers(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
       if (view === "communication") {
         setCommunications(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
         setTeachers(unwrap(responses[2] as { data: ApiResponse<DataRecord[]> }) || []);
       }
-      if (view === "dashboard" && responses[2]) setAiRecommendations((responses[2] as any).data.data);
-    }).catch((reason) => setError(apiMessage(reason))).finally(() => setLoading(false));
-  }, [selectedId, view]);
+      // Hata durumunda istek ``null`` döner. Null üzerinde ``.data`` okumak
+      // Promise.all akışını bozuyordu ve AI kartı hiç gösterilmiyordu.
+      const aiResponse = responses[responses.length - 1] as { data?: ApiResponse<DataRecord> } | null;
+      setAiRecommendations(aiResponse?.data?.data ?? null);
+    }).catch((reason) => { if (!cancelled) setError(apiMessage(reason)); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedId, view, canReadFinances]);
 
   const selected = children.find((child) => String(child.student_id) === selectedId);
   const heading = { 
@@ -118,6 +164,8 @@ export function ParentPortalPage({ view }: { view: View }) {
     communication: "İletişim Geçmişi",
     announcements: "Okul Duyuruları",
     activities: "Kulüp ve Aktiviteler",
+    consents: "İzin ve Onay Belgeleri",
+    surveys: "Veli Anketleri",
     reports: "Haftalık Raporlar",
     chat: "Canlı Sohbet"
   }[view];
@@ -134,18 +182,25 @@ export function ParentPortalPage({ view }: { view: View }) {
     communication: "Öğretmenlerle yapılan iletişim kayıtları.",
     announcements: "Okul ve sınıf duyuruları.",
     activities: "Kulüp faaliyetleri ve etkinlik takvimi.",
+    consents: "Çocuğunuzun izin belgelerini okuyun ve veli kararınızı kaydedin.",
+    surveys: "Okulunuzun katılımınıza açtığı anketleri yanıtlayın.",
     reports: "Haftalık gelişim raporları ve değerlendirmeler.",
     chat: "Öğretmenlerle gerçek zamanlı sohbet."
   }[view];
 
   async function submitMedicine(event: React.FormEvent) {
     event.preventDefault();
+    if (medicineSubmitting || !canSendMedicine) return;
+    setMedicineSubmitting(true);
     setRequestMessage("");
     try {
       await api.post(`/parent/child/${selectedId}/medicine-requests`, medicine);
-      setMedicine({ medicine_name: "", dosage: "", time_to_give: "" });
+      setMedicine({ medicine_name: "", dosage: "", time_to_give: "", instructions: "" });
       setRequestMessage("İlaç talimatı okul ekibine iletildi.");
+      const response = await api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/medicine-requests`);
+      setMedicineRequests(((response.data.data?.medicine_requests as DataRecord[]) || []));
     } catch (reason) { setRequestMessage(apiMessage(reason)); }
+    finally { setMedicineSubmitting(false); }
   }
 
   async function submitNewMessage(event: React.FormEvent) {
@@ -162,108 +217,23 @@ export function ParentPortalPage({ view }: { view: View }) {
     } catch (reason) { setRequestMessage(apiMessage(reason)); }
   }
 
-  async function initializePayment(debtId: string, amount: number) {
-    try {
-      // Get payment page URL from backend
-      const response = await api.post("/payments/iyzico/initialize", {
-        debt_id: debtId,
-        amount: amount,
-        currency: "TRY",
-        payment_channel: "WEB",
-        basket_items: []
-      }, { timeout: 30000 });
-      
-      if (response.data.data.payment_page_url) {
-        setPaymentModal({
-          open: true,
-          debtId,
-          amount,
-          paymentUrl: response.data.data.payment_page_url,
-          paymentStatus: 'pending'
-        });
-      }
-    } catch (reason) {
-      setRequestMessage(apiMessage(reason));
-    }
+  function initializePayment(debtId: string, amount: number) {
+    setRequestMessage("");
+    setPaymentModal({ debtId, amount, childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
   }
 
-  function closePaymentModal() {
-    setPaymentModal({ open: false, debtId: '', amount: 0 });
-    // Refresh finances data
-    if (selectedId) {
-      api.get(`/parent/child/${selectedId}/financial-invoices`)
-        .then(response => setFinances(response.data.data))
-        .catch(err => setRequestMessage(apiMessage(err)));
-    }
+  
+
+  function refreshPaymentFinances() {
+    if (!selectedId || !canReadFinances) return;
+    paymentController.current?.abort();
+    const controller = new AbortController(); paymentController.current = controller;
+    api.get(`/parent/child/${selectedId}/financial-invoices`, { signal: controller.signal })
+      .then((response) => { if (!controller.signal.aborted && paymentChild.current === selectedId) setFinances(response.data.data); })
+      .catch((reason) => { if (!controller.signal.aborted && paymentChild.current === selectedId) setRequestMessage(apiMessage(reason)); });
   }
+  function closePaymentModal() { setPaymentModal(null); refreshPaymentFinances(); }
 
-  // Execute iyzico script when modal opens - DISABLED to prevent auto-popup
-  // useEffect(() => {
-  //   if (paymentModal.open && paymentModal.checkoutContent && paymentModal.paymentStatus === 'pending') {
-  //     const timer = setTimeout(() => {
-  //       const container = document.getElementById('iyzico-checkout-form');
-  //       if (container) {
-  //         container.innerHTML = paymentModal.checkoutContent || '';
-  //         
-  //         // Execute scripts
-  //         const scripts = container.querySelectorAll('script');
-  //         scripts.forEach(oldScript => {
-  //           const newScript = document.createElement('script');
-  //           Array.from(oldScript.attributes).forEach(attr => {
-  //             newScript.setAttribute(attr.name, attr.value);
-  //           });
-  //           newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-  //           oldScript.parentNode?.replaceChild(newScript, oldScript);
-  //         });
-  //       }
-  //     }, 100);
-
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [paymentModal.open, paymentModal.checkoutContent, paymentModal.paymentStatus]);
-
-  // Poll for payment status when modal is open
-  useEffect(() => {
-    if (!paymentModal.open || paymentModal.paymentStatus !== 'pending') return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await api.get(`/parent/child/${selectedId}/financial-invoices`);
-        const invoices = response.data.data.invoices as DataRecord[];
-        const paidDebt = invoices.find((inv: DataRecord) => 
-          String(inv.debt_id) === paymentModal.debtId && inv.status === 'PAID'
-        );
-        
-        if (paidDebt) {
-          setPaymentModal(prev => ({
-            ...prev,
-            paymentStatus: 'success',
-            message: 'Ödeme başarıyla tamamlandı'
-          }));
-          clearInterval(pollInterval);
-        }
-      } catch (err) {
-        console.error('Error polling payment status:', err);
-      }
-    }, 3000); // Poll every 3 seconds
-
-    // Stop polling after 5 minutes
-    const timeout = setTimeout(() => {
-      clearInterval(pollInterval);
-      if (paymentModal.paymentStatus === 'pending') {
-        setPaymentModal(prev => ({
-          ...prev,
-          paymentStatus: 'failed',
-          message: 'Ödeme işlemi zaman aşımına uğradı'
-        }));
-      }
-    }, 300000); // 5 minutes
-
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeout);
-    };
-  }, [paymentModal.open, paymentModal.paymentStatus, paymentModal.debtId, selectedId]);
 
   if (loading && !children.length) return <div className="card"><LoadingState /></div>;
   if (error && !children.length) return <div className="card"><ErrorState message={error} /></div>;
@@ -276,6 +246,9 @@ export function ParentPortalPage({ view }: { view: View }) {
 
   return <>
     <PageHeader eyebrow="Veli Portalı" title={heading} description={description} />
+    {view === "finances" && canMakePayment && paymentSearch.has("checkout") && <ParentCheckoutReturn
+      checkoutId={paymentSearch.get("checkout") || ""} onComplete={refreshPaymentFinances}
+      onClose={() => { const next = new URLSearchParams(paymentSearch); next.delete("checkout"); setPaymentSearch(next, { replace: true }); }} />}
     
     {/* Child Selector */}
     <div className="card parent-selector-gradient parent-animate-in">
@@ -285,6 +258,7 @@ export function ParentPortalPage({ view }: { view: View }) {
           <select 
             id="parent-child" 
             value={selectedId} 
+            disabled={medicineSubmitting}
             onChange={(event) => setSelectedId(event.target.value)}
             className="parent-input-glass"
             style={{ 
@@ -310,8 +284,8 @@ export function ParentPortalPage({ view }: { view: View }) {
               <UsersRound size={24} />
             </div>
             <div>
-              <div style={{ fontSize: "18px", fontWeight: 700 }}>{selected.first_name} {selected.last_name}</div>
-              <div style={{ fontSize: "14px", opacity: 0.9 }}>{selected.class_name || "Sınıf bilgisi yok"}</div>
+              <div style={{ fontSize: "18px", fontWeight: 700 }}>{String(selected.first_name)} {String(selected.last_name)}</div>
+              <div style={{ fontSize: "14px", opacity: 0.9 }}>{String(selected.class_name || "Sınıf bilgisi yok")}</div>
             </div>
           </div>
         )}
@@ -319,6 +293,38 @@ export function ParentPortalPage({ view }: { view: View }) {
     </div>
 
     {error && <div className="card" style={{ marginBottom: 24 }}><ErrorState message={error} /></div>}
+    {(view === "dashboard" || view === "children") && selectedId && status?.date &&
+      <ParentDayTimeline key={`${selectedId}-${String(status.date)}`} studentId={selectedId} initialDate={String(status.date)} />}
+    {view === "activities" && selectedId && <ParentCertificates key={selectedId} studentId={selectedId} />}
+    {view === "academic" && selectedId && <ParentReportCards key={selectedId} studentId={selectedId} />}
+    {view === "consents" && selectedId && <ParentConsents key={selectedId} studentId={selectedId} />}
+    {view === "surveys" && selectedId && <ParentSurveys key={selectedId} studentId={selectedId} />}
+
+    {aiRecommendations && (
+      <div className="card parent-animate-in" style={{
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        color: "white", padding: "16px", marginBottom: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <Brain size={20} />
+          <span style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
+        </div>
+        <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
+          {String(aiRecommendations.title || "Çocuğunuz için gelişim önerileri")}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 13, opacity: 0.95 }}>
+          {Array.isArray(aiRecommendations.metrics) && aiRecommendations.metrics.length > 0 ? aiRecommendations.metrics.map((metric: { label?: string; value?: string }, index: number) => (
+            <span key={index}>{String(metric.label || "Ölçüt")}: {String(metric.value ?? "-")}</span>
+          )) : <span>{String(aiRecommendations.summary || "Görüntülenebilir kayıt yok")}</span>}
+        </div>
+        {Array.isArray(aiRecommendations.recommendations) && aiRecommendations.recommendations.map((recommendation: string, index: number) => (
+          <div key={index} style={{ display: "flex", gap: 8, marginTop: 10, fontSize: 13 }}>
+            <Lightbulb size={15} style={{ flexShrink: 0 }} />
+            <span>{recommendation}</span>
+          </div>
+        ))}
+      </div>
+    )}
 
     {/* Dashboard View */}
     {view === "dashboard" && (
@@ -338,10 +344,10 @@ export function ParentPortalPage({ view }: { view: View }) {
               <span style={{ fontSize: "10px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Öğrenci</span>
             </div>
             <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: 2 }}>
-              {selected?.first_name || ""} {selected?.last_name || ""}
+              {String(selected?.first_name || "")} {String(selected?.last_name || "")}
             </div>
             <div style={{ fontSize: "12px", opacity: 0.9 }}>
-              {selected?.class_name || "Sınıf bilgisi yok"}
+              {String(selected?.class_name || "Sınıf bilgisi yok")}
             </div>
           </div>
         </div>
@@ -394,6 +400,7 @@ export function ParentPortalPage({ view }: { view: View }) {
           </div>
         </div>
 
+        {canReadFinances && (
         <div className="card parent-stat-card parent-animate-in" style={{ 
           background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", 
           color: "white",
@@ -417,6 +424,7 @@ export function ParentPortalPage({ view }: { view: View }) {
             </div>
           </div>
         </div>
+        )}
 
         <div className="card parent-stat-card parent-animate-in" style={{ 
           background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", 
@@ -466,7 +474,7 @@ export function ParentPortalPage({ view }: { view: View }) {
           </div>
         </div>
 
-        {aiRecommendations && (
+        {aiRecommendations?.recommendations?.length > 0 && (
           <div className="card parent-animate-in" style={{ 
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
             color: "white",
@@ -479,7 +487,7 @@ export function ParentPortalPage({ view }: { view: View }) {
             <div style={{ position: "relative", zIndex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <Brain size={20} />
-                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>AI Önerileri</span>
+                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
               </div>
               <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
                 Çocuğunuzun akademik performansı için öneriler
@@ -678,329 +686,494 @@ export function ParentPortalPage({ view }: { view: View }) {
 
     {/* Attendance View */}
     {view === "attendance" && (
-      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
-        <div className="card parent-stat-card parent-animate-in" style={{ 
-          textAlign: "center", 
-          padding: "32px", 
-          background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", 
-          border: "none",
-          color: "white",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ 
-              width: 64, 
-              height: 64, 
-              borderRadius: 16, 
-              background: "rgba(255,255,255,0.2)", 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center",
-              margin: "0 auto 20px"
-            }}>
-              <CheckCircle size={32} />
+      <>
+        <ParentExcuseRequests key={selectedId} studentId={selectedId} />
+        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
+          <div className="card parent-stat-card parent-animate-in" style={{ 
+            textAlign: "center", 
+            padding: "32px", 
+            background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", 
+            border: "none",
+            color: "white",
+            position: "relative",
+            overflow: "hidden"
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ 
+                width: 64, 
+                height: 64, 
+                borderRadius: 16, 
+                background: "rgba(255,255,255,0.2)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                margin: "0 auto 20px"
+              }}>
+                <CheckCircle size={32} />
+              </div>
+              <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
+                {String(summary?.present || 0)}
+              </h3>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Mevcut (Bu Ay)</p>
             </div>
-            <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-              {String(summary?.present || 0)}
-            </h3>
-            <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Mevcut (Bu Ay)</p>
+          </div>
+          
+          <div className="card parent-stat-card parent-animate-in" style={{ 
+            textAlign: "center", 
+            padding: "32px", 
+            background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 
+            border: "none",
+            color: "white",
+            position: "relative",
+            overflow: "hidden",
+            animationDelay: "0.1s"
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ 
+                width: 64, 
+                height: 64, 
+                borderRadius: 16, 
+                background: "rgba(255,255,255,0.2)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                margin: "0 auto 20px"
+              }}>
+                <Clock size={32} />
+              </div>
+              <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
+                {String(summary?.late || 0)}
+              </h3>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Geç (Bu Ay)</p>
+            </div>
+          </div>
+          
+          <div className="card parent-stat-card parent-animate-in" style={{ 
+            textAlign: "center", 
+            padding: "32px", 
+            background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", 
+            border: "none",
+            color: "white",
+            position: "relative",
+            overflow: "hidden",
+            animationDelay: "0.2s"
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ 
+                width: 64, 
+                height: 64, 
+                borderRadius: 16, 
+                background: "rgba(255,255,255,0.2)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                margin: "0 auto 20px"
+              }}>
+                <XCircle size={32} />
+              </div>
+              <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
+                {String(summary?.absent || 0)}
+              </h3>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Devamsız (Bu Ay)</p>
+            </div>
           </div>
         </div>
-        
-        <div className="card parent-stat-card parent-animate-in" style={{ 
-          textAlign: "center", 
-          padding: "32px", 
-          background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 
-          border: "none",
-          color: "white",
-          position: "relative",
-          overflow: "hidden",
-          animationDelay: "0.1s"
-        }}>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ 
-              width: 64, 
-              height: 64, 
-              borderRadius: 16, 
-              background: "rgba(255,255,255,0.2)", 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center",
-              margin: "0 auto 20px"
-            }}>
-              <Clock size={32} />
+
+        {aiRecommendations?.recommendations?.length > 0 && (
+          <div className="card parent-animate-in" style={{ 
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+            color: "white",
+            padding: "16px",
+            position: "relative",
+            overflow: "hidden",
+            marginTop: 20
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Brain size={20} />
+                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
+                Devamsızlık analizi için öneriler
+              </div>
+              {aiRecommendations.recommendations && aiRecommendations.recommendations.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {aiRecommendations.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                    <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13 }}>
+                      <Lightbulb size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-              {String(summary?.late || 0)}
-            </h3>
-            <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Geç (Bu Ay)</p>
           </div>
-        </div>
-        
-        <div className="card parent-stat-card parent-animate-in" style={{ 
-          textAlign: "center", 
-          padding: "32px", 
-          background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", 
-          border: "none",
-          color: "white",
-          position: "relative",
-          overflow: "hidden",
-          animationDelay: "0.2s"
-        }}>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ 
-              width: 64, 
-              height: 64, 
-              borderRadius: 16, 
-              background: "rgba(255,255,255,0.2)", 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "center",
-              margin: "0 auto 20px"
-            }}>
-              <XCircle size={32} />
-            </div>
-            <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-              {String(summary?.absent || 0)}
-            </h3>
-            <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Devamsız (Bu Ay)</p>
-          </div>
-        </div>
-      </div>
+        )}
+      </>
     )}
 
     {/* Finances View */}
     {view === "finances" && (
-      <div className="card parent-animate-in" style={{ border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
-        <div style={{ 
-          padding: "24px", 
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
-          borderRadius: "18px 18px 0 0",
-          color: "white"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, marginBottom: 8 }}>Ödeme Kayıtları</h2>
-              <p style={{ margin: 0, fontSize: "14px", opacity: 0.9 }}>
-                Kalan toplam: <strong style={{ fontSize: "20px", fontWeight: 700 }}>₺{Number(finances?.total_remaining || 0).toLocaleString("tr-TR")}</strong>
-              </p>
-            </div>
-            <div className="parent-icon-circle">
-              <CreditCard size={28} />
+      <>
+        <div className="card parent-animate-in" style={{ border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
+          <div style={{ 
+            padding: "24px", 
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+            borderRadius: "18px 18px 0 0",
+            color: "white"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, marginBottom: 8 }}>Ödeme Kayıtları</h2>
+                <p style={{ margin: 0, fontSize: "14px", opacity: 0.9 }}>
+                  Kalan toplam: <strong style={{ fontSize: "20px", fontWeight: 700 }}>₺{Number(finances?.total_remaining || 0).toLocaleString("tr-TR")}</strong>
+                </p>
+              </div>
+              <div className="parent-icon-circle">
+                <CreditCard size={28} />
+              </div>
             </div>
           </div>
-        </div>
-        {invoices.length ? (
-          <div className="table-wrap" style={{ padding: "20px" }}>
-            <table className="data-table" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
-              <thead>
-                <tr>
-                  <th style={{ 
-                    padding: "16px", 
-                    background: "#f8faf9", 
-                    borderRadius: "8px 8px 0 0",
-                    color: "#2c3e50",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px"
-                  }}>Açıklama</th>
-                  <th style={{ 
-                    padding: "16px", 
-                    background: "#f8faf9", 
-                    borderRadius: "8px 8px 0 0",
-                    color: "#2c3e50",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px"
-                  }}>Vade</th>
-                  <th style={{ 
-                    padding: "16px", 
-                    background: "#f8faf9", 
-                    borderRadius: "8px 8px 0 0",
-                    color: "#2c3e50",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px"
-                  }}>Kalan</th>
-                  <th style={{ 
-                    padding: "16px", 
-                    background: "#f8faf9", 
-                    borderRadius: "8px 8px 0 0",
-                    color: "#2c3e50",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px"
-                  }}>Durum</th>
-                  <th style={{ 
-                    padding: "16px", 
-                    background: "#f8faf9", 
-                    borderRadius: "8px 8px 0 0",
-                    color: "#2c3e50",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px"
-                  }}>İşlem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((invoice) => (
-                  <tr key={invoice.debt_id as string} className="parent-table-row" style={{ 
-                    background: "white",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
-                  }}>
-                    <td style={{ 
+          {invoices.length ? (
+            <div className="table-wrap" style={{ padding: "20px" }}>
+              <table className="data-table" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ 
                       padding: "16px", 
-                      fontWeight: 600, 
+                      background: "#f8faf9", 
+                      borderRadius: "8px 8px 0 0",
                       color: "#2c3e50",
-                      borderRadius: "8px 0 0 8px"
-                    }}>{String(invoice.description || invoice.debt_type)}</td>
-                    <td style={{ 
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Açıklama</th>
+                    <th style={{ 
                       padding: "16px", 
-                      color: "#546e7a",
-                      borderRadius: "0"
-                    }}>{String(invoice.due_date || "-")}</td>
-                    <td style={{ 
+                      background: "#f8faf9", 
+                      borderRadius: "8px 8px 0 0",
+                      color: "#2c3e50",
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Vade</th>
+                    <th style={{ 
                       padding: "16px", 
-                      fontWeight: 700, 
-                      color: "#e74c3c",
-                      fontSize: "15px",
-                      borderRadius: "0"
-                    }}>₺{Number(invoice.remaining_amount || 0).toLocaleString("tr-TR")}</td>
-                    <td style={{ 
+                      background: "#f8faf9", 
+                      borderRadius: "8px 8px 0 0",
+                      color: "#2c3e50",
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Kalan</th>
+                    <th style={{ 
                       padding: "16px", 
-                      borderRadius: "0"
-                    }}><Badge value={invoice.status} /></td>
-                    <td style={{ 
+                      background: "#f8faf9", 
+                      borderRadius: "8px 8px 0 0",
+                      color: "#2c3e50",
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>Durum</th>
+                    <th style={{ 
                       padding: "16px", 
-                      borderRadius: "0 8px 8px 0"
-                    }}>
-                      {invoice.status === "UNPAID" && Number(invoice.remaining_amount || 0) > 0 && (
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ 
-                            padding: "10px 20px", 
-                            fontSize: "14px",
-                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                            border: "none",
-                            borderRadius: 8,
-                            fontWeight: 600
-                          }}
-                          onClick={() => initializePayment(String(invoice.debt_id), Number(invoice.remaining_amount))}
-                        >
-                          <Wallet size={16} style={{ marginRight: 8 }} />
-                          Öde
-                        </button>
-                      )}
-                    </td>
+                      background: "#f8faf9", 
+                      borderRadius: "8px 8px 0 0",
+                      color: "#2c3e50",
+                      fontWeight: 700,
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px"
+                    }}>İşlem</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="parent-empty-state">
-            <div className="parent-empty-icon">
-              <CheckCircle size={40} style={{ color: "#2e7d32" }} />
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.debt_id as string} className="parent-table-row" style={{ 
+                      background: "white",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)"
+                    }}>
+                      <td style={{ 
+                        padding: "16px", 
+                        fontWeight: 600, 
+                        color: "#2c3e50",
+                        borderRadius: "8px 0 0 8px"
+                      }}>{String(invoice.description || invoice.debt_type)}</td>
+                      <td style={{ 
+                        padding: "16px", 
+                        color: "#546e7a",
+                        borderRadius: "0"
+                      }}>{String(invoice.due_date || "-")}</td>
+                      <td style={{ 
+                        padding: "16px", 
+                        fontWeight: 700, 
+                        color: "#e74c3c",
+                        fontSize: "15px",
+                        borderRadius: "0"
+                      }}>₺{Number(invoice.remaining_amount || 0).toLocaleString("tr-TR")}</td>
+                      <td style={{ 
+                        padding: "16px", 
+                        borderRadius: "0"
+                      }}><Badge value={invoice.status} /></td>
+                      <td style={{ 
+                        padding: "16px", 
+                        borderRadius: "0 8px 8px 0"
+                      }}>
+                        {canMakePayment && finances?.online_payment_available && ["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) && Number(invoice.remaining_amount || 0) > 0 && (
+                          <button 
+                            className="btn btn-primary" 
+                            style={{ 
+                              padding: "10px 20px", 
+                              fontSize: "14px",
+                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                              border: "none",
+                              borderRadius: 8,
+                              fontWeight: 600
+                            }}
+                            onClick={() => initializePayment(String(invoice.debt_id), Number(invoice.remaining_amount))}
+                          >
+                            <Wallet size={16} style={{ marginRight: 8 }} />
+                            Öde
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Tebrikler!</h3>
-            <p style={{ color: "#546e7a", fontSize: "14px" }}>Bekleyen ödeme bulunmuyor.</p>
+          ) : (
+            <div className="parent-empty-state">
+              <div className="parent-empty-icon">
+                <CheckCircle size={40} style={{ color: "#2e7d32" }} />
+              </div>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Tebrikler!</h3>
+              <p style={{ color: "#546e7a", fontSize: "14px" }}>Bekleyen ödeme bulunmuyor.</p>
+            </div>
+          )}
+        </div>
+
+        {aiRecommendations?.recommendations?.length > 0 && (
+          <div className="card parent-animate-in" style={{ 
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+            color: "white",
+            padding: "16px",
+            position: "relative",
+            overflow: "hidden",
+            marginTop: 20
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Brain size={20} />
+                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
+                Finansal planlama için öneriler
+              </div>
+              {aiRecommendations.recommendations && aiRecommendations.recommendations.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {aiRecommendations.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                    <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13 }}>
+                      <Lightbulb size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
-      </div>
+      </>
     )}
 
     {/* Health View */}
     {view === "health" && (
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.8fr)", gap: 24 }}>
-        <section className="card parent-animate-in" style={{ 
-          padding: "24px", 
-          background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 
-          border: "none",
-          color: "white",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, color: "white" }}>
-              <div className="parent-icon-circle">
-                <FileHeart size={20} />
-              </div>
-              İlaç Talimatı
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.9)", marginBottom: 24, fontSize: "14px" }}>
-              Güncel doz ve saat bilgisini okul ekibiyle paylaşın.
-            </p>
-            <form className="form-grid" onSubmit={submitMedicine} style={{ gap: "16px" }}>
-              <label className="field">
-                <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>İlaç Adı</span>
-                <input 
-                  required 
-                  value={medicine.medicine_name} 
-                  onChange={(event) => setMedicine({ ...medicine, medicine_name: event.target.value })}
-                  placeholder="Örn. Parasetamol"
-                  className="parent-input-glass"
-                />
-              </label>
-              <label className="field">
-                <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>Doz</span>
-                <input 
-                  required 
-                  placeholder="Örn. 5 ml" 
-                  value={medicine.dosage} 
-                  onChange={(event) => setMedicine({ ...medicine, dosage: event.target.value })}
-                  className="parent-input-glass"
-                />
-              </label>
-              <label className="field">
-                <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>Uygulama Saati</span>
-                <input 
-                  required 
-                  placeholder="Örn. 13:00" 
-                  value={medicine.time_to_give} 
-                  onChange={(event) => setMedicine({ ...medicine, time_to_give: event.target.value })}
-                  className="parent-input-glass"
-                />
-              </label>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <button 
-                  className="btn btn-primary" 
-                  type="submit" 
-                  style={{ 
-                    width: "100%", 
-                    background: "white", 
-                    color: "#f5576c",
-                    fontWeight: 700,
-                    padding: "14px"
-                  }}
-                >
-                  Talimatı Gönder
-                </button>
-              </div>
-            </form>
-            {requestMessage && (
+      <>
+        <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.8fr)", gap: 24 }}>
+          <section className="card parent-animate-in" style={{ 
+            padding: "24px", 
+            background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 
+            border: "none",
+            color: "white",
+            position: "relative",
+            overflow: "hidden"
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, color: "white" }}>
+                <div className="parent-icon-circle">
+                  <FileHeart size={20} />
+                </div>
+                İlaç Talimatı
+              </h2>
+              <p style={{ color: "rgba(255,255,255,0.9)", marginBottom: 24, fontSize: "14px" }}>
+                Güncel doz ve saat bilgisini okul ekibiyle paylaşın.
+              </p>
+              {canSendMedicine && <form className="form-grid" aria-label="İlaç talimatı gönder" onSubmit={submitMedicine} style={{ gap: "16px" }}>
+                <label className="field">
+                  <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>İlaç Adı</span>
+                  <input 
+                    required 
+                    value={medicine.medicine_name} 
+                    maxLength={255}
+                    disabled={medicineSubmitting}
+                    onChange={(event) => setMedicine({ ...medicine, medicine_name: event.target.value })}
+                    placeholder="Örn. Parasetamol"
+                    className="parent-input-glass"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>Doz</span>
+                  <input 
+                    required 
+                    placeholder="Örn. 5 ml" 
+                    value={medicine.dosage} 
+                    maxLength={100}
+                    disabled={medicineSubmitting}
+                    onChange={(event) => setMedicine({ ...medicine, dosage: event.target.value })}
+                    className="parent-input-glass"
+                  />
+                </label>
+                <label className="field">
+                  <span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>Uygulama Saati</span>
+                  <input 
+                    required 
+                    placeholder="Örn. 13:00" 
+                    value={medicine.time_to_give} 
+                    maxLength={100}
+                    disabled={medicineSubmitting}
+                    onChange={(event) => setMedicine({ ...medicine, time_to_give: event.target.value })}
+                    className="parent-input-glass"
+                  />
+                </label>
+                <label className="field"><span className="field-label" style={{ color: "rgba(255,255,255,0.9)" }}>İlaç talimatı notu</span><textarea className="parent-input-glass" maxLength={1000} disabled={medicineSubmitting} value={medicine.instructions} onChange={(event) => setMedicine({ ...medicine, instructions: event.target.value })} /></label>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <button 
+                    className="btn btn-primary" 
+                    type="submit" 
+                    disabled={medicineSubmitting}
+                    style={{ 
+                      width: "100%", 
+                      background: "white", 
+                      color: "#f5576c",
+                      fontWeight: 700,
+                      padding: "14px"
+                    }}
+                  >
+                    Talimatı Gönder
+                  </button>
+                </div>
+              </form>}
+              {requestMessage && (
+                <div style={{ 
+                  marginTop: 16, 
+                  padding: 16, 
+                  borderRadius: 12, 
+                  background: requestMessage.includes("iletildi") ? "rgba(46, 125, 50, 0.2)" : "rgba(211, 47, 47, 0.2)",
+                  color: "white",
+                  fontSize: "14px",
+                  backdropFilter: "blur(10px)"
+                }}>
+                  {requestMessage}
+                </div>
+              )}
+            </div>
+          </section>
+          
+          <section className="card parent-animate-in" style={{ padding: "24px", border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)", animationDelay: "0.1s" }}>
+            <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, color: "#2c3e50" }}>
               <div style={{ 
-                marginTop: 16, 
-                padding: 16, 
-                borderRadius: 12, 
-                background: requestMessage.includes("iletildi") ? "rgba(46, 125, 50, 0.2)" : "rgba(211, 47, 47, 0.2)",
-                color: "white",
-                fontSize: "14px",
-                backdropFilter: "blur(10px)"
+                width: 40, 
+                height: 40, 
+                borderRadius: 10, 
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center" 
               }}>
-                {requestMessage}
+                <Activity size={20} style={{ color: "white" }} />
+              </div>
+              Mevcut Talepler
+            </h2>
+            {medicineRequests.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {medicineRequests.map((request, index) => (
+                  <div 
+                    key={String(request.id || index)}
+                    className="parent-request-card"
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                      <strong style={{ fontSize: "18px", color: "#2c3e50", fontWeight: 700 }}>
+                        {String(request.medicine_name || "İlaç talimatı")}
+                      </strong>
+                      <Badge value={request.status || "PENDING"} />
+                    </div>
+                    <div style={{ display: "flex", gap: 20, fontSize: "14px", color: "#546e7a" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 600 }}>Doz:</span>
+                        <span>{String(request.dosage || "-")}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 600 }}>Saat:</span>
+                        <span>{String(request.time_to_give || "-")}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="parent-empty-state">
+                <div className="parent-empty-icon">
+                  <FileHeart size={40} style={{ color: "#2e7d32" }} />
+                </div>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Sağlık Kayıtları</h3>
+                <p style={{ color: "#546e7a", fontSize: "14px" }}>Henüz sağlık talebi bulunmuyor.</p>
               </div>
             )}
+          </section>
+        </div>
+
+        {aiRecommendations?.recommendations?.length > 0 && (
+          <div className="card parent-animate-in" style={{ 
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
+            color: "white",
+            padding: "16px",
+            position: "relative",
+            overflow: "hidden",
+            marginTop: 20
+          }}>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Brain size={20} />
+                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
+                Sağlık ve gelişim için öneriler
+              </div>
+              {aiRecommendations.recommendations && aiRecommendations.recommendations.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {aiRecommendations.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                    <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13 }}>
+                      <Lightbulb size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </section>
-        
-        <section className="card parent-animate-in" style={{ padding: "24px", border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)", animationDelay: "0.1s" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, color: "#2c3e50" }}>
+        )}
+      </>
+    )}
+
+    {/* Academic View */}
+    {view === "academic" && (
+      <>
+        <div className="card parent-animate-in" style={{ padding: "24px", border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
+          <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, color: "#2c3e50" }}>
             <div style={{ 
               width: 40, 
               height: 40, 
@@ -1010,101 +1183,78 @@ export function ParentPortalPage({ view }: { view: View }) {
               alignItems: "center", 
               justifyContent: "center" 
             }}>
-              <Activity size={20} style={{ color: "white" }} />
+              <GraduationCap size={20} style={{ color: "white" }} />
             </div>
-            Mevcut Talepler
+            Akademik Performans
           </h2>
-          {medicineRequests.length ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {medicineRequests.map((request, index) => (
-                <div 
-                  key={String(request.id || index)}
-                  className="parent-request-card"
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <strong style={{ fontSize: "18px", color: "#2c3e50", fontWeight: 700 }}>
-                      {String(request.medicine_name || "İlaç talimatı")}
-                    </strong>
-                    <Badge value={request.status || "PENDING"} />
-                  </div>
-                  <div style={{ display: "flex", gap: 20, fontSize: "14px", color: "#546e7a" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 600 }}>Doz:</span>
-                      <span>{String(request.dosage || "-")}</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontWeight: 600 }}>Saat:</span>
-                      <span>{String(request.time_to_give || "-")}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {grades.length ? (
+            <div className="table-wrap">
+              <table className="data-table" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ders</th>
+                    <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Sınav Türü</th>
+                    <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Not / tam puan</th>
+                    <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tarih</th>
+                    <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Durum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grades.map((grade, index) => {
+                    const ratio = grade.score != null && Number(grade.max_score) > 0 ? Number(grade.score) / Number(grade.max_score) * 100 : null;
+                    return <tr key={`${grade.source ?? "GRADE"}:${grade.id ?? index}`} className="parent-table-row" style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                      <td style={{ padding: "16px", fontWeight: 600, color: "#2c3e50", borderRadius: "8px 0 0 8px" }}>{String(grade.subject || "-")}</td>
+                      <td style={{ padding: "16px", color: "#546e7a", borderRadius: "0" }}>{String(grade.exam_type || "-")}</td>
+                      <td style={{ padding: "16px", fontWeight: 700, color: ratio === null || grade.valid_numeric_score === false ? "#546e7a" : ratio >= 70 ? "#2e7d32" : ratio >= 50 ? "#f57c00" : "#c62828", fontSize: "15px", borderRadius: "0" }}>{grade.score == null ? String(grade.grade_scale ?? "—") : `${grade.score} / ${grade.max_score ?? "—"}`}</td>
+                      <td style={{ padding: "16px", color: "#546e7a", borderRadius: "0" }}>{String(grade.exam_date || "-")}</td>
+                      <td style={{ padding: "16px", borderRadius: "0 8px 8px 0" }}><Badge value={grade.status || "COMPLETED"} /></td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="parent-empty-state">
               <div className="parent-empty-icon">
-                <FileHeart size={40} style={{ color: "#2e7d32" }} />
+                <GraduationCap size={40} style={{ color: "#2e7d32" }} />
               </div>
-              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Sağlık Kayıtları</h3>
-              <p style={{ color: "#546e7a", fontSize: "14px" }}>Henüz sağlık talebi bulunmuyor.</p>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Akademik Kayıtlar</h3>
+              <p style={{ color: "#546e7a", fontSize: "14px" }}>Henüz not bilgisi bulunmuyor.</p>
             </div>
           )}
-        </section>
-      </div>
-    )}
+        </div>
 
-    {/* Academic View */}
-    {view === "academic" && (
-      <div className="card parent-animate-in" style={{ padding: "24px", border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
-        <h2 style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, color: "#2c3e50" }}>
-          <div style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: 10, 
+        {aiRecommendations?.recommendations?.length > 0 && (
+          <div className="card parent-animate-in" style={{ 
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center" 
+            color: "white",
+            padding: "16px",
+            position: "relative",
+            overflow: "hidden",
+            marginTop: 20
           }}>
-            <GraduationCap size={20} style={{ color: "white" }} />
-          </div>
-          Akademik Performans
-        </h2>
-        {grades.length ? (
-          <div className="table-wrap">
-            <table className="data-table" style={{ borderCollapse: "separate", borderSpacing: "0 8px" }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Ders</th>
-                  <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Sınav Türü</th>
-                  <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Not</th>
-                  <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Tarih</th>
-                  <th style={{ padding: "16px", background: "#f8faf9", borderRadius: "8px 8px 0 0", color: "#2c3e50", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Durum</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grades.map((grade, index) => (
-                  <tr key={index} className="parent-table-row" style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                    <td style={{ padding: "16px", fontWeight: 600, color: "#2c3e50", borderRadius: "8px 0 0 8px" }}>{String(grade.subject || "-")}</td>
-                    <td style={{ padding: "16px", color: "#546e7a", borderRadius: "0" }}>{String(grade.exam_type || "-")}</td>
-                    <td style={{ padding: "16px", fontWeight: 700, color: Number(grade.score) >= 70 ? "#2e7d32" : Number(grade.score) >= 50 ? "#f57c00" : "#c62828", fontSize: "15px", borderRadius: "0" }}>{String(grade.score || "-")}</td>
-                    <td style={{ padding: "16px", color: "#546e7a", borderRadius: "0" }}>{String(grade.exam_date || "-")}</td>
-                    <td style={{ padding: "16px", borderRadius: "0 8px 8px 0" }}><Badge value={grade.status || "COMPLETED"} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="parent-empty-state">
-            <div className="parent-empty-icon">
-              <GraduationCap size={40} style={{ color: "#2e7d32" }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Brain size={20} />
+                <span style={{ fontSize: "12px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kayıt özeti</span>
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: 8 }}>
+                Akademik gelişim için öneriler
+              </div>
+              {aiRecommendations.recommendations && aiRecommendations.recommendations.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  {aiRecommendations.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                    <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13 }}>
+                      <Lightbulb size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span>{rec}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <h3 style={{ fontSize: "18px", fontWeight: 700, color: "#2c3e50", marginBottom: 8 }}>Akademik Kayıtlar</h3>
-            <p style={{ color: "#546e7a", fontSize: "14px" }}>Henüz not bilgisi bulunmuyor.</p>
           </div>
         )}
-      </div>
+      </>
     )}
 
     {/* Schedule View */}
@@ -1179,8 +1329,8 @@ export function ParentPortalPage({ view }: { view: View }) {
         </h2>
         {homework.length ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {homework.map((hw, index) => (
-              <div key={index} className="parent-request-card">
+            {homework.map((hw) => (
+              <div key={String(hw.id)} className="parent-request-card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <strong style={{ fontSize: "18px", color: "#2c3e50", fontWeight: 700 }}>
                     {String(hw.subject || "-")} - {String(hw.title || "-")}
@@ -1192,6 +1342,7 @@ export function ParentPortalPage({ view }: { view: View }) {
                   <span style={{ fontWeight: 600 }}>Teslim Tarihi:</span>
                   <span>{String(hw.due_date || "-")}</span>
                 </div>
+                <HomeworkSubmissions key={`${selectedId}-${String(hw.id)}`} homeworkId={String(hw.id)} studentId={selectedId} />
               </div>
             ))}
           </div>
@@ -1224,6 +1375,7 @@ export function ParentPortalPage({ view }: { view: View }) {
           </div>
           Ders Materyalleri
         </h2>
+        {materialError && <div role="alert"><ErrorState message={materialError} /></div>}
         {materials.length ? (
           <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
             {materials.map((material, index) => (
@@ -1232,10 +1384,10 @@ export function ParentPortalPage({ view }: { view: View }) {
                 <div style={{ fontSize: "12px", color: "#546e7a", marginBottom: 8 }}>{String(material.subject || "-")}</div>
                 <div style={{ fontSize: "12px", color: "#546e7a" }}>{String(material.type || "-")}</div>
                 {material.file_url && (
-                  <a 
-                    href={String(material.file_url)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => downloadMaterial(material)}
+                    disabled={Boolean(downloadingMaterial)}
                     style={{ 
                       display: "inline-block", 
                       marginTop: 12, 
@@ -1248,8 +1400,8 @@ export function ParentPortalPage({ view }: { view: View }) {
                       textDecoration: "none"
                     }}
                   >
-                    İndir
-                  </a>
+                    {downloadingMaterial === String(material.id) ? "İndiriliyor…" : "İndir"}
+                  </button>
                 )}
               </div>
             ))}
@@ -1719,10 +1871,10 @@ export function ParentPortalPage({ view }: { view: View }) {
     {chatTeacherId && (
       <div style={{ 
         position: "fixed", 
-        bottom: 20, 
-        right: 20, 
-        width: 380, 
-        height: 500, 
+        bottom: 16,
+        right: 16,
+        width: "min(380px, calc(100vw - 32px))",
+        height: "min(500px, calc(100dvh - 32px))",
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
@@ -1745,105 +1897,8 @@ export function ParentPortalPage({ view }: { view: View }) {
     )}
 
     {/* Payment Modal */}
-    {paymentModal.open && (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000
-      }}>
-        <div style={{
-          background: 'white',
-          borderRadius: 12,
-          maxWidth: 600,
-          width: '90%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          padding: 24
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>
-              {paymentModal.paymentStatus === 'pending' ? 'Ödeme İşlemi' : 
-               paymentModal.paymentStatus === 'success' ? 'Ödeme Başarılı' : 'Ödeme Başarısız'}
-            </h2>
-            <button 
-              onClick={closePaymentModal}
-              style={{ 
-                background: 'none', 
-                border: 'none', 
-                fontSize: '24px', 
-                cursor: 'pointer',
-                color: '#666'
-              }}
-            >
-              ×
-            </button>
-          </div>
-          
-          {paymentModal.paymentStatus === 'pending' && paymentModal.paymentUrl && (
-            <div>
-              <div style={{ marginBottom: 16, fontSize: '14px', color: '#666' }}>
-                Ödeme Tutarı: ₺{paymentModal.amount.toLocaleString('tr-TR')}
-              </div>
-              <iframe
-                src={paymentModal.paymentUrl}
-                style={{
-                  width: '100%',
-                  height: '500px',
-                  border: 'none',
-                  borderRadius: '8px'
-                }}
-                title="Ödeme"
-              />
-            </div>
-          )}
-          
-          {paymentModal.paymentStatus === 'success' && (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <CheckCircle size={64} style={{ color: '#4caf50', marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', color: '#2e7d32' }}>
-                Ödeme Başarılı
-              </h3>
-              <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>
-                Ödemeniz başarıyla tamamlandı. Teşekkür ederiz.
-              </p>
-              <button 
-                onClick={closePaymentModal}
-                className="btn btn-primary"
-                style={{ marginTop: 24, padding: '12px 32px' }}
-              >
-                Kapat
-              </button>
-            </div>
-          )}
-          
-          {paymentModal.paymentStatus === 'failed' && (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <XCircle size={64} style={{ color: '#f44336', marginBottom: 16 }} />
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '24px', color: '#c62828' }}>
-                Ödeme Başarısız
-              </h3>
-              <p style={{ margin: 0, color: '#666', fontSize: '16px' }}>
-                {paymentModal.message || 'Ödeme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.'}
-              </p>
-              <button 
-                onClick={closePaymentModal}
-                className="btn btn-primary"
-                style={{ marginTop: 24, padding: '12px 32px' }}
-              >
-                Kapat
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
+    {paymentModal && <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentModal.amount} childName={paymentModal.childName}
+      available={Boolean(finances?.online_payment_available) && canMakePayment} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />}
 
   </>;
 }

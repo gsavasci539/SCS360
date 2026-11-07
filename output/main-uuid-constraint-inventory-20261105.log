@@ -1,0 +1,52 @@
+{
+  "current": {
+    "tables": 108,
+    "composite_primary_keys": 5,
+    "unique_indexes_total_including_pk": 144,
+    "unique_constraints_excluding_pk": 33,
+    "explicit_unique_indexes": 3,
+    "uuid_containing_constraints": 129,
+    "uuid_containing_unique_excluding_pk": 22,
+    "candidate_normalized_uuid_collision_groups": 25,
+    "candidate_collision_rows": 50,
+    "unverified_constraints": 0,
+    "uuid_mapped_pk_fk_columns_checked": 358,
+    "invalid_uuid_literal_columns": 8,
+    "invalid_uuid_literal_cells": 43,
+    "invalid_uuid_primary_key_cells": 25,
+    "uuid_mapped_pk_fk_declared_sqlite_types": {
+      "VARCHAR(36)": 358
+    },
+    "missing_model_columns": 8,
+    "extra_physical_columns": 4,
+    "differing_existing_model_columns": 225
+  },
+  "backup": {
+    "tables": 107,
+    "composite_primary_keys": 5,
+    "unique_indexes_total_including_pk": 142,
+    "unique_constraints_excluding_pk": 33,
+    "explicit_unique_indexes": 2,
+    "uuid_containing_constraints": 127,
+    "uuid_containing_unique_excluding_pk": 21,
+    "candidate_normalized_uuid_collision_groups": 25,
+    "candidate_collision_rows": 50,
+    "unverified_constraints": 0,
+    "uuid_mapped_pk_fk_columns_checked": 353,
+    "invalid_uuid_literal_columns": 8,
+    "invalid_uuid_literal_cells": 43,
+    "invalid_uuid_primary_key_cells": 25,
+    "uuid_mapped_pk_fk_declared_sqlite_types": {
+      "VARCHAR(36)": 353
+    },
+    "missing_model_columns": 29,
+    "extra_physical_columns": 4,
+    "differing_existing_model_columns": 223
+  },
+  "comparison": {
+    "same_collision_key_set": true,
+    "new_collision_groups": 0,
+    "removed_collision_groups": 0
+  },
+  "output": "C:\\Okul360\\output\\main-uuid-constraint-inventory-20261105.json"
+}

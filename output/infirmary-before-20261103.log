@@ -1,0 +1,92 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial[sqlite] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000026C35915160>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000026C35914AD0>, 'nurse': <app.infrastructure.models.models.User object at 0x0000026C35933390>, ...})
+
+    async def test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial(infirmary_client):
+        client, sessions, data = infirmary_client
+        child = str(data["children"][0].id); auth = headers(data["nurse"])
+        bad = await client.put(f"/api/infirmary/health-records/{child}", headers=auth,
+            json={"student_id": str(data["children"][1].id), "allergies": "Wrong child"})
+>       assert bad.status_code == 422, bad.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"message":"Health record updated successfully"}}
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_infirmary_workflow.py:41: AssertionError
+_ test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial[postgresql] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000026C37A9F4D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000026C37A9EAD0>, 'nurse': <app.infrastructure.models.models.User object at 0x0000026C37A85E10>, ...})
+
+    async def test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial(infirmary_client):
+        client, sessions, data = infirmary_client
+        child = str(data["children"][0].id); auth = headers(data["nurse"])
+        bad = await client.put(f"/api/infirmary/health-records/{child}", headers=auth,
+            json={"student_id": str(data["children"][1].id), "allergies": "Wrong child"})
+>       assert bad.status_code == 422, bad.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"message":"Health record updated successfully"}}
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_infirmary_workflow.py:41: AssertionError
+____ test_medication_log_cannot_reference_another_childs_schedule[sqlite] _____
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000026C37F46D50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000026C37EE3100>, 'nurse': <app.infrastructure.models.models.User object at 0x0000026C3792BA50>, ...})
+
+    async def test_medication_log_cannot_reference_another_childs_schedule(infirmary_client):
+        client, _, data = infirmary_client
+        auth = headers(data["nurse"])
+        created = await client.post("/api/infirmary/medication-schedules", headers=auth, json=schedule_body(data))
+        assert created.status_code == 200, created.text
+        wrong = await client.post("/api/infirmary/medication/mark-given", headers=auth, json={"schedule_id": created.json()["data"]["id"],
+            "student_id": str(data["children"][1].id), "scheduled_time": "10:00", "status": "GIVEN", "given_by": str(data["teacher"].id)})
+>       assert wrong.status_code in {403, 422}, wrong.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"message":"Medication marked as given","status":"GIVEN","given_time":"2026-11-03T14:22:28.195501"}}
+E       assert 200 in {403, 422}
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_infirmary_workflow.py:60: AssertionError
+__ test_medication_log_cannot_reference_another_childs_schedule[postgresql] ___
+
+infirmary_client = (<httpx.AsyncClient object at 0x0000026C3802C9D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x0000026C37FD8270>, 'nurse': <app.infrastructure.models.models.User object at 0x0000026C37FEF050>, ...})
+
+    async def test_medication_log_cannot_reference_another_childs_schedule(infirmary_client):
+        client, _, data = infirmary_client
+        auth = headers(data["nurse"])
+        created = await client.post("/api/infirmary/medication-schedules", headers=auth, json=schedule_body(data))
+        assert created.status_code == 200, created.text
+        wrong = await client.post("/api/infirmary/medication/mark-given", headers=auth, json={"schedule_id": created.json()["data"]["id"],
+            "student_id": str(data["children"][1].id), "scheduled_time": "10:00", "status": "GIVEN", "given_by": str(data["teacher"].id)})
+>       assert wrong.status_code in {403, 422}, wrong.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"message":"Medication marked as given","status":"GIVEN","given_time":"2026-11-03T14:22:30.221297"}}
+E       assert 200 in {403, 422}
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_infirmary_workflow.py:60: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[sqlite]
+tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[postgresql]
+  C:\Okul360\backend\app\routers\infirmary.py:328: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    given_time=log.given_time or datetime.utcnow(),
+
+tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[sqlite]
+tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[postgresql]
+  C:\Okul360\backend\app\routers\infirmary.py:340: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "given_time": (log.given_time or datetime.utcnow()).isoformat()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_infirmary_workflow.py::test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial[sqlite]
+FAILED tests/integration/test_infirmary_workflow.py::test_health_record_path_cannot_create_a_different_child_and_upsert_is_serial[postgresql]
+FAILED tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[sqlite]
+FAILED tests/integration/test_infirmary_workflow.py::test_medication_log_cannot_reference_another_childs_schedule[postgresql]
+4 failed, 8 deselected, 24 warnings in 9.82s

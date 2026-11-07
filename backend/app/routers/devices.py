@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
@@ -56,7 +57,7 @@ def device_to_dict(device: Device) -> dict:
 
 @router.get("")
 async def list_devices(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -74,7 +75,7 @@ async def list_devices(
 @router.get("/{device_id}")
 async def get_device(
     device_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -90,7 +91,7 @@ async def get_device(
 @router.post("")
 async def create_device(
     device: DeviceCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -131,7 +132,7 @@ async def create_device(
 async def update_device(
     device_id: str,
     device: DeviceUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -177,7 +178,7 @@ async def update_device(
 @router.delete("/{device_id}")
 async def delete_device(
     device_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -196,7 +197,7 @@ async def delete_device(
 async def update_device_status(
     device_id: str,
     status: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -219,7 +220,7 @@ async def update_device_status(
 @router.patch("/{device_id}/heartbeat")
 async def update_device_heartbeat(
     device_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):

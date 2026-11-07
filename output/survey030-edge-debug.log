@@ -1,0 +1,99 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [11352]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "1bfe3512-9dfc-4f0a-b0d8-4b42140974f5", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.57, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:14.872695Z"}
+[WebServer] (node:23272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24756) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:22016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "89f9fa4d-9282-4134-aa83-b39bddbfd419", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 2783.19, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:26.032548Z"}
+[WebServer] {"request_id": "29661b45-1b32-4c41-9cc8-dd22019ba20e", "method": "GET", "path": "/api/surveys/surveys", "status": 200, "duration_ms": 57.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:26.978784Z"}
+[WebServer] {"request_id": "8aa80bf1-e048-42ba-bd55-9f99e62ade06", "method": "GET", "path": "/api/surveys/options", "status": 200, "duration_ms": 277.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:27.223223Z"}
+[WebServer] {"request_id": "91843d9e-efac-403b-9b0c-879a2a281c23", "method": "GET", "path": "/api/surveys/summary", "status": 200, "duration_ms": 366.23, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:27.293768Z"}
+[WebServer] {"request_id": "a2ace9c5-d2ce-4aea-b012-4c6ecd1670ba", "method": "GET", "path": "/api/surveys/responses", "status": 200, "duration_ms": 368.06, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T09:03:27.295447Z"}
+  x  1 [edge] › e2e\acceptance.spec.ts:6:1 › published anonymous survey accepts parent and staff answers and displays real results (7.9s)
+
+
+  1) [edge] › e2e\acceptance.spec.ts:6:1 › published anonymous survey accepts parent and staff answers and displays real results 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 6
+
+    - Array []
+    + Array [
+    +   Object {
+    +     "message": "Lütfen listeden bir öge seçin.",
+    +     "name": "",
+    +   },
+    + ]
+
+      12 |   await page.getByLabel("Bitiş tarihi", { exact: true }).fill("2030-01-01");
+      13 |   await page.getByLabel("Anonim yanıt topla", { exact: true }).check();
+    > 14 |   expect(await page.getByRole("region", { name: "Yeni anket", exact: true }).locator("form").evaluate((form: HTMLFormElement) => [...form.elements].filter((element) => element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement).filter((element) => !(element as HTMLInputElement).checkValidity()).map((element) => ({ name: (element as HTMLInputElement).name, message: (element as HTMLInputElement).validationMessage })))).toEqual([]);
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ^
+      15 |   await page.getByRole("button", { name: "Anket taslağını oluştur", exact: true }).click();
+      16 |   await expect(page).toHaveURL(/\/surveys\?survey=/);
+      17 |   await page.getByLabel("Soru metni", { exact: true }).fill("Okul memnuniyeti");
+        at C:\Okul360\frontend\e2e\acceptance.spec.ts:14:481
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-published-anony-b9bf8-s-and-displays-real-results-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\acceptance.spec.ts:6:1 › published anonymous survey accepts parent and staff answers and displays real results 

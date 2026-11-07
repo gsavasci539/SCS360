@@ -1,0 +1,4 @@
+SCS360: http://127.0.0.1:5173
+API: http://127.0.0.1:8000/api/docs
+Logs: C:\Okul360\.codex-build\local
+Verified refreshed connect-teacher route with HTTP 201.

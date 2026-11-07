@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, DateTime, Date, ForeignKey, Boolean, Integer, JSON, func
+from sqlalchemy import String, DateTime, Date, ForeignKey, Boolean, Integer, JSON, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -12,6 +12,7 @@ class Survey(Base):
     __table_args__ = {"extend_existing": True}
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    organization_id: Mapped[UUID | None] = mapped_column(ForeignKey("organizations.id"), index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
     target_audience: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -48,4 +49,15 @@ class SurveyResponse(Base):
     response_data: Mapped[dict] = mapped_column(JSON, nullable=False)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SurveyParticipation(Base):
+    """Prevent duplicate participation without linking an anonymous answer ID."""
+    __tablename__ = "survey_participations"
+    __table_args__ = (UniqueConstraint("survey_id", "user_id", name="uq_survey_participation"),)
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    survey_id: Mapped[UUID] = mapped_column(ForeignKey("surveys.id"), nullable=False)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/inventory.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  07:50:30
+   Duration  3.51s (transform 201ms, setup 279ms, import 505ms, tests 611ms, environment 1.84s)
+

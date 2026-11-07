@@ -1,4 +1,6 @@
+import asyncio
 import smtplib
+import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -11,18 +13,22 @@ settings = get_settings()
 class SmtpEmailProvider(NotificationProvider):
     async def send(self, recipient: str, subject: str | None, body: str) -> ProviderResult:
         try:
-            if settings.APP_ENV in ("development", "test"):
-                return ProviderResult(success=True, message="Email queued (dev mode)", response={"to": recipient})
+            if not settings.NOTIFICATION_DELIVERY_ENABLED:
+                return ProviderResult(success=False, message="Bildirim gönderimi yapılandırmada kapalı")
+            if not settings.SMTP_HOST or settings.SMTP_HOST == "smtp.example.com" or not settings.SMTP_FROM_EMAIL:
+                return ProviderResult(success=False, message="SMTP sunucusu yapılandırılmamış")
             msg = MIMEMultipart()
             msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
             msg["To"] = recipient
-            msg["Subject"] = subject or "EduPanel Bildirimi"
+            msg["Subject"] = subject or "SCS360 Bildirimi"
             msg.attach(MIMEText(body, "plain", "utf-8"))
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                server.starttls()
-                if settings.SMTP_USER:
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.send_message(msg)
+            def deliver():
+                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=settings.NOTIFICATION_TIMEOUT_SECONDS) as server:
+                    server.starttls(context=ssl.create_default_context())
+                    if settings.SMTP_USER:
+                        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                    server.send_message(msg)
+            await asyncio.to_thread(deliver)
             return ProviderResult(success=True, message="Email sent")
-        except Exception as e:
-            return ProviderResult(success=False, message=str(e))
+        except Exception:
+            return ProviderResult(success=False, message="E-posta sağlayıcısı gönderimi tamamlayamadı")

@@ -1,0 +1,48 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary[sqlite] _
+
+pickup_client = (<httpx.AsyncClient object at 0x000001612B709940>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001612B910050>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001612B7092B0>, ...})
+
+    async def test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary(pickup_client):
+        client, sessions, data = pickup_client
+        auth = headers(data["actor"]); payload = body(data, request_id=str(uuid4()))
+        replies = await asyncio.gather(*[client.post("/api/dismissal/authorizations", headers=auth, json=payload) for _ in range(2)])
+        assert all(reply.status_code == 200 for reply in replies), [reply.text for reply in replies]
+>       assert replies[0].json()["data"]["id"] == replies[1].json()["data"]["id"]
+E       AssertionError: assert '63d639e2-480...-d9be3d44c374' == 'b207a037-b08...-42d3ebc7265c'
+E         
+E         - b207a037-b080-4e26-bf25-42d3ebc7265c
+E         + 63d639e2-4804-4533-886a-d9be3d44c374
+
+tests\integration\test_pickup_desk.py:58: AssertionError
+_ test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary[postgresql] _
+
+pickup_client = (<httpx.AsyncClient object at 0x000001612DBA2990>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001612DBBD810>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001612DBA1F90>, ...})
+
+    async def test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary(pickup_client):
+        client, sessions, data = pickup_client
+        auth = headers(data["actor"]); payload = body(data, request_id=str(uuid4()))
+        replies = await asyncio.gather(*[client.post("/api/dismissal/authorizations", headers=auth, json=payload) for _ in range(2)])
+        assert all(reply.status_code == 200 for reply in replies), [reply.text for reply in replies]
+>       assert replies[0].json()["data"]["id"] == replies[1].json()["data"]["id"]
+E       AssertionError: assert '2d96553b-0f1...-ca7ee8b75aa6' == 'b0d0f0aa-5fe...-19ea865907bd'
+E         
+E         - b0d0f0aa-5fe0-422c-b59c-19ea865907bd
+E         + 2d96553b-0f15-4023-a0d4-ca7ee8b75aa6
+
+tests\integration\test_pickup_desk.py:58: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_pickup_desk.py::test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary[sqlite]
+FAILED tests/integration/test_pickup_desk.py::test_pickup_create_retries_overlap_checks_and_legacy_duplicate_summary[postgresql]
+2 failed, 4 deselected, 20 warnings in 6.81s

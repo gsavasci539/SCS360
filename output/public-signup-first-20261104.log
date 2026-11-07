@@ -1,0 +1,146 @@
+FFFF....F..                                                              [100%]
+================================== FAILURES ===================================
+_ test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000002C509372A50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002C5093723C0>, 'org': <app.infrastructure.models.models.Organization object at 0x000002C509370D70>, ...})
+
+    async def test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account(platform_client):
+        client, sessions, data = platform_client
+        plan, tenant, body = await plan_and_tenant(client, data)
+        public = {**body, "name": "Public School", "owner_email": "public-owner@example.com", "request_id": str(uuid4())}
+        catalog = await client.get("/api/public/plans")
+        assert catalog.status_code == 200 and catalog.json()["data"][0]["price"] == "100.00", catalog.text
+        forbidden = await client.post("/api/public/signup", json={**public, "period_end": "2030-01-01T00:00:00Z"})
+        assert forbidden.status_code == 422, forbidden.text
+        first = await client.post("/api/public/signup", json=public)
+        assert first.status_code == 200 and first.json()["data"]["period_end"] is None, first.text
+        again = await asyncio.gather(*[client.post("/api/public/signup", json=public) for _ in range(2)])
+        assert all(row.status_code == 200 and row.json()["data"] == first.json()["data"] for row in again), [row.text for row in again]
+        login = await client.post("/api/auth/login", json={"email": public["owner_email"], "password": public["owner_password"]})
+        assert login.status_code == 200 and login.json()["data"]["user"]["organization_access"]["status"] == "PENDING_PAYMENT", login.text
+        auth = {"Authorization": "Bearer " + login.json()["data"]["access_token"]}
+        assert (await client.get("/api/students", headers=auth)).status_code == 402
+>       assert (await client.get("/api/platform/tenants", headers=auth)).status_code == 403
+E       assert 402 == 403
+E        +  where 402 = <Response [402 Payment Required]>.status_code
+
+tests\integration\test_public_signup.py:29: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  passlib.handlers.bcrypt:bcrypt.py:622 (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+_ test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000002C50BB4CB90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002C50BB4C190>, 'org': <app.infrastructure.models.models.Organization object at 0x000002C50B6F88A0>, ...})
+
+    async def test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account(platform_client):
+        client, sessions, data = platform_client
+        plan, tenant, body = await plan_and_tenant(client, data)
+        public = {**body, "name": "Public School", "owner_email": "public-owner@example.com", "request_id": str(uuid4())}
+        catalog = await client.get("/api/public/plans")
+        assert catalog.status_code == 200 and catalog.json()["data"][0]["price"] == "100.00", catalog.text
+        forbidden = await client.post("/api/public/signup", json={**public, "period_end": "2030-01-01T00:00:00Z"})
+        assert forbidden.status_code == 422, forbidden.text
+        first = await client.post("/api/public/signup", json=public)
+        assert first.status_code == 200 and first.json()["data"]["period_end"] is None, first.text
+        again = await asyncio.gather(*[client.post("/api/public/signup", json=public) for _ in range(2)])
+        assert all(row.status_code == 200 and row.json()["data"] == first.json()["data"] for row in again), [row.text for row in again]
+        login = await client.post("/api/auth/login", json={"email": public["owner_email"], "password": public["owner_password"]})
+        assert login.status_code == 200 and login.json()["data"]["user"]["organization_access"]["status"] == "PENDING_PAYMENT", login.text
+        auth = {"Authorization": "Bearer " + login.json()["data"]["access_token"]}
+        assert (await client.get("/api/students", headers=auth)).status_code == 402
+>       assert (await client.get("/api/platform/tenants", headers=auth)).status_code == 403
+E       assert 402 == 403
+E        +  where 402 = <Response [402 Payment Required]>.status_code
+
+tests\integration\test_public_signup.py:29: AssertionError
+_ test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000002C50BC9CA50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002C50BB995B0>, 'org': <app.infrastructure.models.models.Organization object at 0x000002C50B5D3D50>, ...})
+
+    async def test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable(platform_client):
+        client, sessions, data = platform_client
+        plan, tenant, body = await plan_and_tenant(client, data)
+        another = {key: value for key, value in plan.items() if key != "id"}
+        another["code"] = "SECOND"; another["name"] = "Second package"
+        created = await client.post("/api/platform/plans", headers=headers(data["root"]), json=another)
+        assert created.status_code == 200, created.text
+        second_id = created.json()["data"]["id"]
+        values = {**body, "owner_email": "collision@example.com"}
+        attempts = await asyncio.gather(*[client.post("/api/public/signup", json={**values, "plan_id": identifier, "request_id": str(uuid4())}) for identifier in (plan["id"], second_id)])
+>       assert sorted(row.status_code for row in attempts) == [200, 409], [row.text for row in attempts]
+E       AssertionError: ['{"success":false,"message":"Hesap veya istek kimli�i ba�ka bir kay�tla �ak���yor","errors":[],"request_id":"247d3008...esap veya istek kimli�i ba�ka bir kay�tla �ak���yor","errors":[],"request_id":"4050272f-72ba-45cd-93cf-7e8ca0e8f327"}']
+E       assert [409, 409] == [200, 409]
+E         
+E         At index 0 diff: 409 != 200
+E         Use -v to get more diff
+
+tests\integration\test_public_signup.py:52: AssertionError
+_ test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000002C50BB9AEA0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002C50BB86140>, 'org': <app.infrastructure.models.models.Organization object at 0x000002C50BCCFD90>, ...})
+
+    async def test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable(platform_client):
+        client, sessions, data = platform_client
+        plan, tenant, body = await plan_and_tenant(client, data)
+        another = {key: value for key, value in plan.items() if key != "id"}
+        another["code"] = "SECOND"; another["name"] = "Second package"
+        created = await client.post("/api/platform/plans", headers=headers(data["root"]), json=another)
+        assert created.status_code == 200, created.text
+        second_id = created.json()["data"]["id"]
+        values = {**body, "owner_email": "collision@example.com"}
+        attempts = await asyncio.gather(*[client.post("/api/public/signup", json={**values, "plan_id": identifier, "request_id": str(uuid4())}) for identifier in (plan["id"], second_id)])
+>       assert sorted(row.status_code for row in attempts) == [200, 409], [row.text for row in attempts]
+E       AssertionError: ['{"success":false,"message":"Hesap veya istek kimli�i ba�ka bir kay�tla �ak���yor","errors":[],"request_id":"de3d5f16...esap veya istek kimli�i ba�ka bir kay�tla �ak���yor","errors":[],"request_id":"441e795d-f0dd-4c10-8ae3-75ec3323a138"}']
+E       assert [409, 409] == [200, 409]
+E         
+E         At index 0 diff: 409 != 200
+E         Use -v to get more diff
+
+tests\integration\test_public_signup.py:52: AssertionError
+_ test_expiry_and_ten_day_boundary_are_exact_and_do_not_depend_on_server_timezone _
+
+    def test_expiry_and_ten_day_boundary_are_exact_and_do_not_depend_on_server_timezone():
+        end = datetime(2026, 11, 3, 12, tzinfo=UTC)
+        subscription = SimpleNamespace(admin_status="ACTIVE", period_end=end, package_snapshot={"branch_limit": 1, "student_limit": 10, "user_limit": 5})
+>       assert evaluate(subscription, now=end - timedelta(microseconds=1))["status"] == "ACTIVE"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_subscription_access.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+subscription = namespace(admin_status='ACTIVE', period_end=datetime.datetime(2026, 11, 3, 12, 0, tzinfo=datetime.timezone.utc), package_snapshot={'branch_limit': 1, 'student_limit': 10, 'user_limit': 5})
+
+    def evaluate(subscription, *, active=True, now=None):
+        now = utc(now or datetime.now(UTC))
+        result = {"status": "LEGACY", "restricted": False, "warning": None, "period_end": None,
+            "grace_end": None, "billing_path": "/subscription", "days_remaining": None}
+        if not active or (subscription and subscription.admin_status != "ACTIVE"):
+            return {**result, "status": "SUSPENDED", "restricted": True, "warning": "Kurum hesab� kapat�lm��. Platform y�neticisiyle ileti�ime ge�in."}
+        if subscription is None:
+            return result
+>       if subscription.package_snapshot and subscription.period_start is None and subscription.period_end is None:
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'period_start'
+
+app\application\services\subscription_access.py:23: AttributeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_public_signup.py::test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account[sqlite]
+FAILED tests/integration/test_public_signup.py::test_public_purchase_stays_restricted_until_verified_payment_and_retries_keep_one_account[postgresql]
+FAILED tests/integration/test_public_signup.py::test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable[sqlite]
+FAILED tests/integration/test_public_signup.py::test_concurrent_public_email_collision_is_a_conflict_and_hidden_plans_are_not_purchasable[postgresql]
+FAILED tests/unit/test_subscription_access.py::test_expiry_and_ten_day_boundary_are_exact_and_do_not_depend_on_server_timezone
+5 failed, 6 passed, 20 warnings in 21.56s

@@ -1,4 +1,5 @@
-import { Plus, Upload } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Plus, Upload, BookOpen, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
@@ -19,6 +20,7 @@ export function LibraryPage() {
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
@@ -37,6 +39,10 @@ export function LibraryPage() {
   }
 
   useEffect(() => { load(1); }, []);
+
+  useEffect(() => {
+    getAnalysis("/ai/library-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => 
     data.items.filter((r) => JSON.stringify(r).toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))),
@@ -60,7 +66,7 @@ export function LibraryPage() {
         title="Kütüphane & Zimmet"
         description="Kitapları ve zimmet kayıtlarını yönetin."
       >
-        {can("resource.write") && (
+        {can("library.write") && (
           <>
             <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
               <Plus size={16} />Yeni kitap
@@ -71,6 +77,45 @@ export function LibraryPage() {
           </>
         )}
       </PageHeader>
+
+      {aiAnalysis && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI Kütüphane Analizi</h2>
+              <p>Kitap durumu ve öneriler</p>
+            </div>
+            <BookOpen size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Kitap</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{data.total}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Mevcut</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{data.items.reduce((sum, item) => sum + (Number(item.available_count) || 0), 0)}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Kategori</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{new Set(data.items.map(item => item.category)).size}</div>
+              </div>
+            </div>
+            {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
+                {aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                    <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="card"><LoadingState /></div>
@@ -94,8 +139,8 @@ export function LibraryPage() {
           total={data.total}
           onPage={load}
           detailBase="/library/books"
-          canEdit={can("resource.write")}
-          onDelete={can("resource.write") ? handleDelete : undefined}
+          canEdit={can("library.write")}
+          onDelete={can("library.write") ? handleDelete : undefined}
         />
       )}
 

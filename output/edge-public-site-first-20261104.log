@@ -1,0 +1,104 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [23496]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "2917e6d7-f3e3-4e40-b361-d9922415505a", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:44:56.666269Z"}
+[WebServer] (node:16832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:23812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:4920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "c5af7023-f5ef-48bc-99cf-153e3fa2f314", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1574.08, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:04.617824Z"}
+[WebServer] {"request_id": "cdcd0726-b3f7-44b3-9399-00f22b0f20f0", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 47.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:05.019086Z"}
+[WebServer] {"request_id": "2e618bb2-9c1e-4702-a787-de334a706fd3", "method": "POST", "path": "/api/platform/plans", "status": 200, "duration_ms": 35.38, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:05.218594Z"}
+[WebServer] {"request_id": "73c94584-fb66-40d5-8d13-bdf78fb109fc", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 248.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:05.232564Z"}
+[WebServer] {"request_id": "f0b72801-5522-40ac-9f78-f2b7eff6eb4c", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 292.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:05.294050Z"}
+[WebServer] {"request_id": "1f9ee21f-4267-4f38-a1c5-5ea304097cb7", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 323.9, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:05.307676Z"}
+[WebServer] {"request_id": "b5be7350-e183-4fe3-b23f-e46403344b17", "method": "GET", "path": "/api/public/plans", "status": 200, "duration_ms": 7.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:06.304587Z"}
+[WebServer] {"request_id": "69d25d72-3a1e-460a-aed5-eba7a0316728", "method": "GET", "path": "/api/public/plans", "status": 200, "duration_ms": 8.19, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:06.642037Z"}
+[WebServer] {"request_id": "309e5d1e-94d9-4f04-a8b2-319ecfb543a5", "method": "POST", "path": "/api/public/signup", "status": 200, "duration_ms": 298.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:07.230341Z"}
+[WebServer] {"request_id": "ea328873-f67e-4ff4-b4dc-781e8e25e699", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 280.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:07.516926Z"}
+[WebServer] {"request_id": "dd440ba6-66fe-4360-ab64-84d356f0e4f1", "method": "GET", "path": "/api/subscription/access", "status": 200, "duration_ms": 34.82, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:07.887041Z"}
+[WebServer] {"request_id": "1c317010-45c8-4420-b4b0-e81a89241b41", "method": "GET", "path": "/api/subscription/invoices", "status": 200, "duration_ms": 36.21, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:07.945029Z"}
+[WebServer] {"request_id": "2c82422a-6d1c-4699-8f5e-052d809709b7", "method": "GET", "path": "/api/subscription/plans", "status": 200, "duration_ms": 42.16, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:07.947609Z"}
+[WebServer] {"request_id": "7d001cc1-8ca2-43d6-a07b-553e6a688f22", "method": "POST", "path": "/api/subscription/invoices", "status": 200, "duration_ms": 76.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.132181Z"}
+[WebServer] {"request_id": "7d64b9aa-ba20-4aa4-b564-cce220fd7f58", "method": "GET", "path": "/api/subscription/access", "status": 200, "duration_ms": 34.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.185278Z"}
+[WebServer] {"request_id": "ff0bafd8-a366-4dc9-9f64-2a8d66e4b1fa", "method": "GET", "path": "/api/subscription/plans", "status": 200, "duration_ms": 23.08, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.223444Z"}
+[WebServer] {"request_id": "8ac9ab4f-47d5-4987-ae5e-54bf11893c6f", "method": "GET", "path": "/api/subscription/invoices", "status": 200, "duration_ms": 26.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.229484Z"}
+[WebServer] {"request_id": "0cc28e1d-d29b-496a-9475-07518e9a4c46", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 18.83, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.953727Z"}
+[WebServer] {"request_id": "c8fe671d-4522-4901-8a5b-27b19b8b9c79", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 48.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:08.990487Z"}
+[WebServer] {"request_id": "753222b4-a6b9-4b16-8702-86d4f6a96b4a", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 38.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.007611Z"}
+[WebServer] {"request_id": "0991c562-ed12-45b4-8fb5-7cfeb57e3b58", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 65.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.016185Z"}
+[WebServer] {"request_id": "aad7e411-98d1-4d0b-89e2-5aaa479b0261", "method": "POST", "path": "/api/platform/invoices/4c85d6d2-e5d9-47fe-8229-6446f6f5742c/settle", "status": 200, "duration_ms": 65.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.738218Z"}
+[WebServer] {"request_id": "4090d347-69f9-40e1-8967-47bd3b371328", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 9.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.800035Z"}
+[WebServer] {"request_id": "413c2656-221f-4095-8536-3ccba0d19038", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 28.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.834612Z"}
+[WebServer] {"request_id": "a37fe674-f48c-4e01-85d4-8321657f8536", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 35.12, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.865355Z"}
+[WebServer] {"request_id": "0b32e508-4081-44d7-ae82-bb1a00687678", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 47.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:09.870128Z"}
+[WebServer] {"request_id": "ed43ce57-4bc9-403e-8555-c1dbd442dc35", "method": "GET", "path": "/api/subscription/access", "status": 200, "duration_ms": 34.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.028055Z"}
+[WebServer] {"request_id": "4280aa09-a5e0-4446-b992-02f6493efdbe", "method": "GET", "path": "/api/subscription/plans", "status": 200, "duration_ms": 36.19, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.091746Z"}
+[WebServer] {"request_id": "c4dc2a25-b544-4d07-9938-faa862c5e473", "method": "GET", "path": "/api/subscription/invoices", "status": 200, "duration_ms": 39.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.098886Z"}
+[WebServer] {"request_id": "6d6c13ff-4378-4a2f-a1f4-e7a3f5b603ff", "method": "GET", "path": "/api/platform/tenants/a986e346-e296-41f1-9963-5fd2d604f9c1/workspace", "status": 200, "duration_ms": 21.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.160853Z"}
+[WebServer] {"request_id": "8bf29d82-77d1-44a6-82c5-aa8e65deae1a", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 8.57, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.262603Z"}
+[WebServer] {"request_id": "4d5c6e14-4fc9-46d1-a0ef-7f6e9a7c1010", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 34.2, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.306113Z"}
+[WebServer] {"request_id": "bdcb6b06-1955-40c9-84de-ad20aed4cef7", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 34.27, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.312831Z"}
+[WebServer] {"request_id": "e3eb7b25-4918-4c27-b02e-dfb5fc2bd6e5", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 44.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.319531Z"}
+[WebServer] {"request_id": "193f6aad-3c8a-42e3-97ff-0729a3ec0bc6", "method": "GET", "path": "/api/dashboard/charts", "status": 200, "duration_ms": 100.74, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.851812Z"}
+[WebServer] {"request_id": "995a49a0-ccae-4800-94da-2fa7cf88627f", "method": "GET", "path": "/api/dashboard/summary", "status": 200, "duration_ms": 190.98, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:10.865167Z"}
+[WebServer] {"request_id": "04551b0d-ed02-4a18-be19-87b6e78aee25", "method": "GET", "path": "/api/dashboard/charts", "status": 200, "duration_ms": 175.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.041450Z"}
+[WebServer] {"request_id": "f0b07486-58f8-49cf-a7f3-d5f3cc14b5f1", "method": "GET", "path": "/api/ai/insights-report", "status": 200, "duration_ms": 296.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.051079Z"}
+[WebServer] {"request_id": "83597f44-7e8b-4012-a97c-a6a35948387e", "method": "GET", "path": "/api/dashboard/summary", "status": 200, "duration_ms": 255.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.127646Z"}
+[WebServer] {"request_id": "463db631-d9b9-4b32-b857-1623fe3b2fdf", "method": "GET", "path": "/api/students", "status": 200, "duration_ms": 63.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.583950Z"}
+[WebServer] {"request_id": "32a61bd3-3605-46bc-bb89-bfe1396c0ac3", "method": "GET", "path": "/api/ai/students-overview", "status": 200, "duration_ms": 113.9, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.637392Z"}
+[WebServer] {"request_id": "e4756697-35ab-416b-b354-c49bb1989a1e", "method": "GET", "path": "/api/students", "status": 200, "duration_ms": 50.61, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.642832Z"}
+[WebServer] {"request_id": "adefa0b4-87f4-4381-9348-216b5a2f5f5d", "method": "GET", "path": "/api/ai/students-overview", "status": 200, "duration_ms": 48.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:11.692449Z"}
+[WebServer] {"request_id": "d2ce8c9b-64a3-4eca-95f7-8e64783bda37", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 10.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:12.101845Z"}
+[WebServer] {"request_id": "27378716-a373-4448-b038-5888c52b421a", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 31.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:12.150274Z"}
+[WebServer] {"request_id": "b2d88fac-9261-4038-aa1b-823f0daafa6c", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 39.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:12.152523Z"}
+[WebServer] {"request_id": "f57d4285-2891-4ccc-b4ce-8ef023d55b34", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 51.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T22:45:12.164255Z"}
+  ok 1 [edge] › e2e\public-site.spec.ts:7:1 › public pricing, pending signup, verified purchase and selected-school platform workspace work on mobile (13.3s)
+
+  1 passed (29.4s)

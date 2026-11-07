@@ -1,0 +1,120 @@
+
+> scs360-frontend@1.0.0 build
+> tsc -b && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+✓ 2714 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                             1.13 kB │ gzip:   0.50 kB
+dist/assets/manrope-latin-ext-wght-normal-Ch3YOpNY.woff2   15.12 kB
+dist/assets/dm-sans-latin-ext-wght-normal-BOFOeGcA.woff2   18.23 kB
+dist/assets/manrope-latin-wght-normal-DHIcAJRg.woff2       24.84 kB
+dist/assets/dm-sans-latin-wght-normal-Xz1IZZA0.woff2       36.93 kB
+dist/assets/MarketingPage-DYfCjaPd.css                     12.42 kB │ gzip:   3.20 kB
+dist/assets/index-8ob_8m0W.css                             22.76 kB │ gzip:   5.76 kB
+dist/assets/data-CQA2--Jk.js                                0.18 kB │ gzip:   0.15 kB
+dist/assets/hostedPayment-CKEmvdka.js                       0.25 kB │ gzip:   0.21 kB
+dist/assets/requestId-BF-Pb9CB.js                           0.27 kB │ gzip:   0.21 kB
+dist/assets/OrganizationDetailPage-Y9e3xk6R.js              0.34 kB │ gzip:   0.24 kB
+dist/assets/download-D6YGH0aD.js                            0.34 kB │ gzip:   0.28 kB
+dist/assets/BranchesPage-_vSEXkh9.js                        0.37 kB │ gzip:   0.26 kB
+dist/assets/OrganizationsPage-B7NF14AC.js                   0.38 kB │ gzip:   0.26 kB
+dist/assets/export-VNuZuL4E.js                              1.58 kB │ gzip:   0.96 kB
+dist/assets/OutboxPage-BgIvIbXF.js                          1.67 kB │ gzip:   0.96 kB
+dist/assets/TimetablePage-mtQ7jsXK.js                       1.77 kB │ gzip:   0.81 kB
+dist/assets/UserCreatePage-YMD-jzLq.js                      2.51 kB │ gzip:   1.15 kB
+dist/assets/OutboxDetailPage-C7XDdx8w.js                    2.79 kB │ gzip:   1.12 kB
+dist/assets/MonthlyPaymentsReport-Cq1PLSco.js               2.98 kB │ gzip:   1.40 kB
+dist/assets/BulkAttendancePage-BS8xjXAy.js                  3.41 kB │ gzip:   1.48 kB
+dist/assets/ExcelImport-Ca-VdPAc.js                         3.49 kB │ gzip:   1.67 kB
+dist/assets/analysis-u3eaJK7X.js                            3.49 kB │ gzip:   0.91 kB
+dist/assets/ExpensesPage-UhAssCb8.js                        3.67 kB │ gzip:   1.57 kB
+dist/assets/MonthlyAttendanceReport-CeywhKWA.js             3.69 kB │ gzip:   1.59 kB
+dist/assets/UsersPage-D9DS9Vfb.js                           3.71 kB │ gzip:   1.55 kB
+dist/assets/PaymentPage-DW8sKuEq.js                         3.77 kB │ gzip:   1.71 kB
+dist/assets/DataTable-B2lAb6mS.js                           3.77 kB │ gzip:   1.59 kB
+dist/assets/StudentAttendancePage-CWurFdk4.js               3.79 kB │ gzip:   1.68 kB
+dist/assets/AttendanceReport-ZuXDaEs0.js                    3.83 kB │ gzip:   1.55 kB
+dist/assets/ParentSurveys-B1OdKwhl.js                       3.92 kB │ gzip:   1.84 kB
+dist/assets/HomeworkSubmissions-0LlqB7nZ.js                 3.96 kB │ gzip:   1.73 kB
+dist/assets/ClassOccupancyReport-BmG7Ek1T.js                3.96 kB │ gzip:   1.66 kB
+dist/assets/RolePermissionsPage-GDgo9xF5.js                 4.02 kB │ gzip:   1.80 kB
+dist/assets/ExamsPage-wcGHk06o.js                           4.05 kB │ gzip:   1.51 kB
+dist/assets/BranchPerformanceReport-8wpPBUiM.js             4.07 kB │ gzip:   1.67 kB
+dist/assets/ChatInterface-Cw3Mx62b.js                       4.09 kB │ gzip:   1.72 kB
+dist/assets/StudentFilesPage-B1UoPsZ-.js                    4.12 kB │ gzip:   1.73 kB
+dist/assets/DebtReport-CW-dUPn6.js                          4.27 kB │ gzip:   1.63 kB
+dist/assets/OverdueDebtsReport-D2q14Ele.js                  4.32 kB │ gzip:   1.76 kB
+dist/assets/SignupPage-D4uiOD8O.js                          4.33 kB │ gzip:   1.82 kB
+dist/assets/TemplateFormPage-BxREY8zs.js                    4.35 kB │ gzip:   1.69 kB
+dist/assets/RolesPage-C3c5vtUY.js                           4.73 kB │ gzip:   1.93 kB
+dist/assets/AnnouncementDetailPage-g6iZgwEr.js              4.94 kB │ gzip:   1.74 kB
+dist/assets/ExcuseRequests-U4iAeaSM.js                      5.04 kB │ gzip:   1.87 kB
+dist/assets/StaffDetailPage-BqAOFIFG.js                     5.20 kB │ gzip:   1.61 kB
+dist/assets/MaterialsPage-Bk9fXhbh.js                       5.31 kB │ gzip:   2.20 kB
+dist/assets/AssignStudentsPage-_mwtYfTB.js                  5.45 kB │ gzip:   1.87 kB
+dist/assets/StaffPage-DdODto-v.js                           5.50 kB │ gzip:   2.07 kB
+dist/assets/ClassOccupancyPage-D6-dbYN5.js                  5.50 kB │ gzip:   1.88 kB
+dist/assets/LibraryPage-BI-hm-X6.js                         5.70 kB │ gzip:   2.13 kB
+dist/assets/ParentNoticesPage-hz_Lmksd.js                   5.85 kB │ gzip:   2.23 kB
+dist/assets/AttendancePage-C2lwfnhl.js                      5.91 kB │ gzip:   2.36 kB
+dist/assets/ClassDetailPage-BgPAJKHE.js                     5.91 kB │ gzip:   1.74 kB
+dist/assets/AppointmentsPage-BsF4YYew.js                    6.24 kB │ gzip:   2.11 kB
+dist/assets/StudentParentsPage-DE4FZ_rE.js                  6.55 kB │ gzip:   2.17 kB
+dist/assets/SettingsPage-Du9IVRmG.js                        6.80 kB │ gzip:   2.46 kB
+dist/assets/StudentsPage-DX8SoHoI.js                        7.04 kB │ gzip:   2.21 kB
+dist/assets/DevicesPage-Br0fgXwP.js                         7.13 kB │ gzip:   2.19 kB
+dist/assets/StudentDetailPage-Cut3_Sis.js                   7.38 kB │ gzip:   2.10 kB
+dist/assets/UserDetailPage-hHAuy_-J.js                      7.66 kB │ gzip:   2.55 kB
+dist/assets/ReceiptPrintPage-BtfeP3Xv.js                    8.93 kB │ gzip:   2.37 kB
+dist/assets/TeacherPortalPage-CQvpeSaw.js                   9.24 kB │ gzip:   2.76 kB
+dist/assets/CanteenPage-CoSHoKFx.js                         9.36 kB │ gzip:   2.67 kB
+dist/assets/ConsentsPage-Cp_oPXOz.js                        9.93 kB │ gzip:   3.11 kB
+dist/assets/StudentPaymentsPage-DKdtoTN8.js                10.15 kB │ gzip:   3.02 kB
+dist/assets/PayrollPage-DrUGPbCL.js                        10.51 kB │ gzip:   3.59 kB
+dist/assets/SecurityPage-DVPXSWIY.js                       11.16 kB │ gzip:   3.73 kB
+dist/assets/HomeworkPage-DaOv026r.js                       11.23 kB │ gzip:   3.31 kB
+dist/assets/GuidancePage-BFavkQHN.js                       11.25 kB │ gzip:   3.61 kB
+dist/assets/SurveysPage-zGDomlNc.js                        11.26 kB │ gzip:   3.64 kB
+dist/assets/ReportsPage-JC_dSNbV.js                        11.28 kB │ gzip:   4.66 kB
+dist/assets/CardBalancePage-Bbc1JG4d.js                    11.45 kB │ gzip:   3.29 kB
+dist/assets/DismissalPage-WDYj-n2_.js                      11.80 kB │ gzip:   3.90 kB
+dist/assets/SubscriptionPage-BYdgbyvV.js                   12.00 kB │ gzip:   4.19 kB
+dist/assets/CommunicationPages-BovQvSZf.js                 12.05 kB │ gzip:   3.83 kB
+dist/assets/InventoryPage-xjmt2luj.js                      12.20 kB │ gzip:   3.44 kB
+dist/assets/RfidCardsPage-CPFQWS7q.js                      12.39 kB │ gzip:   3.50 kB
+dist/assets/MarketingPage-BaOGurKq.js                      13.23 kB │ gzip:   4.11 kB
+dist/assets/DailyReportsPage-CHw62Iv3.js                   13.57 kB │ gzip:   3.50 kB
+dist/assets/DetailPage-BUjSItWh.js                         14.60 kB │ gzip:   3.72 kB
+dist/assets/TutoringPage-HLHRovKP.js                       14.73 kB │ gzip:   4.45 kB
+dist/assets/BusPage-BEulK2pf.js                            15.13 kB │ gzip:   4.34 kB
+dist/assets/HealthPage-jZzkvdFo.js                         16.26 kB │ gzip:   4.92 kB
+dist/assets/FinancePages-NWZDMYTj.js                       16.70 kB │ gzip:   4.31 kB
+dist/assets/ClubsPage-DroCsYR3.js                          17.28 kB │ gzip:   4.36 kB
+dist/assets/CanteenSalesPage-B9mv8uXS.js                   18.83 kB │ gzip:   5.32 kB
+dist/assets/PlatformPage-B8l_FRBj.js                       18.91 kB │ gzip:   5.22 kB
+dist/assets/DashboardPage-Bucku7xf.js                      19.63 kB │ gzip:   5.21 kB
+dist/assets/ResourcePages-k1TjgyF9.js                      20.68 kB │ gzip:   5.89 kB
+dist/assets/ChatbotManagementPage-ZPfoC47R.js              23.52 kB │ gzip:   4.87 kB
+dist/assets/AIAnalyticsPage-p9JCU9Iq.js                    23.75 kB │ gzip:   4.50 kB
+dist/assets/react-BHl5bdSy.js                              50.96 kB │ gzip:  18.10 kB
+dist/assets/ParentPortalPage-Dufh6aZj.js                   69.33 kB │ gzip:  12.36 kB
+dist/assets/vendor-CJyiovg3.js                             86.26 kB │ gzip:  31.79 kB
+dist/assets/forms-CjQOklnA.js                             112.22 kB │ gzip:  34.60 kB
+dist/assets/charts-CVvm9Gxr.js                            372.99 kB │ gzip: 110.17 kB
+dist/assets/index-B4IpE-8M.js                             398.09 kB │ gzip: 121.41 kB
+✓ built in 12.56s

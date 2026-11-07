@@ -1,0 +1,33 @@
+FF........                                                               [100%]
+================================== FAILURES ===================================
+__ test_bus_writes_require_accessible_route_and_stop_from_same_route[sqlite] __
+tests\integration\test_bus_scope.py:36: in test_bus_writes_require_accessible_route_and_stop_from_same_route
+    assert reply.status_code == 404, (path, reply.text)
+E   AssertionError: ('check-in', '{"success":true,"message":"��renci BOARDED olarak i�aretlendi","data":{"route_id":"b8344dce-9cb2-46dc-86...:"BOARDED","timestamp":"2026-11-03T16:23:26.668565","pickup_time":"16:23:26","dropoff_time":null,"status":"PRESENT"}}')
+E   assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_bus_writes_require_accessible_route_and_stop_from_same_route[postgresql] _
+tests\integration\test_bus_scope.py:36: in test_bus_writes_require_accessible_route_and_stop_from_same_route
+    assert reply.status_code == 404, (path, reply.text)
+E   AssertionError: ('check-in', '{"success":true,"message":"��renci BOARDED olarak i�aretlendi","data":{"route_id":"187acbff-9d47-4444-98...:"BOARDED","timestamp":"2026-11-03T16:23:28.890526","pickup_time":"16:23:28","dropoff_time":null,"status":"PRESENT"}}')
+E   assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[sqlite]
+tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[postgresql]
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\type_adapter.py:412: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return self.validator.validate_python(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[postgresql]
+2 failed, 8 passed, 22 warnings in 14.70s

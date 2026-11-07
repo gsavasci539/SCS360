@@ -1,3 +1,5 @@
+import { getAnalysis } from "../../lib/analysis";
+import { reportClientError } from "../../lib/diagnostics";
 import { CalendarCheck2, ChevronRight, CreditCard, GraduationCap, ReceiptText, UserPlus, UsersRound, WalletCards, Bell, BookOpen, ClipboardCheck, MessageCircle, X, Send, Brain, TrendingUp, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -7,6 +9,7 @@ import { api, apiMessage } from "../../lib/api";
 import { money } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
 import { ChatInterface } from "../parent/ChatInterface";
+import { ExcuseReviewPanel } from "../communications/ExcuseRequests";
 import type { ApiResponse } from "../../types/api";
 
 interface Summary { total_students?: number; active_students?: number; total_branches?: number; total_classes?: number; absent_today?: number; monthly_payments?: string | number; pending_debt?: string | number; overdue_debt?: string | number }
@@ -21,11 +24,12 @@ interface StudentWithParent {
   is_primary: boolean;
 }
 
-const fallbackChart = [{ month: "Oca", amount: 210000 }, { month: "Şub", amount: 245000 }, { month: "Mar", amount: 228000 }, { month: "Nis", amount: 306000 }, { month: "May", amount: 334000 }, { month: "Haz", amount: 382000 }];
+const fallbackChart: Array<{ month: string; amount: number }> = [];
 
 export function DashboardPage() {
   const [summary, setSummary] = useState<Summary>({}); const [chart, setChart] = useState(fallbackChart); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [aiInsights, setAiInsights] = useState<any>(null);
   const user = useAuthStore((state) => state.user);
+  const can = useAuthStore((state) => state.can);
   const isTeacher = user?.roles?.some((r: any) => r.slug === "teacher1" || r.slug === "teacher2" || r.slug === "teacher3") || false;
   
   // Admin chat state
@@ -33,18 +37,19 @@ export function DashboardPage() {
   const [students, setStudents] = useState<StudentWithParent[]>([]);
   const [chatStudentId, setChatStudentId] = useState<string>("");
   const [chatParentName, setChatParentName] = useState<string>("");
+  const [chatParentId, setChatParentId] = useState<string>("");
   const [studentsLoading, setStudentsLoading] = useState(false);
   
   async function load() {
     setLoading(true); setError("");
     try {
-      const [summaryResult, chartResult, aiResult] = await Promise.allSettled([api.get<ApiResponse<Summary>>("/dashboard/summary"), api.get<ApiResponse<Charts>>("/dashboard/charts"), api.get("/ai/insights-report").catch(() => null)]);
+      const [summaryResult, chartResult, aiResult] = await Promise.allSettled([api.get<ApiResponse<Summary>>("/dashboard/summary"), api.get<ApiResponse<Charts>>("/dashboard/charts"), getAnalysis("/ai/insights-report").catch(() => null)]);
       if (summaryResult.status === "fulfilled") setSummary(summaryResult.value.data.data || {}); else {
         const overview = await api.get<ApiResponse<Summary>>("/dashboard/overview"); setSummary(overview.data.data || {});
       }
       if (chartResult.status === "fulfilled") {
         const rows = chartResult.value.data.data?.monthly_income || chartResult.value.data.data?.income || [];
-        if (rows.length) setChart(rows.map((row: { month?: string; label?: string; amount?: number; income?: number }) => ({ month: row.month || row.label || "", amount: Number(row.amount ?? row.income ?? 0) })));
+        setChart(rows.map((row: { month?: string; label?: string; amount?: number; income?: number }) => ({ month: row.month || row.label || "", amount: Number(row.amount ?? row.income ?? 0) })));
       }
       if (aiResult.status === "fulfilled" && aiResult.value) setAiInsights(aiResult.value.data.data);
     } catch (err) { setError(apiMessage(err)); } finally { setLoading(false); }
@@ -56,15 +61,16 @@ export function DashboardPage() {
       const result = await api.get<ApiResponse<StudentWithParent[]>>("/admin/students");
       setStudents(result.data.data || []);
     } catch (err) {
-      console.error("Failed to load students:", err);
+      reportClientError("Failed to load students:", err);
     } finally {
       setStudentsLoading(false);
     }
   };
 
-  const openChat = (studentId: string, parentName: string) => {
+  const openChat = (studentId: string, parentName: string, parentId: string) => {
     setChatStudentId(studentId);
     setChatParentName(parentName);
+    setChatParentId(parentId);
   };
 
   useEffect(() => { load(); }, []);
@@ -82,10 +88,11 @@ export function DashboardPage() {
         title="Günaydın, yönetim merkezi hazır." 
         description="Kurumunuzdaki önemli gelişmeler ve hızlı aksiyonlar tek bakışta burada." 
       >
-        <Link to="/students/new" className="btn btn-primary">
+        {can("students.write") && <Link to="/students/new" className="btn btn-primary">
           <UserPlus size={16} />Yeni öğrenci
-        </Link>
+        </Link>}
       </PageHeader>
+      {can("students.write") && can("branch.read") && can("dashboard.view") && <ExcuseReviewPanel />}
       {error && (
         <div className="card" style={{ marginBottom: 18 }}>
           <ErrorState message={error} retry={load} />
@@ -101,6 +108,56 @@ export function DashboardPage() {
             <Brain size={20} color="#176b5b" />
           </div>
           <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <GraduationCap size={16} color="#176b5b" />
+                  <div style={{ fontSize: 11, color: "#6e7b7d", fontWeight: 600 }}>Akademik</div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e", marginBottom: 4 }}>
+                  {aiInsights.insights?.academic_performance?.overall_trend || "Veri yok"}
+                </div>
+                <div style={{ fontSize: 11, color: "#6e7b7d" }}>
+                  {aiInsights.insights?.academic_performance?.at_risk_students || 0} risk öğrenci
+                </div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <CalendarCheck2 size={16} color="#16a34a" />
+                  <div style={{ fontSize: 11, color: "#6e7b7d", fontWeight: 600 }}>Devamsızlık</div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e", marginBottom: 4 }}>
+                  %{aiInsights.insights?.attendance?.overall_rate || 0}
+                </div>
+                <div style={{ fontSize: 11, color: "#6e7b7d" }}>
+                  {aiInsights.insights?.attendance?.trend || "Veri yok"}
+                </div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <WalletCards size={16} color="#dc2626" />
+                  <div style={{ fontSize: 11, color: "#6e7b7d", fontWeight: 600 }}>Finansal</div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e", marginBottom: 4 }}>
+                  %{aiInsights.insights?.financial?.collection_rate || 0}
+                </div>
+                <div style={{ fontSize: 11, color: "#6e7b7d" }}>
+                  {aiInsights.insights?.financial?.forecast_trend || "Veri yok"}
+                </div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <MessageCircle size={16} color="#f59e0b" />
+                  <div style={{ fontSize: 11, color: "#6e7b7d", fontWeight: 600 }}>Veli</div>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e", marginBottom: 4 }}>
+                  {aiInsights.insights?.parent_satisfaction?.score || "Veri yok"}
+                </div>
+                <div style={{ fontSize: 11, color: "#6e7b7d" }}>
+                  {aiInsights.insights?.parent_satisfaction?.sentiment || "Veri yok"}
+                </div>
+              </div>
+            </div>
             {aiInsights.priority_actions && aiInsights.priority_actions.length > 0 && 
               aiInsights.priority_actions.slice(0, 3).map((action: string, index: number) => (
                 <div 
@@ -121,6 +178,11 @@ export function DashboardPage() {
                 </div>
               ))
             }
+            {!aiInsights.priority_actions || aiInsights.priority_actions.length === 0 && (
+              <div style={{ padding: 12, borderRadius: 8, background: "#f0fdf4", border: "1px solid #16a34a" }}>
+                <span style={{ fontSize: 13, color: "#16a34a" }}>Tüm göstergeler normal seviyede</span>
+              </div>
+            )}
             <Link className="btn btn-ghost" to="/ai-analytics" style={{ marginTop: 12 }}>
               Tüm AI analizlerini gör <ChevronRight size={14} />
             </Link>
@@ -203,10 +265,10 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-                  <Link to="/attendance" className="card" style={{ padding: 20, textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 12, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}><div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><CalendarCheck2 size={24} /></div><div><div style={{ fontWeight: 600, marginBottom: 4 }}>Yoklama Al</div><div style={{ fontSize: 12, color: "#666" }}>Günlük yoklama kaydı</div></div></Link>
-                  <Link to="/finance" className="card" style={{ padding: 20, textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 12, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}><div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><WalletCards size={24} /></div><div><div style={{ fontWeight: 600, marginBottom: 4 }}>Ödemeler</div><div style={{ fontSize: 12, color: "#666" }}>Tahsilat ve borç yönetimi</div></div></Link>
-                  <Link to="/communications" className="card" style={{ padding: 20, textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 12, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}><div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><Bell size={24} /></div><div><div style={{ fontWeight: 600, marginBottom: 4 }}>Duyurular</div><div style={{ fontSize: 12, color: "#666" }}>Okul duyuruları ve bildirimler</div></div></Link>
-                  <Link to="/reports" className="card" style={{ padding: 20, textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: 12, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}><div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><ReceiptText size={24} /></div><div><div style={{ fontWeight: 600, marginBottom: 4 }}>Raporlar</div><div style={{ fontSize: 12, color: "#666" }}>Detaylı analiz ve istatistikler</div></div></Link>
+                  <Quick to="/attendance" icon={<CalendarCheck2 size={24} />} title="Yoklama Al" caption="Günlük yoklama kaydı" />
+                  <Quick to="/finance/payments" icon={<WalletCards size={24} />} title="Ödemeler" caption="Tahsilat ve borç yönetimi" />
+                  <Quick to="/announcements" icon={<Bell size={24} />} title="Duyurular" caption="Okul duyuruları ve bildirimler" />
+                  <Quick to="/reports" icon={<ReceiptText size={24} />} title="Raporlar" caption="Detaylı analiz ve istatistikler" />
                 </div>
               </section>
             </div>
@@ -215,7 +277,7 @@ export function DashboardPage() {
         {activeTab === "chat" && (
           <div className="tab-content">
             {chatStudentId ? (
-              <ChatInterface studentId={chatStudentId} teacherName={chatParentName} onBack={() => { setChatStudentId(""); setChatParentName(""); }} apiBase="/admin" />
+              <ChatInterface studentId={chatStudentId} parentId={chatParentId} teacherName={chatParentName} onBack={() => { setChatStudentId(""); setChatParentName(""); }} apiBase="/admin" />
             ) : (
               <div>
                 {studentsLoading ? (
@@ -225,7 +287,7 @@ export function DashboardPage() {
                     <h3 style={{ marginBottom: 16 }}>Öğrenciler ve Veliler</h3>
                     <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
                       {students.map((student) => (
-                        <div key={student.student_id} className="card" style={{ padding: 16, cursor: "pointer" }} onClick={() => openChat(student.student_id, student.parent_name)}>
+                        <div key={`${student.student_id}-${student.parent_id}`} className="card" style={{ padding: 16, cursor: "pointer" }} onClick={() => openChat(student.student_id, student.parent_name, student.parent_id)}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 600 }}>{student.student_name[0]}</div>
                             <div>
@@ -280,7 +342,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
       const studentsResult = await api.get<ApiResponse<any[]>>("/students");
       setStudents(studentsResult.data.data || []);
     } catch (err) {
-      console.error("Failed to load contacts:", err);
+      reportClientError("Failed to load contacts:", err);
     } finally {
       setLoadingContacts(false);
     }
@@ -451,7 +513,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
                 ) : (
                   students.slice(0, 10).map((student) => (
                     <div
-                      key={student.id}
+                      key={student.student_id}
                       style={{
                         padding: 12,
                         border: '1px solid #e5e7eb',
@@ -461,7 +523,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
                         transition: 'all 0.2s'
                       }}
                       onClick={() => {
-                        setSelectedRecipient(student.id);
+                        setSelectedRecipient(student.student_id);
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
@@ -485,7 +547,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
                 ) : (
                   students.slice(0, 10).map((student) => (
                     <div
-                      key={student.id}
+                      key={student.student_id}
                       style={{
                         padding: 12,
                         border: '1px solid #e5e7eb',
@@ -495,7 +557,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
                         transition: 'all 0.2s'
                       }}
                       onClick={() => {
-                        setSelectedRecipient(student.id);
+                        setSelectedRecipient(student.student_id);
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
@@ -584,12 +646,12 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
                         setSending(true);
                         try {
                           // TODO: Implement actual message sending
-                          console.log('Sending message to:', selectedRecipient, 'Message:', messageInput);
+                          
                           setMessageInput('');
                           setSelectedRecipient('');
                           setShowQuickChat(false);
                         } catch (err) {
-                          console.error('Failed to send message:', err);
+                          reportClientError('Failed to send message:', err);
                         } finally {
                           setSending(false);
                         }
@@ -660,7 +722,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
 }
 
 function Quick({ to, icon, title, caption }: { to: string; icon: React.ReactNode; title: string; caption: string }) {
-  const permission = ({ "/attendance": "attendance.read", "/finance/payments/new": "finance.write", "/announcements/new": "announcement.write", "/finance/receipts": "receipt.read" } as Record<string, string>)[to];
+  const permission = ({ "/attendance": "attendance.read", "/students": "students.read", "/finance/payments": "finance.read", "/finance/payments/new": "finance.write", "/announcements": "announcement.read", "/announcements/new": "announcement.write", "/finance/receipts": "receipt.read", "/reports": "report.read" } as Record<string, string>)[to];
   const allowed = useAuthStore((state) => state.can(permission));
   return allowed ? <Link className="quick-item" to={to}><div className="quick-icon">{icon}</div><div className="quick-copy"><strong>{title}</strong><span>{caption}</span></div><ChevronRight size={15} color="#91a09f" /></Link> : null;
 }

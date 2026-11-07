@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/api/announcements", tags=["Announcements"])
 @require_permission("announcements.create")
 async def create_announcement(
     announcement: AnnouncementCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = AnnouncementRepository()
@@ -40,7 +41,7 @@ async def list_announcements(
     limit: int = Query(100, ge=1, le=100),
     branch_id: Optional[UUID] = None,
     status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("announcements.read"))
 ):
     repo = AnnouncementRepository()
@@ -58,7 +59,7 @@ async def list_announcements(
 @router.get("/{announcement_id}", response_model=AnnouncementResponse)
 async def get_announcement(
     announcement_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("announcements.read"))
 ):
     repo = AnnouncementRepository()
@@ -74,7 +75,7 @@ async def get_announcement(
 async def update_announcement(
     announcement_id: UUID,
     announcement: AnnouncementUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("announcements.write"))
 ):
     repo = AnnouncementRepository()
@@ -93,7 +94,7 @@ async def update_announcement(
 @router.delete("/{announcement_id}")
 async def delete_announcement(
     announcement_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("announcements.write"))
 ):
     repo = AnnouncementRepository()
@@ -109,7 +110,7 @@ async def delete_announcement(
 @router.post("/{announcement_id}/send")
 async def send_announcement(
     announcement_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = AnnouncementRepository()

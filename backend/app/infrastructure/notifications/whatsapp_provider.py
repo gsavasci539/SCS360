@@ -9,8 +9,10 @@ settings = get_settings()
 class MetaWhatsAppProvider(NotificationProvider):
     async def send(self, recipient: str, subject: str | None, body: str) -> ProviderResult:
         try:
-            if settings.APP_ENV in ("development", "test"):
-                return ProviderResult(success=True, message="WhatsApp queued (dev mode)", response={"to": recipient})
+            if not settings.NOTIFICATION_DELIVERY_ENABLED:
+                return ProviderResult(success=False, message="Bildirim gönderimi yapılandırmada kapalı")
+            if not all([settings.WHATSAPP_API_URL, settings.WHATSAPP_ACCESS_TOKEN, settings.WHATSAPP_PHONE_NUMBER_ID]):
+                return ProviderResult(success=False, message="WhatsApp sağlayıcısı yapılandırılmamış")
             url = f"{settings.WHATSAPP_API_URL}/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
             headers = {"Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}", "Content-Type": "application/json"}
             payload = {
@@ -19,9 +21,9 @@ class MetaWhatsAppProvider(NotificationProvider):
                 "type": "text",
                 "text": {"body": body},
             }
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=settings.NOTIFICATION_TIMEOUT_SECONDS) as client:
                 response = await client.post(url, json=payload, headers=headers)
-            success = response.status_code in (200, 201)
+            success = response.status_code in (200, 201) and bool(response.json().get("messages"))
             return ProviderResult(success=success, message=response.text, response=response.json() if success else None)
-        except Exception as e:
-            return ProviderResult(success=False, message=str(e))
+        except Exception:
+            return ProviderResult(success=False, message="WhatsApp sağlayıcısı gönderimi tamamlayamadı")

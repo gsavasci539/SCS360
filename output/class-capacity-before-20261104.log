@@ -1,0 +1,237 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+__ test_student_create_update_and_repeat_assignment_respect_capacity[sqlite] __
+
+platform_client = (<httpx.AsyncClient object at 0x0000027D6C38B230>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000027D6C38ABA0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000027D6C389400>, ...})
+
+    async def test_student_create_update_and_repeat_assignment_respect_capacity(platform_client):
+        client, sessions, data = platform_client; classroom = await target(sessions, data); h = auth(data)
+        first = await client.post("/api/students", headers=h, json=student(data, classroom))
+        assert first.status_code == 200, first.text
+>       assert (await client.post("/api/students", headers=h, json=student(data, classroom, "Second"))).status_code == 409
+E       assert 200 == 409
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_class_capacity_management.py:31: AssertionError
+_ test_bulk_transfer_and_capacity_shrink_preserve_rosters_on_failure[sqlite] __
+
+platform_client = (<httpx.AsyncClient object at 0x0000027D6E72AD50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000027D6E801D90>, 'org': <app.infrastructure.models.models.Organization object at 0x0000027D6E72A0D0>, ...})
+
+    async def test_bulk_transfer_and_capacity_shrink_preserve_rosters_on_failure(platform_client):
+        client, sessions, data = platform_client; classroom = await target(sessions, data); h = auth(data)
+        ids = [str(row.id) for row in data["children"]]
+>       assert (await client.post(f"/api/classes/{classroom.id}/assign-students", headers=h, json={"student_ids": ids})).status_code == 409
+E       assert 422 == 409
+E        +  where 422 = <Response [422 Unprocessable Entity]>.status_code
+
+tests\integration\test_class_capacity_management.py:42: AssertionError
+__ test_parent_role_cannot_transfer_between_its_own_children_classes[sqlite] __
+
+materials_client = (<httpx.AsyncClient object at 0x0000027D6E72BD90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000027D6E842750>, 'org': <app.infrastructure.models.models.Organization object at 0x0000027D6E703BB0>, ...})
+
+    async def test_parent_role_cannot_transfer_between_its_own_children_classes(materials_client):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            row = await db.get(Student, data["children"][1].id); row.class_id = data["other_class"].id; await db.commit()
+        response = await client.post(f'/api/classes/{data["classroom"].id}/transfer-students', headers=headers(data["user"]),
+            json={"student_ids": [str(data["children"][0].id)], "target_class_id": str(data["other_class"].id)})
+>       assert response.status_code == 403, response.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"d6ae086c-5e82-4547-82c6-ba0a0d3e9237"}
+E       assert 404 == 403
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_class_capacity_management.py:59: AssertionError
+____ test_concurrent_last_seat_creates_serialize_on_both_databases[sqlite] ____
+
+platform_client = (<httpx.AsyncClient object at 0x0000027D6E869E00>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000027D6E8D2E40>, 'org': <app.infrastructure.models.models.Organization object at 0x0000027D6E756580>, ...})
+
+    async def test_concurrent_last_seat_creates_serialize_on_both_databases(platform_client):
+        client, sessions, data = platform_client; classroom = await target(sessions, data); h = auth(data)
+        responses = await asyncio.gather(*[client.post("/api/students", headers=h, json=student(data, classroom, f"Concurrent{i}")) for i in range(2)])
+>       assert sorted(row.status_code for row in responses) == [200, 409], [row.text for row in responses]
+E       AssertionError: ['{"success":true,"message":"��renci olu�turuldu","data":{"id":"dfaa07de-5cbd-43e7-9326-12c03ffc487a","organization_id...l,"enrollment_date":"2026-11-04","status":"ACTIVE","photo_url":null,"address":null,"notes":null,"health_notes":null}}']
+E       assert [200, 200] == [200, 409]
+E         
+E         At index 1 diff: 200 != 409
+E         Use -v to get more diff
+
+tests\integration\test_class_capacity_management.py:65: AssertionError
+_ test_assignment_payloads_validate_ids_and_transfer_never_mismatches_branch[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x0000027D6E86A780>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000027D6EA30E50>, 'org': <app.infrastructure.models.models.Organization object at 0x0000027D6E95B750>, ...})
+
+    async def test_assignment_payloads_validate_ids_and_transfer_never_mismatches_branch(platform_client):
+        client, sessions, data = platform_client; h = auth(data)
+        for payload in ({}, {"student_id": 1}, {"student_id": None}):
+>           response = await client.post(f'/api/classes/{data["classroom"].id}/students', headers=h, json=payload)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_class_capacity_management.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+class_id = UUID('ed9ca7c3-2883-4721-a1cb-ea14c968d2bd'), body = {}
+tenant = TenantContext(user_id=UUID('fafa2588-bf89-4717-a98b-2d2f0912efda'), organization_id=UUID('eef84f87-4726-4897-ae8a-6922... class_ids=[], permissions=set(), role_slugs={'owner'}, is_super_admin=False, platform_admin=True, parent_portal=False)
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000027D6C5D26D0>
+
+    @router.post("/api/classes/{class_id}/students")
+    async def assign_student_to_class(
+        class_id: UUID,
+        body: dict,
+        tenant: TenantContext = Depends(PermissionChecker("class.write")),
+        db: AsyncSession = Depends(get_db),
+    ):
+        repo = BaseRepository(db, tenant)
+        classroom = await repo.get_by_id(class_id, ClassRoom)
+>       student_id = UUID(body["student_id"])
+                          ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'student_id'
+
+app\routers\core_modules.py:577: KeyError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/classes/ed9ca7c3-2883-4721-a1cb-ea14c968d2bd/students", "request_id": "b59b5ba9-f165-4832-9a40-37e6ea2e998f", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T05:19:28.893205Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\core_modules.py", line 577, in assign_student_to_class
+    student_id = UUID(body["student_id"])
+                      ~~~~^^^^^^^^^^^^^^
+KeyError: 'student_id'
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_class_capacity_management.py::test_student_create_update_and_repeat_assignment_respect_capacity[sqlite]
+FAILED tests/integration/test_class_capacity_management.py::test_bulk_transfer_and_capacity_shrink_preserve_rosters_on_failure[sqlite]
+FAILED tests/integration/test_class_capacity_management.py::test_parent_role_cannot_transfer_between_its_own_children_classes[sqlite]
+FAILED tests/integration/test_class_capacity_management.py::test_concurrent_last_seat_creates_serialize_on_both_databases[sqlite]
+FAILED tests/integration/test_class_capacity_management.py::test_assignment_payloads_validate_ids_and_transfer_never_mismatches_branch[sqlite]
+5 failed, 5 deselected, 20 warnings in 13.18s

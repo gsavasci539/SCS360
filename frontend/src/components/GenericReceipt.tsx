@@ -1,5 +1,6 @@
 import { Printer, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { ReceiptBrand } from "./Brand";
 import { money, shortDate, formatTime } from "../lib/format";
 
 interface ReceiptItem {
@@ -82,6 +83,7 @@ export function GenericReceipt({ receipt, onClose, type = "generic" }: GenericRe
         className="generic-receipt"
       >
         {/* Header */}
+        <ReceiptBrand />
         <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 15, borderBottom: `1px dashed ${themeColor}` }}>
           <h1 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 5px", color: themeColor }}>
             {receipt.entity_info.name}

@@ -1,0 +1,31 @@
+*** Begin Patch
+*** Update File: C:/Okul360/frontend/src/App.tsx
+@@
+ const PaymentPage = lazy(() => import("./features/payment/PaymentPage").then((module) => ({ default: module.PaymentPage })));
++const SchoolPaymentSettings = lazy(() => import("./features/payment/SchoolPaymentSettings").then((module) => ({ default: module.SchoolPaymentSettings })));
+@@
+       <Route element={<AppShell />}>
++        <Route path="settings/payments" element={<SchoolPaymentSettings />} />
+@@
+       <Route path="/payment/:debtId/:amount" element={<Suspense fallback={<LoadingState label="Sayfa yükleniyor" />}><PaymentPage /></Suspense>} />
++      <Route path="/payment" element={<Suspense fallback={<LoadingState label="Sayfa yükleniyor" />}><PaymentPage /></Suspense>} />
+*** Update File: C:/Okul360/frontend/src/features/settings/SettingsPage.tsx
+@@
+-import { BellRing, Building2, CloudCog, Save, Upload } from "lucide-react";
++import { BellRing, Building2, CloudCog, Save, Upload, WalletCards } from "lucide-react";
++import { Link } from "react-router-dom";
+@@
+   const canWrite = useAuthStore((state) => state.can("settings.write"));
++  const principal = useAuthStore((state) => state.user);
++  const paymentOwnerHint = Boolean(principal?.is_super_admin || principal?.roles.some((role) => role.slug === "owner"));
+@@
+     <PageHeader eyebrow="Sistem" title="Ayarlar" description="Kurum tercihlerini ve dış servis bağlantılarını tek yerden yönetin.">
++      {paymentOwnerHint && <Link className="btn btn-secondary" to="/settings/payments"><WalletCards size={16} />Ödeme entegrasyonu</Link>}
+*** Update File: C:/Okul360/frontend/src/features/saas/PlatformPage.tsx
+@@
+ import { PaymentReview } from "./PaymentReview";
++import { PaymentReadinessPanel } from "./PaymentReadinessPanel";
+@@
+     <section className="card card-pad" aria-label="Platform özeti"><p>Kurum: {summary.total_institutions ?? 0} · Etkin üyelik: {summary.active_memberships ?? 0} · Ek sürede: {summary.grace_memberships ?? 0} · Erişimi kapalı: {summary.restricted_institutions ?? 0} · Paketsiz mevcut kurum: {summary.legacy_institutions ?? 0} · Bekleyen ödeme talebi: {summary.pending_invoices ?? 0}</p></section>
++    <PaymentReadinessPanel />
+*** End Patch

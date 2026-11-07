@@ -1,0 +1,92 @@
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_ test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context[sqlite] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63A4CF4D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63A4CEE40>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63A518770>, ...})
+
+    async def test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context(merchant_client):
+        client, sessions, data = merchant_client
+        initial = await client.get("/api/payments/merchant", headers=headers(data["user"]))
+>       assert initial.status_code == 200, initial.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.read","errors":[],"request_id":"f9062b86-cba6-4255-8a0b-d6e29a1933bb"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_school_payment_merchants.py:54: AssertionError
+_ test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context[postgresql] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63CB63C50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63CB63250>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63CA1A550>, ...})
+
+    async def test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context(merchant_client):
+        client, sessions, data = merchant_client
+        initial = await client.get("/api/payments/merchant", headers=headers(data["user"]))
+>       assert initial.status_code == 200, initial.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.read","errors":[],"request_id":"ce92b247-6fc5-4214-b394-6143fa6e9e8f"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_school_payment_merchants.py:54: AssertionError
+_ test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays[sqlite] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63CFF6D50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63D031220>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63CBB8D50>, ...})
+
+    async def test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays(merchant_client):
+        client, sessions, data = merchant_client
+        request = body()
+        first = await configure(client, data["user"], request)
+>       assert first.status_code == 200, first.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.write, payments.update","errors":[],"request_id":"808a9332-5094-4d0a-8aa3-74b979d59386"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_school_payment_merchants.py:82: AssertionError
+_ test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays[postgresql] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63D032190>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63D016030>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63D0B7750>, ...})
+
+    async def test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays(merchant_client):
+        client, sessions, data = merchant_client
+        request = body()
+        first = await configure(client, data["user"], request)
+>       assert first.status_code == 200, first.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.write, payments.update","errors":[],"request_id":"90b6752d-d9ae-44a6-816c-61c8ddf024be"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_school_payment_merchants.py:82: AssertionError
+_ test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school[sqlite] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63D031CD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63D0B4650>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63D0B5B50>, ...})
+
+    async def test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school(merchant_client):
+>       from app.application.services.school_payment_merchant import resolve_gateway
+E       ModuleNotFoundError: No module named 'app.application.services.school_payment_merchant'
+
+tests\integration\test_school_payment_merchants.py:98: ModuleNotFoundError
+_ test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school[postgresql] _
+
+merchant_client = (<httpx.AsyncClient object at 0x000001D63D2545F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001D63D0A74D0>, 'false_owner': <app.infrastructure.models.models.User object at 0x000001D63CBBB650>, ...})
+
+    async def test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school(merchant_client):
+>       from app.application.services.school_payment_merchant import resolve_gateway
+E       ModuleNotFoundError: No module named 'app.application.services.school_payment_merchant'
+
+tests\integration\test_school_payment_merchants.py:98: ModuleNotFoundError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_school_payment_merchants.py::test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context[sqlite]
+FAILED tests/integration/test_school_payment_merchants.py::test_merchant_owner_controls_secrets_while_finance_and_root_require_proper_context[postgresql]
+FAILED tests/integration/test_school_payment_merchants.py::test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays[sqlite]
+FAILED tests/integration/test_school_payment_merchants.py::test_merchant_nonce_and_revision_prevent_replacement_or_rotation_replays[postgresql]
+FAILED tests/integration/test_school_payment_merchants.py::test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school[sqlite]
+FAILED tests/integration/test_school_payment_merchants.py::test_school_key_rotation_and_disable_preserve_checkout_snapshot_and_other_school[postgresql]
+6 failed, 20 warnings in 17.16s

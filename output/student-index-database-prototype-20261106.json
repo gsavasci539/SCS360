@@ -1,0 +1,24 @@
+{
+  "mode": "PROTOTYPE_ONLY_NO_APPLICATION_OR_MAIN_CHANGE",
+  "dialects": {
+    "sqlite": {
+      "archived_reuse": true,
+      "unarchived_inactive_conflict": true,
+      "restore_rollback": true,
+      "null_numbers_distinct": true,
+      "literal_uuid_like_numbers_distinct": true,
+      "institution_isolation": true,
+      "organization_uuid_alias_conflict": true
+    },
+    "postgresql": {
+      "archived_reuse": true,
+      "unarchived_inactive_conflict": true,
+      "restore_rollback": true,
+      "null_numbers_distinct": true,
+      "literal_uuid_like_numbers_distinct": true,
+      "institution_isolation": true,
+      "organization_uuid_alias_conflict": true
+    }
+  },
+  "requires_real_migration_and_api_acceptance": true
+}

@@ -1,0 +1,9 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  16 passed (16)
+   Start at  22:42:19
+   Duration  7.24s (transform 616ms, setup 756ms, import 2.29s, tests 3.86s, environment 4.13s)
+

@@ -1,0 +1,63 @@
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+_ test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate[sqlite] _
+tests\integration\test_subscription_billing.py:27: in test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate
+    assert all(row.status_code == 200 for row in responses), [row.text for row in responses]
+E   AssertionError: ['{"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"3b09b10f-3bd0-4330-9b31-d89d7e...ss":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"b8fee703-0755-4b06-9143-7187ab86a59b"}']
+E   assert False
+E    +  where False = all(<generator object test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate.<locals>.<genexpr> at 0x00000131D85B58A0>)
+------------------------------ Captured log call ------------------------------
+WARNING  passlib.handlers.bcrypt:bcrypt.py:622 (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+_ test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate[postgresql] _
+tests\integration\test_subscription_billing.py:27: in test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate
+    assert all(row.status_code == 200 for row in responses), [row.text for row in responses]
+E   AssertionError: ['{"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"db5b4040-2cf4-46c7-b994-fbd55f...ss":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"5ec77398-e176-49c4-94b5-254d8b84bc72"}']
+E   assert False
+E    +  where False = all(<generator object test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate.<locals>.<genexpr> at 0x00000131DA910110>)
+_ test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices[sqlite] _
+tests\integration\test_subscription_billing.py:41: in test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices
+    assert invoice.status_code == 200, invoice.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"1c51cfa3-5b38-49ae-a48d-872430208626"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices[postgresql] _
+tests\integration\test_subscription_billing.py:41: in test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices
+    assert invoice.status_code == 200, invoice.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"c7dbb9f6-80d4-49b3-a4e3-6dd28f2f2de6"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate[sqlite] _
+tests\integration\test_subscription_billing.py:66: in test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate
+    assert created.status_code == 200, created.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"3d082cfa-6d98-4135-a2d9-d02466316d45"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+_ test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate[postgresql] _
+tests\integration\test_subscription_billing.py:66: in test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate
+    assert created.status_code == 200, created.text
+E   AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"407b491b-6c44-438b-8463-39ee0db7901b"}
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_subscription_billing.py::test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate[sqlite]
+FAILED tests/integration/test_subscription_billing.py::test_subscription_invoice_uses_server_price_and_retries_do_not_duplicate[postgresql]
+FAILED tests/integration/test_subscription_billing.py::test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices[sqlite]
+FAILED tests/integration/test_subscription_billing.py::test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices[postgresql]
+FAILED tests/integration/test_subscription_billing.py::test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate[sqlite]
+FAILED tests/integration/test_subscription_billing.py::test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_not_activate[postgresql]
+6 failed, 20 warnings in 13.61s

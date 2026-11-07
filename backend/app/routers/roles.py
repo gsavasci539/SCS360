@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/roles", tags=["Roles"])
 @require_permission("roles.create")
 async def create_role(
     role: RoleCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -35,7 +35,7 @@ async def create_role(
 async def list_roles(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -52,7 +52,7 @@ async def list_roles(
 @require_permission("roles.view")
 async def get_role(
     role_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -69,7 +69,7 @@ async def get_role(
 async def update_role(
     role_id: UUID,
     role: RoleUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -90,7 +90,7 @@ async def update_role(
 @require_permission("roles.delete")
 async def delete_role(
     role_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -111,7 +111,7 @@ async def delete_role(
 async def assign_permissions(
     role_id: UUID,
     permission_ids: List[UUID],
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = RoleRepository()
@@ -138,7 +138,7 @@ async def assign_permissions(
 @require_permission("roles.view")
 async def get_role_permissions(
     role_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     from sqlalchemy import select

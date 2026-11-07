@@ -1,0 +1,95 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[sqlite] _
+
+tutoring_client = (<httpx.AsyncClient object at 0x000001993CB41400>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...m object at 0x000001993CB40D70>, 'manager': <app.infrastructure.models.models.User object at 0x000001993CBAB5C0>, ...})
+
+    async def test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision(tutoring_client):
+        client, _, data = tutoring_client
+        auth = headers(data["teacher"])
+        created = await client.post("/api/tutoring/requests", headers=auth, json=request_body(data))
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        response = await client.post(f"/api/tutoring/requests/{identifier}/approve", headers=auth)
+        assert response.status_code == 200, response.text
+>       assert response.json()["data"].get("approved_by") == str(data["teacher"].id), response.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"d96dbf89-6894-4f16-9375-5fb91592382d","status":"APPROVED","approved_at":"2026-11-03T14:02:49.575989"}}
+E       assert None == 'b74a0a3a-a02f-44eb-93da-e568eb22c7ff'
+E        +  where None = <built-in method get of dict object at 0x000001993EB9B600>('approved_by')
+E        +    where <built-in method get of dict object at 0x000001993EB9B600> = {'approved_at': '2026-11-03T14:02:49.575989', 'id': 'd96dbf89-6894-4f16-9375-5fb91592382d', 'status': 'APPROVED'}.get
+E        +  and   'b74a0a3a-a02f-44eb-93da-e568eb22c7ff' = str(UUID('b74a0a3a-a02f-44eb-93da-e568eb22c7ff'))
+E        +    where UUID('b74a0a3a-a02f-44eb-93da-e568eb22c7ff') = <app.infrastructure.models.models.User object at 0x000001993CB19810>.id
+
+tests\integration\test_tutoring_workflow.py:46: AssertionError
+_ test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[postgresql] _
+
+tutoring_client = (<httpx.AsyncClient object at 0x000001993ED1B890>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...m object at 0x000001993ED1AE90>, 'manager': <app.infrastructure.models.models.User object at 0x000001993ECFD250>, ...})
+
+    async def test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision(tutoring_client):
+        client, _, data = tutoring_client
+        auth = headers(data["teacher"])
+        created = await client.post("/api/tutoring/requests", headers=auth, json=request_body(data))
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        response = await client.post(f"/api/tutoring/requests/{identifier}/approve", headers=auth)
+        assert response.status_code == 200, response.text
+>       assert response.json()["data"].get("approved_by") == str(data["teacher"].id), response.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"5669fad6-8e81-4de9-8b58-d128396698c9","status":"APPROVED","approved_at":"2026-11-03T14:02:51.441652"}}
+E       assert None == '01846fe3-e1d9-45f8-a647-6963e88ec5ca'
+E        +  where None = <built-in method get of dict object at 0x000001993F273400>('approved_by')
+E        +    where <built-in method get of dict object at 0x000001993F273400> = {'approved_at': '2026-11-03T14:02:51.441652', 'id': '5669fad6-8e81-4de9-8b58-d128396698c9', 'status': 'APPROVED'}.get
+E        +  and   '01846fe3-e1d9-45f8-a647-6963e88ec5ca' = str(UUID('01846fe3-e1d9-45f8-a647-6963e88ec5ca'))
+E        +    where UUID('01846fe3-e1d9-45f8-a647-6963e88ec5ca') = <app.infrastructure.models.models.User object at 0x000001993ED019D0>.id
+
+tests\integration\test_tutoring_workflow.py:46: AssertionError
+_ test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session[sqlite] _
+
+tutoring_client = (<httpx.AsyncClient object at 0x000001993F1B7110>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...m object at 0x000001993F0CF490>, 'manager': <app.infrastructure.models.models.User object at 0x000001993F1C9D50>, ...})
+
+    async def test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session(tutoring_client):
+        client, _, data = tutoring_client
+        auth = headers(data["teacher"])
+        availability = {"teacher_id": str(data["other_teacher"].id), "day_of_week": 1, "start_time": "09:00", "end_time": "12:00"}
+        denied = await client.post("/api/tutoring/availability", headers=auth, json=availability)
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"007ad645-a27d-4867-8074-11bfc8f1228f","day_of_week":1,"start_time":"09:00","end_time":"12:00","created_at":"2026-11-03T14:02:53"}}
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_tutoring_workflow.py:58: AssertionError
+_ test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session[postgresql] _
+
+tutoring_client = (<httpx.AsyncClient object at 0x000001993F0CC510>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...m object at 0x000001993ED01E10>, 'manager': <app.infrastructure.models.models.User object at 0x000001993F2ED550>, ...})
+
+    async def test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session(tutoring_client):
+        client, _, data = tutoring_client
+        auth = headers(data["teacher"])
+        availability = {"teacher_id": str(data["other_teacher"].id), "day_of_week": 1, "start_time": "09:00", "end_time": "12:00"}
+        denied = await client.post("/api/tutoring/availability", headers=auth, json=availability)
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"5ae576c7-aeeb-429f-8c64-5ecb426a96d9","day_of_week":1,"start_time":"09:00","end_time":"12:00","created_at":"2026-11-03T14:02:55.224562+00:00"}}
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_tutoring_workflow.py:58: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_tutoring_workflow.py::test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[sqlite]
+tests/integration/test_tutoring_workflow.py::test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[postgresql]
+  C:\Okul360\backend\app\routers\tutoring.py:377: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    req.approved_at = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_tutoring_workflow.py::test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[sqlite]
+FAILED tests/integration/test_tutoring_workflow.py::test_tutoring_approval_records_real_actor_and_retry_preserves_first_decision[postgresql]
+FAILED tests/integration/test_tutoring_workflow.py::test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session[sqlite]
+FAILED tests/integration/test_tutoring_workflow.py::test_tutoring_teacher_cannot_write_another_teachers_calendar_or_session[postgresql]
+4 failed, 4 deselected, 22 warnings in 8.69s

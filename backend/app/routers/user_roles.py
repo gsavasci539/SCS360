@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/users", tags=["User Roles"])
 async def assign_user_roles(
     user_id: UUID,
     role_ids: List[UUID],
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     service = UserService(db)
@@ -30,7 +30,7 @@ async def assign_user_roles(
 @require_permission("users.view")
 async def get_user_roles(
     user_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     service = UserService(db)
@@ -43,7 +43,7 @@ async def get_user_roles(
 async def assign_user_branches(
     user_id: UUID,
     branch_ids: List[UUID],
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     service = UserService(db)

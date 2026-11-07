@@ -7,7 +7,7 @@ import { navigation } from "../config/navigation";
 import { resources } from "../config/resources";
 import { useAuthStore } from "../stores/auth";
 
-describe("Okul360 uygulama iskeleti", () => {
+describe("SCS360 uygulama iskeleti", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -18,10 +18,11 @@ describe("Okul360 uygulama iskeleti", () => {
     render(<MemoryRouter initialEntries={["/dashboard"]}><ToastProvider><App /></ToastProvider></MemoryRouter>);
     expect(await screen.findByRole("heading", { name: /günün akışına/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Giriş yap" })).toBeInTheDocument();
+    expect(screen.getByText("SCS360", { exact: true })).toBeInTheDocument();
   });
 
   it("ana menü ve CRUD kaynakları eksiksiz tanımlıdır", () => {
-    expect(navigation.map((item) => item.path)).toEqual(expect.arrayContaining(["/dashboard", "/students", "/attendance", "/finance/debts", "/reports", "/settings"]));
+    expect(navigation.flatMap((section) => section.items.map((item) => item.path))).toEqual(expect.arrayContaining(["/dashboard", "/students", "/attendance", "/finance/debts", "/reports", "/settings"]));
     expect(Object.keys(resources)).toEqual(expect.arrayContaining(["organizations", "branches", "users", "students", "parents", "classes", "debts"]));
   });
 

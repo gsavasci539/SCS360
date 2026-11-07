@@ -2,20 +2,18 @@ services:
   # Local PostgreSQL service - comment out when using external database
   db:
     image: postgres:16-alpine
-    container_name: edupanel-db
+    container_name: scs360-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: school_management
+      POSTGRES_USER: ${POSTGRES_USER:-scs360}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the compose environment}
+      POSTGRES_DB: ${POSTGRES_DB:-school_management}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/sql/001_schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
-      - ./backend/sql/002_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
-    ports:
-      - "5432:5432"
+      # Seed data disabled for production - remove comment to enable for development
+      # - ./backend/sql/002_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d school_management"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,19 +22,21 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: edupanel-backend
+    container_name: scs360-backend
     restart: unless-stopped
     env_file:
       - ./backend/.env
     environment:
       APP_ENV: ${APP_ENV:-production}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-scs360}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-school_management}
     volumes:
       - upload_data:/app/uploads
+      - private_upload_data:/app/private_uploads
     expose:
       - "5006"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5006/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -48,13 +48,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: edupanel-worker
+    container_name: scs360-worker
     restart: unless-stopped
     command: python -m app.infrastructure.notifications.outbox_worker
     env_file:
       - ./backend/.env
     environment:
       APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-scs360}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-school_management}
     depends_on:
       db:
         condition: service_healthy
@@ -67,16 +68,16 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: /api
-    container_name: edupanel-frontend
+    container_name: scs360-frontend
     restart: unless-stopped
-    ports:
-      - "3000:80"
+    expose:
+      - "80"
     depends_on:
       - backend
 
   nginx:
     image: nginx:alpine
-    container_name: edupanel-nginx
+    container_name: scs360-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -89,3 +90,4 @@ services:
 volumes:
   postgres_data:
   upload_data:
+  private_upload_data:

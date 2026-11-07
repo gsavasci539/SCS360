@@ -1,0 +1,289 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run --run src/test/cash-payments.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/cash-payments.test.tsx (4 tests | 4 failed) 2683ms
+   × sonucu bilinmeyen tahsilat tekrarında aynı istek kimliğini korur 1549ms
+   × yalnız tahsilat yetkisiyle minimal borç seçer ve yasak makbuz sayfasına yönlenmez 411ms
+   × iptal düğmesi kullanıcının seçtiği satırdaki tahsilatı hedefler 656ms
+   × online tahsilatta nakit iptali yerine sağlayıcı mutabakatı bilgisini gösterir 62ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/cash-payments.test.tsx > sonucu bilinmeyen tahsilat tekrarında aynı istek kimliğini korur
+AssertionError: expected undefined to deeply equal StringMatching /^[0-9a-f-]{36}$/i
+
+- Expected:
+StringMatching /^[0-9a-f-]{36}$/i
+
++ Received:
+undefined
+
+ ❯ src/test/cash-payments.test.tsx:46:32
+     44|   const firstBody = vi.mocked(api.post).mock.calls[0][1] as Record<str…
+     45|   const retryBody = vi.mocked(api.post).mock.calls[1][1] as Record<str…
+     46|   expect(firstBody.request_id).toEqual(expect.stringMatching(/^[0-9a-f…
+       |                                ^
+     47|   expect(retryBody.request_id).toBe(firstBody.request_id);
+     48|   expect(mocks.navigate).toHaveBeenCalledWith("/finance/receipts/recei…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/test/cash-payments.test.tsx > yalnız tahsilat yetkisiyle minimal borç seçer ve yasak makbuz sayfasına yönlenmez
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/test/cash-payments.test.tsx:54:77
+     52|   permissions = new Set(["finance.write"]);
+     53|   render(<MemoryRouter><PaymentFormPage /></MemoryRouter>); await fill…
+     54|   expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/deb…
+       |                                                                             ^
+     55|   expect(vi.mocked(api.get).mock.calls.some(([path]) => String(path).s…
+     56|   fireEvent.click(screen.getByRole("button", { name: /Tahsilatı tamaml…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/test/cash-payments.test.tsx > iptal düğmesi kullanıcının seçtiği satırdaki tahsilatı hedefler
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "İptal et"
+
+Here are the accessible roles:
+
+  cell:
+
+  Name "İkinci kişi":
+  <td />
+
+  --------------------------------------------------cell:
+
+  Name "₺50":
+  <td />
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  <strong />
+
+  --------------------------------------------------cell:
+
+  Name "CASH":
+  <td />
+
+  --------------------------------------------------cell:
+
+  Name "04 Kas 2026":
+  <td />
+
+  --------------------------------------------------cell:
+
+  Name "Tamamlandı":
+  <td />
+
+  --------------------------------------------------cell:
+
+  Name "Detayı aç":
+  <td />
+
+  --------------------------------------------------
+  link:
+
+  Name "Detayı aç":
+  <a
+    aria-label="Detayı aç"
+    class="btn btn-ghost btn-icon"
+    data-discover="true"
+    href="/finance/payments/00000000-0000-4000-8000-000000000012"
+    title="Detayı aç"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<tr>
+  <td>
+    <div>
+      <span
+        class=""
+      >
+        İkinci kişi
+      </span>
+    </div>
+  </td>
+  <td>
+    <strong>
+      ₺50
+    </strong>
+  </td>
+  <td>
+    <div>
+      <span
+        class=""
+      >
+        CASH
+      </span>
+    </div>
+  </td>
+  <td>
+    04 Kas 2026
+  </td>
+  <td>
+    <span
+      class="badge badge-neutral"
+    >
+      Tamamlandı
+    </span>
+  </td>
+  <td>
+    <div
+      class="table-actions"
+    >
+      <a
+        aria-label="Detayı aç"
+        class="btn btn-ghost btn-icon"
+        data-discover="true"
+        href="/finance/payments/00000000-0000-4000-8000-000000000012"
+        title="Detayı aç"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-eye"
+          fill="none"
+          height="15"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="15"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="3"
+          />
+        </svg>
+      </a>
+    </div>
+  </td>
+</tr>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/cash-payments.test.tsx:65:31
+     63|   render(<MemoryRouter><PaymentsPage /></MemoryRouter>);
+     64|   const row = (await screen.findByText("İkinci kişi")).closest("tr")!;
+     65|   fireEvent.click(within(row).getByRole("button", { name: "İptal et" }…
+       |                               ^
+     66|   const dialog = await screen.findByRole("dialog");
+     67|   expect(dialog).toHaveTextContent("İkinci kişi");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  src/test/cash-payments.test.tsx > online tahsilatta nakit iptali yerine sağlayıcı mutabakatı bilgisini gösterir
+TestingLibraryElementError: Unable to find an element with the text: /Sağlayıcı mutabakatı/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<tr>
+  <td>
+    <div>
+      <span
+        class=""
+      >
+        İlk kişi
+      </span>
+    </div>
+  </td>
+  <td>
+    <strong>
+      ₺100
+    </strong>
+  </td>
+  <td>
+    <div>
+      <span
+        class=""
+      >
+        CASH
+      </span>
+    </div>
+  </td>
+  <td>
+    04 Kas 2026
+  </td>
+  <td>
+    <span
+      class="badge badge-neutral"
+    >
+      Tamamlandı
+    </span>
+  </td>
+  <td>
+    <div
+      class="table-actions"
+    >
+      <a
+        aria-label="Detayı aç"
+        class="btn btn-ghost btn-icon"
+        data-discover="true"
+        href="/finance/payments/00000000-0000-4000-8000-000000000011"
+        title="Detayı aç"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-eye"
+          fill="none"
+          height="15"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="15"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="3"
+          />
+        </svg>
+      </a>
+    </div>
+  </td>
+</tr>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/cash-payments.test.tsx:77:22
+     75|   const row = (await screen.findByText("İlk kişi")).closest("tr")!;
+     76|   expect(within(row).queryByRole("button", { name: "İptal et" })).not.…
+     77|   expect(within(row).getByText(/Sağlayıcı mutabakatı/)).toBeInTheDocum…
+       |                      ^
+     78| });
+     79|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed (4)
+   Start at  19:39:16
+   Duration  8.95s (transform 433ms, setup 526ms, import 928ms, tests 2.68s, environment 4.25s)
+

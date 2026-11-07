@@ -1,0 +1,2472 @@
+........FF..FF..FF.......                                                [100%]
+================================== FAILURES ===================================
+_ test_parent_requests_need_review_and_rejection_persists_across_portals[sqlite] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x000001DC43AE9B50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x000001DC43F0DB50>, 'nurse': <app.infrastructure.models.models.User object at 0x000001DC43AEB850>, ...})
+
+    async def test_parent_requests_need_review_and_rejection_persists_across_portals(infirmary_client):
+        client, _, data = infirmary_client
+        child = str(data["children"][0].id); auth = headers(data["nurse"])
+        instructions = "Parent supplied instructions " * 12
+        path = f"/api/parent/child/{child}/medicine-requests"
+        created = await client.post(path, headers=headers(data["user"]), json={"medicine_name": "Test record", "dosage": "Test instruction", "time_to_give": "10:00", "instructions": instructions})
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        unapproved = await client.post("/api/infirmary/medication/mark-given", headers=auth, json={"schedule_id": identifier, "student_id": child, "scheduled_time": "10:00", "status": "GIVEN"})
+        assert unapproved.status_code == 409
+        decision = await client.put("/api/infirmary/medicine-requests/" + identifier, headers=auth, json={"status": "REJECTED"})
+        assert decision.status_code == 200, decision.text
+        again = await client.get(path, headers=headers(data["user"]))
+        assert again.json()["data"]["medicine_requests"][0]["status"] == "REJECTED"
+>       assert again.json()["data"]["medicine_requests"][0]["instructions"] == instructions
+E       AssertionError: assert 'Parent suppl... instructions' == 'Parent suppl...instructions '
+E         
+E         Skipping 336 identical leading characters in diff, use -v to show
+E         - nstructions 
+E         ?            -
+E         + nstructions
+
+tests\integration\test_infirmary_workflow.py:119: AssertionError
+_ test_parent_requests_need_review_and_rejection_persists_across_portals[postgresql] _
+
+infirmary_client = (<httpx.AsyncClient object at 0x000001DC43DA8150>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...oom object at 0x000001DC4410C260>, 'nurse': <app.infrastructure.models.models.User object at 0x000001DC440C1250>, ...})
+
+    async def test_parent_requests_need_review_and_rejection_persists_across_portals(infirmary_client):
+        client, _, data = infirmary_client
+        child = str(data["children"][0].id); auth = headers(data["nurse"])
+        instructions = "Parent supplied instructions " * 12
+        path = f"/api/parent/child/{child}/medicine-requests"
+        created = await client.post(path, headers=headers(data["user"]), json={"medicine_name": "Test record", "dosage": "Test instruction", "time_to_give": "10:00", "instructions": instructions})
+        assert created.status_code == 200, created.text
+        identifier = created.json()["data"]["id"]
+        unapproved = await client.post("/api/infirmary/medication/mark-given", headers=auth, json={"schedule_id": identifier, "student_id": child, "scheduled_time": "10:00", "status": "GIVEN"})
+        assert unapproved.status_code == 409
+        decision = await client.put("/api/infirmary/medicine-requests/" + identifier, headers=auth, json={"status": "REJECTED"})
+        assert decision.status_code == 200, decision.text
+        again = await client.get(path, headers=headers(data["user"]))
+        assert again.json()["data"]["medicine_requests"][0]["status"] == "REJECTED"
+>       assert again.json()["data"]["medicine_requests"][0]["instructions"] == instructions
+E       AssertionError: assert 'Parent suppl... instructions' == 'Parent suppl...instructions '
+E         
+E         Skipping 336 identical leading characters in diff, use -v to show
+E         - nstructions 
+E         ?            -
+E         + nstructions
+
+tests\integration\test_infirmary_workflow.py:119: AssertionError
+_ test_parent_timeline_reads_real_child_events_and_school_day_boundaries[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x000001DC44487D90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001DC444B2FD0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001DC44650B50>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001DC4433CF30>
+
+    async def test_parent_timeline_reads_real_child_events_and_school_day_boundaries(materials_client, monkeypatch):
+        client, sessions, data = materials_client
+        monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")
+        day = date(2026, 11, 3)
+        student = data["children"][0]
+        async with sessions() as db:
+            db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
+                student_id=student.id, attendance_date=day, status=AttendanceStatus.PRESENT, check_in_time=time(8, 30), recorded_by=data["teacher"].id))
+            db.add(DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=day, meal_status="ALL",
+                activities=["Kitap okuma"], teacher_notes="Kal�c� ��retmen notu", recorded_by=data["teacher"].id,
+                updated_at=datetime(2026, 11, 3, 10, tzinfo=UTC)))
+            prescription = MedicationSchedule(student_id=student.id, medication_name="Test talimat�", dosage="Test dozu",
+                frequency="G�nde bir", start_date=day)
+            other_prescription = MedicationSchedule(student_id=data["children"][1].id, medication_name="Ba�ka �ocu�un kayd�",
+                dosage="Gizli", frequency="G�nde bir", start_date=day)
+            route = BusRoute(branch_id=data["branch"].id, route_name="Test g�zerg�h�")
+            db.add_all([prescription, other_prescription, route])
+            await db.flush()
+            for instant in (datetime(2026, 11, 2, 20, 59, tzinfo=UTC), datetime(2026, 11, 2, 22, 30, tzinfo=UTC),
+                datetime(2026, 11, 3, 21, tzinfo=UTC)):
+                db.add(MedicationLog(student_id=student.id, schedule_id=prescription.id, scheduled_time=time(1, 30),
+                    given_time=instant, status="GIVEN", given_by=data["teacher"].id))
+            # Corrupt auxiliary relationship must not reveal a sibling's prescription.
+            db.add(MedicationLog(student_id=student.id, schedule_id=other_prescription.id, scheduled_time=time(1),
+                given_time=datetime(2026, 11, 3, 9, tzinfo=UTC), status="GIVEN"))
+            db.add(InfirmaryVisit(student_id=student.id, branch_id=data["branch"].id, visit_date=day, visit_time=time(11),
+                complaint="Test revir kayd�", examined_by=data["teacher"].id))
+            db.add(BusAttendance(route_id=route.id, student_id=student.id, date=day, pickup_time=time(7, 45), dropoff_time=time(16, 30)))
+            db.add(PickupLog(student_id=student.id, pickup_person_name="Yetkili veli", verified_by=data["teacher"].id,
+                pickup_time=datetime(2026, 11, 3, 14, tzinfo=UTC)))
+            await db.commit()
+        path = f"/api/parent/child/{student.id}/timeline"
+>       response = await client.get(path, headers=auth(data["user"]), params={"date": str(day)})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_day.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:170: in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\application\services\parent_day_service.py:64: in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:461: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2362: in execute
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2247: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv\Lib\site-packages\sqlalchemy\orm\context.py:305: in orm_execute_statement
+    result = conn.execute(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1418: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1632: in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:703: in _compile_w_cache
+    compiled_sql = self._compiler(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:316: in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:1429: in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:870: in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:915: in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4824: in visit_select
+    text = self._compose_select_body(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4986: in _compose_select_body
+    t = self._generate_delimited_and_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2769: in _generate_delimited_and_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:508: in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:561: in __call__
+    expr = fn(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\uuid_type.py:80: in _legacy_uuid_comparison
+    return compiler.visit_binary(element, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3407: in visit_binary
+    return self._generate_generic_binary(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3462: in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4734: in visit_select
+    froms = self._setup_select_stack(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4904: in _setup_select_stack
+    froms = compile_state._get_display_froms(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.orm.context.ORMSelectCompileState object at 0x000001DC4483FE30>
+explicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...util._ORMJoin at 0x1dc4456e570; Join object on medication_logs(2045308139152) and medication_schedules(2045534451856)>}
+implicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...util._ORMJoin at 0x1dc4456e570; Join object on medication_logs(2045308139152) and medication_schedules(2045534451856)>}
+
+    def _get_display_froms(
+        self,
+        explicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+        implicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+    ) -> List[FromClause]:
+        """Return the full list of 'from' clauses to be displayed.
+    
+        Takes into account a set of existing froms which may be
+        rendered in the FROM clause of enclosing selects; this Select
+        may want to leave those absent if it is automatically
+        correlating.
+    
+        """
+    
+        froms = self.froms
+    
+        if self.statement._correlate:
+            to_correlate = self.statement._correlate
+            if to_correlate:
+                froms = [
+                    f
+                    for f in froms
+                    if f
+                    not in _cloned_intersection(
+                        _cloned_intersection(
+                            froms, explicit_correlate_froms or ()
+                        ),
+                        to_correlate,
+                    )
+                ]
+    
+        if self.statement._correlate_except is not None:
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_difference(
+                    _cloned_intersection(
+                        froms, explicit_correlate_froms or ()
+                    ),
+                    self.statement._correlate_except,
+                )
+            ]
+    
+        if (
+            self.statement._auto_correlate
+            and implicit_correlate_froms
+            and len(froms) > 1
+        ):
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_intersection(froms, implicit_correlate_froms)
+            ]
+    
+            if not len(froms):
+>               raise exc.InvalidRequestError(
+                    "Select statement '%r"
+                    "' returned no FROM clauses "
+                    "due to auto-correlation; "
+                    "specify correlate(<tables>) "
+                    "to control correlation "
+                    "manually." % self.statement
+                )
+E               sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC448A3BD0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+
+.venv\Lib\site-packages\sqlalchemy\sql\selectable.py:4793: InvalidRequestError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/child/99229521-cfde-4e1f-8323-02019b169fd7/timeline", "request_id": "1ebca6ae-931a-4f79-8541-22734f1c8c6e", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-03T14:26:35.052590Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 170, in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\parent_day_service.py", line 64, in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        MedicationSchedule.id == MedicationLog.schedule_id).where(MedicationLog.student_id == student.id,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            MedicationSchedule.student_id == student.id, MedicationLog.given_time >= start, MedicationLog.given_time < end))).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1632, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 703, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 316, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1429, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 870, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 915, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4824, in visit_select
+    text = self._compose_select_body(
+        text,
+    ...<6 lines>...
+        kwargs,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4986, in _compose_select_body
+    t = self._generate_delimited_and_list(
+        select._where_criteria, from_linter=from_linter, **kwargs
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2769, in _generate_delimited_and_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 508, in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 561, in __call__
+    expr = fn(element, compiler, **kw)
+  File "C:\Okul360\backend\app\core\uuid_type.py", line 80, in _legacy_uuid_comparison
+    return compiler.visit_binary(element, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3407, in visit_binary
+    return self._generate_generic_binary(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        binary,
+        ^^^^^^^
+    ...<3 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3462, in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, eager_grouping=eager_grouping, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4734, in visit_select
+    froms = self._setup_select_stack(
+        select_stmt, compile_state, entry, asfrom, lateral, compound_index
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4904, in _setup_select_stack
+    froms = compile_state._get_display_froms(
+        explicit_correlate_froms=correlate_froms,
+        implicit_correlate_froms=asfrom_froms,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\selectable.py", line 4793, in _get_display_froms
+    raise exc.InvalidRequestError(
+    ...<6 lines>...
+    )
+sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC448A3BD0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+_ test_parent_timeline_reads_real_child_events_and_school_day_boundaries[postgresql] _
+
+materials_client = (<httpx.AsyncClient object at 0x000001DC447217F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001DC44508370>, 'org': <app.infrastructure.models.models.Organization object at 0x000001DC4441EDD0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001DC44CACD00>
+
+    async def test_parent_timeline_reads_real_child_events_and_school_day_boundaries(materials_client, monkeypatch):
+        client, sessions, data = materials_client
+        monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")
+        day = date(2026, 11, 3)
+        student = data["children"][0]
+        async with sessions() as db:
+            db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
+                student_id=student.id, attendance_date=day, status=AttendanceStatus.PRESENT, check_in_time=time(8, 30), recorded_by=data["teacher"].id))
+            db.add(DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=day, meal_status="ALL",
+                activities=["Kitap okuma"], teacher_notes="Kal�c� ��retmen notu", recorded_by=data["teacher"].id,
+                updated_at=datetime(2026, 11, 3, 10, tzinfo=UTC)))
+            prescription = MedicationSchedule(student_id=student.id, medication_name="Test talimat�", dosage="Test dozu",
+                frequency="G�nde bir", start_date=day)
+            other_prescription = MedicationSchedule(student_id=data["children"][1].id, medication_name="Ba�ka �ocu�un kayd�",
+                dosage="Gizli", frequency="G�nde bir", start_date=day)
+            route = BusRoute(branch_id=data["branch"].id, route_name="Test g�zerg�h�")
+            db.add_all([prescription, other_prescription, route])
+            await db.flush()
+            for instant in (datetime(2026, 11, 2, 20, 59, tzinfo=UTC), datetime(2026, 11, 2, 22, 30, tzinfo=UTC),
+                datetime(2026, 11, 3, 21, tzinfo=UTC)):
+                db.add(MedicationLog(student_id=student.id, schedule_id=prescription.id, scheduled_time=time(1, 30),
+                    given_time=instant, status="GIVEN", given_by=data["teacher"].id))
+            # Corrupt auxiliary relationship must not reveal a sibling's prescription.
+            db.add(MedicationLog(student_id=student.id, schedule_id=other_prescription.id, scheduled_time=time(1),
+                given_time=datetime(2026, 11, 3, 9, tzinfo=UTC), status="GIVEN"))
+            db.add(InfirmaryVisit(student_id=student.id, branch_id=data["branch"].id, visit_date=day, visit_time=time(11),
+                complaint="Test revir kayd�", examined_by=data["teacher"].id))
+            db.add(BusAttendance(route_id=route.id, student_id=student.id, date=day, pickup_time=time(7, 45), dropoff_time=time(16, 30)))
+            db.add(PickupLog(student_id=student.id, pickup_person_name="Yetkili veli", verified_by=data["teacher"].id,
+                pickup_time=datetime(2026, 11, 3, 14, tzinfo=UTC)))
+            await db.commit()
+        path = f"/api/parent/child/{student.id}/timeline"
+>       response = await client.get(path, headers=auth(data["user"]), params={"date": str(day)})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_day.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:170: in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\application\services\parent_day_service.py:64: in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:461: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2362: in execute
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2247: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv\Lib\site-packages\sqlalchemy\orm\context.py:305: in orm_execute_statement
+    result = conn.execute(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1418: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1632: in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:703: in _compile_w_cache
+    compiled_sql = self._compiler(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:316: in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:1429: in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:870: in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:915: in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4824: in visit_select
+    text = self._compose_select_body(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4986: in _compose_select_body
+    t = self._generate_delimited_and_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2769: in _generate_delimited_and_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:508: in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:561: in __call__
+    expr = fn(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:493: in _wrap_existing_dispatch
+    return existing_dispatch(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3407: in visit_binary
+    return self._generate_generic_binary(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3462: in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4734: in visit_select
+    froms = self._setup_select_stack(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4904: in _setup_select_stack
+    froms = compile_state._get_display_froms(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.orm.context.ORMSelectCompileState object at 0x000001DC443783B0>
+explicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+implicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+
+    def _get_display_froms(
+        self,
+        explicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+        implicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+    ) -> List[FromClause]:
+        """Return the full list of 'from' clauses to be displayed.
+    
+        Takes into account a set of existing froms which may be
+        rendered in the FROM clause of enclosing selects; this Select
+        may want to leave those absent if it is automatically
+        correlating.
+    
+        """
+    
+        froms = self.froms
+    
+        if self.statement._correlate:
+            to_correlate = self.statement._correlate
+            if to_correlate:
+                froms = [
+                    f
+                    for f in froms
+                    if f
+                    not in _cloned_intersection(
+                        _cloned_intersection(
+                            froms, explicit_correlate_froms or ()
+                        ),
+                        to_correlate,
+                    )
+                ]
+    
+        if self.statement._correlate_except is not None:
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_difference(
+                    _cloned_intersection(
+                        froms, explicit_correlate_froms or ()
+                    ),
+                    self.statement._correlate_except,
+                )
+            ]
+    
+        if (
+            self.statement._auto_correlate
+            and implicit_correlate_froms
+            and len(froms) > 1
+        ):
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_intersection(froms, implicit_correlate_froms)
+            ]
+    
+            if not len(froms):
+>               raise exc.InvalidRequestError(
+                    "Select statement '%r"
+                    "' returned no FROM clauses "
+                    "due to auto-correlation; "
+                    "specify correlate(<tables>) "
+                    "to control correlation "
+                    "manually." % self.statement
+                )
+E               sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC44329D30>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+
+.venv\Lib\site-packages\sqlalchemy\sql\selectable.py:4793: InvalidRequestError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/child/b88d61a4-f3e4-4da9-b84c-a175eb163a80/timeline", "request_id": "26b91da3-ff5b-47dc-aee7-f5561c18f586", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-03T14:26:39.796841Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 170, in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\parent_day_service.py", line 64, in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        MedicationSchedule.id == MedicationLog.schedule_id).where(MedicationLog.student_id == student.id,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            MedicationSchedule.student_id == student.id, MedicationLog.given_time >= start, MedicationLog.given_time < end))).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1632, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 703, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 316, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1429, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 870, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 915, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4824, in visit_select
+    text = self._compose_select_body(
+        text,
+    ...<6 lines>...
+        kwargs,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4986, in _compose_select_body
+    t = self._generate_delimited_and_list(
+        select._where_criteria, from_linter=from_linter, **kwargs
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2769, in _generate_delimited_and_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 508, in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 561, in __call__
+    expr = fn(element, compiler, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 493, in _wrap_existing_dispatch
+    return existing_dispatch(element, compiler, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3407, in visit_binary
+    return self._generate_generic_binary(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        binary,
+        ^^^^^^^
+    ...<3 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3462, in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, eager_grouping=eager_grouping, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4734, in visit_select
+    froms = self._setup_select_stack(
+        select_stmt, compile_state, entry, asfrom, lateral, compound_index
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4904, in _setup_select_stack
+    froms = compile_state._get_display_froms(
+        explicit_correlate_froms=correlate_froms,
+        implicit_correlate_froms=asfrom_froms,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\selectable.py", line 4793, in _get_display_froms
+    raise exc.InvalidRequestError(
+    ...<6 lines>...
+    )
+sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC44329D30>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+_________ test_date_only_records_do_not_invent_an_event_time[sqlite] __________
+
+materials_client = (<httpx.AsyncClient object at 0x000001DC43714350>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001DC43038910>, 'org': <app.infrastructure.models.models.Organization object at 0x000001DC43B57950>, ...})
+
+    async def test_date_only_records_do_not_invent_an_event_time(materials_client):
+        client, sessions, data = materials_client
+        day = date(2026, 11, 3)
+        student = data["children"][0]
+        async with sessions() as db:
+            db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
+                student_id=student.id, attendance_date=day, status=AttendanceStatus.ABSENT, recorded_by=data["teacher"].id))
+            await db.commit()
+>       response = await client.get(f'/api/parent/child/{student.id}/timeline', headers=auth(data["user"]), params={"date": str(day)})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_day.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:170: in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\application\services\parent_day_service.py:64: in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:461: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2362: in execute
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2247: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv\Lib\site-packages\sqlalchemy\orm\context.py:305: in orm_execute_statement
+    result = conn.execute(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1418: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1632: in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:703: in _compile_w_cache
+    compiled_sql = self._compiler(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:316: in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:1429: in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:870: in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:915: in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4824: in visit_select
+    text = self._compose_select_body(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4986: in _compose_select_body
+    t = self._generate_delimited_and_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2769: in _generate_delimited_and_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:508: in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:561: in __call__
+    expr = fn(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\uuid_type.py:80: in _legacy_uuid_comparison
+    return compiler.visit_binary(element, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3407: in visit_binary
+    return self._generate_generic_binary(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3462: in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4734: in visit_select
+    froms = self._setup_select_stack(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4904: in _setup_select_stack
+    froms = compile_state._get_display_froms(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.orm.context.ORMSelectCompileState object at 0x000001DC43D75070>
+explicit_correlate_froms = {<sqlalchemy.orm.util._ORMJoin at 0x1dc43a72f10; Join object on medication_logs(2045308139152) and medication_schedule...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+implicit_correlate_froms = {<sqlalchemy.orm.util._ORMJoin at 0x1dc43a72f10; Join object on medication_logs(2045308139152) and medication_schedule...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+
+    def _get_display_froms(
+        self,
+        explicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+        implicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+    ) -> List[FromClause]:
+        """Return the full list of 'from' clauses to be displayed.
+    
+        Takes into account a set of existing froms which may be
+        rendered in the FROM clause of enclosing selects; this Select
+        may want to leave those absent if it is automatically
+        correlating.
+    
+        """
+    
+        froms = self.froms
+    
+        if self.statement._correlate:
+            to_correlate = self.statement._correlate
+            if to_correlate:
+                froms = [
+                    f
+                    for f in froms
+                    if f
+                    not in _cloned_intersection(
+                        _cloned_intersection(
+                            froms, explicit_correlate_froms or ()
+                        ),
+                        to_correlate,
+                    )
+                ]
+    
+        if self.statement._correlate_except is not None:
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_difference(
+                    _cloned_intersection(
+                        froms, explicit_correlate_froms or ()
+                    ),
+                    self.statement._correlate_except,
+                )
+            ]
+    
+        if (
+            self.statement._auto_correlate
+            and implicit_correlate_froms
+            and len(froms) > 1
+        ):
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_intersection(froms, implicit_correlate_froms)
+            ]
+    
+            if not len(froms):
+>               raise exc.InvalidRequestError(
+                    "Select statement '%r"
+                    "' returned no FROM clauses "
+                    "due to auto-correlation; "
+                    "specify correlate(<tables>) "
+                    "to control correlation "
+                    "manually." % self.statement
+                )
+E               sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC43A2F5B0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+
+.venv\Lib\site-packages\sqlalchemy\sql\selectable.py:4793: InvalidRequestError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/child/0b5c6355-fef7-4d6b-a185-bd7138e2a317/timeline", "request_id": "ed6b9d6e-49de-4fee-a013-a7add7f9f455", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-03T14:26:48.034524Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 170, in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\parent_day_service.py", line 64, in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        MedicationSchedule.id == MedicationLog.schedule_id).where(MedicationLog.student_id == student.id,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            MedicationSchedule.student_id == student.id, MedicationLog.given_time >= start, MedicationLog.given_time < end))).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1632, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 703, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 316, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1429, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 870, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 915, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4824, in visit_select
+    text = self._compose_select_body(
+        text,
+    ...<6 lines>...
+        kwargs,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4986, in _compose_select_body
+    t = self._generate_delimited_and_list(
+        select._where_criteria, from_linter=from_linter, **kwargs
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2769, in _generate_delimited_and_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 508, in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 561, in __call__
+    expr = fn(element, compiler, **kw)
+  File "C:\Okul360\backend\app\core\uuid_type.py", line 80, in _legacy_uuid_comparison
+    return compiler.visit_binary(element, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3407, in visit_binary
+    return self._generate_generic_binary(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        binary,
+        ^^^^^^^
+    ...<3 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3462, in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, eager_grouping=eager_grouping, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4734, in visit_select
+    froms = self._setup_select_stack(
+        select_stmt, compile_state, entry, asfrom, lateral, compound_index
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4904, in _setup_select_stack
+    froms = compile_state._get_display_froms(
+        explicit_correlate_froms=correlate_froms,
+        implicit_correlate_froms=asfrom_froms,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\selectable.py", line 4793, in _get_display_froms
+    raise exc.InvalidRequestError(
+    ...<6 lines>...
+    )
+sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC43A2F5B0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+_______ test_date_only_records_do_not_invent_an_event_time[postgresql] ________
+
+materials_client = (<httpx.AsyncClient object at 0x000001DC43044C50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001DC440CB9D0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001DC43F710D0>, ...})
+
+    async def test_date_only_records_do_not_invent_an_event_time(materials_client):
+        client, sessions, data = materials_client
+        day = date(2026, 11, 3)
+        student = data["children"][0]
+        async with sessions() as db:
+            db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
+                student_id=student.id, attendance_date=day, status=AttendanceStatus.ABSENT, recorded_by=data["teacher"].id))
+            await db.commit()
+>       response = await client.get(f'/api/parent/child/{student.id}/timeline', headers=auth(data["user"]), params={"date": str(day)})
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_day.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:170: in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\application\services\parent_day_service.py:64: in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:461: in execute
+    result = await greenlet_spawn(
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:190: in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2362: in execute
+    return self._execute_internal(
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2247: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+.venv\Lib\site-packages\sqlalchemy\orm\context.py:305: in orm_execute_statement
+    result = conn.execute(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1418: in execute
+    return meth(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:515: in _execute_on_connection
+    return connection._execute_clauseelement(
+.venv\Lib\site-packages\sqlalchemy\engine\base.py:1632: in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:703: in _compile_w_cache
+    compiled_sql = self._compiler(
+.venv\Lib\site-packages\sqlalchemy\sql\elements.py:316: in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:1429: in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:870: in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:915: in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4824: in visit_select
+    text = self._compose_select_body(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4986: in _compose_select_body
+    t = self._generate_delimited_and_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2769: in _generate_delimited_and_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2771: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2802: in visit_expression_clauselist
+    return self._generate_delimited_list(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2752: in _generate_delimited_list
+    return separator.join(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2754: in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:508: in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:561: in __call__
+    expr = fn(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\ext\compiler.py:493: in _wrap_existing_dispatch
+    return existing_dispatch(element, compiler, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3407: in visit_binary
+    return self._generate_generic_binary(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:3462: in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\annotation.py:344: in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:2419: in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\visitors.py:141: in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+           ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4734: in visit_select
+    froms = self._setup_select_stack(
+.venv\Lib\site-packages\sqlalchemy\sql\compiler.py:4904: in _setup_select_stack
+    froms = compile_state._get_display_froms(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.orm.context.ORMSelectCompileState object at 0x000001DC43AC7B90>
+explicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+implicit_correlate_froms = {Table('medication_logs', MetaData(), Column('id', CustomUUID(length=36), table=<medication_logs>, primary_key=True, n...les>), Column('updated_by', CustomUUID(length=36), ForeignKey('users.id'), table=<medication_schedules>), schema=None)}
+
+    def _get_display_froms(
+        self,
+        explicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+        implicit_correlate_froms: Optional[Sequence[FromClause]] = None,
+    ) -> List[FromClause]:
+        """Return the full list of 'from' clauses to be displayed.
+    
+        Takes into account a set of existing froms which may be
+        rendered in the FROM clause of enclosing selects; this Select
+        may want to leave those absent if it is automatically
+        correlating.
+    
+        """
+    
+        froms = self.froms
+    
+        if self.statement._correlate:
+            to_correlate = self.statement._correlate
+            if to_correlate:
+                froms = [
+                    f
+                    for f in froms
+                    if f
+                    not in _cloned_intersection(
+                        _cloned_intersection(
+                            froms, explicit_correlate_froms or ()
+                        ),
+                        to_correlate,
+                    )
+                ]
+    
+        if self.statement._correlate_except is not None:
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_difference(
+                    _cloned_intersection(
+                        froms, explicit_correlate_froms or ()
+                    ),
+                    self.statement._correlate_except,
+                )
+            ]
+    
+        if (
+            self.statement._auto_correlate
+            and implicit_correlate_froms
+            and len(froms) > 1
+        ):
+            froms = [
+                f
+                for f in froms
+                if f
+                not in _cloned_intersection(froms, implicit_correlate_froms)
+            ]
+    
+            if not len(froms):
+>               raise exc.InvalidRequestError(
+                    "Select statement '%r"
+                    "' returned no FROM clauses "
+                    "due to auto-correlation; "
+                    "specify correlate(<tables>) "
+                    "to control correlation "
+                    "manually." % self.statement
+                )
+E               sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC430817F0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+
+.venv\Lib\site-packages\sqlalchemy\sql\selectable.py:4793: InvalidRequestError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/child/cb69e717-488c-4c44-aebe-92879ce24e05/timeline", "request_id": "e47fa7ba-1fe7-44f7-9d79-a03680777c7e", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-03T14:26:52.088856Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 170, in get_child_timeline
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\parent_day_service.py", line 64, in timeline
+    medication = (await db.execute(select(MedicationLog, MedicationSchedule).join(MedicationSchedule,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        MedicationSchedule.id == MedicationLog.schedule_id).where(MedicationLog.student_id == student.id,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            MedicationSchedule.student_id == student.id, MedicationLog.given_time >= start, MedicationLog.given_time < end))).all()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2362, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2247, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 305, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1632, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 703, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 316, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 1429, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 870, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 915, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4824, in visit_select
+    text = self._compose_select_body(
+        text,
+    ...<6 lines>...
+        kwargs,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4986, in _compose_select_body
+    t = self._generate_delimited_and_list(
+        select._where_criteria, from_linter=from_linter, **kwargs
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2769, in _generate_delimited_and_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2771, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in clauses)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2802, in visit_expression_clauselist
+    return self._generate_delimited_list(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        clauselist.clauses, opstring, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2752, in _generate_delimited_list
+    return separator.join(
+           ~~~~~~~~~~~~~~^
+        s
+        ^
+        for s in (c._compiler_dispatch(self, **kw) for c in elements)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if s
+        ^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2754, in <genexpr>
+    for s in (c._compiler_dispatch(self, **kw) for c in elements)
+              ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 508, in <lambda>
+    lambda *arg, **kw: existing(*arg, **kw),
+                       ~~~~~~~~^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 561, in __call__
+    expr = fn(element, compiler, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\compiler.py", line 493, in _wrap_existing_dispatch
+    return existing_dispatch(element, compiler, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3407, in visit_binary
+    return self._generate_generic_binary(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        binary,
+        ^^^^^^^
+    ...<3 lines>...
+        **kw,
+        ^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 3462, in _generate_generic_binary
+    + binary.right._compiler_dispatch(
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, eager_grouping=eager_grouping, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 2419, in visit_grouping
+    return "(" + grouping.element._compiler_dispatch(self, **kwargs) + ")"
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4734, in visit_select
+    froms = self._setup_select_stack(
+        select_stmt, compile_state, entry, asfrom, lateral, compound_index
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\compiler.py", line 4904, in _setup_select_stack
+    froms = compile_state._get_display_froms(
+        explicit_correlate_froms=correlate_froms,
+        implicit_correlate_froms=asfrom_froms,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\sql\selectable.py", line 4793, in _get_display_froms
+    raise exc.InvalidRequestError(
+    ...<6 lines>...
+    )
+sqlalchemy.exc.InvalidRequestError: Select statement '<sqlalchemy.sql.selectable.Select object at 0x000001DC430817F0>' returned no FROM clauses due to auto-correlation; specify correlate(<tables>) to control correlation manually.
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_infirmary_workflow.py::test_parent_requests_need_review_and_rejection_persists_across_portals[sqlite]
+FAILED tests/integration/test_infirmary_workflow.py::test_parent_requests_need_review_and_rejection_persists_across_portals[postgresql]
+FAILED tests/integration/test_parent_day.py::test_parent_timeline_reads_real_child_events_and_school_day_boundaries[sqlite]
+FAILED tests/integration/test_parent_day.py::test_parent_timeline_reads_real_child_events_and_school_day_boundaries[postgresql]
+FAILED tests/integration/test_parent_day.py::test_date_only_records_do_not_invent_an_event_time[sqlite]
+FAILED tests/integration/test_parent_day.py::test_date_only_records_do_not_invent_an_event_time[postgresql]
+6 failed, 19 passed, 20 warnings in 53.02s

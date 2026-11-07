@@ -1,0 +1,23 @@
+ExpectError: expect(received).toBeLessThan(expected)
+
+Expected: < 500
+Received:   1964
+
+Call Log:
+- Timeout 5000ms exceeded while waiting on the predicate
+    at captureRawStack (C:\Okul360\frontend\node_modules\playwright-core\lib\coreBundle.js:9282:17)
+    at callMatcherAsStep (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13316:57)
+    at Object.toBeLessThan (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13308:23)
+    at C:\Okul360\.codex-build\local\review-sales-20261104.cjs:35:110 {
+  matcherResult: {
+    pass: false,
+    message: 'expect(received).toBeLessThan(expected)\n' +
+      '\n' +
+      'Expected: < 500\n' +
+      'Received:   1964\n' +
+      '\n' +
+      'Call Log:\n' +
+      '- Timeout 5000ms exceeded while waiting on the predicate',
+    name: 'toBeLessThan'
+  }
+}

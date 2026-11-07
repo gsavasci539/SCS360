@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from app.infrastructure.models.models import DebtStatus
+from app.core.dates import school_today
 
 
 class DebtCalculator:
@@ -11,10 +12,10 @@ class DebtCalculator:
         if remaining <= 0:
             return DebtStatus.PAID
         if paid_amount > 0:
-            if due_date < date.today():
+            if due_date < school_today():
                 return DebtStatus.OVERDUE
             return DebtStatus.PARTIALLY_PAID
-        if due_date < date.today():
+        if due_date < school_today():
             return DebtStatus.OVERDUE
         return DebtStatus.UNPAID
 

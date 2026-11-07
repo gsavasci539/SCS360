@@ -1,13 +1,32 @@
-# EduPanel — Okul Yönetim Sistemi
+# SCS360 — Okul Yönetim Sistemi
 
 Anaokulu, kreş, etüt ve kurs merkezleri için franchise uyumlu, çoklu şube destekli yönetim platformu.
+
+## Windows'ta yerel çalıştırma
+
+Mevcut bağımlılıklar ve `backend/.env` hazırken proje kökünden:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+```
+
+Arayüz: http://127.0.0.1:5173 — API belgeleri: http://127.0.0.1:8000/api/docs.
+Betik servisleri arka planda, yalnız bu bilgisayardan erişilecek şekilde başlatır; API hazır olma ve arayüz proxy kontrollerini yapar. Mevcut SCS360 servislerini tekrar başlatmaz, başka uygulamaların portlarını kapatmaz. Loglar `.codex-build/local` içindedir. Veritabanı migration'ları güncel olmalıdır; betik örnek kullanıcı/veri oluşturmaz.
+
+Durdurmak için:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/stop-local.ps1
+```
+
+Yalnız bu betiğin başlattığı, kimliği ve başlangıç zamanı doğrulanan süreçler durdurulur. Backend kodu veya ortam ayarları değiştiğinde durdurup yeniden başlatın.
 
 ## Teknoloji Stack
 
 | Katman | Teknoloji |
 |--------|-----------|
 | Backend | Python, FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL |
-| Frontend | React, Material Dashboard (Creative Tim), MUI, Axios, Zustand |
+| Frontend | React, TypeScript, Vite, Axios, Zustand |
 | DevOps | Docker, Docker Compose, Nginx, GitHub Actions |
 
 ## Hızlı Başlangıç
@@ -20,9 +39,8 @@ Anaokulu, kreş, etüt ve kurs merkezleri için franchise uyumlu, çoklu şube d
 ### Docker ile Çalıştırma
 
 ```bash
-cd school-management
-cp .env.example .env
-cp backend/.env.example backend/.env
+cp .env.compose.example .env
+cp backend/.env.production.example backend/.env
 # backend/.env içindeki JWT_SECRET_KEY değerini benzersiz ve en az 32 karakter yapın.
 docker compose up --build -d
 ```

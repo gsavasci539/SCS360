@@ -1,0 +1,860 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/school-payment-review.test.tsx (12 tests | 2 failed) 2215ms
+   × loads the pending-only server page and never sends actions while opening or paging 296ms
+   × closes an in-flight command and reopens the fresh read-only result while removing its stale queue row 1122ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/school-payment-review.test.tsx > loads the pending-only server page and never sends actions while opening or paging
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Listeyi yenile"
+
+Here are the accessible roles:
+
+  banner:
+
+  Name "":
+  <header
+    class="page-head"
+  />
+
+  --------------------------------------------------
+  heading:
+
+  Name "Online ödeme incelemesi":
+  <h1 />
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  --------------------------------------------------
+  link:
+
+  Name "Tahsilatlara dön":
+  <a
+    class="btn btn-secondary"
+    data-discover="true"
+    href="/finance/payments"
+  />
+
+  --------------------------------------------------
+  region:
+
+  Name "Uzlaştırma bekleyen online ödemeler":
+  <section
+    aria-label="Uzlaştırma bekleyen online ödemeler"
+    class="card card-pad"
+  />
+
+  --------------------------------------------------
+  table:
+
+  Name "":
+  <table
+    class="data-table"
+  />
+
+  --------------------------------------------------
+  rowgroup:
+
+  Name "":
+  <thead />
+
+  Name "":
+  <tbody />
+
+  --------------------------------------------------
+  row:
+
+  Name "Öğrenci İşlem tutarı Durum Ortam Tarih İşlem":
+  <tr />
+
+  Name "Deniz Öğrenci 25.00 USD Ödendi, inceleme bekliyor Canlı 05 Kas 2026 İncele":
+  <tr />
+
+  --------------------------------------------------
+  columnheader:
+
+  Name "Öğrenci":
+  <th />
+
+  Name "İşlem tutarı":
+  <th />
+
+  Name "Durum":
+  <th />
+
+  Name "Ortam":
+  <th />
+
+  Name "Tarih":
+  <th />
+
+  Name "İşlem":
+  <th />
+
+  --------------------------------------------------
+  cell:
+
+  Name "Deniz Öğrenci":
+  <td />
+
+  Name "25.00 USD":
+  <td />
+
+  Name "Ödendi, inceleme bekliyor":
+  <td />
+
+  Name "Canlı":
+  <td />
+
+  Name "05 Kas 2026":
+  <td />
+
+  Name "İncele":
+  <td />
+
+  --------------------------------------------------
+  button:
+
+  Name "İncele":
+  <button
+    class="btn btn-secondary"
+  />
+
+  Name "Önceki sayfa":
+  <button
+    class="btn btn-secondary"
+    disabled=""
+  />
+
+  Name "Sonraki sayfa":
+  <button
+    class="btn btn-secondary"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Online ödeme incelemesi
+        </h1>
+        <p>
+          Ödeme alınmış ancak borca işlenmesi için inceleme bekleyen öğrenci ödemeleri.
+        </p>
+      </div>
+      <div
+        class="head-actions"
+      >
+        <a
+          class="btn btn-secondary"
+          data-discover="true"
+          href="/finance/payments"
+        >
+          Tahsilatlara dön
+        </a>
+      </div>
+    </header>
+    <p>
+      Bu kuyruk yalnız uzlaştırma bekleyen kayıtları gösterir. Bir kaydı açmak veya sayfayı yenilemek işlem göndermez.
+    </p>
+    <section
+      aria-label="Uzlaştırma bekleyen online ödemeler"
+      class="card card-pad"
+    >
+      <div
+        class="table-wrap"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                İşlem tutarı
+              </th>
+              <th>
+                Durum
+              </th>
+              <th>
+                Ortam
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                İşlem
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Öğrenci
+              </td>
+              <td>
+                25.00 USD
+              </td>
+              <td>
+                <span
+                  class="badge badge-warning"
+                >
+                  Ödendi, inceleme bekliyor
+                </span>
+              </td>
+              <td>
+                Canlı
+              </td>
+              <td>
+                05 Kas 2026
+              </td>
+              <td>
+                <button
+                  class="btn btn-secondary"
+                >
+                  İncele
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        class="pagination"
+      >
+        <span>
+          Toplam 
+          21
+           kayıt · Sayfa 
+          1
+          /
+          2
+        </span>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Önceki sayfa
+        </button>
+        <button
+          class="btn btn-secondary"
+        >
+          Sonraki sayfa
+        </button>
+      </div>
+    </section>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/school-payment-review.test.tsx:28:26
+     26|   open(false); expect(await screen.findByText("Deniz Öğrenci")).toBeIn…
+     27|   expect(screen.getByText("Canlı")).toBeInTheDocument();
+     28|   fireEvent.click(screen.getByRole("button", { name: "Listeyi yenile" …
+       |                          ^
+     29|   fireEvent.click(screen.getByRole("button", { name: "Sonraki sayfa" }…
+     30|   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/payments/…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/test/school-payment-review.test.tsx > closes an in-flight command and reopens the fresh read-only result while removing its stale queue row
+TestingLibraryElementError: Unable to find an element with the text: Uzlaştırma bekleyen online ödeme bulunmuyor.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body
+  style="overflow: hidden;"
+>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Online ödeme incelemesi
+        </h1>
+        <p>
+          Ödeme alınmış ancak borca işlenmesi için inceleme bekleyen öğrenci ödemeleri.
+        </p>
+      </div>
+      <div
+        class="head-actions"
+      >
+        <a
+          class="btn btn-secondary"
+          data-discover="true"
+          href="/finance/payments"
+        >
+          Tahsilatlara dön
+        </a>
+      </div>
+    </header>
+    <p>
+      Bu kuyruk yalnız uzlaştırma bekleyen kayıtları gösterir. Bir kaydı açmak veya sayfayı yenilemek işlem göndermez.
+    </p>
+    <section
+      aria-label="Uzlaştırma bekleyen online ödemeler"
+      class="card card-pad"
+    >
+      <div
+        class="table-wrap"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                İşlem tutarı
+              </th>
+              <th>
+                Durum
+              </th>
+              <th>
+                Ortam
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                İşlem
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Öğrenci
+              </td>
+              <td>
+                25.00 USD
+              </td>
+              <td>
+                <span
+                  class="badge badge-warning"
+                >
+                  Ödendi, inceleme bekliyor
+                </span>
+              </td>
+              <td>
+                Canlı
+              </td>
+              <td>
+                05 Kas 2026
+              </td>
+              <td>
+                <button
+                  class="btn btn-secondary"
+                >
+                  İncele
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        class="pagination"
+      >
+        <span>
+          Toplam 
+          1
+           kayıt · Sayfa 
+          1
+          /
+          1
+        </span>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Önceki sayfa
+        </button>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Sonraki sayfa
+        </button>
+      </div>
+    </section>
+    <div
+      class="modal-backdrop"
+    >
+      <div
+        aria-labelledby="_r_18_"
+        aria-modal="true"
+        class="modal"
+        role="dialog"
+        tabindex="-1"
+      >
+        <div
+          class="modal-head"
+        >
+          <div>
+            <h2
+              id="_r_18_"
+            >
+              Online ödeme incelemesi
+            </h2>
+            <p>
+              Doğrulanmış ödeme ve borç bakiyesini karşılaştırın.
+            </p>
+          </div>
+          <button
+            aria-label="Pencereyi kapat"
+            class="btn btn-ghost btn-icon"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x"
+              fill="none"
+              height="18"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="modal-body"
+        >
+          <p>
+            <strong>
+              Deniz Öğrenci
+            </strong>
+             · 
+            <span
+              class="badge badge-neutral"
+            >
+              Tamamlandı
+            </span>
+          </p>
+          <dl
+            class="detail-list"
+          >
+            <div>
+              <dt>
+                İşlem tutarı
+              </dt>
+              <dd>
+                25.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Sağlayıcıda doğrulanan
+              </dt>
+              <dd>
+                25.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Güncel kalan borç
+              </dt>
+              <dd>
+                50.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                İnceleme nedeni
+              </dt>
+              <dd>
+                BALANCE_CHANGED
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Sağlayıcı işlem referansı
+              </dt>
+              <dd
+                style="overflow-wrap: anywhere;"
+              >
+                provider-reference
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Doğrulama tarihi
+              </dt>
+              <dd>
+                05 Kas 2026
+              </dd>
+            </div>
+          </dl>
+          <section
+            aria-label="Mutabakat işlem geçmişi"
+          >
+            <h3>
+              Mutabakat işlem geçmişi
+            </h3>
+            <p>
+              Borca işleme
+               · 
+              <span
+                class="badge badge-neutral"
+              >
+                Tamamlandı
+              </span>
+               · 
+              05 Kas 2026
+            </p>
+          </section>
+          <p>
+            Bu kayıt için uygulanabilir bir mutabakat işlemi bulunmuyor. Görüntüleme yetkisi işlem yapma yetkisi vermez.
+          </p>
+          <p
+            class="cell-sub"
+          >
+            Sayfa yenilendiğinde güncel detay ve işlem geçmişi yüklenir; yeni istek kendiliğinden gönderilmez. Açıklama ve iade referansı tarayıcı depolamasına kaydedilmez.
+          </p>
+          <button
+            class="btn btn-secondary"
+          >
+            Güncel kaydı yükle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body
+  style="overflow: hidden;"
+>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Online ödeme incelemesi
+        </h1>
+        <p>
+          Ödeme alınmış ancak borca işlenmesi için inceleme bekleyen öğrenci ödemeleri.
+        </p>
+      </div>
+      <div
+        class="head-actions"
+      >
+        <a
+          class="btn btn-secondary"
+          data-discover="true"
+          href="/finance/payments"
+        >
+          Tahsilatlara dön
+        </a>
+      </div>
+    </header>
+    <p>
+      Bu kuyruk yalnız uzlaştırma bekleyen kayıtları gösterir. Bir kaydı açmak veya sayfayı yenilemek işlem göndermez.
+    </p>
+    <section
+      aria-label="Uzlaştırma bekleyen online ödemeler"
+      class="card card-pad"
+    >
+      <div
+        class="table-wrap"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Öğrenci
+              </th>
+              <th>
+                İşlem tutarı
+              </th>
+              <th>
+                Durum
+              </th>
+              <th>
+                Ortam
+              </th>
+              <th>
+                Tarih
+              </th>
+              <th>
+                İşlem
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Deniz Öğrenci
+              </td>
+              <td>
+                25.00 USD
+              </td>
+              <td>
+                <span
+                  class="badge badge-warning"
+                >
+                  Ödendi, inceleme bekliyor
+                </span>
+              </td>
+              <td>
+                Canlı
+              </td>
+              <td>
+                05 Kas 2026
+              </td>
+              <td>
+                <button
+                  class="btn btn-secondary"
+                >
+                  İncele
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        class="pagination"
+      >
+        <span>
+          Toplam 
+          1
+           kayıt · Sayfa 
+          1
+          /
+          1
+        </span>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Önceki sayfa
+        </button>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Sonraki sayfa
+        </button>
+      </div>
+    </section>
+    <div
+      class="modal-backdrop"
+    >
+      <div
+        aria-labelledby="_r_18_"
+        aria-modal="true"
+        class="modal"
+        role="dialog"
+        tabindex="-1"
+      >
+        <div
+          class="modal-head"
+        >
+          <div>
+            <h2
+              id="_r_18_"
+            >
+              Online ödeme incelemesi
+            </h2>
+            <p>
+              Doğrulanmış ödeme ve borç bakiyesini karşılaştırın.
+            </p>
+          </div>
+          <button
+            aria-label="Pencereyi kapat"
+            class="btn btn-ghost btn-icon"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-x"
+              fill="none"
+              height="18"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M18 6 6 18"
+              />
+              <path
+                d="m6 6 12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div
+          class="modal-body"
+        >
+          <p>
+            <strong>
+              Deniz Öğrenci
+            </strong>
+             · 
+            <span
+              class="badge badge-neutral"
+            >
+              Tamamlandı
+            </span>
+          </p>
+          <dl
+            class="detail-list"
+          >
+            <div>
+              <dt>
+                İşlem tutarı
+              </dt>
+              <dd>
+                25.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Sağlayıcıda doğrulanan
+              </dt>
+              <dd>
+                25.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Güncel kalan borç
+              </dt>
+              <dd>
+                50.00 USD
+              </dd>
+            </div>
+            <div>
+              <dt>
+                İnceleme nedeni
+              </dt>
+              <dd>
+                BALANCE_CHANGED
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Sağlayıcı işlem referansı
+              </dt>
+              <dd
+                style="overflow-wrap: anywhere;"
+              >
+                provider-reference
+              </dd>
+            </div>
+            <div>
+              <dt>
+                Doğrulama tarihi
+              </dt>
+              <dd>
+                05 Kas 2026
+              </dd>
+            </div>
+          </dl>
+          <section
+            aria-label="Mutabakat işlem geçmişi"
+          >
+            <h3>
+              Mutabakat işlem geçmişi
+            </h3>
+            <p>
+              Borca işleme
+               · 
+              <span
+                class="badge badge-neutral"
+              >
+                Tamamlandı
+              </span>
+               · 
+              05 Kas 2026
+            </p>
+          </section>
+          <p>
+            Bu kayıt için uygulanabilir bir mutabakat işlemi bulunmuyor. Görüntüleme yetkisi işlem yapma yetkisi vermez.
+          </p>
+          <p
+            class="cell-sub"
+          >
+            Sayfa yenilendiğinde güncel detay ve işlem geçmişi yüklenir; yeni istek kendiliğinden gönderilmez. Açıklama ve iade referansı tarayıcı depolamasına kaydedilmez.
+          </p>
+          <button
+            class="btn btn-secondary"
+          >
+            Güncel kaydı yükle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/school-payment-review.test.tsx:141:23
+    139|   fireEvent.click(screen.getByRole("button", { name: "İncele" }));
+    140|   expect(await screen.findByRole("region", { name: "Mutabakat işlem ge…
+    141|   expect(await screen.findByText("Uzlaştırma bekleyen online ödeme bul…
+       |                       ^
+    142|   expect(screen.queryByRole("form")).not.toBeInTheDocument();
+    143|   expect(screen.getByRole("button", { name: "Listeyi yenile" })).toBeE…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 10 passed (12)
+   Start at  15:59:20
+   Duration  4.58s (transform 227ms, setup 276ms, import 455ms, tests 2.21s, environment 1.40s)
+

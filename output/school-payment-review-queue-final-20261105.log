@@ -1,0 +1,164 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+stderr | src/test/school-payment-review.test.tsx > loads the pending-only server page and never sends actions while opening or paging
+An update to ScopedReviewPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/test/school-payment-review.test.tsx > loads the pending-only server page and never sends actions while opening or paging
+An update to ScopedReviewPage inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ❯ src/test/school-payment-review.test.tsx (12 tests | 1 failed) 1438ms
+   × loads the pending-only server page and never sends actions while opening or paging 239ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/school-payment-review.test.tsx > loads the pending-only server page and never sends actions while opening or paging
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Sonraki sayfa"
+
+Here are the accessible roles:
+
+  banner:
+
+  Name "":
+  <header
+    class="page-head"
+  />
+
+  --------------------------------------------------
+  heading:
+
+  Name "Online ödeme incelemesi":
+  <h1 />
+
+  Name "Veriler hazırlanıyor":
+  <h3 />
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  --------------------------------------------------
+  button:
+
+  Name "Listeyi yenile":
+  <button
+    class="btn btn-secondary"
+    disabled=""
+  />
+
+  --------------------------------------------------
+  link:
+
+  Name "Tahsilatlara dön":
+  <a
+    class="btn btn-secondary"
+    data-discover="true"
+    href="/finance/payments"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Online ödeme incelemesi
+        </h1>
+        <p>
+          Ödeme alınmış ancak borca işlenmesi için inceleme bekleyen öğrenci ödemeleri.
+        </p>
+      </div>
+      <div
+        class="head-actions"
+      >
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Listeyi yenile
+        </button>
+        <a
+          class="btn btn-secondary"
+          data-discover="true"
+          href="/finance/payments"
+        >
+          Tahsilatlara dön
+        </a>
+      </div>
+    </header>
+    <p>
+      Bu kuyruk yalnız uzlaştırma bekleyen kayıtları gösterir. Bir kaydı açmak veya sayfayı yenilemek işlem göndermez.
+    </p>
+    <div
+      class="state"
+    >
+      <div>
+        <div
+          class="spinner"
+          style="margin: auto;"
+        />
+        <h3>
+          Veriler hazırlanıyor
+        </h3>
+        <p>
+          Bu işlem yalnızca birkaç saniye sürmeli.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/school-payment-review.test.tsx:29:26
+     27|   expect(screen.getByText("Canlı")).toBeInTheDocument();
+     28|   fireEvent.click(screen.getByRole("button", { name: "Listeyi yenile" …
+     29|   fireEvent.click(screen.getByRole("button", { name: "Sonraki sayfa" }…
+       |                          ^
+     30|   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/payments/…
+     31|   expect(api.post).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 passed (12)
+   Start at  15:59:42
+   Duration  3.77s (transform 211ms, setup 204ms, import 449ms, tests 1.44s, environment 1.36s)
+

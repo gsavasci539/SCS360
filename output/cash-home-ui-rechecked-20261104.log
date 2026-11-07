@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run --run src/test/cash-payments.test.tsx src/test/home.test.ts src/test/navigation-contract.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  3 passed (3)
+      Tests  83 passed (83)
+   Start at  20:11:09
+   Duration  6.08s (transform 643ms, setup 651ms, import 1.71s, tests 1.27s, environment 5.54s)
+

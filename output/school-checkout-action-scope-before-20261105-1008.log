@@ -1,0 +1,98 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions[sqlite] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x000001D8F81DFA10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001D8F85ED940>, ...}, <test_school_checkout_durability.Provider object at 0x000001D8F85ECC20>)
+
+    async def test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions(school_checkout_client):
+        client, sessions, data, _provider = school_checkout_client
+        request = payment(data)
+        started = await client.post("/api/payments/iyzico/initialize", headers=headers(data["finance"]), json=request)
+        assert started.status_code == 200, started.text
+        identifier = request["request_id"]
+        async with sessions() as db:
+            role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "org_admin", Role.organization_id == data["org"].id))).scalar_one()
+            parent_payment = (await db.execute(select(Permission).where(Permission.code == "parent.make_payment"))).scalar_one()
+            role.permissions = [permission for permission in role.permissions if permission.code != "finance.write"] + [parent_payment]
+            await db.commit()
+        metadata = await client.get(f"/api/payments/iyzico/checkouts/{identifier}", headers=headers(data["finance"]))
+        assert metadata.status_code == 200, metadata.text
+>       assert metadata.json()["data"]["can_resume"] is False and metadata.json()["data"]["can_refresh"] is False
+E       assert (True is False)
+
+tests\integration\test_school_checkout_current_permissions.py:72: AssertionError
+_ test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions[postgresql] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x000001D8FA9B2490>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001D8FAE3B530>, ...}, <test_school_checkout_durability.Provider object at 0x000001D8FAE59310>)
+
+    async def test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions(school_checkout_client):
+        client, sessions, data, _provider = school_checkout_client
+        request = payment(data)
+        started = await client.post("/api/payments/iyzico/initialize", headers=headers(data["finance"]), json=request)
+        assert started.status_code == 200, started.text
+        identifier = request["request_id"]
+        async with sessions() as db:
+            role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "org_admin", Role.organization_id == data["org"].id))).scalar_one()
+            parent_payment = (await db.execute(select(Permission).where(Permission.code == "parent.make_payment"))).scalar_one()
+            role.permissions = [permission for permission in role.permissions if permission.code != "finance.write"] + [parent_payment]
+            await db.commit()
+        metadata = await client.get(f"/api/payments/iyzico/checkouts/{identifier}", headers=headers(data["finance"]))
+        assert metadata.status_code == 200, metadata.text
+>       assert metadata.json()["data"]["can_resume"] is False and metadata.json()["data"]["can_refresh"] is False
+E       assert (True is False)
+
+tests\integration\test_school_checkout_current_permissions.py:72: AssertionError
+_ test_completed_checkout_metadata_does_not_need_current_merchant_cipher[sqlite] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x000001D8FAE48A50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001D8FA8A3020>, ...}, <test_school_checkout_durability.Provider object at 0x000001D8FAE48CD0>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D8FA98C410>
+
+    async def test_completed_checkout_metadata_does_not_need_current_merchant_cipher(school_checkout_client, monkeypatch):
+        client, _, data, provider = school_checkout_client
+        request = payment(data)
+        assert (await start(client, data, request)).status_code == 200
+        captured = await callback(client, provider, request["request_id"])
+        assert captured.status_code == 200, captured.text
+        monkeypatch.setattr(get_settings(), "SCHOOL_PAYMENT_ENCRYPTION_KEY", "")
+        metadata = await client.get(f'/api/parent/payments/checkouts/{request["request_id"]}', headers=headers(data["user"]))
+>       assert metadata.status_code == 200, metadata.text
+E       AssertionError: {"success":false,"message":"Okul �deme �ifreleme anahtar� yap�land�r�lmam��","errors":[],"request_id":"a8c688aa-b42a-462e-9917-010d03345957"}
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\integration\test_school_checkout_current_permissions.py:95: AssertionError
+_ test_completed_checkout_metadata_does_not_need_current_merchant_cipher[postgresql] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x000001D8FAEA10F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001D8FC1A75B0>, ...}, <test_school_checkout_durability.Provider object at 0x000001D8FA9CB820>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D8FC0E3C50>
+
+    async def test_completed_checkout_metadata_does_not_need_current_merchant_cipher(school_checkout_client, monkeypatch):
+        client, _, data, provider = school_checkout_client
+        request = payment(data)
+        assert (await start(client, data, request)).status_code == 200
+        captured = await callback(client, provider, request["request_id"])
+        assert captured.status_code == 200, captured.text
+        monkeypatch.setattr(get_settings(), "SCHOOL_PAYMENT_ENCRYPTION_KEY", "")
+        metadata = await client.get(f'/api/parent/payments/checkouts/{request["request_id"]}', headers=headers(data["user"]))
+>       assert metadata.status_code == 200, metadata.text
+E       AssertionError: {"success":false,"message":"Okul �deme �ifreleme anahtar� yap�land�r�lmam��","errors":[],"request_id":"b3a34828-5dc1-4dc2-a967-627f230d1761"}
+E       assert 503 == 200
+E        +  where 503 = <Response [503 Service Unavailable]>.status_code
+
+tests\integration\test_school_checkout_current_permissions.py:95: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions[sqlite]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_finance_read_plus_parent_payment_permission_requires_actual_guardian_child_for_actions[postgresql]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_completed_checkout_metadata_does_not_need_current_merchant_cipher[sqlite]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_completed_checkout_metadata_does_not_need_current_merchant_cipher[postgresql]
+4 failed, 20 warnings in 10.96s

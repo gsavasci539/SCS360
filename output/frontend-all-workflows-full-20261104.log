@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  35 passed (35)
+      Tests  189 passed (189)
+   Start at  03:18:16
+   Duration  100.11s (transform 3.22s, setup 14.57s, import 22.61s, tests 37.90s, environment 105.55s)
+

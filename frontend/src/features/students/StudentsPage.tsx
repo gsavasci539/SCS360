@@ -1,3 +1,5 @@
+import { getAnalysis } from "../../lib/analysis";
+import { reportClientError } from "../../lib/diagnostics";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, apiMessage } from "../../lib/api";
@@ -35,14 +37,14 @@ export function StudentsPage() {
         : `/students?limit=50&offset=${(page - 1) * 50}`;
       
       const response = await api.get<any>(url);
-      console.log("API Response:", response.data);
+      
       const studentsData = Array.isArray(response.data.data?.items) ? response.data.data.items : (Array.isArray(response.data.data) ? response.data.data : []);
       const total = response.data.data?.total || studentsData.length;
-      console.log("Students data:", studentsData);
+      
       setStudents(studentsData);
       setTotal(total);
     } catch (err) {
-      console.error("API Error:", err);
+      reportClientError("API Error:", err);
       setError(apiMessage(err));
       setStudents([]);
     } finally {
@@ -52,12 +54,12 @@ export function StudentsPage() {
 
   const loadAiAnalysis = async () => {
     try {
-      const response = await api.get<any>("/ai/students-overview");
+      const response = await getAnalysis<any>("/ai/students-overview");
       if (response.data.success) {
         setAiAnalysis(response.data.data);
       }
     } catch (err) {
-      console.error("Failed to load AI analysis:", err);
+      reportClientError("Failed to load AI analysis:", err);
     }
   };
 

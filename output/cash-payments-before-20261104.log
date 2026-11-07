@@ -1,0 +1,857 @@
+FFFFF.FFFFFFFFFF.F                                                       [100%]
+================================== FAILURES ===================================
+_ test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992C947620>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992C807250>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992C946F90>, ...})
+
+    async def test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data, notes="Original intent")
+        response = await collect(client, data, body)
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+>       assert Decimal(saved["remaining_debt"]) == Decimal("125"), saved
+E       AssertionError: {'payment_id': '95f7d09b-47a3-4d0b-a749-0ebea4abc302', 'receipt_id': '9b576700-4068-4f74-a827-b0d2276314b9', 'receipt_number': 'RCP-20261104-95F7D0', 'remaining_debt': '150.00'}
+E       assert Decimal('150.00') == Decimal('125')
+E        +  where Decimal('150.00') = Decimal('150.00')
+E        +  and   Decimal('125') = Decimal('125')
+
+tests\integration\test_manual_payment_integrity.py:54: AssertionError
+_ test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992EF51A90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992F2A90F0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992EF51090>, ...})
+
+    async def test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data, notes="Original intent")
+        response = await collect(client, data, body)
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+>       assert Decimal(saved["remaining_debt"]) == Decimal("125"), saved
+E       AssertionError: {'payment_id': '2eff4e38-fda3-4928-9189-73d753d04a47', 'receipt_id': '8cc61014-fd9e-4aa7-8c3d-dc7325d352d9', 'receipt_number': 'RCP-20261104-2EFF4E', 'remaining_debt': '150.00'}
+E       assert Decimal('150.00') == Decimal('125')
+E        +  where Decimal('150.00') = Decimal('150.00')
+E        +  and   Decimal('125') = Decimal('125')
+
+tests\integration\test_manual_payment_integrity.py:54: AssertionError
+_ test_simultaneous_retries_create_one_payment_receipt_notification_and_audit[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992F411BD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992F3489E0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F2AA060>, ...})
+
+    async def test_simultaneous_retries_create_one_payment_receipt_notification_and_audit(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data, amount="30.00")
+        replies = await asyncio.gather(collect(client, data, body), collect(client, data, body))
+        assert [row.status_code for row in replies] == [200, 200], [row.text for row in replies]
+>       assert replies[0].json()["data"] == replies[1].json()["data"]
+E       AssertionError: assert {'payment_id'...bt': '150.00'} == {'payment_id'...bt': '120.00'}
+E         
+E         Differing items:
+E         {'remaining_debt': '150.00'} != {'remaining_debt': '120.00'}
+E         {'payment_id': 'cdf7344d-2d7f-4b4d-afec-b9311720ebb9'} != {'payment_id': '80c04f41-2a6b-4ebd-a969-075f2b939f03'}
+E         {'receipt_id': '0a3459a9-a22b-4425-a607-e83c23b96114'} != {'receipt_id': 'a9cf83eb-7f64-4106-9eb7-5b08e367f374'}
+E         {'receipt_number': 'RCP-20261104-CDF734'} != {'receipt_number': 'RCP-20261104-80C04F'}
+E         Use -v to get more diff
+
+tests\integration\test_manual_payment_integrity.py:74: AssertionError
+_ test_simultaneous_retries_create_one_payment_receipt_notification_and_audit[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992F2AAFD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992ECE34D0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F34AAD0>, ...})
+
+    async def test_simultaneous_retries_create_one_payment_receipt_notification_and_audit(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data, amount="30.00")
+        replies = await asyncio.gather(collect(client, data, body), collect(client, data, body))
+        assert [row.status_code for row in replies] == [200, 200], [row.text for row in replies]
+>       assert replies[0].json()["data"] == replies[1].json()["data"]
+E       AssertionError: assert {'payment_id'...bt': '150.00'} == {'payment_id'...bt': '120.00'}
+E         
+E         Differing items:
+E         {'remaining_debt': '150.00'} != {'remaining_debt': '120.00'}
+E         {'payment_id': '03242b70-2972-45c4-a076-b8a8b18ed529'} != {'payment_id': '37f4ae44-6fda-4141-814c-a64ad729cee8'}
+E         {'receipt_id': '7b0f14c0-d21e-42a6-a172-d8d0350bd0ca'} != {'receipt_id': '68c2bf67-a625-4728-9a87-518b718c5276'}
+E         {'receipt_number': 'RCP-20261104-03242B'} != {'receipt_number': 'RCP-20261104-37F4AE'}
+E         Use -v to get more diff
+
+tests\integration\test_manual_payment_integrity.py:74: AssertionError
+_ test_simultaneous_distinct_collections_cannot_overpay_or_lose_a_balance_update[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992F47EC40>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992F6F3CB0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F4CD250>, ...})
+
+    async def test_simultaneous_distinct_collections_cannot_overpay_or_lose_a_balance_update(cash_client):
+        client, sessions, data = cash_client
+        replies = await asyncio.gather(*[collect(client, data, payment_body(data, amount="80.00")) for _ in range(2)])
+>       assert sorted(row.status_code for row in replies) == [200, 422], [row.text for row in replies]
+E       AssertionError: ['{"success":true,"message":"Tahsilat al�nd�","data":{"payment_id":"db84a8e6-dc81-4ae2-b52f-7a9d67dd8b26","receipt_id"...receipt_id":"a5b33a32-4d7e-48b0-80a1-99ff67d1f53f","receipt_number":"RCP-20261104-C1DF23","remaining_debt":"150.00"}}']
+E       assert [200, 200] == [200, 422]
+E         
+E         At index 1 diff: 200 != 422
+E         Use -v to get more diff
+
+tests\integration\test_manual_payment_integrity.py:84: AssertionError
+____ test_invalid_financial_input_is_rejected_before_any_mutation[sqlite] _____
+
+cash_client = (<httpx.AsyncClient object at 0x000001992ED7BF00>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992EF1E780>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F866270>, ...})
+
+    async def test_invalid_financial_input_is_rejected_before_any_mutation(cash_client):
+        client, sessions, data = cash_client
+        for invalid in ({"debt_id": "bad"}, {"debt_id": None}, {"amount": "NaN"}, {"amount": "invalid"},
+                        {"amount": -1}, {"amount": "0"}, {"amount": "0.001"}, {"amount": "10000000000.00"},
+                        {"payment_method": "invalid"}, {"request_id": "bad"}, {"notes": "x" * 2001}):
+>           response = await collect(client, data, payment_body(data, **invalid))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_manual_payment_integrity.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_manual_payment_integrity.py:45: in collect
+    return await client.post("/api/payments", headers=auth(data["accountant"]), json=body)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\core_modules.py:1227: in take_payment
+    debt = await repo.get_by_id(UUID(body.debt_id), Debt, for_update=True)
+                                ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'uuid.UUID' object has no attribute 'int'") raised in repr()] UUID object at 0x199309a0b90>
+hex = 'bad', bytes = None, bytes_le = None, fields = None, int = None
+version = None
+
+    def __init__(self, hex=None, bytes=None, bytes_le=None, fields=None,
+                       int=None, version=None,
+                       *, is_safe=SafeUUID.unknown):
+        r"""Create a UUID from either a string of 32 hexadecimal digits,
+        a string of 16 bytes as the 'bytes' argument, a string of 16 bytes
+        in little-endian order as the 'bytes_le' argument, a tuple of six
+        integers (32-bit time_low, 16-bit time_mid, 16-bit time_hi_version,
+        8-bit clock_seq_hi_variant, 8-bit clock_seq_low, 48-bit node) as
+        the 'fields' argument, or a single 128-bit integer as the 'int'
+        argument.  When a string of hex digits is given, curly braces,
+        hyphens, and a URN prefix are all optional.  For example, these
+        expressions all yield the same UUID:
+    
+        UUID('{12345678-1234-5678-1234-567812345678}')
+        UUID('12345678123456781234567812345678')
+        UUID('urn:uuid:12345678-1234-5678-1234-567812345678')
+        UUID(bytes='\x12\x34\x56\x78'*4)
+        UUID(bytes_le='\x78\x56\x34\x12\x34\x12\x78\x56' +
+                      '\x12\x34\x56\x78\x12\x34\x56\x78')
+        UUID(fields=(0x12345678, 0x1234, 0x5678, 0x12, 0x34, 0x567812345678))
+        UUID(int=0x12345678123456781234567812345678)
+    
+        Exactly one of 'hex', 'bytes', 'bytes_le', 'fields', or 'int' must
+        be given.  The 'version' argument is optional; if given, the resulting
+        UUID will have its variant and version set according to RFC 4122,
+        overriding the given 'hex', 'bytes', 'bytes_le', 'fields', or 'int'.
+    
+        is_safe is an enum exposed as an attribute on the instance.  It
+        indicates whether the UUID has been generated in a way that is safe
+        for multiprocessing applications, via uuid_generate_time_safe(3).
+        """
+    
+        if [hex, bytes, bytes_le, fields, int].count(None) != 4:
+            raise TypeError('one of the hex, bytes, bytes_le, fields, '
+                            'or int arguments must be given')
+        if hex is not None:
+            hex = hex.replace('urn:', '').replace('uuid:', '')
+            hex = hex.strip('{}').replace('-', '')
+            if len(hex) != 32:
+>               raise ValueError('badly formed hexadecimal UUID string')
+E               ValueError: badly formed hexadecimal UUID string
+
+C:\Python313\Lib\uuid.py:181: ValueError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/payments", "request_id": "96b01e36-ef8b-4b4d-b1ed-07df70d66a76", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T16:39:34.032381Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\core_modules.py", line 1227, in take_payment
+    debt = await repo.get_by_id(UUID(body.debt_id), Debt, for_update=True)
+                                ~~~~^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\uuid.py", line 181, in __init__
+    raise ValueError('badly formed hexadecimal UUID string')
+ValueError: badly formed hexadecimal UUID string
+__ test_invalid_financial_input_is_rejected_before_any_mutation[postgresql] ___
+
+cash_client = (<httpx.AsyncClient object at 0x0000019930C8C6B0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6C260>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F871570>, ...})
+
+    async def test_invalid_financial_input_is_rejected_before_any_mutation(cash_client):
+        client, sessions, data = cash_client
+        for invalid in ({"debt_id": "bad"}, {"debt_id": None}, {"amount": "NaN"}, {"amount": "invalid"},
+                        {"amount": -1}, {"amount": "0"}, {"amount": "0.001"}, {"amount": "10000000000.00"},
+                        {"payment_method": "invalid"}, {"request_id": "bad"}, {"notes": "x" * 2001}):
+>           response = await collect(client, data, payment_body(data, **invalid))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_manual_payment_integrity.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_manual_payment_integrity.py:45: in collect
+    return await client.post("/api/payments", headers=auth(data["accountant"]), json=body)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\core_modules.py:1227: in take_payment
+    debt = await repo.get_by_id(UUID(body.debt_id), Debt, for_update=True)
+                                ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'uuid.UUID' object has no attribute 'int'") raised in repr()] UUID object at 0x199310bfb90>
+hex = 'bad', bytes = None, bytes_le = None, fields = None, int = None
+version = None
+
+    def __init__(self, hex=None, bytes=None, bytes_le=None, fields=None,
+                       int=None, version=None,
+                       *, is_safe=SafeUUID.unknown):
+        r"""Create a UUID from either a string of 32 hexadecimal digits,
+        a string of 16 bytes as the 'bytes' argument, a string of 16 bytes
+        in little-endian order as the 'bytes_le' argument, a tuple of six
+        integers (32-bit time_low, 16-bit time_mid, 16-bit time_hi_version,
+        8-bit clock_seq_hi_variant, 8-bit clock_seq_low, 48-bit node) as
+        the 'fields' argument, or a single 128-bit integer as the 'int'
+        argument.  When a string of hex digits is given, curly braces,
+        hyphens, and a URN prefix are all optional.  For example, these
+        expressions all yield the same UUID:
+    
+        UUID('{12345678-1234-5678-1234-567812345678}')
+        UUID('12345678123456781234567812345678')
+        UUID('urn:uuid:12345678-1234-5678-1234-567812345678')
+        UUID(bytes='\x12\x34\x56\x78'*4)
+        UUID(bytes_le='\x78\x56\x34\x12\x34\x12\x78\x56' +
+                      '\x12\x34\x56\x78\x12\x34\x56\x78')
+        UUID(fields=(0x12345678, 0x1234, 0x5678, 0x12, 0x34, 0x567812345678))
+        UUID(int=0x12345678123456781234567812345678)
+    
+        Exactly one of 'hex', 'bytes', 'bytes_le', 'fields', or 'int' must
+        be given.  The 'version' argument is optional; if given, the resulting
+        UUID will have its variant and version set according to RFC 4122,
+        overriding the given 'hex', 'bytes', 'bytes_le', 'fields', or 'int'.
+    
+        is_safe is an enum exposed as an attribute on the instance.  It
+        indicates whether the UUID has been generated in a way that is safe
+        for multiprocessing applications, via uuid_generate_time_safe(3).
+        """
+    
+        if [hex, bytes, bytes_le, fields, int].count(None) != 4:
+            raise TypeError('one of the hex, bytes, bytes_le, fields, '
+                            'or int arguments must be given')
+        if hex is not None:
+            hex = hex.replace('urn:', '').replace('uuid:', '')
+            hex = hex.strip('{}').replace('-', '')
+            if len(hex) != 32:
+>               raise ValueError('badly formed hexadecimal UUID string')
+E               ValueError: badly formed hexadecimal UUID string
+
+C:\Python313\Lib\uuid.py:181: ValueError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/payments", "request_id": "c9353cf7-4a9c-4cb8-b9a0-1d5d4f2500de", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T16:39:36.931675Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\core_modules.py", line 1227, in take_payment
+    debt = await repo.get_by_id(UUID(body.debt_id), Debt, for_update=True)
+                                ~~~~^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\uuid.py", line 181, in __init__
+    raise ValueError('badly formed hexadecimal UUID string')
+ValueError: badly formed hexadecimal UUID string
+_ test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992F4CE050>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992EF1F750>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992F668DD0>, ...})
+
+    async def test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data)
+        response = await collect(client, data, body)
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+        path = f'/api/payments/{saved["payment_id"]}/cancel'
+        replies = await asyncio.gather(*[client.post(path, headers=auth(data["accountant"]), json={"cancel_reason": "Cancellation test"}) for _ in range(2)])
+        assert [row.status_code for row in replies] == [200, 200], [row.text for row in replies]
+        replay = await collect(client, data, body)
+>       assert replay.status_code == 409, replay.text
+E       AssertionError: {"success":true,"message":"Tahsilat al�nd�","data":{"payment_id":"2cd1b824-19d0-4f24-a36a-a20b7f9fcdb5","receipt_id":"59b699ae-cfb5-4d50-b151-918cf134a065","receipt_number":"RCP-20261104-2CD1B8","remaining_debt":"150.00"}}
+E       assert 200 == 409
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:114: AssertionError
+_ test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001992EF03850>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x000001992EF1F330>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992EF1D180>, ...})
+
+    async def test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data)
+        response = await collect(client, data, body)
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+        path = f'/api/payments/{saved["payment_id"]}/cancel'
+        replies = await asyncio.gather(*[client.post(path, headers=auth(data["accountant"]), json={"cancel_reason": "Cancellation test"}) for _ in range(2)])
+>       assert [row.status_code for row in replies] == [200, 200], [row.text for row in replies]
+E       AssertionError: ['{"success":true,"message":"�deme iptal edildi","data":null}', '{"success":false,"message":"�deme zaten iptal edilmi�","errors":[],"request_id":"47821889-2fac-4631-af5a-7d0cb1f169de"}']
+E       assert [200, 422] == [200, 200]
+E         
+E         At index 1 diff: 422 != 200
+E         Use -v to get more diff
+
+tests\integration\test_manual_payment_integrity.py:112: AssertionError
+______ test_online_collection_cannot_be_voided_as_a_cash_refund[sqlite] _______
+
+cash_client = (<httpx.AsyncClient object at 0x000001992F4AD310>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6C730>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001992EEE8D70>, ...})
+
+    async def test_online_collection_cannot_be_voided_as_a_cash_refund(cash_client):
+        client, sessions, data = cash_client
+        response = await collect(client, data, payment_body(data, payment_method="CREDIT_CARD"))
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+        async with sessions() as db:
+            db.add(PaymentCheckout(organization_id=data["org"].id, debt_id=data["debt"].id,
+                created_by=data["accountant"].id, amount=25, currency="TRY", status="COMPLETED",
+                provider_payment_id="isolated-provider-payment", payment_id=UUID(saved["payment_id"])))
+            await db.commit()
+        denied = await client.post(f'/api/payments/{saved["payment_id"]}/cancel', headers=auth(data["accountant"]), json={"cancel_reason": "No provider refund"})
+>       assert denied.status_code == 409, denied.text
+E       AssertionError: {"success":true,"message":"�deme iptal edildi","data":null}
+E       assert 200 == 409
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:134: AssertionError
+____ test_online_collection_cannot_be_voided_as_a_cash_refund[postgresql] _____
+
+cash_client = (<httpx.AsyncClient object at 0x000001992ED45400>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6DF40>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000019931153F70>, ...})
+
+    async def test_online_collection_cannot_be_voided_as_a_cash_refund(cash_client):
+        client, sessions, data = cash_client
+        response = await collect(client, data, payment_body(data, payment_method="CREDIT_CARD"))
+        assert response.status_code == 200, response.text
+        saved = response.json()["data"]
+        async with sessions() as db:
+            db.add(PaymentCheckout(organization_id=data["org"].id, debt_id=data["debt"].id,
+                created_by=data["accountant"].id, amount=25, currency="TRY", status="COMPLETED",
+                provider_payment_id="isolated-provider-payment", payment_id=UUID(saved["payment_id"])))
+            await db.commit()
+        denied = await client.post(f'/api/payments/{saved["payment_id"]}/cancel', headers=auth(data["accountant"]), json={"cancel_reason": "No provider refund"})
+>       assert denied.status_code == 409, denied.text
+E       AssertionError: {"success":true,"message":"�deme iptal edildi","data":null}
+E       assert 200 == 409
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:134: AssertionError
+_ test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x000001993110DA90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6F070>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000019931150C30>, ...})
+
+    async def test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads(cash_client):
+        client, sessions, data = cash_client
+        async with sessions() as db:
+            role = (await db.execute(select(Role).where(Role.organization_id == data["org"].id,
+                Role.slug == "accountant").options(selectinload(Role.permissions)))).scalar_one()
+            role.permissions = [row for row in role.permissions if row.code == "finance.write"]
+            db.add_all([Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=10, paid_amount=0,
+                due_date=school_today(), description=f"Invoice {index:03}") for index in range(105)])
+            await db.commit()
+        header = auth(data["accountant"])
+        response = await client.get("/api/payments/debt-options", headers=header, params={"page": 3, "page_size": 50})
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.read","errors":[],"request_id":"c1417b52-31da-48b0-95f8-8a04cd40cb90"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:154: AssertionError
+_ test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x0000019930FCA970>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6E8E0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001993100D590>, ...})
+
+    async def test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads(cash_client):
+        client, sessions, data = cash_client
+        async with sessions() as db:
+            role = (await db.execute(select(Role).where(Role.organization_id == data["org"].id,
+                Role.slug == "accountant").options(selectinload(Role.permissions)))).scalar_one()
+            role.permissions = [row for row in role.permissions if row.code == "finance.write"]
+            db.add_all([Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=10, paid_amount=0,
+                due_date=school_today(), description=f"Invoice {index:03}") for index in range(105)])
+            await db.commit()
+        header = auth(data["accountant"])
+        response = await client.get("/api/payments/debt-options", headers=header, params={"page": 3, "page_size": 50})
+>       assert response.status_code == 200, response.text
+E       AssertionError: {"success":false,"message":"Gerekli yetki: finance.read","errors":[],"request_id":"bece51a7-090d-47fd-a74c-1c0d676d8c01"}
+E       assert 403 == 200
+E        +  where 403 = <Response [403 Forbidden]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:154: AssertionError
+_ test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt[sqlite] _
+
+cash_client = (<httpx.AsyncClient object at 0x0000019930AC5710>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930D6FC20>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000019930F7C870>, ...})
+
+    async def test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data)
+        first = await collect(client, data, body)
+        assert first.status_code == 200, first.text
+        async with sessions() as db:
+            role = (await db.execute(select(Role).where(Role.organization_id == data["org"].id, Role.slug == "accountant"))).scalar_one()
+            other = User(organization_id=data["org"].id, email="other-cashier@test.invalid", password_hash="unused",
+                first_name="Other", last_name="Cashier", roles=[role])
+            db.add(other); await db.commit()
+        denied = await client.post("/api/payments", headers=auth(other), json=body)
+>       assert denied.status_code == 409 and first.json()["data"]["receipt_id"] not in denied.text, denied.text
+E       AssertionError: {"success":true,"message":"Tahsilat al�nd�","data":{"payment_id":"31177c0b-eadd-4bc7-8ed9-f9f434581185","receipt_id":"68b67866-0624-4d79-8e29-b3b85880b667","receipt_number":"RCP-20261104-31177C","remaining_debt":"125.00"}}
+E       assert (200 == 409)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:174: AssertionError
+_ test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x0000019930AE90D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930AC01B0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x00000199313CA850>, ...})
+
+    async def test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt(cash_client):
+        client, sessions, data = cash_client
+        body = payment_body(data)
+        first = await collect(client, data, body)
+        assert first.status_code == 200, first.text
+        async with sessions() as db:
+            role = (await db.execute(select(Role).where(Role.organization_id == data["org"].id, Role.slug == "accountant"))).scalar_one()
+            other = User(organization_id=data["org"].id, email="other-cashier@test.invalid", password_hash="unused",
+                first_name="Other", last_name="Cashier", roles=[role])
+            db.add(other); await db.commit()
+        denied = await client.post("/api/payments", headers=auth(other), json=body)
+>       assert denied.status_code == 409 and first.json()["data"]["receipt_id"] not in denied.text, denied.text
+E       AssertionError: {"success":true,"message":"Tahsilat al�nd�","data":{"payment_id":"b698c290-584f-4bc8-9690-b1b14271b1f5","receipt_id":"621f90af-31b6-48aa-97ab-5a5cfe72b563","receipt_number":"RCP-20261104-B698C2","remaining_debt":"125.00"}}
+E       assert (200 == 409)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_manual_payment_integrity.py:174: AssertionError
+_ test_corrupt_legacy_balances_do_not_generate_a_partial_payment_or_server_error[postgresql] _
+
+cash_client = (<httpx.AsyncClient object at 0x00000199315A37D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000019930AC1700>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x000001993166A8F0>, ...})
+
+    async def test_corrupt_legacy_balances_do_not_generate_a_partial_payment_or_server_error(cash_client):
+        client, sessions, data = cash_client
+        async with sessions() as db:
+            debt = await db.get(Debt, data["debt"].id)
+            debt.paid_amount = Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity")
+            await db.commit()
+>       response = await collect(client, data, payment_body(data))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_manual_payment_integrity.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\integration\test_manual_payment_integrity.py:45: in collect
+    return await client.post("/api/payments", headers=auth(data["accountant"]), json=body)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\core_modules.py:1232: in take_payment
+    DebtCalculator.validate_payment(debt.amount, debt.paid_amount, payment_amount)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+amount = Decimal('100.00'), paid_amount = Decimal('NaN')
+payment_amount = Decimal('25.00')
+
+    @staticmethod
+    def validate_payment(amount: Decimal, paid_amount: Decimal, payment_amount: Decimal) -> None:
+        if payment_amount <= 0:
+            raise ValueError("�deme tutar� 0'dan b�y�k olmal�d�r")
+        remaining = amount - paid_amount
+>       if payment_amount > remaining:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+
+app\domain\services\debt_calculator.py:26: InvalidOperation
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/payments", "request_id": "0e982fb2-d845-4cf8-b9f3-15be9432882a", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T16:40:00.019390Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\core_modules.py", line 1232, in take_payment
+    DebtCalculator.validate_payment(debt.amount, debt.paid_amount, payment_amount)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\domain\services\debt_calculator.py", line 26, in validate_payment
+    if payment_amount > remaining:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_manual_payment_integrity.py::test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_receipt_balance_and_retry_remain_correct_with_production_autoflush_disabled[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_simultaneous_retries_create_one_payment_receipt_notification_and_audit[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_simultaneous_retries_create_one_payment_receipt_notification_and_audit[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_simultaneous_distinct_collections_cannot_overpay_or_lose_a_balance_update[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_invalid_financial_input_is_rejected_before_any_mutation[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_invalid_financial_input_is_rejected_before_any_mutation[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_cancel_retries_reverse_once_and_an_old_nonce_cannot_reapply_cancelled_money[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_online_collection_cannot_be_voided_as_a_cash_refund[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_online_collection_cannot_be_voided_as_a_cash_refund[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_write_only_cashier_has_paged_searchable_debt_choices_without_registry_reads[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt[sqlite]
+FAILED tests/integration/test_manual_payment_integrity.py::test_nonce_reuse_by_another_actor_does_not_disclose_or_duplicate_the_original_receipt[postgresql]
+FAILED tests/integration/test_manual_payment_integrity.py::test_corrupt_legacy_balances_do_not_generate_a_partial_payment_or_server_error[postgresql]
+16 failed, 2 passed, 20 warnings in 49.32s

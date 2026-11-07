@@ -1,0 +1,32 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+___ test_bus_route_edit_returns_committed_timestamp_and_real_actor[sqlite] ____
+tests\integration\test_bus_scope.py:151: in test_bus_route_edit_returns_committed_timestamp_and_real_actor
+    assert row.route_name == "Updated route" and row.updated_by == data["writer"].id
+E   AssertionError: assert ('Updated route' == 'Updated route'
+E     
+E       Updated route and None == UUID('9c59e456-5489-4716-a35c-4e1a9e0b2f9a'))
+E    +  where None = <app.domain.entities.bus.BusRoute object at 0x000001A457246210>.updated_by
+E    +  and   UUID('9c59e456-5489-4716-a35c-4e1a9e0b2f9a') = <app.infrastructure.models.models.User object at 0x000001A45720C690>.id
+_ test_bus_route_edit_returns_committed_timestamp_and_real_actor[postgresql] __
+tests\integration\test_bus_scope.py:151: in test_bus_route_edit_returns_committed_timestamp_and_real_actor
+    assert row.route_name == "Updated route" and row.updated_by == data["writer"].id
+E   AssertionError: assert ('Updated route' == 'Updated route'
+E     
+E       Updated route and None == UUID('4955ef40-e055-4859-9c03-ee538e48d0e2'))
+E    +  where None = <app.domain.entities.bus.BusRoute object at 0x000001A4591BF3E0>.updated_by
+E    +  and   UUID('4955ef40-e055-4859-9c03-ee538e48d0e2') = <app.infrastructure.models.models.User object at 0x000001A45902B250>.id
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_bus_scope.py::test_bus_route_edit_returns_committed_timestamp_and_real_actor[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_bus_route_edit_returns_committed_timestamp_and_real_actor[postgresql]
+2 failed, 12 deselected, 20 warnings in 4.49s

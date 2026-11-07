@@ -1,0 +1,79 @@
+
+> okul360-frontend@1.0.0 test:e2e
+> playwright test --grep parent sees
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO:     Started server process [10988]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "61a17e93-db09-4d15-b1c0-b5cb2c6be06b", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:37.026257Z"}
+[WebServer] (node:15812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:22372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:14400) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] {"request_id": "2c80d1a5-624c-4340-bf80-d66e63241b14", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1483.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:47.911529Z"}
+[WebServer] {"request_id": "508a5e12-5979-481f-94a0-ad9c27c7389f", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 100.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:48.070385Z"}
+[WebServer] {"request_id": "9b9aab87-8f97-43f8-906a-f5e010252739", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 36.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:48.114375Z"}
+[WebServer] {"request_id": "6bf633f8-5b42-4699-ae12-c43828030476", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 360.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:48.506457Z"}
+[WebServer] {"request_id": "bb82b047-df8f-478c-b40b-c6bc9ca42c13", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/financial-invoices", "status": 200, "duration_ms": 523.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:48.692562Z"}
+[WebServer] {"request_id": "334f8537-5569-4a5c-96a2-0a38fd54b65b", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 683.93, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:48.863092Z"}
+[WebServer] {"request_id": "8d6db7b8-5052-4313-8080-860259d53ae4", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 56.51, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:49.018431Z"}
+[WebServer] {"request_id": "9d0967ba-7dcb-4660-9af7-1872f2b45c2a", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 184.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:49.208140Z"}
+[WebServer] {"request_id": "fbc5217a-d290-4d06-89fa-da0a4cb65985", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 218.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:49.292340Z"}
+[WebServer] {"request_id": "14f3dd92-eab5-4e02-9368-73e4e51d6310", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/grades", "status": 200, "duration_ms": 219.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:49.298256Z"}
+[WebServer] {"request_id": "d4766338-19dc-4f3a-bd56-d7e971df924f", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 362.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:49.445879Z"}
+[WebServer] {"request_id": "76ae989f-3a22-4149-bbf7-64d480a0095a", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 48.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:50.502632Z"}
+[WebServer] {"request_id": "f6b9ede5-8457-4e8b-b10a-0adf57d44844", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 132.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:50.644742Z"}
+[WebServer] {"request_id": "00c8b570-dd34-4559-97aa-f04c372bf7dd", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 179.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:50.714676Z"}
+[WebServer] {"request_id": "57097b6e-e969-4688-a2ef-b7d00c863503", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/announcements", "status": 200, "duration_ms": 252.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:50.815932Z"}
+[WebServer] {"request_id": "f35eb656-b9ec-4aa1-b6ec-76c021d43d83", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 293.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:50.872235Z"}
+[WebServer] {"request_id": "03cedf1e-d1f8-4480-a3b1-14d7200743f8", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 56.24, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:51.513281Z"}
+[WebServer] Chatbot request | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | role=parent | organization_id=f380b9fa-4a71-4370-a093-1248a2f0bb40 | query='Merhaba'
+[WebServer] Starting intent detection for query: 'Merhaba'
+[WebServer] Intent detected: GENERAL (confidence: 0.5) for query: 'Merhaba'
+[WebServer] LLM intent detection succeeded: GENERAL
+[WebServer] Intent detected | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GENERAL | confidence=0.50
+[WebServer] Intent resolved | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | student_id=fd33435c-7be3-463d-a697-312020812812 | teacher_id=None | date_range=None
+[WebServer] Chatbot response | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GENERAL | execution_time=0.05s | success=True
+[WebServer] {"request_id": "2f79b440-9f78-48fe-9efc-b637f829454b", "method": "POST", "path": "/api/v1/chatbot/process-query", "status": 200, "duration_ms": 87.44, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:51.687262Z"}
+[WebServer] Chatbot request | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | role=parent | organization_id=f380b9fa-4a71-4370-a093-1248a2f0bb40 | query='anla��lmayan bir istek xyz'
+[WebServer] Starting intent detection for query: 'anla��lmayan bir istek xyz'
+[WebServer] Intent detected: GENERAL (confidence: 0.5) for query: 'anla��lmayan bir istek xyz'
+[WebServer] LLM intent detection succeeded: GENERAL
+[WebServer] Intent detected | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GENERAL | confidence=0.50
+[WebServer] Intent resolved | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | student_id=fd33435c-7be3-463d-a697-312020812812 | teacher_id=None | date_range=None
+[WebServer] Chatbot response | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GENERAL | execution_time=0.27s | success=True
+[WebServer] {"request_id": "103a9a17-acc4-4fb1-98b5-9819e6c59030", "method": "POST", "path": "/api/v1/chatbot/process-query", "status": 200, "duration_ms": 298.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.136653Z"}
+[WebServer] Chatbot request | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | role=parent | organization_id=f380b9fa-4a71-4370-a093-1248a2f0bb40 | query='notlar�m'
+[WebServer] Starting intent detection for query: 'notlar�m'
+[WebServer] Intent detected: GENERAL (confidence: 0.5) for query: 'notlar�m'
+[WebServer] Intent detected | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GRADES | confidence=0.70
+[WebServer] Intent resolved | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | student_id=fd33435c-7be3-463d-a697-312020812812 | teacher_id=None | date_range=None
+[WebServer] Chatbot response | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GRADES | execution_time=0.03s | success=True
+[WebServer] {"request_id": "93cb54b5-6667-436d-ae38-20777c7ee4c4", "method": "POST", "path": "/api/v1/chatbot/process-query", "status": 200, "duration_ms": 88.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.371877Z"}
+[WebServer] Chatbot request | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | role=parent | organization_id=f380b9fa-4a71-4370-a093-1248a2f0bb40 | query='Detaylar� a�'
+[WebServer] Starting intent detection for query: 'Detaylar� a�'
+[WebServer] Using conversation follow-up intent: GRADES
+[WebServer] Intent detected | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GRADES | confidence=0.90
+[WebServer] Intent resolved | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | student_id=fd33435c-7be3-463d-a697-312020812812 | teacher_id=None | date_range=None
+[WebServer] Chatbot response | user_id=8b27eaa2-fb69-4800-9b74-f1ba8783e41e | intent=GRADES | execution_time=0.05s | success=True
+[WebServer] {"request_id": "94c4d6ab-8dbe-4b64-8f61-522b687af1f0", "method": "POST", "path": "/api/v1/chatbot/process-query", "status": 200, "duration_ms": 89.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.629765Z"}
+[WebServer] {"request_id": "ff1c1550-9e44-42d8-a14f-0da88dfed9a1", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 151.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.847904Z"}
+[WebServer] {"request_id": "56f76f94-9d07-4b16-80bd-9cf9507a32f8", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/grades", "status": 200, "duration_ms": 150.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.864989Z"}
+[WebServer] {"request_id": "362b6c70-afe3-4108-a4b7-d418daf21407", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 160.39, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T16:51:52.886923Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:34:1 › parent sees database grades and announcements on mobile width (12.3s)
+
+  1 passed (23.9s)

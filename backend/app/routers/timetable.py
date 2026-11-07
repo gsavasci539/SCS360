@@ -2,6 +2,7 @@
 Timetable/Schedule Builder Module API
 Handles timetable slots, classroom assignments, and conflict detection
 """
+from __future__ import annotations
 from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
@@ -12,8 +13,10 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.infrastructure.models.models import ClassRoom as Class
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
+from app.core.permissions import PermissionChecker
+from app.core.tenant import TenantContext
 from app.domain.entities import (
     TimetableSlot, ClassroomAssignment, Timetable, User
 )
@@ -98,7 +101,7 @@ class BulkTimetableSave(BaseModel):
 @router.get("/slots")
 async def get_timetable_slots(
     day: Optional[str] = Query(None, description="Filter by day"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.read"))
 ):
     """Get all timetable slots"""
@@ -129,7 +132,7 @@ async def get_timetable_slots(
 @router.post("/slots")
 async def create_timetable_slot(
     slot: TimetableSlotCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Create a new timetable slot"""
@@ -167,7 +170,7 @@ async def create_timetable_slot(
 @router.delete("/slots/{slot_id}")
 async def delete_timetable_slot(
     slot_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Delete a timetable slot"""
@@ -189,7 +192,7 @@ async def delete_timetable_slot(
 async def update_timetable_slot(
     slot_id: UUID,
     slot: TimetableSlotCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Update a timetable slot"""
@@ -234,7 +237,7 @@ async def update_timetable_slot(
 async def get_classroom_assignments(
     class_id: Optional[UUID] = Query(None),
     teacher_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.read"))
 ):
     """Get classroom assignments"""
@@ -289,7 +292,7 @@ async def get_classroom_assignments(
 @router.post("/classroom-assignments")
 async def create_classroom_assignment(
     assignment: ClassroomAssignmentCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Create a new classroom assignment"""
@@ -323,7 +326,7 @@ async def get_class_timetable(
     class_id: UUID,
     academic_year: str = Query(..., description="e.g., 2024-2025"),
     semester: str = Query("FALL", description="FALL, SPRING, SUMMER"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.read"))
 ):
     """Get timetable for a specific class"""
@@ -401,7 +404,7 @@ async def get_teacher_timetable(
     teacher_id: UUID,
     academic_year: str = Query(..., description="e.g., 2024-2025"),
     semester: str = Query("FALL", description="FALL, SPRING, SUMMER"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.read"))
 ):
     """Get timetable for a specific teacher"""
@@ -463,7 +466,7 @@ async def get_teacher_timetable(
 @router.post("/bulk-save")
 async def bulk_save_timetable(
     request: BulkTimetableSave,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Bulk save timetable entries with conflict checking"""
@@ -534,7 +537,7 @@ async def check_timetable_conflict(
     classroom_assignment_id: Optional[UUID] = None,
     academic_year: str = Query(...),
     semester: str = Query("FALL"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.read"))
 ):
     """Check for timetable conflicts"""
@@ -559,7 +562,7 @@ async def check_timetable_conflict(
 @router.delete("/{timetable_id}")
 async def delete_timetable_entry(
     timetable_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("timetable.write"))
 ):
     """Delete a timetable entry"""

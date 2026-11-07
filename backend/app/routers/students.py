@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -12,6 +14,8 @@ from app.core.permissions import require_permission, PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
+from app.infrastructure.models.models import Student
+from app.core.student_access import accessible_student_ids, require_student_access
 
 router = APIRouter(prefix="/api/students", tags=["Students"])
 
@@ -20,7 +24,7 @@ router = APIRouter(prefix="/api/students", tags=["Students"])
 @require_permission("students.create")
 async def create_student(
     student: StudentCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     repo = StudentRepository()
@@ -43,11 +47,31 @@ async def list_students(
     branch_id: Optional[UUID] = None,
     class_id: Optional[UUID] = None,
     search: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("students.read"))
 ):
     repo = StudentRepository()
     
+    allowed_ids = await accessible_student_ids(db, tenant)
+    if allowed_ids is not None:
+        if not allowed_ids:
+            return success_response([])
+        query = select(Student).where(
+            Student.organization_id == tenant.organization_id,
+            Student.deleted_at.is_(None),
+            Student.id.in_(allowed_ids),
+        )
+        if branch_id:
+            query = query.where(Student.branch_id == branch_id)
+        if class_id:
+            query = query.where(Student.class_id == class_id)
+        if search:
+            pattern = f"%{search.strip()}%"
+            query = query.where((Student.first_name.ilike(pattern)) | (Student.last_name.ilike(pattern)) | (Student.student_number.ilike(pattern)))
+        result = await db.execute(query.offset(skip).limit(limit))
+        return success_response(result.scalars().all())
+    
+    # Non-parent users use normal filtering
     filters = {"organization_id": tenant.organization_id}
     if branch_id:
         filters["branch_id"] = branch_id
@@ -67,7 +91,7 @@ async def list_students(
 @router.get("/{student_id}", response_model=StudentResponse)
 async def get_student(
     student_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("students.read"))
 ):
     repo = StudentRepository()
@@ -75,6 +99,7 @@ async def get_student(
     
     if not student or student.organization_id != tenant.organization_id:
         return success_response(None, "Öğrenci bulunamadı", success=False)
+    await require_student_access(db, tenant, student.id)
     
     return success_response(student)
 
@@ -83,7 +108,7 @@ async def get_student(
 async def update_student(
     student_id: UUID,
     student: StudentUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("students.write"))
 ):
     repo = StudentRepository()
@@ -91,6 +116,7 @@ async def update_student(
     
     if not db_student or db_student.organization_id != tenant.organization_id:
         return success_response(None, "Öğrenci bulunamadı", success=False)
+    await require_student_access(db, tenant, db_student.id)
     
     student_data = student.model_dump(exclude_unset=True, exclude={"parent_ids"})
     student_data["updated_by"] = tenant.user_id
@@ -105,7 +131,7 @@ async def update_student(
 @router.delete("/{student_id}")
 async def delete_student(
     student_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("students.write"))
 ):
     repo = StudentRepository()
@@ -113,6 +139,7 @@ async def delete_student(
     
     if not db_student or db_student.organization_id != tenant.organization_id:
         return success_response(None, "Öğrenci bulunamadı", success=False)
+    await require_student_access(db, tenant, db_student.id)
     
     await repo.soft_delete(db, student_id)
     
@@ -125,7 +152,7 @@ async def delete_student(
 @require_permission("students.import")
 async def import_students_excel(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Import students from Excel file"""
@@ -207,7 +234,7 @@ async def import_students_excel(
 async def export_students_excel(
     branch_id: Optional[UUID] = None,
     class_id: Optional[UUID] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Export students to Excel file"""

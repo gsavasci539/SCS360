@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Plus, MessageSquare, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
@@ -17,6 +18,7 @@ export function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
@@ -35,6 +37,10 @@ export function NotificationsPage() {
   }
 
   useEffect(() => { load(1); }, []);
+
+  useEffect(() => {
+    getAnalysis("/ai/communication-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+  }, []);
 
   const filtered = useMemo(() => 
     data.items.filter((r) => JSON.stringify(r).toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))),
@@ -65,6 +71,45 @@ export function NotificationsPage() {
         )}
       </PageHeader>
 
+      {aiAnalysis && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI İletişim Analizi</h2>
+              <p>Bildirim gönderim istatistikleri ve öneriler</p>
+            </div>
+            <MessageSquare size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Bildirim</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_notifications}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.success_rate >= 80 ? "#dcfce7" : "#fef3c7" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Başarı Oranı</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>%{aiAnalysis.success_rate}</div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Alıcı</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_recipients}</div>
+              </div>
+            </div>
+            {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
+                {aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                    <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="card"><LoadingState /></div>
       ) : error ? (
@@ -86,7 +131,7 @@ export function NotificationsPage() {
           total={data.total}
           onPage={load}
           detailBase="/notifications"
-          canEdit={can("communication.write")}
+          canEdit={false}
           onDelete={can("communication.write") ? handleDelete : undefined}
         />
       )}
@@ -129,7 +174,7 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
             <option value="">Seçiniz</option>
             <option value="SMS">SMS</option>
             <option value="EMAIL">E-posta</option>
-            <option value="PUSH">Push bildirim</option>
+            <option value="WHATSAPP">WhatsApp</option>
           </select>
         </Field>
         <Field label="Hedef kitle" required error={errors.target_audience?.message as string}>

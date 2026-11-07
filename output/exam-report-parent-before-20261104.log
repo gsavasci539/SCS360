@@ -1,0 +1,60 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001795ACDBA10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001795ACDB380>, 'org': <app.infrastructure.models.models.Organization object at 0x000001795ACD9D30>, ...})
+
+    async def test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission(platform_client):
+        from app.domain.entities.exams import ReportCard
+        client, sessions, data = platform_client
+        child = data["children"][0]
+        async with sessions() as db:
+            card = ReportCard(student_id=child.id, academic_year="2026-2027", semester="FALL", gpa=0,
+                attendance_rate=50, is_published=False, teacher_comments="Yay�mlanacak yorum")
+            foreign = ReportCard(student_id=data["stranger"].id, academic_year="2026-2027", semester="FALL", is_published=True)
+            db.add_all([card, foreign]); await db.commit()
+        auth = headers(data["user"])
+        path = f"/api/parent/child/{child.id}/report-cards"
+        draft = await client.get(path, headers=auth)
+>       assert draft.status_code == 200 and draft.json()["data"]["items"] == [], draft.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"542202b7-a25d-40ef-84d9-dd73bede3d87"}
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_exam_management.py:235: AssertionError
+_ test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001795D146490>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001795D145A90>, 'org': <app.infrastructure.models.models.Organization object at 0x000001795D144CD0>, ...})
+
+    async def test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission(platform_client):
+        from app.domain.entities.exams import ReportCard
+        client, sessions, data = platform_client
+        child = data["children"][0]
+        async with sessions() as db:
+            card = ReportCard(student_id=child.id, academic_year="2026-2027", semester="FALL", gpa=0,
+                attendance_rate=50, is_published=False, teacher_comments="Yay�mlanacak yorum")
+            foreign = ReportCard(student_id=data["stranger"].id, academic_year="2026-2027", semester="FALL", is_published=True)
+            db.add_all([card, foreign]); await db.commit()
+        auth = headers(data["user"])
+        path = f"/api/parent/child/{child.id}/report-cards"
+        draft = await client.get(path, headers=auth)
+>       assert draft.status_code == 200 and draft.json()["data"]["items"] == [], draft.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"3f2d4b05-9466-439d-92ea-18290eb99b35"}
+E       assert (404 == 200)
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_exam_management.py:235: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_exam_management.py::test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission[sqlite]
+FAILED tests/integration/test_exam_management.py::test_parent_sees_only_published_own_cards_and_attendance_requires_its_permission[postgresql]
+2 failed, 20 deselected, 20 warnings in 8.21s

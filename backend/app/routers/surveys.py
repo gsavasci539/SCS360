@@ -1,450 +1,210 @@
-"""
-Anket & Geri Bildirim Sistemi Module API
-Handles surveys, questions, and responses
-"""
-from datetime import datetime, date
-from typing import Optional, List, Dict, Any
+"""Survey drafts, published questions and validated responses."""
+from datetime import date
+from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from sqlalchemy import select, and_, func
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from sqlalchemy import delete, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.services import survey_service as service
+from app.application.services.consent_service import form_organization
 from app.core.database import get_db
+from app.core.dates import school_today
+from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
-from app.domain.entities import User
+from app.core.tenant import TenantContext
+from app.domain.entities.surveys import Survey, SurveyQuestion, SurveyResponse
+from app.infrastructure.models.models import Organization, User
 
 router = APIRouter(prefix="/api/surveys", tags=["Surveys"])
 
 
-# ==================== Schemas ====================
-
 class SurveyCreate(BaseModel):
-    title: str = Field(..., max_length=255)
-    description: Optional[str] = None
-    target_audience: Optional[str] = None
-    start_date: date = Field(..., description="Survey start date")
-    end_date: date = Field(..., description="Survey end date")
-    is_anonymous: bool = Field(default=False)
+    model_config = ConfigDict(str_strip_whitespace=True)
+    organization_id: UUID | None = None
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5000)
+    target_audience: Literal["PARENTS", "STAFF", "ALL"] = "PARENTS"
+    start_date: date
+    end_date: date
+    is_anonymous: bool = False
+
+    @model_validator(mode="after")
+    def dates(self):
+        if self.end_date < self.start_date:
+            raise ValueError("Bitiş tarihi başlangıçtan önce olamaz")
+        return self
+
 
 class SurveyQuestionCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     survey_id: UUID
-    question_text: str = Field(..., description="Question text")
-    question_type: str = Field(..., description="MULTIPLE_CHOICE, RATING, TEXT")
-    options: Optional[List[str]] = None
-    is_required: bool = Field(default=True)
-    order_index: int = Field(default=0)
+    question_text: str = Field(min_length=1, max_length=2000)
+    question_type: Literal["MULTIPLE_CHOICE", "RATING", "TEXT"]
+    options: list[str] | None = Field(default=None, max_length=25)
+    is_required: bool = True
+    order_index: int = Field(default=0, ge=0, le=100)
+
+    @model_validator(mode="after")
+    def choices(self):
+        if self.question_type == "MULTIPLE_CHOICE":
+            if not self.options or not 2 <= len(self.options) <= 25 or any(not option or len(option) > 200 for option in self.options) or len(set(self.options)) != len(self.options):
+                raise ValueError("Seçmeli soruda en az iki farklı, boş olmayan seçenek gerekir")
+        elif self.options:
+            raise ValueError("Yalnız seçmeli sorulara seçenek eklenebilir")
+        return self
+
 
 class SurveyResponseCreate(BaseModel):
     survey_id: UUID
-    response_data: Dict[str, Any] = Field(..., description="Response data as JSON")
-    ip_address: Optional[str] = None
+    response_data: dict[str, Any] = Field(max_length=100)
+    # Retained for old mobile clients; client-supplied IP is never stored.
+    ip_address: str | None = Field(default=None, max_length=45)
 
 
-# ==================== Surveys Endpoints ====================
+async def require_editable(db, row):
+    service.require_draft(row)
+    if (await db.execute(select(exists().where(SurveyResponse.__table__.c.survey_id == row.id)))).scalar():
+        raise ConflictException("Yanıtı bulunan anket değiştirilemez")
+
+
+@router.get("/options")
+async def options(db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    rows = (await db.execute(select(Organization).where(Organization.deleted_at.is_(None), Organization.is_active.is_(True))
+        .order_by(Organization.name).limit(100))).scalars().all()
+    return success_response({"organizations": [{"id": str(row.id), "name": row.name} for row in rows]})
+
+
+@router.get("/summary")
+async def summary(db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+    return success_response(await service.summary(db))
+
+
+@router.get("/my-surveys")
+async def own_surveys(limit: int = Query(21, ge=1, le=100), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db, scope="function"),
+                      tenant: TenantContext = Depends(PermissionChecker("surveys.respond"))):
+    if tenant.organization_id is None:
+        return success_response([])
+    return success_response(await service.available(db, tenant.organization_id, tenant.user_id, "STAFF", limit, offset))
+
 
 @router.get("/surveys")
-async def get_surveys(
-    status: Optional[str] = Query(None),
-    target_audience: Optional[str] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.read"))
-):
-    """Get surveys with filtering"""
-    from app.domain.entities.surveys import Survey
-    
+async def list_surveys(status: str | None = None, target_audience: str | None = None, start_date: date | None = None, end_date: date | None = None,
+                       limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db, scope="function"),
+                       tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
     query = select(Survey)
-    
-    conditions = []
     if status:
-        conditions.append(Survey.status == status.upper())
+        query = query.where(Survey.status == status.upper())
     if target_audience:
-        conditions.append(Survey.target_audience == target_audience)
+        query = query.where(Survey.target_audience == target_audience)
     if start_date:
-        conditions.append(Survey.start_date >= start_date)
+        query = query.where(Survey.start_date >= start_date)
     if end_date:
-        conditions.append(Survey.end_date <= end_date)
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(Survey.start_date.desc()).limit(limit).offset(offset)
-    
-    result = await db.execute(query)
-    surveys = result.scalars().all()
-    
-    enriched_surveys = []
-    for survey in surveys:
-        # Get created by name
-        created_by_name = None
-        if survey.created_by:
-            user_result = await db.execute(
-                select(User).where(User.id == survey.created_by)
-            )
-            user = user_result.scalar_one_or_none()
-            if user:
-                created_by_name = f"{user.first_name} {user.last_name}"
-        
-        # Get response count
-        from app.domain.entities.surveys import SurveyResponse
-        response_result = await db.execute(
-            select(func.count(SurveyResponse.id)).where(SurveyResponse.survey_id == survey.id)
-        )
-        response_count = response_result.scalar() or 0
-        
-        enriched_surveys.append({
-            "id": str(survey.id),
-            "title": survey.title,
-            "description": survey.description,
-            "target_audience": survey.target_audience,
-            "start_date": survey.start_date.isoformat(),
-            "end_date": survey.end_date.isoformat(),
-            "is_anonymous": survey.is_anonymous,
-            "status": survey.status,
-            "response_count": response_count,
-            "created_by": str(survey.created_by),
-            "created_by_name": created_by_name,
-            "created_at": survey.created_at.isoformat()
-        })
-    
-    return success_response(enriched_surveys)
+        query = query.where(Survey.end_date <= end_date)
+    rows = (await db.execute(query.order_by(Survey.start_date.desc(), Survey.id).limit(limit).offset(offset))).scalars().all()
+    counts = dict((await db.execute(select(SurveyResponse.survey_id, func.count(SurveyResponse.id)).where(SurveyResponse.survey_id.in_([row.id for row in rows]))
+        .group_by(SurveyResponse.survey_id))).all()) if rows else {}
+    names = {user.id: f"{user.first_name} {user.last_name}" for user in (await db.execute(select(User).where(User.id.in_([row.created_by for row in rows])))).scalars()} if rows else {}
+    return success_response([{**service.survey_data(row, counts.get(row.id, 0)), "created_by_name": names.get(row.created_by)} for row in rows])
 
 
 @router.post("/surveys")
-async def create_survey(
-    survey: SurveyCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.write"))
-):
-    """Create a new survey"""
-    from app.domain.entities.surveys import Survey
-    
-    new_survey = Survey(
-        title=survey.title,
-        description=survey.description,
-        target_audience=survey.target_audience,
-        start_date=survey.start_date,
-        end_date=survey.end_date,
-        is_anonymous=survey.is_anonymous,
-        status="DRAFT",
-        created_by=None  # Will be set from current user context
-    )
-    db.add(new_survey)
-    await db.commit()
-    await db.refresh(new_survey)
-    
-    return success_response({
-        "id": str(new_survey.id),
-        "title": new_survey.title,
-        "status": new_survey.status,
-        "created_at": new_survey.created_at.isoformat()
-    })
+async def create_survey(survey: SurveyCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    row = Survey(**survey.model_dump(exclude={"organization_id"}), organization_id=await form_organization(db, tenant, survey.organization_id), created_by=tenant.user_id, status="DRAFT")
+    db.add(row); await db.commit(); await db.refresh(row)
+    return success_response(service.survey_data(row))
 
 
 @router.put("/surveys/{survey_id}")
-async def update_survey(
-    survey_id: UUID,
-    survey: SurveyCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.write"))
-):
-    """Update a survey"""
-    from app.domain.entities.surveys import Survey
-    
-    result = await db.execute(
-        select(Survey).where(Survey.id == survey_id)
-    )
-    existing_survey = result.scalar_one_or_none()
-    
-    if not existing_survey:
-        raise HTTPException(status_code=404, detail="Survey not found")
-    
-    existing_survey.title = survey.title
-    existing_survey.description = survey.description
-    existing_survey.target_audience = survey.target_audience
-    existing_survey.start_date = survey.start_date
-    existing_survey.end_date = survey.end_date
-    existing_survey.is_anonymous = survey.is_anonymous
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(existing_survey.id),
-        "updated_at": existing_survey.updated_at.isoformat()
-    })
+async def edit_survey(survey_id: UUID, survey: SurveyCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    row = await service.lock(db, survey_id); await require_editable(db, row)
+    if survey.organization_id and survey.organization_id != row.organization_id:
+        raise ValidationException("Anketin kurumu değiştirilemez")
+    for field, value in survey.model_dump(exclude={"organization_id"}).items():
+        setattr(row, field, value)
+    await db.commit(); await db.refresh(row)
+    return success_response(service.survey_data(row))
+
+
+@router.get("/surveys/{survey_id}")
+async def get_survey(survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+    return success_response(service.survey_data(await service.get(db, survey_id)))
 
 
 @router.post("/surveys/{survey_id}/publish")
-async def publish_survey(
-    survey_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.write"))
-):
-    """Publish a survey"""
-    from app.domain.entities.surveys import Survey
-    
-    result = await db.execute(
-        select(Survey).where(Survey.id == survey_id)
-    )
-    survey = result.scalar_one_or_none()
-    
-    if not survey:
-        raise HTTPException(status_code=404, detail="Survey not found")
-    
-    survey.status = "ACTIVE"
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(survey.id),
-        "status": "ACTIVE"
-    })
+async def publish(survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    row = await service.lock(db, survey_id)
+    if row.status == "ACTIVE":
+        return success_response(service.survey_data(row))
+    await require_editable(db, row)
+    items = await service.questions(db, row.id)
+    if not items or row.end_date < school_today() or row.start_date > row.end_date or row.target_audience not in {"PARENTS", "STAFF", "ALL"}:
+        raise ValidationException("Yayımlamak için geçerli tarihler, hedef kitle ve en az bir soru gerekir")
+    for item in items:
+        try:
+            SurveyQuestionCreate(survey_id=row.id, question_text=item.question_text, question_type=item.question_type,
+                options=item.options, is_required=item.is_required, order_index=item.order_index)
+        except ValueError as error:
+            raise ValidationException("Ankette geçersiz eski soru var; soruyu düzeltip yeniden yayımlayın") from error
+    row.status = "ACTIVE"; await db.commit()
+    return success_response(service.survey_data(row))
 
 
-# ==================== Survey Questions Endpoints ====================
+@router.post("/surveys/{survey_id}/close")
+async def close(survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    row = await service.lock(db, survey_id)
+    if row.status == "DRAFT":
+        raise ConflictException("Taslak anket henüz yayımlanmadı")
+    row.status = "CLOSED"; await db.commit()
+    return success_response(service.survey_data(row))
+
 
 @router.get("/questions")
-async def get_survey_questions(
-    survey_id: Optional[UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.read"))
-):
-    """Get survey questions"""
-    from app.domain.entities.surveys import SurveyQuestion
-    
+async def questions(survey_id: UUID | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+                    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
     query = select(SurveyQuestion)
-    
     if survey_id:
+        await service.get(db, survey_id)
         query = query.where(SurveyQuestion.survey_id == survey_id)
-    
-    query = query.order_by(SurveyQuestion.order_index)
-    
-    result = await db.execute(query)
-    questions = result.scalars().all()
-    
-    enriched_questions = []
-    for question in questions:
-        enriched_questions.append({
-            "id": str(question.id),
-            "survey_id": str(question.survey_id),
-            "question_text": question.question_text,
-            "question_type": question.question_type,
-            "options": question.options,
-            "is_required": question.is_required,
-            "order_index": question.order_index,
-            "created_at": question.created_at.isoformat()
-        })
-    
-    return success_response(enriched_questions)
+    rows = (await db.execute(query.order_by(SurveyQuestion.order_index, SurveyQuestion.id).limit(limit).offset(offset))).scalars().all()
+    return success_response([service.question_data(row) for row in rows])
 
 
 @router.post("/questions")
-async def create_survey_question(
-    question: SurveyQuestionCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.write"))
-):
-    """Create a new survey question"""
-    from app.domain.entities.surveys import SurveyQuestion
-    
-    new_question = SurveyQuestion(
-        survey_id=question.survey_id,
-        question_text=question.question_text,
-        question_type=question.question_type.upper(),
-        options=question.options,
-        is_required=question.is_required,
-        order_index=question.order_index
-    )
-    db.add(new_question)
-    await db.commit()
-    await db.refresh(new_question)
-    
-    return success_response({
-        "id": str(new_question.id),
-        "question_type": new_question.question_type,
-        "order_index": new_question.order_index,
-        "created_at": new_question.created_at.isoformat()
-    })
+async def create_question(question: SurveyQuestionCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    survey = await service.lock(db, question.survey_id); await require_editable(db, survey)
+    if len(await service.questions(db, survey.id)) >= 100:
+        raise ValidationException("Bir ankette en fazla 100 soru bulunabilir")
+    row = SurveyQuestion(**question.model_dump()); db.add(row); await db.commit(); await db.refresh(row)
+    return success_response(service.question_data(row))
 
 
-# ==================== Survey Responses Endpoints ====================
+@router.delete("/questions/{question_id}")
+async def delete_question(question_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+    question = (await db.execute(select(SurveyQuestion).where(SurveyQuestion.id == question_id))).scalar_one_or_none()
+    if question is None:
+        raise NotFoundException("Soru bulunamadı")
+    survey = await service.lock(db, question.survey_id); await require_editable(db, survey)
+    await db.execute(delete(SurveyQuestion).where(SurveyQuestion.id == question_id)); await db.commit()
+    return success_response({"id": str(question_id)})
+
 
 @router.get("/responses")
-async def get_survey_responses(
-    survey_id: Optional[UUID] = Query(None),
-    respondent_id: Optional[UUID] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.read"))
-):
-    """Get survey responses with filtering"""
-    from app.domain.entities.surveys import SurveyResponse
-    
-    query = select(SurveyResponse)
-    
-    conditions = []
-    if survey_id:
-        conditions.append(SurveyResponse.survey_id == survey_id)
-    if respondent_id:
-        conditions.append(SurveyResponse.respondent_id == respondent_id)
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(SurveyResponse.submitted_at.desc()).limit(limit).offset(offset)
-    
-    result = await db.execute(query)
-    responses = result.scalars().all()
-    
-    enriched_responses = []
-    for response in responses:
-        # Get respondent name
-        respondent_name = None
-        if response.respondent_id and not response.survey.is_anonymous:
-            user_result = await db.execute(
-                select(User).where(User.id == response.respondent_id)
-            )
-            user = user_result.scalar_one_or_none()
-            if user:
-                respondent_name = f"{user.first_name} {user.last_name}"
-        
-        enriched_responses.append({
-            "id": str(response.id),
-            "survey_id": str(response.survey_id),
-            "respondent_id": str(response.respondent_id) if response.respondent_id else None,
-            "respondent_name": respondent_name,
-            "response_data": response.response_data,
-            "submitted_at": response.submitted_at.isoformat(),
-            "ip_address": str(response.ip_address) if response.ip_address else None,
-            "created_at": response.created_at.isoformat()
-        })
-    
-    return success_response(enriched_responses)
+async def responses(survey_id: UUID | None = None, respondent_id: UUID | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+                    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+    return success_response(await service.responses(db, survey_id, respondent_id, limit, offset))
 
 
 @router.post("/responses")
-async def create_survey_response(
-    response: SurveyResponseCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.write"))
-):
-    """Create a new survey response"""
-    from app.domain.entities.surveys import SurveyResponse, Survey
-    
-    # Check if survey is active
-    survey_result = await db.execute(
-        select(Survey).where(Survey.id == response.survey_id)
-    )
-    survey = survey_result.scalar_one_or_none()
-    
-    if not survey:
-        raise HTTPException(status_code=404, detail="Survey not found")
-    
-    if survey.status != "ACTIVE":
-        raise HTTPException(status_code=400, detail="Survey is not active")
-    
-    new_response = SurveyResponse(
-        survey_id=response.survey_id,
-        respondent_id=None,  # Will be set from current user context
-        response_data=response.response_data,
-        ip_address=response.ip_address
-    )
-    db.add(new_response)
+async def respond(response: SurveyResponseCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write", "surveys.respond"))):
+    result = await service.respond(db, response.survey_id, tenant.user_id, response.response_data, staff_only=not tenant.has_permission("surveys.write"))
     await db.commit()
-    await db.refresh(new_response)
-    
-    return success_response({
-        "id": str(new_response.id),
-        "submitted_at": new_response.submitted_at.isoformat()
-    })
+    return success_response(result)
 
 
 @router.get("/surveys/{survey_id}/results")
-async def get_survey_results(
-    survey_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("surveys.read"))
-):
-    """Get survey results with statistical aggregation"""
-    from app.domain.entities.surveys import SurveyQuestion, SurveyResponse
-    
-    # Get questions
-    questions_result = await db.execute(
-        select(SurveyQuestion).where(SurveyQuestion.survey_id == survey_id).order_by(SurveyQuestion.order_index)
-    )
-    questions = questions_result.scalars().all()
-    
-    # Get all responses
-    responses_result = await db.execute(
-        select(SurveyResponse).where(SurveyResponse.survey_id == survey_id)
-    )
-    responses = responses_result.scalars().all()
-    
-    # Calculate statistics
-    results = []
-    for question in questions:
-        question_key = str(question.id)
-        
-        if question.question_type == "RATING":
-            ratings = []
-            for response in responses:
-                if question_key in response.response_data:
-                    try:
-                        ratings.append(float(response.response_data[question_key]))
-                    except (ValueError, TypeError):
-                        pass
-            
-            if ratings:
-                avg_rating = sum(ratings) / len(ratings)
-                results.append({
-                    "question_id": str(question.id),
-                    "question_text": question.question_text,
-                    "question_type": question.question_type,
-                    "response_count": len(ratings),
-                    "average_rating": round(avg_rating, 2),
-                    "min_rating": min(ratings),
-                    "max_rating": max(ratings)
-                })
-            else:
-                results.append({
-                    "question_id": str(question.id),
-                    "question_text": question.question_text,
-                    "question_type": question.question_type,
-                    "response_count": 0
-                })
-        
-        elif question.question_type == "MULTIPLE_CHOICE":
-            option_counts = {}
-            for response in responses:
-                if question_key in response.response_data:
-                    selected_option = response.response_data[question_key]
-                    option_counts[selected_option] = option_counts.get(selected_option, 0) + 1
-            
-            results.append({
-                "question_id": str(question.id),
-                "question_text": question.question_text,
-                "question_type": question.question_type,
-                "response_count": sum(option_counts.values()),
-                "option_counts": option_counts
-            })
-        
-        else:  # TEXT
-            results.append({
-                "question_id": str(question.id),
-                "question_text": question.question_text,
-                "question_type": question.question_type,
-                "response_count": len(responses)
-            })
-    
-    return success_response({
-        "survey_id": str(survey_id),
-        "total_responses": len(responses),
-        "question_results": results
-    })
+async def results(survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+    return success_response(await service.results(db, survey_id))

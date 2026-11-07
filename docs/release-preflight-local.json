@@ -1,0 +1,21 @@
+{
+  "ready": false,
+  "scope": "application_and_integrations",
+  "checks": {
+    "production_environment": false,
+    "postgresql_database": false,
+    "https_cors_origins": false,
+    "strong_jwt_secret": true,
+    "https_password_reset": false,
+    "schema_current": true
+  },
+  "provider_configuration": {
+    "smtp": false,
+    "sms": false,
+    "whatsapp": false,
+    "iyzico": false,
+    "notification_delivery_enabled": false,
+    "notification_webhook_configured": false
+  },
+  "provider_live_acceptance": "requires separate sandbox/delivery verification"
+}

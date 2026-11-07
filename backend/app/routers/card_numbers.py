@@ -47,7 +47,7 @@ def card_number_to_dict(card: CardNumber) -> dict:
 
 @router.get("")
 async def list_card_numbers(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read")),
     status: Optional[str] = None
@@ -65,7 +65,7 @@ async def list_card_numbers(
 
 @router.get("/available")
 async def list_available_card_numbers(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -83,7 +83,7 @@ async def list_available_card_numbers(
 @router.get("/{card_id}")
 async def get_card_number(
     card_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -99,7 +99,7 @@ async def get_card_number(
 @router.post("")
 async def create_card_number(
     card: CardNumberCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -138,7 +138,7 @@ async def create_card_number(
 async def update_card_number(
     card_id: str,
     card: CardNumberUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -176,7 +176,7 @@ async def update_card_number(
 @router.delete("/{card_id}")
 async def delete_card_number(
     card_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):

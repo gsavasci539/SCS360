@@ -1,0 +1,17 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Completed role: super_admin; checks: 165
+Completed role: teacher; checks: 330
+Completed role: accountant; checks: 495
+Completed role: canteen_staff; checks: 660
+Completed role: org_admin; checks: 825
+Completed role: branch_manager; checks: 990
+Completed role: staff; checks: 1155
+Completed role: parent; checks: 1320
+Completed role: manager; checks: 1485
+Completed role: administrator; checks: 1650
+Completed role: owner; checks: 1815
+{"checks": 1815, "statuses": {"200": 1146, "500": 3, "403": 666}, "report": "C:\\Okul360\\docs\\api-smoke-results.json"}
+{"role": "super_admin", "path": "/api/dashboard/summary", "error": "'NoneType' object has no attribute 'remaining_amount'"}
+{"role": "super_admin", "path": "/api/finance/analytics", "error": "'NoneType' object has no attribute 'due_date'"}
+{"role": "super_admin", "path": "/api/ai/payment-forecast", "error": "'NoneType' object has no attribute 'remaining_amount'"}

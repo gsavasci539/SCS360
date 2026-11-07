@@ -1,0 +1,107 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 034 -> 035, School merchant accounts and immutable checkout evidence; preserve old columns.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [23712]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "8d5c6827-137e-4742-8527-fe7df355f63f", "method": "GET", "path": "/health", "status": 200, "duration_ms": 10.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:16.467207Z"}
+[WebServer] (node:3572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24288) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:11952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "f63ca61f-f70c-42c2-8c64-a07e0e376bdc", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 1722.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:21.371506Z"}
+[WebServer] {"request_id": "a03d5019-a265-4f1b-8e4a-00491560a57c", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 481.38, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:22.945083Z"}
+[WebServer] {"request_id": "8956bbee-a9a4-4360-8582-b96570be2853", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 351.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:23.312005Z"}
+[WebServer] {"request_id": "4fc92985-0a36-47ea-bcd9-1b81ebc1c143", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 49.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:23.374750Z"}
+[WebServer] {"request_id": "0fadd209-e111-4fab-8b26-02a3feec979e", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 32.56, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:23.416826Z"}
+[WebServer] {"request_id": "cfbb9b06-b662-40e7-9af5-678285ae2fb3", "method": "POST", "path": "/api/payments/iyzico/initialize", "status": 200, "duration_ms": 107.21, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:23.534434Z"}
+[WebServer] {"request_id": "f572c383-a3ca-4d2c-9120-a66e46f4770c", "method": "POST", "path": "/api/payments", "status": 200, "duration_ms": 99.73, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:23.659114Z"}
+[WebServer] {"request_id": "e9fde19e-856d-4d54-bea5-3297595b5546", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 319.52, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:24.825251Z"}
+[WebServer] {"request_id": "2e5a26d0-6f52-46de-a0a8-6fe6a9048ddf", "method": "POST", "path": "/api/payments/iyzico/callback", "status": 303, "duration_ms": 36.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:25.256302Z"}
+[WebServer] {"request_id": "3184fd73-6f25-4fea-86d3-7286e212c775", "method": "GET", "path": "/api/payments/iyzico/checkouts/39041363-c321-4366-815d-c165d2fac243/review", "status": 200, "duration_ms": 58.1, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:25.533081Z"}
+[WebServer] {"request_id": "d782de15-481b-46c1-9932-ade5f73208c9", "method": "POST", "path": "/api/payments/1c4507b7-d908-48e1-92ab-702b00d409e5/cancel", "status": 200, "duration_ms": 132.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:25.725852Z"}
+[WebServer] {"request_id": "54cc2d5b-e4b6-47dc-807f-e70d466421ec", "method": "GET", "path": "/api/debts/29d0174f-ea04-4ef9-8ce2-510fc49a63ac", "status": 200, "duration_ms": 19.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:25.757115Z"}
+[WebServer] {"request_id": "8421e234-3a88-4de6-be63-56ef8e6de0f7", "method": "GET", "path": "/api/payments/iyzico/checkouts/39041363-c321-4366-815d-c165d2fac243/review", "status": 200, "duration_ms": 32.51, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:26.762748Z"}
+[WebServer] {"request_id": "a185e0da-4335-4855-bef4-d97ae4e1b754", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 179.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:26.919423Z"}
+[WebServer] {"request_id": "27435b0b-26a4-41b6-9ca8-1e7a7c7196bb", "method": "POST", "path": "/api/payments/iyzico/checkouts/39041363-c321-4366-815d-c165d2fac243/review", "status": 200, "duration_ms": 89.21, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:27.089836Z"}
+[WebServer] {"request_id": "c928948d-f8f0-4525-85d0-cd27226222f0", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 30.85, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:27.158825Z"}
+[WebServer] {"request_id": "b40bb0f4-5dea-4e71-87ea-e6987b770ed0", "method": "GET", "path": "/api/payments", "status": 200, "duration_ms": 59.21, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:27.197902Z"}
+[WebServer] {"request_id": "293d7c26-da5e-4b5c-8316-523b15da8d3b", "method": "GET", "path": "/api/debts/29d0174f-ea04-4ef9-8ce2-510fc49a63ac", "status": 200, "duration_ms": 16.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:27.226811Z"}
+[WebServer] {"request_id": "bc67adff-ebb1-4aca-a5ef-412287914b3a", "method": "GET", "path": "/api/receipts/ded32c8d-74fc-4945-978a-cb160480236f", "status": 200, "duration_ms": 13.3, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:27.251539Z"}
+[WebServer] {"request_id": "dfe8965f-43a5-4bca-841d-8266b34a363f", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 33.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.012827Z"}
+[WebServer] {"request_id": "880dc323-3c5b-4b61-835e-ba0ca9a7af51", "method": "GET", "path": "/api/payments/iyzico/checkouts/39041363-c321-4366-815d-c165d2fac243/review", "status": 200, "duration_ms": 60.21, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.030653Z"}
+[WebServer] {"request_id": "2355e3c3-4789-4b3b-b46c-910f5f0c720d", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 30.58, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.090898Z"}
+[WebServer] {"request_id": "ce2bd387-f8b5-430d-87d5-9c9eeb1c3d3c", "method": "GET", "path": "/api/payments/iyzico/checkouts/39041363-c321-4366-815d-c165d2fac243/review", "status": 200, "duration_ms": 47.74, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.148612Z"}
+[WebServer] {"request_id": "506b43a5-d8a2-4272-9bf3-c9fa45e2481a", "method": "GET", "path": "/api/payments", "status": 200, "duration_ms": 46.05, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.211892Z"}
+  ok 1 [edge] › e2e\school-payment-review.spec.ts:49:1 › native school review applies a signed captured payment after the conflicting cash receipt is cancelled (8.5s)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "cad7c599-529c-4fa2-b1f2-eeed0ce1b898", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 2.72, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:28.443231Z"}
+[WebServer] {"request_id": "63938c44-e93e-476e-bb6b-7d0f7ac1c179", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 314.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.025161Z"}
+[WebServer] {"request_id": "13f4a503-e0cb-43d6-a4b5-11e5ac5e64f6", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 313.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.348165Z"}
+[WebServer] {"request_id": "3720efa8-e2d9-4ffc-b74b-bce89ced9a39", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 40.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.400698Z"}
+[WebServer] {"request_id": "7d0f72bb-2083-48aa-ae2e-8d9129761ebd", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 30.93, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.443146Z"}
+[WebServer] {"request_id": "3cf18277-ac7d-4407-a45b-940c7281d9f6", "method": "POST", "path": "/api/payments/iyzico/initialize", "status": 200, "duration_ms": 81.64, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.543360Z"}
+[WebServer] {"request_id": "5d86e99c-d27c-4f80-83f6-ae45ccf3fb25", "method": "POST", "path": "/api/payments", "status": 200, "duration_ms": 102.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:29.660134Z"}
+[WebServer] {"request_id": "6182937d-98d4-4bf9-ab6e-67ff3ef5e152", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 450.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:31.108163Z"}
+[WebServer] {"request_id": "655cd6c7-9cb8-496a-ac4c-44a89770d5aa", "method": "GET", "path": "/api/debts", "status": 200, "duration_ms": 45.94, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:31.522805Z"}
+[WebServer] {"request_id": "334e16ad-330f-48ce-a45d-29aab83abb01", "method": "POST", "path": "/api/payments/iyzico/callback", "status": 303, "duration_ms": 24.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:31.840847Z"}
+[WebServer] {"request_id": "dc47c166-a6e6-489a-bf61-7c33872333ce", "method": "GET", "path": "/api/payments/iyzico/checkouts/504c0039-46d7-4ca9-8257-cfa78aa1784e/review", "status": 200, "duration_ms": 37.53, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:32.019993Z"}
+[WebServer] {"request_id": "318f1e4c-4757-4b03-81d9-ad3191ff20cf", "method": "GET", "path": "/api/payments/iyzico/checkouts/504c0039-46d7-4ca9-8257-cfa78aa1784e/review", "status": 200, "duration_ms": 57.08, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:33.027440Z"}
+[WebServer] {"request_id": "976d9e04-b8ef-42db-b4cd-4cf6c7023e5c", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 46.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:33.028808Z"}
+[WebServer] {"request_id": "449d1f10-95e0-4a89-a9e5-d3da0f41ef5a", "method": "POST", "path": "/api/payments/iyzico/checkouts/504c0039-46d7-4ca9-8257-cfa78aa1784e/review", "status": 200, "duration_ms": 49.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:33.382763Z"}
+[WebServer] {"request_id": "36322912-6813-4c1c-b51a-ba2482233653", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 34.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:33.460183Z"}
+[WebServer] {"request_id": "3fb82cb5-9012-43a9-8849-667696831104", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 37.27, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.124285Z"}
+[WebServer] {"request_id": "4fba3ed1-98de-4ab1-b0cc-d96c53aff81f", "method": "GET", "path": "/api/payments/iyzico/checkouts/504c0039-46d7-4ca9-8257-cfa78aa1784e/review", "status": 200, "duration_ms": 43.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.125752Z"}
+[WebServer] {"request_id": "5e9034b5-0a0e-496c-a3cf-c9f92a9f01b2", "method": "GET", "path": "/api/payments/iyzico/reviews", "status": 200, "duration_ms": 23.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.180527Z"}
+[WebServer] {"request_id": "fc1052bb-aa95-4b3f-b819-23acf643a59c", "method": "GET", "path": "/api/payments", "status": 200, "duration_ms": 27.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.230991Z"}
+[WebServer] {"request_id": "a68de1a8-2091-4d9b-af8b-4b2c0d9050d5", "method": "GET", "path": "/api/debts/069cc3b2-1af0-4752-abe7-5b53eadf474c", "status": 200, "duration_ms": 15.61, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.260346Z"}
+[WebServer] {"request_id": "134eb2da-134c-4cbe-a59e-8295f027330e", "method": "GET", "path": "/api/payments/iyzico/checkouts/504c0039-46d7-4ca9-8257-cfa78aa1784e/review", "status": 200, "duration_ms": 20.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-05T13:24:34.290386Z"}
+  ok 2 [edge] › e2e\school-payment-review.spec.ts:83:1 › native school review records an already performed full external refund without changing cash or online ledger (6.0s)
+
+  2 passed (37.9s)

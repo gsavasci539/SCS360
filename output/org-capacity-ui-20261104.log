@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/organization-controls.test.tsx src/test/capacity-table.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  12:31:01
+   Duration  6.93s (transform 500ms, setup 1.11s, import 1.89s, tests 1.20s, environment 6.65s)
+

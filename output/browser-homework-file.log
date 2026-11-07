@@ -1,0 +1,145 @@
+
+> okul360-frontend@1.0.0 test:e2e
+> playwright test --grep uploads homework
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO:     Started server process [23448]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "cf4749a4-9ae4-417b-a011-39aada46ad32", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:10.875855Z"}
+[WebServer] (node:20892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:19616) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:24464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] {"request_id": "4c75068f-29fb-4232-a867-f98fd1fc7f55", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1350.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:21.376056Z"}
+[WebServer] {"request_id": "393aa235-2cca-4b6f-8c3c-a4a482a81c57", "method": "GET", "path": "/api/teacher/my-classes", "status": 200, "duration_ms": 390.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:21.835541Z"}
+[WebServer] {"request_id": "ae9079b4-fb70-413e-8743-ae9bd140ef3d", "method": "GET", "path": "/api/teacher/today-schedule", "status": 200, "duration_ms": 670.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:22.133125Z"}
+[WebServer] {"request_id": "161eae80-7867-443a-bbd9-15dff4a0e073", "method": "GET", "path": "/api/teacher/my-classes", "status": 200, "duration_ms": 756.82, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:22.407258Z"}
+[WebServer] {"request_id": "0420f290-46d2-49b5-a43f-64ad9f71733c", "method": "GET", "path": "/api/teacher/medicine-requests", "status": 200, "duration_ms": 809.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:22.417419Z"}
+[WebServer] {"request_id": "038f378e-b2ef-4432-b657-fba9c28a9140", "method": "GET", "path": "/api/teacher/pending-tasks", "status": 200, "duration_ms": 912.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:22.461077Z"}
+[WebServer] {"request_id": "2c4cd484-baa6-4bf2-a9cc-a732d739af28", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 643.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:22.973740Z"}
+[WebServer] {"request_id": "873dd39a-835f-4e7f-9567-a46223a33a64", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 798.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.139158Z"}
+[WebServer] {"request_id": "b401a235-1c0a-4199-9354-52e56aebed5b", "method": "GET", "path": "/api/homework/classes", "status": 200, "duration_ms": 685.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.161741Z"}
+[WebServer] {"request_id": "2847152a-c8da-46e8-a01d-f57e094891cb", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 337.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.488796Z"}
+[WebServer] {"request_id": "497de620-3fbc-4b7a-91ef-d28512786447", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 311.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.498782Z"}
+[WebServer] {"request_id": "b1e7d8e0-12c6-42e3-9e85-0297f239f6be", "method": "POST", "path": "/api/homework", "status": 200, "duration_ms": 186.17, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.859863Z"}
+[WebServer] {"request_id": "be491d10-abf6-4c64-9235-cfef42f667c0", "method": "GET", "path": "/api/homework", "status": 200, "duration_ms": 98.08, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.977397Z"}
+[WebServer] {"request_id": "e5384d67-2f44-4b8b-ac01-7d03846b5263", "method": "GET", "path": "/api/ai/ai-homework-analysis", "status": 200, "duration_ms": 88.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:23.988941Z"}
+[WebServer] {"request_id": "0eafc07a-d05a-4873-b1cf-1db832bc0f79", "method": "GET", "path": "/api/homework/65a88b27-e61b-4d3b-9c8a-30afa013aeb2", "status": 200, "duration_ms": 136.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:24.414423Z"}
+[WebServer] {"request_id": "d12f40ae-7128-46f0-9e99-7f8528526226", "method": "GET", "path": "/api/homework/65a88b27-e61b-4d3b-9c8a-30afa013aeb2", "status": 200, "duration_ms": 1467.1, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:25.901181Z"}
+[WebServer] {"request_id": "ebdceafe-960c-4c77-b50b-fe6e6a5901d8", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 1641.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:26.112208Z"}
+[WebServer] {"request_id": "ed797c7f-e41c-479a-a4b1-c823868b8944", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 821.65, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:26.949286Z"}
+[WebServer] {"request_id": "67123713-bf8f-4ec7-8452-e9ed0dd9b937", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 496.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:26.985871Z"}
+[WebServer] {"request_id": "7cd5ecf0-7653-43eb-bd43-b1712f39f16d", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 179.06, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:27.236414Z"}
+[WebServer] {"request_id": "548e780b-9fb9-44bb-949e-07906d0e5cd9", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 307.13, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:27.553017Z"}
+[WebServer] {"request_id": "08ecb249-4755-4293-b338-5ed98d3c838f", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/financial-invoices", "status": 200, "duration_ms": 381.51, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:27.708107Z"}
+[WebServer] {"request_id": "0e258793-85a0-4133-8ca9-2fa5c8bf5b3f", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 572.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:27.879079Z"}
+[WebServer] {"request_id": "71f3e568-177e-4e8c-bf3b-8721123e0c21", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 732.13, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.067493Z"}
+[WebServer] {"request_id": "40a164ca-1960-4154-883e-2de326b7b5aa", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 142.58, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.190173Z"}
+[WebServer] {"request_id": "ad0098f6-0fc9-4e1e-ae9e-c3ba9156c36a", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 349.52, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.550158Z"}
+[WebServer] {"request_id": "2d8664c8-867d-4d57-8136-f4535c52cc95", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/homework", "status": 200, "duration_ms": 473.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.760241Z"}
+[WebServer] {"request_id": "47a8fe42-e7bb-4c3d-b6c1-84538b7ab96d", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 446.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.763077Z"}
+[WebServer] {"request_id": "b1c0677d-32e6-4e85-95d3-fdbb6242d353", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 514.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:28.784520Z"}
+[WebServer] {"request_id": "8654587a-aef2-438e-8bf0-ddacec383477", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 348.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.185872Z"}
+[WebServer] {"request_id": "0799afda-9382-4dd2-8100-0de74e19920a", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 488.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.354840Z"}
+[WebServer] {"request_id": "865a5f61-c0a5-43ab-9284-cd1bf19c2f5e", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 548.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.399804Z"}
+[WebServer] {"request_id": "0686e309-e7cd-4126-ba44-b497be14ccd9", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 528.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.414682Z"}
+[WebServer] {"request_id": "19f5108c-29bc-464e-a041-5effb7f99c13", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 523.38, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.421793Z"}
+[WebServer] {"request_id": "60cb9a51-db5c-47d4-8e7f-9f2eaa0da4ba", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 213.64, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.513503Z"}
+[WebServer] {"request_id": "fe38cbe3-30cc-4a26-ad53-f39a6a6408ad", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 186.82, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.589988Z"}
+[WebServer] {"request_id": "0ec5c5c6-4f8b-43d4-affa-3f384764070b", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 235.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.656518Z"}
+[WebServer] {"request_id": "6f0dc529-24df-44b9-9a4b-617dd55db519", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 246.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.685755Z"}
+[WebServer] {"request_id": "efa4e30d-2964-4e36-9b95-dddf35f8afbf", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 243.74, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.694640Z"}
+[WebServer] {"request_id": "0124b48e-8b5e-40da-8b7b-8e5e16a2ced9", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 234.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.787077Z"}
+[WebServer] {"request_id": "924a83ad-061b-4668-9dd7-2aae489388c9", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 903.58, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.808919Z"}
+[WebServer] {"request_id": "e24ceec0-23ba-4f9f-beae-5bb368a79d39", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 217.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.855691Z"}
+[WebServer] {"request_id": "8b7c8691-ee20-442e-b086-449e0ae3de8e", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 262.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:29.949213Z"}
+[WebServer] {"request_id": "cadb61c4-4019-478c-8ae0-c01238700870", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 291.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.004444Z"}
+[WebServer] {"request_id": "7792f21f-1c8f-4a42-8cd5-a48bf515c1d7", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 286.61, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.009054Z"}
+[WebServer] {"request_id": "9ec0bb0f-267f-47cd-92b5-f634b09232d2", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 354.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.187296Z"}
+[WebServer] {"request_id": "915ab5fd-fd1f-4888-92f5-2d3d0fed7554", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 379.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.232630Z"}
+[WebServer] {"request_id": "400907a1-90b0-4085-800d-22043b96c88d", "method": "POST", "path": "/api/homework/65a88b27-e61b-4d3b-9c8a-30afa013aeb2/submit-file", "status": 200, "duration_ms": 237.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.338404Z"}
+[WebServer] {"request_id": "dd411b27-168c-440c-a158-f4196b6e6d87", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 52.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:30.404716Z"}
+[WebServer] {"request_id": "060a78bc-9588-4cc9-ba11-a017b5c558bf", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 52.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:31.199741Z"}
+[WebServer] {"request_id": "6c1093c7-4b77-4e72-9079-dd9f4e9d74d7", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 414.25, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:31.631932Z"}
+[WebServer] {"request_id": "36a68683-fa99-4f06-a0cb-cf5dc0159c92", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/homework", "status": 200, "duration_ms": 529.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:31.801118Z"}
+[WebServer] {"request_id": "f8a84908-dd5e-40cc-ba02-e856a50e2e27", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 516.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:31.805618Z"}
+[WebServer] {"request_id": "da11c0c4-dbf4-4868-8fa3-f3410eb505d8", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 584.92, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:31.827444Z"}
+[WebServer] {"request_id": "27f0babd-8ddd-46c7-bad4-a1d3b02cfc48", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 267.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.155295Z"}
+[WebServer] {"request_id": "f1da5930-df51-4b73-adda-ed695ebcb9da", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 422.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.321685Z"}
+[WebServer] {"request_id": "bc1269d6-4dc8-40ea-98d5-b6a1073c1671", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 484.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.403500Z"}
+[WebServer] {"request_id": "3df4860e-c917-47f8-bab8-89a6829fc8bb", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 478.13, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.409127Z"}
+[WebServer] {"request_id": "8aba4197-e1f6-4b73-8c82-c47c210ea4f7", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 469.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.413753Z"}
+[WebServer] {"request_id": "dd1bf900-2399-4c86-befd-957004dd7e1b", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 499.91, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.455940Z"}
+[WebServer] {"request_id": "09777fca-818f-4cf2-bc6b-6d8846538290", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 316.17, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.565905Z"}
+[WebServer] {"request_id": "45fa8377-6bd4-498e-9473-e257212880cf", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 265.95, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.670438Z"}
+[WebServer] {"request_id": "e3cbef32-23ce-4206-9fe9-4e573fd156c6", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 278.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.740046Z"}
+[WebServer] {"request_id": "fdd2e924-fdc1-4c14-987d-9a64e74b85a5", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 295.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.769667Z"}
+[WebServer] {"request_id": "bac1b8d4-3acc-4625-ba76-006a8210bc67", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 295.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.779096Z"}
+[WebServer] {"request_id": "40421e5c-103f-428b-b569-c61e449e23b7", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 290.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.780095Z"}
+[WebServer] {"request_id": "fb5a6314-065b-4aed-953a-f74bad333278", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 261.05, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.880023Z"}
+[WebServer] {"request_id": "d9ed0f19-dcf6-4adf-aaf2-1dd1858cdbbb", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 200.27, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.940125Z"}
+[WebServer] {"request_id": "0d29d338-52f5-4f3d-ad79-c82c1d05af9d", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 208.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.988234Z"}
+[WebServer] {"request_id": "e21cdeb5-3e1f-4ceb-9c8e-40ce7ad59919", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 205.26, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:32.995106Z"}
+[WebServer] {"request_id": "ee7b4fc9-7055-4e07-b91c-76579638c427", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 211.27, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:33.010600Z"}
+[WebServer] {"request_id": "2dc37181-e27f-4427-9d72-cfe81401d4b1", "method": "GET", "path": "/api/homework/submissions", "status": 200, "duration_ms": 208.91, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:41:33.012482Z"}
+  x  1 [edge] › e2e\acceptance.spec.ts:106:1 › parent uploads homework and teacher downloads and grades it (19.9s)
+
+
+  1) [edge] › e2e\acceptance.spec.ts:106:1 › parent uploads homework and teacher downloads and grades it 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.parent-request-card').filter({ hasText: 'Dosyalı Ödev 1793641274932' }).getByText('Kalıcı dosyalı teslim', { exact: true })
+    Expected: visible
+    Error: strict mode violation: locator('.parent-request-card').filter({ hasText: 'Dosyalı Ödev 1793641274932' }).getByText('Kalıcı dosyalı teslim', { exact: true }) resolved to 2 elements:
+        1) <p>Kalıcı dosyalı teslim</p> aka getByRole('paragraph').filter({ hasText: 'Kalıcı dosyalı teslim' })
+        2) <textarea class="input" maxlength="10000" aria-label="Teslim metni">Kalıcı dosyalı teslim</textarea> aka locator('textarea').filter({ hasText: 'Kalıcı dosyalı teslim' })
+
+    Call log:
+      - Expect "toBeVisible" locator('.parent-request-card').filter({ hasText: 'Dosyalı Ödev 1793641274932' }).getByText('Kalıcı dosyalı teslim', { exact: true }) with timeout 15000ms
+      - waiting for locator('.parent-request-card').filter({ hasText: 'Dosyalı Ödev 1793641274932' }).getByText('Kalıcı dosyalı teslim', { exact: true })
+
+
+      126 |     await expect(card.getByRole("status")).toHaveText("Ödev teslimi kaydedildi.");
+      127 |     await parent.reload();
+    > 128 |     await expect(card.getByText("Kalıcı dosyalı teslim", { exact: true })).toBeVisible();
+          |                                                                            ^
+      129 |     await page.reload();
+      130 |     const [download] = await Promise.all([
+      131 |       page.waitForEvent("download"), page.getByRole("button", { name: "Dosyayı indir: kabul.pdf", exact: true }).click(),
+        at C:\Okul360\frontend\e2e\acceptance.spec.ts:128:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-parent-uploads--a5aca-her-downloads-and-grades-it-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\acceptance.spec.ts:106:1 › parent uploads homework and teacher downloads and grades it 

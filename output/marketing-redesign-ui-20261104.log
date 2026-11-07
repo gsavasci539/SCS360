@@ -1,0 +1,813 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+stderr | src/test/marketing.test.tsx > tanıtım gerçek katalog fiyatını ve sınırları gösterir, paket seçimi kayıt ekranına gider
+An update to PublicPricing inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to PublicPricing inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/test/marketing.test.tsx > tanıtım gerçek katalog fiyatını ve sınırları gösterir, paket seçimi kayıt ekranına gider
+An update to PublicPricing inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ❯ src/test/marketing.test.tsx (5 tests | 1 failed) 6056ms
+   × tanıtım gerçek katalog fiyatını ve sınırları gösterir, paket seçimi kayıt ekranına gider 4129ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/marketing.test.tsx > tanıtım gerçek katalog fiyatını ve sınırları gösterir, paket seçimi kayıt ekranına gider
+TestingLibraryElementError: Unable to find an accessible element with the role "heading" and name `/Eğitimde bütün resmi/`
+
+Here are the accessible roles:
+
+  link:
+
+  Name "İçeriğe geç":
+  <a
+    class="marketing-skip"
+    href="#public-main"
+  />
+
+  Name "SCS360 ana sayfa":
+  <a
+    aria-label="SCS360 ana sayfa"
+    class="marketing-brand-link"
+    data-discover="true"
+    href="/"
+  />
+
+  Name "Çözümler":
+  <a
+    href="/#cozumler"
+  />
+
+  Name "Nasıl çalışır?":
+  <a
+    href="/#nasil-calisir"
+  />
+
+  Name "Erişim ve üyelik":
+  <a
+    href="/#guven"
+  />
+
+  Name "Fiyatlandırma":
+  <a
+    data-discover="true"
+    href="/fiyatlandirma"
+  />
+
+  Name "Giriş yap":
+  <a
+    class="marketing-login"
+    data-discover="true"
+    href="/login"
+  />
+
+  Name "Paketleri keşfedin":
+  <a
+    class="marketing-primary"
+    data-discover="true"
+    href="/fiyatlandirma"
+  />
+
+  Name "Ürün turunu keşfedin":
+  <a
+    class="marketing-secondary"
+    href="#urun"
+  />
+
+  Name "Merak ettiklerinizi inceleyin":
+  <a
+    class="marketing-light-link"
+    href="#sorular"
+  />
+
+  Name "Paketleri karşılaştırın":
+  <a
+    data-discover="true"
+    href="/fiyatlandirma"
+  />
+
+  Name "Size uygun paketi bulun":
+  <a
+    class="marketing-primary"
+    data-discover="true"
+    href="/fiyatlandirma"
+  />
+
+  Name "Çözümler":
+  <a
+    href="/#cozumler"
+  />
+
+  Name "Ürün turu":
+  <a
+    href="/#urun"
+  />
+
+  Name "Erişim ve üyelik":
+  <a
+    href="/#guven"
+  />
+
+  Name "Paketler ve fiyatlar":
+  <a
+    data-discover="true"
+    href="/fiyatlandirma"
+  />
+
+  Name "Sık sorulan sorular":
+  <a
+    href="/#sorular"
+  />
+
+  Name "Kurum girişi":
+  <a
+    data-discover="true"
+    href="/login"
+  />
+
+  Name "Sayfanın başına dön":
+  <a
+    aria-label="Sayfanın başına dön"
+    href="#public-main"
+  />
+
+  --------------------------------------------------
+  banner:
+
+  Name "":
+  <header
+    class="marketing-header"
+  />
+
+  --------------------------------------------------
+  img:
+
+  Name "SCS360 logosu":
+  <img
+    alt="SCS360 logosu"
+    class="brand-mark"
+    height="42"
+    src="/scs360-mark.svg?v=2"
+    style="width: 42px; height: 42px;"
+    width="42"
+  />
+
+  Name "SCS360 logosu":
+  <img
+    alt="SCS360 logosu"
+    class="brand-mark"
+    height="24"
+    src="/scs360-mark.svg?v=2"
+    style="width: 24px; height: 24px;"
+    width="24"
+  />
+
+  Name "SCS360 logosu":
+  <img
+    alt="SCS360 logosu"
+    class="brand-mark"
+    height="42"
+    src="/scs360-mark.svg?v=2"
+    style="width: 42px; height: 42px;"
+    width="42"
+  />
+
+  --------------------------------------------------
+  navigation:
+
+  Name "Site menüsü":
+  <nav
+    aria-label="Site menüsü"
+  />
+
+  Name "Ürün bağlantıları":
+  <nav
+    aria-label="Ürün bağlantıları"
+  />
+
+  Name "Üyelik bağlantıları":
+  <nav
+    aria-label="Üyelik bağlantıları"
+  />
+
+  --------------------------------------------------
+  main:
+
+  Name "":
+  <main
+    id="public-main"
+  />
+
+  --------------------------------------------------
+  heading:
+
+  Name "Eğitimdebütün resmigörün.":
+  <h1 />
+
+  Name "Bütün şubeler. Ortak bir düzen.":
+  <h2 />
+
+  Name "Okulun merkezinde eğitim.Etrafında SCS360.":
+  <h2 />
+
+  Name "Bir okul günününbütün parçaları.":
+  <h3 />
+
+  Name "Şubeler ayrı.Bakışınız bütün.":
+  <h3 />
+
+  Name "Kayıttan tahsilatafinansal takip.":
+  <h3 />
+
+  Name "Okulla aile arasındaortak bir alan.":
+  <h3 />
+
+  Name "Günlük ayrıntılarkayıt altında.":
+  <h3 />
+
+  Name "Birlikte çalışın.Sınırları siz belirleyin.":
+  <h2 />
+
+  Name "Rollere göre erişim":
+  <h3 />
+
+  Name "Kurum ve şube kapsamı":
+  <h3 />
+
+  Name "Görünür üyelik ve sınırlar":
+  <h3 />
+
+  Name "Okulunuz içinyeni bir çalışma düzeni.":
+  <h2 />
+
+  Name "İhtiyacınızı seçin.":
+  <h3 />
+
+  Name "Kurum hesabınızı açın.":
+  <h3 />
+
+  Name "Ekibinizle başlayın.":
+  <h3 />
+
+  Name "İhtiyacınıza göre bir paket.":
+  <h2 />
+
+  Name "Güncel paketler yükleniyor":
+  <h3 />
+
+  Name "Birlikte başlamadanönce.":
+  <h2 />
+
+  Name "Daha net bir okul günü.Birlikte başlayalım.":
+  <h2 />
+
+  --------------------------------------------------
+  emphasis:
+
+  Name "":
+  <em />
+
+  Name "":
+  <em />
+
+  Name "":
+  <em />
+
+  Name "":
+  <em />
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p
+    class="marketing-price-note"
+  />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  Name "":
+  <p />
+
+  --------------------------------------------------
+  region:
+
+  Name "SCS360 ürün turu":
+  <section
+    aria-label="SCS360 ürün turu"
+    class="marketing-product"
+  />
+
+  Name "Ortak çalışma alanları":
+  <section
+    aria-label="Ortak çalışma alanları"
+    class="marketing-connect-strip"
+  />
+
+  Name "SCS360 çözümleri":
+  <section
+    aria-label="SCS360 çözümleri"
+    class="marketing-section marketing-solutions"
+    id="cozumler"
+  />
+
+  Name "Erişim ve üyelik yaklaşımı":
+  <section
+    aria-label="Erişim ve üyelik yaklaşımı"
+    class="marketing-trust"
+    id="guven"
+  />
+
+  Name "Üyelik paketleri":
+  <section
+    aria-label="Üyelik paketleri"
+    class="marketing-section marketing-pricing"
+    id="paketler"
+  />
+
+  --------------------------------------------------
+  strong:
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  Name "":
+  <strong />
+
+  --------------------------------------------------
+  tablist:
+
+  Name "Ürün alanları":
+  <div
+    aria-label="Ürün alanları"
+    class="marketing-product-tabs"
+    role="tablist"
+  />
+
+  --------------------------------------------------
+  tab:
+
+  Name "Kurum":
+  <button
+    aria-controls="product-panel-kurum"
+    aria-selected="true"
+    id="product-tab-kurum"
+    role="tab"
+    tabindex="0"
+    type="button"
+  />
+
+  Name "Eğitim":
+  <button
+    aria-controls="product-panel-egitim"
+    aria-selected="false"
+    id="product-tab-egitim"
+    role="tab"
+    tabindex="-1"
+    type="button"
+  />
+
+  Name "Finans":
+  <button
+    aria-controls="product-panel-finans"
+    aria-selected="false"
+    id="product-tab-finans"
+    role="tab"
+    tabindex="-1"
+    type="button"
+  />
+
+  --------------------------------------------------
+  tabpanel:
+
+  Name "Kurum":
+  <div
+    aria-labelledby="product-tab-kurum"
+    class="marketing-product-body"
+    id="product-panel-kurum"
+    role="tabpanel"
+    tabindex="0"
+  />
+
+  --------------------------------------------------
+  article:
+
+  Name "":
+  <article
+    class="marketing-solution marketing-solution-education"
+  />
+
+  Name "":
+  <article
+    class="marketing-solution marketing-solution-organization"
+  />
+
+  Name "":
+  <article
+    class="marketing-solution marketing-solution-finance"
+  />
+
+  Name "":
+  <article
+    class="marketing-solution marketing-solution-communication"
+  />
+
+  Name "":
+  <article
+    class="marketing-solution marketing-solution-operations"
+  />
+
+  Name "":
+  <article />
+
+  Name "":
+  <article />
+
+  Name "":
+  <article />
+
+  --------------------------------------------------
+  list:
+
+  Name "":
+  <ol />
+
+  --------------------------------------------------
+  listitem:
+
+  Name "":
+  <li />
+
+  Name "":
+  <li />
+
+  Name "":
+  <li />
+
+  --------------------------------------------------
+  button:
+
+  Name "Aylık":
+  <button
+    aria-pressed="true"
+    type="button"
+  />
+
+  Name "Yıllık":
+  <button
+    aria-pressed="false"
+    type="button"
+  />
+
+  --------------------------------------------------
+  group:
+
+  Name "":
+  <details />
+
+  Name "":
+  <details />
+
+  Name "":
+  <details />
+
+  Name "":
+  <details />
+
+  Name "":
+  <details />
+
+  Name "":
+  <details />
+
+  --------------------------------------------------
+  contentinfo:
+
+  Name "":
+  <footer
+    class="marketing-footer"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <div
+      class="marketing"
+    >
+      <a
+        class="marketing-skip"
+        href="#public-main"
+      >
+        İçeriğe geç
+      </a>
+      <div
+        class="marketing-header-shell"
+      >
+        <header
+          class="marketing-header"
+        >
+          <a
+            aria-label="SCS360 ana sayfa"
+            class="marketing-brand-link"
+            data-discover="true"
+            href="/"
+          >
+            <div
+              class="brand"
+            >
+              <img
+                alt="SCS360 logosu"
+                class="brand-mark"
+                height="42"
+                src="/scs360-mark.svg?v=2"
+                style="width: 42px; height: 42px;"
+                width="42"
+              />
+              <div>
+                <div
+                  class="brand-title"
+                >
+                  SCS360
+                </div>
+                <div
+                  class="brand-subtitle"
+                >
+                  Okul ve kurum yönetimi
+                </div>
+              </div>
+            </div>
+          </a>
+          <nav
+            aria-label="Site menüsü"
+          >
+            <a
+              href="/#cozumler"
+            >
+              Çözümler
+            </a>
+            <a
+              href="/#nasil-calisir"
+            >
+              Nasıl çalışır?
+            </a>
+            <a
+              href="/#guven"
+            >
+              Erişim ve üyelik
+            </a>
+            <a
+              data-discover="true"
+              href="/fiyatlandirma"
+            >
+              Fiyatlandırma
+            </a>
+          </nav>
+          <a
+            class="marketing-login"
+            data-discover="true"
+            href="/login"
+          >
+            Giriş yap
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-arrow-up-right"
+              fill="none"
+              height="16"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="16"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M7 7h10v10"
+              />
+              <path
+                d="M7 17 17 7"
+              />
+            </svg>
+          </a>
+        </header>
+      </div>
+      <main
+        id="public-main"
+      >
+        <section
+          class="marketing-hero"
+        >
+          <div
+            class="marketing-hero-copy"
+          >
+            <span
+              class="marketing-hero-badge"
+            >
+              <span />
+              OKUL VE KURUM YÖNETİMİ, BİR ARADA
+            </span>
+            <h1>
+              Eğitimde
+              <br />
+              bütün resmi
+              <br />
+              <em>
+                görün.
+              </em>
+            </h1>
+            <p>
+              Okulunuzun her günü, tek bir yerde. Öğrencilerden şubelere, öğretmenlerden velilere; SCS360 ile ekibinizin işini birbirine bağlayın.
+            </p>
+            <div
+              class="marketing-hero-actions"
+            >
+              <a
+                class="marketing-primary"
+                data-discover="true"
+                href="/fiyatlandirma"
+              >
+                Paketleri keşfedin
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-arrow-up-right"
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="18"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M7 7h10v10"
+                  />
+                  <path
+                    d="M7 17 17 7"
+                  />
+                </svg>
+              </a>
+              <a
+                class="marketing-secondary"
+                href="#urun"
+              >
+                Ürün turunu keşfedin
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-arrow-down-right"
+                  fill="none"
+                  height="18"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+            ...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/marketing.test.tsx:16:17
+     14| it("tanıtım gerçek katalog fiyatını ve sınırları gösterir, paket seçim…
+     15|   render(<MemoryRouter><MarketingPage /></MemoryRouter>);
+     16|   expect(screen.getByRole("heading", { name: /Eğitimde bütün resmi/ })…
+       |                 ^
+     17|   expect(await screen.findByRole("link", { name: "Paketi seç" })).toHa…
+     18|   expect(screen.getByText("80 öğrenci")).toBeInTheDocument(); expect(s…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  22:48:32
+   Duration  11.81s (transform 596ms, setup 639ms, import 1.19s, tests 6.06s, environment 3.51s)
+

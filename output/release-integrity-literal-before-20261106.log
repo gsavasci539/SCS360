@@ -1,0 +1,26 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_uuid_looking_business_codes_are_distinct_literals_not_identifiers[sqlite] _
+tests\integration\test_release_integrity.py:129: in test_uuid_looking_business_codes_are_distinct_literals_not_identifiers
+    assert report["ready"] is True and report["checks"]["canonical_keys"]["count"] == 0, report
+E   AssertionError: {'checks': {'canonical_keys': {'count': 1, 'ok': False}, 'model_columns': {'count': 0, 'ok': True}, 'physical_foreign_...on_id', 'code'], 'count': 1, 'reason': 'canonical_key_collisions', ...}], 'max_scan_rows': 250000, 'ready': False, ...}
+E   assert (False is True)
+_ test_uuid_looking_business_codes_are_distinct_literals_not_identifiers[postgresql] _
+tests\integration\test_release_integrity.py:129: in test_uuid_looking_business_codes_are_distinct_literals_not_identifiers
+    assert report["ready"] is True and report["checks"]["canonical_keys"]["count"] == 0, report
+E   AssertionError: {'checks': {'canonical_keys': {'count': 1, 'ok': False}, 'model_columns': {'count': 0, 'ok': True}, 'physical_foreign_...on_id', 'code'], 'count': 1, 'reason': 'canonical_key_collisions', ...}], 'max_scan_rows': 250000, 'ready': False, ...}
+E   assert (False is True)
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_release_integrity.py::test_uuid_looking_business_codes_are_distinct_literals_not_identifiers[sqlite]
+FAILED tests/integration/test_release_integrity.py::test_uuid_looking_business_codes_are_distinct_literals_not_identifiers[postgresql]
+2 failed, 14 deselected, 20 warnings in 0.94s

@@ -1,0 +1,1351 @@
+FFFFFFFFFFFF.FFFFFF..FFF.                                                [100%]
+================================== FAILURES ===================================
+_ test_online_receipt_snapshots_student_total_with_autoflush_disabled[sqlite] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x000002245F93AF5...ls.Debt object at 0x000002245FB5D810>, <app.infrastructure.models.models.PaymentCheckout object at 0x000002245F9DB0E0>)
+
+    async def test_online_receipt_snapshots_student_total_with_autoflush_disabled(ledger):
+        sessions, data, selected, _, attempt = ledger
+        gateway = Gateway(data["org"].id, {"ledger-one": attempt})
+        async with sessions() as db:
+            first = await payments.reconcile(db, "ledger-one", gateway); await db.commit()
+        assert first["status"] == "SUCCESS"
+        async with sessions() as db:
+            receipt = (await db.execute(select(Receipt))).scalar_one()
+>           assert receipt.remaining_debt == Decimal("125"), receipt.remaining_debt
+E           AssertionError: Decimal('75.00')
+E           assert Decimal('75.00') == Decimal('125')
+E            +  where Decimal('75.00') = <app.infrastructure.models.models.Receipt object at 0x000002245F813C50>.remaining_debt
+E            +  and   Decimal('125') = Decimal('125')
+
+tests\integration\test_online_receipt_balance.py:60: AssertionError
+_ test_online_receipt_snapshots_student_total_with_autoflush_disabled[postgresql] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x000002245FF69C1...ls.Debt object at 0x000002245FF469C0>, <app.infrastructure.models.models.PaymentCheckout object at 0x0000022460329D10>)
+
+    async def test_online_receipt_snapshots_student_total_with_autoflush_disabled(ledger):
+        sessions, data, selected, _, attempt = ledger
+        gateway = Gateway(data["org"].id, {"ledger-one": attempt})
+        async with sessions() as db:
+            first = await payments.reconcile(db, "ledger-one", gateway); await db.commit()
+        assert first["status"] == "SUCCESS"
+        async with sessions() as db:
+            receipt = (await db.execute(select(Receipt))).scalar_one()
+>           assert receipt.remaining_debt == Decimal("125"), receipt.remaining_debt
+E           AssertionError: Decimal('75.00')
+E           assert Decimal('75.00') == Decimal('125')
+E            +  where Decimal('75.00') = <app.infrastructure.models.models.Receipt object at 0x000002245FE12780>.remaining_debt
+E            +  and   Decimal('125') = Decimal('125')
+
+tests\integration\test_online_receipt_balance.py:60: AssertionError
+_ test_parallel_callbacks_have_serialized_whole_student_balance_snapshots[sqlite] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x000002245FED9C1...ls.Debt object at 0x000002246042AC10>, <app.infrastructure.models.models.PaymentCheckout object at 0x00000224602F6190>)
+
+    async def test_parallel_callbacks_have_serialized_whole_student_balance_snapshots(ledger):
+        sessions, data, _, sibling, first = ledger
+        second = PaymentCheckout(organization_id=data["org"].id, debt_id=sibling.id, created_by=data["user"].id,
+            amount=40, currency="TRY", token_hash=payments.token_hash("ledger-two"))
+        async with sessions() as db: db.add(second); await db.commit()
+        gateway = Gateway(data["org"].id, {"ledger-one": first, "ledger-two": second})
+        async def run(token):
+            async with sessions() as db:
+                result = await payments.reconcile(db, token, gateway); await db.commit(); return result
+        results = await asyncio.gather(run("ledger-one"), run("ledger-two"))
+        assert all(row["status"] == "SUCCESS" for row in results)
+        async with sessions() as db:
+            balances = list((await db.execute(select(Receipt.remaining_debt))).scalars())
+>           assert len(balances) == 2 and min(balances) == Decimal("85")
+E           AssertionError: assert (2 == 2 and Decimal('10.00') == Decimal('85'))
+E            +  where 2 = len([Decimal('75.00'), Decimal('10.00')])
+E            +  and   Decimal('10.00') = min([Decimal('75.00'), Decimal('10.00')])
+E            +  and   Decimal('85') = Decimal('85')
+
+tests\integration\test_online_receipt_balance.py:81: AssertionError
+_ test_parallel_callbacks_have_serialized_whole_student_balance_snapshots[postgresql] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x00000224604350D...ls.Debt object at 0x00000224604CA510>, <app.infrastructure.models.models.PaymentCheckout object at 0x00000224602EE850>)
+
+    async def test_parallel_callbacks_have_serialized_whole_student_balance_snapshots(ledger):
+        sessions, data, _, sibling, first = ledger
+        second = PaymentCheckout(organization_id=data["org"].id, debt_id=sibling.id, created_by=data["user"].id,
+            amount=40, currency="TRY", token_hash=payments.token_hash("ledger-two"))
+        async with sessions() as db: db.add(second); await db.commit()
+        gateway = Gateway(data["org"].id, {"ledger-one": first, "ledger-two": second})
+        async def run(token):
+            async with sessions() as db:
+                result = await payments.reconcile(db, token, gateway); await db.commit(); return result
+        results = await asyncio.gather(run("ledger-one"), run("ledger-two"))
+        assert all(row["status"] == "SUCCESS" for row in results)
+        async with sessions() as db:
+            balances = list((await db.execute(select(Receipt.remaining_debt))).scalars())
+>           assert len(balances) == 2 and min(balances) == Decimal("85")
+E           AssertionError: assert (2 == 2 and Decimal('10.00') == Decimal('85'))
+E            +  where 2 = len([Decimal('75.00'), Decimal('10.00')])
+E            +  and   Decimal('10.00') = min([Decimal('75.00'), Decimal('10.00')])
+E            +  and   Decimal('85') = Decimal('85')
+
+tests\integration\test_online_receipt_balance.py:81: AssertionError
+_ test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger[sqlite] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x00000224605E115...ls.Debt object at 0x000002245FECAF90>, <app.infrastructure.models.models.PaymentCheckout object at 0x000002245FE219B0>)
+
+    async def test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger(ledger):
+        sessions, data, selected, sibling, attempt = ledger
+        async with sessions() as db:
+            row = await db.get(Debt, sibling.id)
+            row.paid_amount = Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity")
+            await db.commit()
+        async with sessions() as db:
+            result = await payments.reconcile(db, "ledger-one", Gateway(data["org"].id, {"ledger-one": attempt}))
+            await db.commit()
+>       assert result["status"] == "REVIEW", result
+E       AssertionError: {'amount': '25.00', 'debt_id': '99ecf71b-f50f-425f-adeb-f7c0aa1db7d5', 'payment_id': '5f015e02-6abc-4298-9268-46cc1031239f', 'remaining_amount': '75.00', ...}
+E       assert 'SUCCESS' == 'REVIEW'
+E         
+E         - REVIEW
+E         + SUCCESS
+
+tests\integration\test_online_receipt_balance.py:94: AssertionError
+_ test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger[postgresql] _
+
+ledger = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x000002246053F95...ls.Debt object at 0x0000022460647AF0>, <app.infrastructure.models.models.PaymentCheckout object at 0x00000224616F1230>)
+
+    async def test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger(ledger):
+        sessions, data, selected, sibling, attempt = ledger
+        async with sessions() as db:
+            row = await db.get(Debt, sibling.id)
+            row.paid_amount = Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity")
+            await db.commit()
+        async with sessions() as db:
+            result = await payments.reconcile(db, "ledger-one", Gateway(data["org"].id, {"ledger-one": attempt}))
+            await db.commit()
+>       assert result["status"] == "REVIEW", result
+E       AssertionError: {'amount': '25.00', 'debt_id': '953ae972-318f-46f4-a1c7-5adf44e573b6', 'payment_id': 'c216d1a5-780a-40ec-be7f-5a013ebd55e5', 'remaining_amount': '75.00', ...}
+E       assert 'SUCCESS' == 'REVIEW'
+E         
+E         - REVIEW
+E         + SUCCESS
+
+tests\integration\test_online_receipt_balance.py:94: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-unsigned-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022460314830>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000224617517F0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000224606466D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000224602BDE50>
+variant = 'unsigned', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"e7142320-6c5d-49f7-8853-8099799a6ea6","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-forged-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000224627239D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002246289B520>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022462457110>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022462753D90>
+variant = 'forged', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"32e54003-83ba-47fa-a2c0-00698eff23f1","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-other-conversation-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022462925310>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022463A0AC90>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022461703DD0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000224627A00C0>
+variant = 'other-conversation', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"5f4c49a2-6f12-46fe-b4d6-5f29ed4890f6","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-url-credentials-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x000002245F9DFE10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022462929020>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022462928C00>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000224639AB230>
+variant = 'url-credentials', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"dfde54da-5651-4d82-9ec4-a3eac8e36248","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-url-port-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022462835350>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022463B854F0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000224628DB1B0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000224639AA900>
+variant = 'url-port', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance","conversation_id":"5708b880-149d-4258-9622-62cd77b65556","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-non-object-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022463A603B0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002245FE05090>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022463BB84D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022463BF4DE0>
+variant = 'non-object', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+>       reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+
+tests\integration\test_student_checkout_initial_proof.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:283: in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000022463B6D490>
+tenant = TenantContext(user_id=UUID('931d8c79-b5e4-42c5-a1e7-00cab75be435'), organization_id=UUID('cfef9f73-112f-4849-a30b-8d3c...ildren', 'parent.make_payment'}, role_slugs={'parent'}, is_super_admin=False, platform_admin=False, parent_portal=True)
+user = <app.infrastructure.models.models.User object at 0x000002245F857710>
+body = IyzicoPaymentRequest(debt_id=UUID('0c2df1d3-ef16-4357-894c-bbe38c87b257'), amount=Decimal('25.00'), currency='TRY', pa...onAddress': 'Isolated test address', 'city': 'Test', 'country': 'Turkey'}, shipping_address=None, billing_address=None)
+ip = '127.0.0.1'
+gateway = <app.application.services.online_payment_service.IyzicoGateway object at 0x0000022463A16E70>
+
+    async def initialize(db, tenant, user, body, ip, gateway=None):
+        gateway = gateway or IyzicoGateway()
+        repo = BaseRepository(db, tenant)
+        debt = await repo.get_by_id(body.debt_id, Debt)
+        if not tenant.has_permission("finance.write"):
+            await require_parent_child_access(db, tenant.user_id, debt.student_id)
+        await require_student_access(db, tenant, debt.student_id)
+        await repo.get_by_id(debt.student_id, Student)
+        gateway.require_organization(debt.organization_id)
+        amount = Decimal(str(body.amount)).quantize(Decimal("0.01"))
+        if debt.status == DebtStatus.CANCELLED:
+            raise ConflictException("�ptal edilen borca �deme yap�lamaz")
+        try:
+            DebtCalculator.validate_payment(debt.amount, debt.paid_amount, amount)
+        except ValueError as exc:
+            raise ValidationException(str(exc)) from exc
+        buyer = body.buyer or {}
+        address = body.billing_address or {}
+        if not all([buyer.get("identityNumber"), buyer.get("registrationAddress"), buyer.get("city"), buyer.get("country")]):
+            raise ValidationException("�deme i�in kimlik numaras�, adres, �ehir ve �lke bilgileri gerekli")
+        gateway.configured()
+        checkout = PaymentCheckout(organization_id=debt.organization_id, debt_id=debt.id, created_by=user.id,
+            amount=amount, currency="TRY")
+        db.add(checkout); await db.flush()
+        payer = {"id": str(user.id), "name": user.first_name, "surname": user.last_name,
+            "email": user.email, "gsmNumber": str(buyer.get("gsmNumber") or user.phone or ""), "identityNumber": str(buyer["identityNumber"]),
+            "registrationAddress": str(buyer["registrationAddress"]), "city": str(buyer["city"]),
+            "country": str(buyer["country"]), "ip": ip}
+        billing = {"contactName": f"{user.first_name} {user.last_name}", "city": payer["city"],
+            "country": payer["country"], "address": payer["registrationAddress"]}
+        payload = {"locale": "tr", "conversationId": str(checkout.id), "basketId": str(debt.id),
+            "price": str(amount), "paidPrice": str(amount), "currency": "TRY", "paymentGroup": "PRODUCT",
+            "callbackUrl": get_settings().IYZICO_CALLBACK_URL, "enabledInstallments": [1], "buyer": payer,
+            "billingAddress": billing, "shippingAddress": billing,
+            "basketItems": [{"id": str(debt.id), "name": debt.description or "Okul �demesi", "category1": "E�itim",
+                "itemType": "VIRTUAL", "price": str(amount)}]}
+        result = await gateway.initialize(payload)
+>       if result.get("status") != "success" or not result.get("token") or not result.get("paymentPageUrl"):
+           ^^^^^^^^^^
+E       AttributeError: 'list' object has no attribute 'get'
+
+app\application\services\online_payment_service.py:139: AttributeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/payments/initialize", "request_id": "57f8fd1b-86a3-4ba0-9d6d-8cd95882624a", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T20:51:11.500402Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 283, in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request.client.host if request.client else "127.0.0.1"))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\online_payment_service.py", line 139, in initialize
+    if result.get("status") != "success" or not result.get("token") or not result.get("paymentPageUrl"):
+       ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-unsigned-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000224639F4E20>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000224604C1090>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022463D2A1D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022463D332A0>
+variant = 'unsigned', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"22a4e6bc-4325-4b31-ae35-bf5538cfa009","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-forged-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022463C06F50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022463FECEB0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022463ED3B50>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022463FA3690>
+variant = 'forged', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"a6e6169a-75e1-4d9b-971f-c3d6cf1e4e9c","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-other-conversation-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022463FFDC50>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000224641D7610>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022463FCDBD0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022463FA0D70>
+variant = 'other-conversation', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"5f3f4307-4a98-42e1-b37f-166c1d9020db","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-url-credentials-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022464AB08C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002246452ED50>, 'org': <app.infrastructure.models.models.Organization object at 0x00000224641C9650>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002246415D940>
+variant = 'url-credentials', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance","checkout_url":"https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance","conversation_id":"d90c2b99-1cbf-4f6c-8f6e-0e16eab9efd1","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-url-port-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000022464AD74D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022463E01090>, 'org': <app.infrastructure.models.models.Organization object at 0x00000224644A09D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022464AB78C0>
+variant = 'url-port', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+>       assert reply.status_code == (200 if allowed else 502), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"payment_page_url":"https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance","checkout_url":"https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance","conversation_id":"4d7ee855-9b6e-42b1-81b7-6f23c689ff68","status":"PENDING"}}
+E       assert 200 == 502
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_initial_proof.py:56: AssertionError
+_ test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-non-object-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000224643918D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002246499CAF0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022463DF0650>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000224644A5390>
+variant = 'non-object', allowed = False
+
+    @pytest.mark.parametrize("variant,allowed", [
+        ("unsigned", False), ("forged", False), ("other-conversation", False),
+        ("url-credentials", False), ("url-port", False), ("non-object", False), ("valid-uppercase", True),
+    ])
+    async def test_student_checkout_requires_initial_signature_and_safe_hosted_url(materials_client, monkeypatch, variant, allowed):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=school_today())
+            db.add(debt); await db.commit()
+        source = SimpleNamespace(APP_ENV="test", IYZICO_API_KEY="initial-proof-fixture",
+            IYZICO_SECRET_KEY="initial-proof-local-secret", IYZICO_BASE_URL="https://sandbox-api.iyzipay.com",
+            IYZICO_CALLBACK_URL="http://127.0.0.1/api/payments/iyzico/callback",
+            IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True)
+        monkeypatch.setattr(payments, "get_settings", lambda: source)
+        calls = []
+        class FakeResponse:
+            def __init__(self, result): self.result = result
+            def raise_for_status(self): pass
+            def json(self): return self.result
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                body = json.loads(kwargs["content"]); calls.append(body)
+                conversation = "unrelated-checkout" if variant == "other-conversation" else body["conversationId"]
+                result = {"status": "success", "conversationId": conversation, "token": "local-initial-proof-token",
+                    "paymentPageUrl": "https://sandbox-cpp.iyzipay.com/checkoutform/acceptance"}
+                signature = hmac.new(source.IYZICO_SECRET_KEY.encode(), f"{conversation}:{result['token']}".encode(), hashlib.sha256).hexdigest()
+                if variant != "unsigned": result["signature"] = "f" * 64 if variant == "forged" else signature.upper()
+                if variant == "url-credentials": result["paymentPageUrl"] = "https://user:secret@sandbox-cpp.iyzipay.com/checkoutform/acceptance"
+                if variant == "url-port": result["paymentPageUrl"] = "https://sandbox-cpp.iyzipay.com:444/checkoutform/acceptance"
+                return FakeResponse([] if variant == "non-object" else result)
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+>       reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+
+tests\integration\test_student_checkout_initial_proof.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:283: in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000022464543590>
+tenant = TenantContext(user_id=UUID('b0c648fd-bc2f-423a-8162-ea50af157f80'), organization_id=UUID('ea36b45b-e5db-4412-82be-720f...ildren', 'parent.make_payment'}, role_slugs={'parent'}, is_super_admin=False, platform_admin=False, parent_portal=True)
+user = <app.infrastructure.models.models.User object at 0x000002246407E990>
+body = IyzicoPaymentRequest(debt_id=UUID('2b25d58c-9d90-4872-9840-7e505b24703e'), amount=Decimal('25.00'), currency='TRY', pa...onAddress': 'Isolated test address', 'city': 'Test', 'country': 'Turkey'}, shipping_address=None, billing_address=None)
+ip = '127.0.0.1'
+gateway = <app.application.services.online_payment_service.IyzicoGateway object at 0x0000022464109E10>
+
+    async def initialize(db, tenant, user, body, ip, gateway=None):
+        gateway = gateway or IyzicoGateway()
+        repo = BaseRepository(db, tenant)
+        debt = await repo.get_by_id(body.debt_id, Debt)
+        if not tenant.has_permission("finance.write"):
+            await require_parent_child_access(db, tenant.user_id, debt.student_id)
+        await require_student_access(db, tenant, debt.student_id)
+        await repo.get_by_id(debt.student_id, Student)
+        gateway.require_organization(debt.organization_id)
+        amount = Decimal(str(body.amount)).quantize(Decimal("0.01"))
+        if debt.status == DebtStatus.CANCELLED:
+            raise ConflictException("�ptal edilen borca �deme yap�lamaz")
+        try:
+            DebtCalculator.validate_payment(debt.amount, debt.paid_amount, amount)
+        except ValueError as exc:
+            raise ValidationException(str(exc)) from exc
+        buyer = body.buyer or {}
+        address = body.billing_address or {}
+        if not all([buyer.get("identityNumber"), buyer.get("registrationAddress"), buyer.get("city"), buyer.get("country")]):
+            raise ValidationException("�deme i�in kimlik numaras�, adres, �ehir ve �lke bilgileri gerekli")
+        gateway.configured()
+        checkout = PaymentCheckout(organization_id=debt.organization_id, debt_id=debt.id, created_by=user.id,
+            amount=amount, currency="TRY")
+        db.add(checkout); await db.flush()
+        payer = {"id": str(user.id), "name": user.first_name, "surname": user.last_name,
+            "email": user.email, "gsmNumber": str(buyer.get("gsmNumber") or user.phone or ""), "identityNumber": str(buyer["identityNumber"]),
+            "registrationAddress": str(buyer["registrationAddress"]), "city": str(buyer["city"]),
+            "country": str(buyer["country"]), "ip": ip}
+        billing = {"contactName": f"{user.first_name} {user.last_name}", "city": payer["city"],
+            "country": payer["country"], "address": payer["registrationAddress"]}
+        payload = {"locale": "tr", "conversationId": str(checkout.id), "basketId": str(debt.id),
+            "price": str(amount), "paidPrice": str(amount), "currency": "TRY", "paymentGroup": "PRODUCT",
+            "callbackUrl": get_settings().IYZICO_CALLBACK_URL, "enabledInstallments": [1], "buyer": payer,
+            "billingAddress": billing, "shippingAddress": billing,
+            "basketItems": [{"id": str(debt.id), "name": debt.description or "Okul �demesi", "category1": "E�itim",
+                "itemType": "VIRTUAL", "price": str(amount)}]}
+        result = await gateway.initialize(payload)
+>       if result.get("status") != "success" or not result.get("token") or not result.get("paymentPageUrl"):
+           ^^^^^^^^^^
+E       AttributeError: 'list' object has no attribute 'get'
+
+app\application\services\online_payment_service.py:139: AttributeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/payments/initialize", "request_id": "891e3d7e-7c31-417a-aba2-eb6ebb160803", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T20:51:29.641599Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 283, in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request.client.host if request.client else "127.0.0.1"))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\online_payment_service.py", line 139, in initialize
+    if result.get("status") != "success" or not result.get("token") or not result.get("paymentPageUrl"):
+       ^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'
+__ test_corrupt_legacy_debt_cannot_initialize_an_online_payment[postgresql] ___
+
+materials_client = (<httpx.AsyncClient object at 0x0000022464D35A90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000022464A45BD0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000022464F435D0>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022464CA4830>
+
+    async def test_corrupt_legacy_debt_cannot_initialize_an_online_payment(materials_client, monkeypatch):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=100,
+                paid_amount=Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity"), due_date=school_today())
+            db.add(debt); await db.commit()
+        class NeverProvider:
+            def require_organization(self, identifier): pass
+            def configured(self): pass
+            async def initialize(self, payload): raise AssertionError("Invalid old debt must not reach the provider")
+        monkeypatch.setattr(payments, "IyzicoGateway", NeverProvider)
+>       reply = await client.post("/api/parent/payments/initialize", headers=headers(data["user"]), json={
+            "debt_id": str(debt.id), "amount": "25.00", "buyer": {"identityNumber": "ACCEPTANCE-ONLY",
+                "registrationAddress": "Isolated test address", "city": "Test", "country": "Turkey"}})
+
+tests\integration\test_student_checkout_initial_proof.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1859: in post
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:690: in app
+    raw_response = await run_endpoint_function(
+.venv\Lib\site-packages\fastapi\routing.py:344: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\routers\parent_portal.py:283: in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+app\application\services\online_payment_service.py:115: in initialize
+    DebtCalculator.validate_payment(debt.amount, debt.paid_amount, amount)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+amount = Decimal('100.00'), paid_amount = Decimal('NaN')
+payment_amount = Decimal('25.00')
+
+    @staticmethod
+    def validate_payment(amount: Decimal, paid_amount: Decimal, payment_amount: Decimal) -> None:
+        if payment_amount <= 0:
+            raise ValueError("�deme tutar� 0'dan b�y�k olmal�d�r")
+        remaining = amount - paid_amount
+>       if payment_amount > remaining:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+
+app\domain\services\debt_calculator.py:26: InvalidOperation
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/parent/payments/initialize", "request_id": "8300a985-2ce4-4ad5-8969-dedbdf7e628a", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T20:51:36.907322Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 690, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 344, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\routers\parent_portal.py", line 283, in initialize_parent_payment
+    return success_response(await online_payment_service.initialize(db, tenant, current_user, body,
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        request.client.host if request.client else "127.0.0.1"))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\application\services\online_payment_service.py", line 115, in initialize
+    DebtCalculator.validate_payment(debt.amount, debt.paid_amount, amount)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\domain\services\debt_calculator.py", line 26, in validate_payment
+    if payment_amount > remaining:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+_ test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day[0-OVERDUE] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022464CA41A0>
+paid = '0', expected = <DebtStatus.OVERDUE: 'OVERDUE'>
+
+    @pytest.mark.parametrize("paid,expected", [("0", DebtStatus.OVERDUE), ("25", DebtStatus.OVERDUE)])
+    def test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day(monkeypatch, paid, expected):
+        class ServerDate(date):
+            @classmethod
+            def today(cls): return cls(2026, 11, 4)
+        monkeypatch.setattr(calculator, "date", ServerDate)
+        monkeypatch.setattr(calculator, "school_today", lambda: date(2026, 11, 5), raising=False)
+>       assert calculator.DebtCalculator.calculate_status(Decimal("100"), Decimal(paid), date(2026, 11, 4)) == expected
+E       AssertionError: assert <DebtStatus.UNPAID: 'UNPAID'> == <DebtStatus.O...UE: 'OVERDUE'>
+E         
+E         - OVERDUE
+E         + UNPAID
+
+tests\unit\test_debt_business_calendar.py:17: AssertionError
+_ test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day[25-OVERDUE] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002245FA3EC80>
+paid = '25', expected = <DebtStatus.OVERDUE: 'OVERDUE'>
+
+    @pytest.mark.parametrize("paid,expected", [("0", DebtStatus.OVERDUE), ("25", DebtStatus.OVERDUE)])
+    def test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day(monkeypatch, paid, expected):
+        class ServerDate(date):
+            @classmethod
+            def today(cls): return cls(2026, 11, 4)
+        monkeypatch.setattr(calculator, "date", ServerDate)
+        monkeypatch.setattr(calculator, "school_today", lambda: date(2026, 11, 5), raising=False)
+>       assert calculator.DebtCalculator.calculate_status(Decimal("100"), Decimal(paid), date(2026, 11, 4)) == expected
+E       AssertionError: assert <DebtStatus.P...RTIALLY_PAID'> == <DebtStatus.O...UE: 'OVERDUE'>
+E         
+E         - OVERDUE
+E         + PARTIALLY_PAID
+
+tests\unit\test_debt_business_calendar.py:17: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_online_receipt_balance.py::test_online_receipt_snapshots_student_total_with_autoflush_disabled[sqlite]
+FAILED tests/integration/test_online_receipt_balance.py::test_online_receipt_snapshots_student_total_with_autoflush_disabled[postgresql]
+FAILED tests/integration/test_online_receipt_balance.py::test_parallel_callbacks_have_serialized_whole_student_balance_snapshots[sqlite]
+FAILED tests/integration/test_online_receipt_balance.py::test_parallel_callbacks_have_serialized_whole_student_balance_snapshots[postgresql]
+FAILED tests/integration/test_online_receipt_balance.py::test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger[sqlite]
+FAILED tests/integration/test_online_receipt_balance.py::test_invalid_sibling_balance_preserves_provider_proof_for_review_without_partial_ledger[postgresql]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-unsigned-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-forged-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-other-conversation-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-url-credentials-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-url-port-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[sqlite-non-object-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-unsigned-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-forged-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-other-conversation-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-url-credentials-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-url-port-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_student_checkout_requires_initial_signature_and_safe_hosted_url[postgresql-non-object-False]
+FAILED tests/integration/test_student_checkout_initial_proof.py::test_corrupt_legacy_debt_cannot_initialize_an_online_payment[postgresql]
+FAILED tests/unit/test_debt_business_calendar.py::test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day[0-OVERDUE]
+FAILED tests/unit/test_debt_business_calendar.py::test_debt_status_uses_school_calendar_even_while_server_is_on_previous_day[25-OVERDUE]
+21 failed, 4 passed, 20 warnings in 54.20s

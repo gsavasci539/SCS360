@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run --run src/test/exam-management.test.tsx src/test/navigation-contract.test.tsx src/test/home.test.ts
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  3 passed (3)
+      Tests  78 passed (78)
+   Start at  17:57:16
+   Duration  19.30s (transform 1.81s, setup 3.40s, import 8.85s, tests 2.96s, environment 16.88s)
+

@@ -1,4 +1,5 @@
 from html import escape
+from base64 import b64encode
 from io import BytesIO
 from uuid import UUID
 from zipfile import BadZipFile, ZipFile
@@ -30,9 +31,10 @@ from app.infrastructure.models.models import (
     StudentParent,
     User,
 )
-from app.infrastructure.pdf.receipt_pdf import generate_receipt_pdf
+from app.infrastructure.pdf.receipt_pdf import LOGO_PATH, generate_receipt_pdf
 from app.infrastructure.repositories.base import BaseRepository
 from app.infrastructure.storage.local_storage import LocalFileStorage
+from app.infrastructure.storage.uploads import read_upload
 
 router = APIRouter(tags=["Files & Receipts"])
 settings = get_settings()
@@ -129,6 +131,7 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt) -> dict:
         "organization_name": org.legal_name if org and org.legal_name else (org.name if org else "Okul Yönetim Sistemi"),
         "branch_name": branch.name if branch else "",
         "receipt_number": receipt.receipt_number,
+        "status": receipt.status.value if hasattr(receipt.status, "value") else str(receipt.status),
         "issued_at": receipt.issued_at.strftime("%d.%m.%Y %H:%M") if receipt.issued_at else "",
         "student_name": f"{student.first_name} {student.last_name}" if student else "",
         "student_number": student.student_number if student else "",
@@ -144,7 +147,7 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt) -> dict:
 async def list_student_files(
     student_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("student.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
     await repo.get_by_id(student_id, Student)
@@ -176,28 +179,27 @@ async def list_student_files(
 @router.post("/api/students/{student_id}/files")
 async def upload_student_file(
     student_id: UUID,
-    category: str = Form("OTHER"),
+    category: FileCategory = Form(FileCategory.OTHER),
     file: UploadFile = File(...),
     tenant: TenantContext = Depends(PermissionChecker("student.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
     student = await repo.get_by_id(student_id, Student)
-    content = await file.read()
-    _validate_upload(file, content)
+    name, content = await read_upload(file)
 
     storage = LocalFileStorage()
     subfolder = f"students/{student_id}"
-    storage_path = await storage.save_async(content, file.filename or "file", subfolder)
+    storage_path = await storage.save_async(content, name, subfolder)
 
     student_file = StudentFile(
         organization_id=student.organization_id,
         branch_id=student.branch_id,
         student_id=student_id,
-        category=FileCategory(category),
+        category=category,
         file_name=storage_path.split("/")[-1],
-        original_name=file.filename or "file",
+        original_name=name,
         mime_type=file.content_type or "application/octet-stream",
         file_size=len(content),
         storage_path=storage_path,
@@ -213,7 +215,7 @@ async def delete_student_file(
     student_id: UUID,
     file_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("student.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
     await repo.get_by_id(student_id, Student)
@@ -236,7 +238,7 @@ async def download_student_file(
     student_id: UUID,
     file_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("student.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
     await repo.get_by_id(student_id, Student)
@@ -252,12 +254,13 @@ async def download_student_file(
         raise NotFoundException("Dosya bulunamadı")
     storage = LocalFileStorage()
     full_path = storage.get_full_path(student_file.storage_path)
-    if not full_path.exists():
+    if not full_path.is_file():
         raise NotFoundException("Dosya diskte bulunamadı")
     return FileResponse(
         path=str(full_path),
         filename=student_file.original_name,
         media_type=student_file.mime_type,
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 
@@ -267,7 +270,7 @@ async def list_receipts(
     skip: int = 0,
     limit: int = 100,
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """List receipts with optional student filter"""
     from app.repositories.receipt_repository import ReceiptRepository
@@ -297,7 +300,7 @@ async def list_receipts(
 async def get_receipt(
     receipt_id: str,
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Get receipt details"""
     # Try with hyphens first
@@ -336,7 +339,7 @@ async def get_receipt(
 async def download_receipt_pdf(
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     receipt_result = await db.execute(
         select(Receipt).where(Receipt.id == receipt_id)
@@ -351,7 +354,8 @@ async def download_receipt_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{receipt.receipt_number}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{receipt.receipt_number}.pdf"',
+            "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 
@@ -359,7 +363,7 @@ async def download_receipt_pdf(
 async def print_receipt(
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     receipt_result = await db.execute(
         select(Receipt).where(Receipt.id == receipt_id)
@@ -371,14 +375,19 @@ async def print_receipt(
     
     raw_ctx = await _build_receipt_context(db, receipt)
     ctx = {key: escape(str(value), quote=True) for key, value in raw_ctx.items()}
+    ctx["receipt_title"] = "İPTAL EDİLMİŞ MAKBUZ" if raw_ctx.get("status") == "CANCELLED" else "TAHSİLAT MAKBUZU"
+    logo_data = b64encode(LOGO_PATH.read_bytes()).decode("ascii")
     
     receipt_html = f"""
     <div class="receipt-header">
-        <h3>{ctx['organization_name']}</h3>
+        <div style="display:flex;align-items:center;gap:10px">
+          <img src="data:image/png;base64,{logo_data}" width="40" height="40" alt="SCS360 logosu" />
+          <div><strong style="font-size:10px">SCS360</strong><h3>{ctx['organization_name']}</h3></div>
+        </div>
         <span class="copy-type">VELİ KOPYASI</span>
     </div>
     <div class="receipt-title">
-        <h2>TAHSİLAT MAKBUZU</h2>
+        <h2>{ctx['receipt_title']}</h2>
     </div>
     <div class="receipt-info">
         <div class="info-row">
@@ -421,14 +430,14 @@ async def print_receipt(
         </div>
     </div>
     <div class="receipt-footer">
-        <p>Bu belge resmi makbuz niteliğindedir.</p>
+        <p>Bu belge SCS360 üzerinden oluşturulmuştur.</p>
     </div>
     """
     
     management_html = receipt_html.replace("VELİ KOPYASI", "YÖNETİM KOPYASI")
     management_html = management_html.replace(
-        '<div class="receipt-footer">\n        <p>Bu belge resmi makbuz niteliğindedir.</p>\n    </div>',
-        '<div class="receipt-footer">\n        <p>Bu belge resmi makbuz niteliğindedir.</p>\n        <div class="signature-area">\n            <span class="label">İmza:</span>\n            <div class="signature-line"></div>\n        </div>\n    </div>'
+        '<div class="receipt-footer">\n        <p>Bu belge SCS360 üzerinden oluşturulmuştur.</p>\n    </div>',
+        '<div class="receipt-footer">\n        <p>Bu belge SCS360 üzerinden oluşturulmuştur.</p>\n        <div class="signature-area">\n            <span class="label">İmza:</span>\n            <div class="signature-line"></div>\n        </div>\n    </div>'
     )
     
     html = f"""<!DOCTYPE html>
@@ -618,7 +627,7 @@ body {{
 </div>
 <script>window.onload=function(){{window.print();}}</script>
 </body></html>"""
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html, headers={"Cache-Control": "private, no-store"})
 
 
 async def _queue_receipt_notification(
@@ -655,7 +664,7 @@ async def send_receipt_email(
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     receipt_result = await db.execute(
         select(Receipt).where(Receipt.id == receipt_id)
@@ -698,7 +707,7 @@ async def send_receipt_sms(
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     receipt_result = await db.execute(
         select(Receipt).where(Receipt.id == receipt_id)
@@ -742,7 +751,7 @@ async def send_receipt_whatsapp(
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     receipt_result = await db.execute(
         select(Receipt).where(Receipt.id == receipt_id)

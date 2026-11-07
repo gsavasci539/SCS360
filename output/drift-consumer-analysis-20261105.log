@@ -1,0 +1,80 @@
+{
+  "output": "C:\\Okul360\\output\\drift-consumer-analysis-20261105.json",
+  "version": "036",
+  "select_results": [
+    {
+      "model": "app.infrastructure.models.models.AppSetting",
+      "result": "select_limit_zero_ok",
+      "missing": [],
+      "rows": 2
+    },
+    {
+      "model": "app.domain.entities.app_setting.AppSetting",
+      "result": "no such column: app_settings.key",
+      "missing": [
+        "key",
+        "value"
+      ],
+      "rows": 2
+    },
+    {
+      "model": "app.infrastructure.models.models.IntegrationSetting",
+      "result": "select_limit_zero_ok",
+      "missing": [],
+      "rows": 0
+    },
+    {
+      "model": "app.domain.entities.integration_setting.IntegrationSetting",
+      "result": "no such column: integration_settings.integration_type",
+      "missing": [
+        "integration_type",
+        "provider_name",
+        "settings"
+      ],
+      "rows": 0
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentTeacherAssignment",
+      "result": "no such column: student_teacher_assignments.updated_at",
+      "missing": [
+        "updated_at"
+      ],
+      "rows": 0
+    }
+  ],
+  "settings_routes": [
+    {
+      "path": "/api/settings/integrations",
+      "methods": [
+        "PUT"
+      ],
+      "endpoint": "app.routers.dashboard_reports.update_integrations",
+      "source_line": 916
+    },
+    {
+      "path": "/api/settings",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.dashboard_reports.get_settings",
+      "source_line": 1320
+    },
+    {
+      "path": "/api/settings",
+      "methods": [
+        "PUT"
+      ],
+      "endpoint": "app.routers.dashboard_reports.update_settings",
+      "source_line": 1333
+    },
+    {
+      "path": "/api/settings/integrations",
+      "methods": [
+        "GET"
+      ],
+      "endpoint": "app.routers.dashboard_reports.get_integrations",
+      "source_line": 1363
+    }
+  ],
+  "legacy_settings_module_loaded_by_app": false
+}

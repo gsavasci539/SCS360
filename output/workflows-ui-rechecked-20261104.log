@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/parent-account-access.test.tsx src/test/student-payment-page.test.tsx src/test/transport.test.tsx src/test/bus-management.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  4 passed (4)
+      Tests  7 passed (7)
+   Start at  03:13:08
+   Duration  12.51s (transform 490ms, setup 1.74s, import 2.63s, tests 3.23s, environment 13.61s)
+

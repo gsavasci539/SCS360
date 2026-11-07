@@ -1,3 +1,5 @@
+import { getAnalysis } from "../../lib/analysis";
+import { reportClientError } from "../../lib/diagnostics";
 import { Download, FileSpreadsheet, Printer, TrendingUp, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -78,12 +80,12 @@ export function ReportsPage() {
 
   const loadAiAnalysis = async () => {
     try {
-      const response = await api.get<any>("/ai/insights-report");
+      const response = await getAnalysis<any>("/ai/insights-report");
       if (response.data.success) {
         setAiAnalysis(response.data.data);
       }
     } catch (err) {
-      console.error("Failed to load AI analysis:", err);
+      reportClientError("Failed to load AI analysis:", err);
     }
   };
 

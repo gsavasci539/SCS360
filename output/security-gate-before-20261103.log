@@ -1,0 +1,103 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[sqlite] _
+
+security_client = (<httpx.AsyncClient object at 0x000001B59F4B96A0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001B59F4B9010>, 'org': <app.infrastructure.models.models.Organization object at 0x000001B59F2F3770>, ...})
+
+    async def test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free(security_client):
+        client, sessions, data = security_client
+        child = str(data["children"][0].id)
+        denied = await client.get("/api/security/digital-id/" + child, headers=headers(data["teacher"]))
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"01248290-7d5d-4e25-bef6-d12f14b78869","student_id":"ac9b3427-44ac-4b39-bd78-9109efc0ccb2","token":"85bc5a90-02af-43b5-85a4-c50289e9806a","qr_code_url":"/api/security/qr-code/85bc5a90-02af-43b5-85a4-c50289e9806a","barcode_number":"OK823286","status":"ACTIVE","expires_at":"2026-11-04T14:56:00.744804","issued_at":"2026-11-03T14:56:00.744818","last_used_at":null,"student_name":"Child0 Test","student_number":null,"class_name":"9080de03-93bb-4ea2-99ce-a389e54c7fb1","branch_name":null}}
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_security_gate_workflow.py:35: AssertionError
+_ test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[postgresql] _
+
+security_client = (<httpx.AsyncClient object at 0x000001B5A1BB8B90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001B5A1BB8190>, 'org': <app.infrastructure.models.models.Organization object at 0x000001B5A17234D0>, ...})
+
+    async def test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free(security_client):
+        client, sessions, data = security_client
+        child = str(data["children"][0].id)
+        denied = await client.get("/api/security/digital-id/" + child, headers=headers(data["teacher"]))
+>       assert denied.status_code == 403, denied.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"83cf3063-6865-4e86-a9d1-b955a17ffa9e","student_id":"75322948-9c58-4f9a-86d1-c7d3633e13b9","token":"6e248d4f-a312-40f7-80d1-40286b1a847b","qr_code_url":"/api/security/qr-code/6e248d4f-a312-40f7-80d1-40286b1a847b","barcode_number":"OK901070","status":"ACTIVE","expires_at":"2026-11-04T11:56:03.088147+00:00","issued_at":"2026-11-03T11:56:03.088163+00:00","last_used_at":null,"student_name":"Child0 Test","student_number":null,"class_name":"06362af4-23df-451a-8c90-60bc193215d9","branch_name":null}}
+E       assert 200 == 403
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_security_gate_workflow.py:35: AssertionError
+_ test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[sqlite] _
+
+security_client = (<httpx.AsyncClient object at 0x000001B5A1BBBED0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001B5A17A76F0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001B5A17A56E0>, ...})
+
+    async def test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private(security_client):
+        client, sessions, data = security_client
+        async with sessions() as db:
+            rows = [DigitalIdToken(student_id=data["children"][0].id, token=str(uuid4()), barcode_number="SCS" + uuid4().hex,
+                issued_at=datetime.now(UTC) - timedelta(hours=index), expires_at=datetime.now(UTC) + timedelta(days=1)) for index in (0, 1)]
+            db.add_all(rows); await db.commit()
+        auth = headers(data["writer"])
+        response = await client.get(f'/api/security/digital-id/{data["children"][0].id}', headers=auth)
+>       assert response.status_code == 200 and response.json()["data"]["id"] == str(rows[0].id), response.text
+E       AssertionError: {"success":false,"message":"Birden fazla eski kay�t ayn� kimlikle e�le�iyor; veri e�le�tirmesi gerekli","errors":[],"request_id":"eb1dba7a-e5a0-467a-9af0-e479d38b6718"}
+E       assert (409 == 200)
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests\integration\test_security_gate_workflow.py:51: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  app.core.middleware:middleware.py:87 {"path": "/api/security/digital-id/4fc42de0-006f-48f2-b990-ef6ae14b2498", "request_id": "eb1dba7a-e5a0-467a-9af0-e479d38b6718", "event": "ambiguous_database_record", "logger": "app.core.middleware", "level": "warning", "timestamp": "2026-11-03T14:56:05.252613Z"}
+_ test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[postgresql] _
+
+security_client = (<httpx.AsyncClient object at 0x000001B5A1D08180>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001B5A1D00380>, 'org': <app.infrastructure.models.models.Organization object at 0x000001B5A172B020>, ...})
+
+    async def test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private(security_client):
+        client, sessions, data = security_client
+        async with sessions() as db:
+            rows = [DigitalIdToken(student_id=data["children"][0].id, token=str(uuid4()), barcode_number="SCS" + uuid4().hex,
+                issued_at=datetime.now(UTC) - timedelta(hours=index), expires_at=datetime.now(UTC) + timedelta(days=1)) for index in (0, 1)]
+            db.add_all(rows); await db.commit()
+        auth = headers(data["writer"])
+        response = await client.get(f'/api/security/digital-id/{data["children"][0].id}', headers=auth)
+>       assert response.status_code == 200 and response.json()["data"]["id"] == str(rows[0].id), response.text
+E       AssertionError: {"success":false,"message":"Birden fazla eski kay�t ayn� kimlikle e�le�iyor; veri e�le�tirmesi gerekli","errors":[],"request_id":"69707d95-deb5-4f22-8b3a-b96c9fd158bb"}
+E       assert (409 == 200)
+E        +  where 409 = <Response [409 Conflict]>.status_code
+
+tests\integration\test_security_gate_workflow.py:51: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  app.core.middleware:middleware.py:87 {"path": "/api/security/digital-id/a3cff7a7-d11c-410f-8537-9128ff752a80", "request_id": "69707d95-deb5-4f22-8b3a-b96c9fd158bb", "event": "ambiguous_database_record", "logger": "app.core.middleware", "level": "warning", "timestamp": "2026-11-03T14:56:06.937332Z"}
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[sqlite]
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[postgresql]
+tests/integration/test_security_gate_workflow.py::test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[sqlite]
+tests/integration/test_security_gate_workflow.py::test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[postgresql]
+  C:\Okul360\backend\app\routers\security.py:136: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    DigitalIdToken.expires_at > datetime.utcnow()
+
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[sqlite]
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[postgresql]
+  C:\Okul360\backend\app\routers\security.py:150: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expires_at=datetime.utcnow() + timedelta(hours=24),
+
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[sqlite]
+tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[postgresql]
+  C:\Okul360\backend\app\routers\security.py:151: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    issued_at=datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[sqlite]
+FAILED tests/integration/test_security_gate_workflow.py::test_student_read_permission_cannot_issue_gate_credentials_and_read_is_side_effect_free[postgresql]
+FAILED tests/integration/test_security_gate_workflow.py::test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[sqlite]
+FAILED tests/integration/test_security_gate_workflow.py::test_security_legacy_multiple_active_ids_read_latest_and_qr_download_is_private[postgresql]
+4 failed, 4 deselected, 28 warnings in 9.77s

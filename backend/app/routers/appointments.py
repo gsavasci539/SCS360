@@ -2,9 +2,11 @@
 Appointments Module API
 Handles teacher-parent appointment scheduling and management
 """
-from datetime import datetime, date, time, timedelta
+from __future__ import annotations
+from datetime import UTC, datetime, date, time, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -14,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
 from app.core.permissions import PermissionChecker
-from app.core.responses import success_response
+from app.core.responses import success_response, paginate
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
 
@@ -44,6 +46,74 @@ class TimeSlotCreate(BaseModel):
     is_available: bool = Field(default=True)
 
 
+
+
+# ==================== Admin Endpoints ====================
+
+@router.get("")
+async def list_appointments(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
+):
+    from app.application.services import appointment_service
+    rows = await appointment_service.records(db, tenant, status)
+    return success_response(paginate(rows[(page - 1) * page_size:page * page_size], len(rows), page, page_size))
+
+
+@router.get("/{appointment_id}")
+async def get_appointment(
+    appointment_id: str,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
+):
+    from app.application.services import appointment_service
+    from app.core.exceptions import NotFoundException
+    records = await appointment_service.records(db, tenant)
+    record = next((row for row in records if row["id"] == appointment_id), None)
+    if record is None:
+        raise NotFoundException("Randevu bulunamadı")
+    return success_response(record)
+
+
+@router.put("/{appointment_id}")
+async def update_appointment(
+    appointment_id: str,
+    update_data: AppointmentUpdate,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
+):
+    from app.application.services import appointment_service
+    from app.application.schemas.common import AppointmentStatusUpdate
+    return success_response(await appointment_service.update_status(db, tenant, appointment_id,
+        AppointmentStatusUpdate(status=update_data.status.upper(), feedback_notes=update_data.teacher_note)))
+
+
+@router.delete("/{appointment_id}")
+async def delete_appointment(
+    appointment_id: str,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
+):
+    from app.application.services import appointment_service
+    await appointment_service.delete(db, tenant, appointment_id)
+    return success_response(message="Randevu silindi")
+
+
+@router.post("")
+async def create_appointment(
+    body: AppointmentCreate,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
+):
+    from app.application.services import appointment_service
+    from app.application.schemas.common import AppointmentCreate as PersistentCreate
+    return success_response(await appointment_service.create(db, tenant,
+        PersistentCreate.model_validate(body.model_dump(mode="json"))), "Randevu oluşturuldu")
+
+
 # ==================== Teacher Endpoints ====================
 
 @router.get("/my-appointments")
@@ -51,106 +121,44 @@ async def get_my_appointments(
     status: Optional[str] = Query(None),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
 ):
-    """Get appointments for the current user (teacher or parent)"""
-    from app.infrastructure.models.models import Appointment, Student, User as UserModel
-    
-    query = select(Appointment)
-    
-    # Filter based on user role
-    if tenant.role == "TEACHER":
-        query = query.where(Appointment.teacher_id == tenant.id)
-    elif tenant.role == "PARENT":
-        # Get parent's student IDs
-        from app.infrastructure.models.models import StudentParent
-        parent_result = await db.execute(
-            select(StudentParent.student_id).where(StudentParent.parent_id == tenant.id)
-        )
-        student_ids = [r[0] for r in parent_result]
-        query = query.where(Appointment.student_id.in_(student_ids))
-    else:
-        raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
-    
-    # Apply filters
-    conditions = []
-    if status:
-        conditions.append(Appointment.status == status.upper())
+    from app.application.services import appointment_service
+    records = await appointment_service.records(db, tenant, status=status, mine=True)
     if start_date:
-        conditions.append(Appointment.slot_datetime >= datetime.combine(start_date, time.min))
+        records = [row for row in records if row["appointment_date"] >= start_date.isoformat()]
     if end_date:
-        conditions.append(Appointment.slot_datetime <= datetime.combine(end_date, time.max))
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(Appointment.slot_datetime)
-    
-    result = await db.execute(query)
-    appointments = result.scalars().all()
-    
-    enriched_appointments = []
-    for appointment in appointments:
-        # Get teacher name
-        teacher_result = await db.execute(
-            select(UserModel).where(UserModel.id == appointment.teacher_id)
-        )
-        teacher = teacher_result.scalar_one_or_none()
-        
-        # Get student name
-        student_result = await db.execute(
-            select(Student).where(Student.id == appointment.student_id)
-        )
-        student = student_result.scalar_one_or_none()
-        
-        # Get parent name
-        parent_result = await db.execute(
-            select(UserModel).where(UserModel.id == appointment.parent_id)
-        )
-        parent = parent_result.scalar_one_or_none()
-        
-        enriched_appointments.append({
-            "id": str(appointment.id),
-            "teacher_id": str(appointment.teacher_id),
-            "teacher_name": f"{teacher.first_name} {teacher.last_name}" if teacher else None,
-            "student_id": str(appointment.student_id),
-            "student_name": f"{student.first_name} {student.last_name}" if student else None,
-            "parent_id": str(appointment.parent_id),
-            "parent_name": f"{parent.first_name} {parent.last_name}" if parent else None,
-            "slot_datetime": appointment.slot_datetime.isoformat(),
-            "duration_minutes": appointment.duration_minutes,
-            "status": appointment.status,
-            "parent_note": appointment.parent_note,
-            "teacher_note": appointment.teacher_note,
-            "created_at": appointment.created_at.isoformat(),
-            "updated_at": appointment.updated_at.isoformat()
-        })
-    
-    return success_response(enriched_appointments)
+        records = [row for row in records if row["appointment_date"] <= end_date.isoformat()]
+    return success_response(records)
 
 
 @router.get("/teacher-slots/{teacher_id}")
 async def get_teacher_available_slots(
     teacher_id: UUID,
     date: date = Query(..., description="Date to get slots for"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
 ):
     """Get available time slots for a teacher on a specific date"""
     from app.infrastructure.models.models import Appointment, TimeSlot
+    from app.infrastructure.repositories.base import BaseRepository
+    from app.infrastructure.models.models import User as UserModel
+    await BaseRepository(db, tenant).get_by_id(teacher_id, UserModel)
     
     # Get existing appointments for this teacher on this date
-    start_of_day = datetime.combine(date, time.min)
-    end_of_day = datetime.combine(date, time.max)
+    school_zone = ZoneInfo("Europe/Istanbul")
+    start_of_day = datetime.combine(date, time.min, school_zone).astimezone(UTC)
+    end_of_day = datetime.combine(date, time.max, school_zone).astimezone(UTC)
     
     appointment_result = await db.execute(
         select(Appointment).where(
             and_(
                 Appointment.teacher_id == teacher_id,
+                Appointment.deleted_at.is_(None),
                 Appointment.slot_datetime >= start_of_day,
                 Appointment.slot_datetime <= end_of_day,
-                Appointment.status.in_(["PENDING", "APPROVED"])
+                Appointment.status.in_(["PENDING", "APPROVED", "CONFIRMED"])
             )
         )
     )
@@ -171,13 +179,16 @@ async def get_teacher_available_slots(
     # Calculate available slots
     available_slots = []
     for slot in time_slots:
-        slot_start = datetime.combine(date, slot.start_time)
-        slot_end = datetime.combine(date, slot.end_time)
+        slot_start = datetime.combine(date, slot.start_time, school_zone)
+        slot_end = datetime.combine(date, slot.end_time, school_zone)
         
         # Check if this slot conflicts with any appointment
         is_booked = False
         for appointment in appointments:
             appointment_start = appointment.slot_datetime
+            if appointment_start.tzinfo is None:
+                appointment_start = appointment_start.replace(tzinfo=UTC)
+            appointment_start = appointment_start.astimezone(school_zone)
             appointment_end = appointment_start + timedelta(minutes=appointment.duration_minutes)
             
             # Check for overlap
@@ -201,35 +212,13 @@ async def get_teacher_available_slots(
 async def update_appointment_status(
     appointment_id: UUID,
     update_data: AppointmentUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
-    """Update appointment status (teacher action)"""
-    from app.infrastructure.models.models import Appointment
-    
-    result = await db.execute(
-        select(Appointment).where(Appointment.id == appointment_id)
-    )
-    appointment = result.scalar_one_or_none()
-    
-    if not appointment:
-        raise HTTPException(status_code=404, detail="Randevu bulunamadı")
-    
-    # Verify teacher owns this appointment
-    if appointment.teacher_id != tenant.id:
-        raise HTTPException(status_code=403, detail="Bu randevuyu güncelleme yetkiniz yok")
-    
-    appointment.status = update_data.status.upper()
-    appointment.teacher_note = update_data.teacher_note
-    appointment.updated_at = datetime.utcnow()
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(appointment.id),
-        "status": appointment.status,
-        "updated_at": appointment.updated_at.isoformat()
-    }, "Randevu durumu güncellendi")
+    from app.application.services import appointment_service
+    from app.application.schemas.common import AppointmentStatusUpdate
+    return success_response(await appointment_service.update_status(db, tenant, appointment_id,
+        AppointmentStatusUpdate(status=update_data.status.upper(), feedback_notes=update_data.teacher_note)))
 
 
 # ==================== Parent Endpoints ====================
@@ -237,66 +226,15 @@ async def update_appointment_status(
 @router.post("/request")
 async def request_appointment(
     appointment_data: AppointmentCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
-    """Request an appointment with a teacher"""
-    from app.infrastructure.models.models import Appointment, StudentParent
-    
-    # Verify parent has access to this student
-    parent_result = await db.execute(
-        select(StudentParent).where(
-            and_(
-                StudentParent.parent_id == tenant.id,
-                StudentParent.student_id == appointment_data.student_id
-            )
-        )
-    )
-    if not parent_result.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Bu öğrenciye erişiminiz yok")
-    
-    # Check if slot is available
-    slot_start = appointment_data.slot_datetime
-    slot_end = slot_start + timedelta(minutes=appointment_data.duration_minutes)
-    
-    from app.infrastructure.models.models import Appointment as AppointmentModel
-    conflict_result = await db.execute(
-        select(AppointmentModel).where(
-            and_(
-                AppointmentModel.teacher_id == appointment_data.teacher_id,
-                AppointmentModel.status.in_(["PENDING", "APPROVED"]),
-                AppointmentModel.slot_datetime < slot_end,
-                (AppointmentModel.slot_datetime + timedelta(minutes=AppointmentModel.duration_minutes)) > slot_start
-            )
-        )
-    )
-    
-    if conflict_result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Bu saat dolu, lütfen başka bir saat seçin")
-    
-    # Create appointment
-    new_appointment = Appointment(
-        teacher_id=appointment_data.teacher_id,
-        student_id=appointment_data.student_id,
-        parent_id=tenant.id,
-        slot_datetime=appointment_data.slot_datetime,
-        duration_minutes=appointment_data.duration_minutes,
-        parent_note=appointment_data.parent_note,
-        status="PENDING"
-    )
-    
-    db.add(new_appointment)
-    await db.commit()
-    await db.refresh(new_appointment)
-    
-    return success_response({
-        "id": str(new_appointment.id),
-        "teacher_id": str(new_appointment.teacher_id),
-        "student_id": str(new_appointment.student_id),
-        "slot_datetime": new_appointment.slot_datetime.isoformat(),
-        "status": new_appointment.status,
-        "created_at": new_appointment.created_at.isoformat()
-    }, "Randevu talebi oluşturuldu")
+    from app.application.services import appointment_service
+    from app.application.schemas.common import AppointmentCreate as PersistentCreate
+    from app.core.student_access import require_student_access
+    await require_student_access(db, tenant, appointment_data.student_id)
+    return success_response(await appointment_service.create(db, tenant,
+        PersistentCreate.model_validate(appointment_data.model_dump(mode="json"))), "Randevu talebi oluşturuldu")
 
 
 # ==================== Time Slot Management (Teacher) ====================
@@ -304,16 +242,21 @@ async def request_appointment(
 @router.post("/slots")
 async def create_time_slot(
     slot_data: TimeSlotCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
     """Create available time slot for appointments"""
     from app.infrastructure.models.models import TimeSlot
     
     # Verify teacher is creating slot for themselves
-    if slot_data.teacher_id != tenant.id:
+    if not tenant.is_super_admin and slot_data.teacher_id != tenant.user_id:
         raise HTTPException(status_code=403, detail="Sadece kendi saatlerinizi oluşturabilirsiniz")
     
+    from app.infrastructure.repositories.base import BaseRepository
+    from app.infrastructure.models.models import User as UserModel
+    await BaseRepository(db, tenant).get_by_id(slot_data.teacher_id, UserModel)
+    if slot_data.end_time <= slot_data.start_time:
+        raise HTTPException(status_code=422, detail="Bitiş saati başlangıçtan sonra olmalı")
     new_slot = TimeSlot(
         teacher_id=slot_data.teacher_id,
         date=slot_data.date,
@@ -339,7 +282,7 @@ async def create_time_slot(
 @router.delete("/slots/{slot_id}")
 async def delete_time_slot(
     slot_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
     """Delete a time slot"""
@@ -354,7 +297,10 @@ async def delete_time_slot(
         raise HTTPException(status_code=404, detail="Saat dilimi bulunamadı")
     
     # Verify teacher owns this slot
-    if slot.teacher_id != tenant.id:
+    from app.infrastructure.repositories.base import BaseRepository
+    from app.infrastructure.models.models import User as UserModel
+    await BaseRepository(db, tenant).get_by_id(slot.teacher_id, UserModel)
+    if not tenant.is_super_admin and slot.teacher_id != tenant.user_id:
         raise HTTPException(status_code=403, detail="Bu saat dilimini silme yetkiniz yok")
     
     await db.delete(slot)

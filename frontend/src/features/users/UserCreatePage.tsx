@@ -1,193 +1,36 @@
-import { ArrowLeft, Save } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { PageHeader, LoadingState } from "../../components/ui";
+import { ErrorState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
+import { useWorkspaceUser } from "../../lib/workspaceUser";
 
 export function UserCreatePage() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    first_name: "",
-    last_name: "",
-    phone: "",
-    organization_id: ""
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      await api.post("/users", formData);
-      navigate("/users");
-    } catch (err) {
-      setError(apiMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <PageHeader
-        eyebrow="Kullanıcı Yönetimi"
-        title="Yeni Kullanıcı"
-        description="Sisteme yeni kullanıcı ekleyin."
-      >
-        <Link className="btn btn-secondary" to="/users">
-          <ArrowLeft size={16} />Listeye dön
-        </Link>
-      </PageHeader>
-
-      <div className="card" style={{ marginTop: 18 }}>
-        <div className="card-head">
-          <h2>Kullanıcı Bilgileri</h2>
-        </div>
-        <div className="card-pad">
-          {error && (
-            <div style={{
-              padding: 12,
-              backgroundColor: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: 6,
-              marginBottom: 16,
-              color: "#dc2626"
-            }}>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                  E-posta *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 4
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                  Şifre *
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 4
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                    Ad *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: 4
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                    Soyad *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid #d1d5db",
-                      borderRadius: 4
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                  Telefon
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 4
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>
-                  Organizasyon ID (Opsiyonel)
-                </label>
-                <input
-                  type="text"
-                  value={formData.organization_id}
-                  onChange={(e) => setFormData({ ...formData, organization_id: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: 4
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end" }}>
-                <Link className="btn btn-secondary" to="/users">
-                  İptal
-                </Link>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={loading}
-                >
-                  {loading ? <LoadingState label="Kaydediliyor..." /> : <><Save size={16} />Kaydet</>}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </>
-  );
+  const [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const user = useWorkspaceUser(); const navigate = useNavigate();
+  useEffect(() => {
+    const controller = new AbortController();
+    if (user?.is_super_admin) api.get("/users/options", { signal: controller.signal }).then((response) => {
+      if (!controller.signal.aborted) setOrganizations(response.data.data.organizations);
+    }).catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); });
+    return () => controller.abort();
+  }, [user?.is_super_admin]);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (busy) return; setBusy(true); setError("");
+    const data = Object.fromEntries(new FormData(event.currentTarget));
+    try { const response = await api.post("/users", data); navigate(`/users/${response.data.data.id}`); }
+    catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
+  }
+  return <>
+    <PageHeader eyebrow="Kullanıcı Yönetimi" title="Yeni Kullanıcı" description="Hesabı oluşturduktan sonra profilinden rol ve şube erişimini atayın."><Link className="btn btn-secondary" to="/users">Listeye dön</Link></PageHeader>
+    <section className="card card-pad account-workspace" style={{ marginTop: 18 }}>{error && <ErrorState message={error} />}<form aria-label="Kullanıcı oluştur" onSubmit={submit}><fieldset disabled={busy} style={{ border: 0, padding: 0, display: "grid", gap: 16 }}>
+      <label>Ad<input className="filter-select" name="first_name" maxLength={100} autoComplete="given-name" required /></label>
+      <label>Soyad<input className="filter-select" name="last_name" maxLength={100} autoComplete="family-name" required /></label>
+      <label>E-posta<input className="filter-select" name="email" type="email" maxLength={255} autoComplete="email" required /></label>
+      <label>Başlangıç parolası<input className="filter-select" name="password" type="password" minLength={8} maxLength={4096} autoComplete="new-password" required /></label>
+      <label>Telefon<input className="filter-select" name="phone" type="tel" maxLength={20} autoComplete="tel" /></label>
+      {user?.is_super_admin && <label>Kurum<select className="filter-select" name="organization_id" required defaultValue={user.organization_id || ""}><option value="">Kurum seçin</option>{organizations.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>}
+      <button className="btn btn-primary">{busy ? "Kaydediliyor…" : "Kullanıcıyı oluştur"}</button>
+    </fieldset></form></section>
+  </>;
 }

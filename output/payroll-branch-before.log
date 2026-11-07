@@ -1,0 +1,84 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff[sqlite] _
+
+materials_client = (<httpx.AsyncClient object at 0x000001914F8ACAD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001914F8AC440>, 'org': <app.infrastructure.models.models.Organization object at 0x000001914F3AECF0>, ...})
+
+    async def test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff(materials_client):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            branch = Branch(organization_id=data["org"].id, name="Private other branch")
+            db.add(branch); await db.flush()
+            manager = User(email="payroll-branch@scope.invalid", password_hash="unused", first_name="Scoped", last_name="Manager",
+                organization_id=data["org"].id, branches=[data["branch"]],
+                roles=[Role(name="Scoped Payroll", slug="branch_manager", organization_id=data["org"].id,
+                    permissions=[Permission(code=code, name=code, module="payroll") for code in ("payroll.read", "payroll.write")])])
+            other = User(email="other-staff@scope.invalid", password_hash="unused", first_name="Private", last_name="Salary",
+                organization_id=data["org"].id, branches=[branch])
+            db.add_all([manager, other]); await db.flush()
+            for staff in (data["teacher"], other):
+                db.add(PayrollRecord(staff_id=staff.id, period="MONTHLY", year=2026, month=11, base_salary=50000, net_salary=50000))
+                db.add(StaffTimesheet(staff_id=staff.id, date=date(2026, 11, 3), work_hours=8))
+                db.add(AdditionalCourseHours(staff_id=staff.id, period="MONTHLY", year=2026, month=11, total_hours=8))
+            await db.commit()
+        for path in ("records", "timesheets", "additional-hours"):
+            response = await client.get("/api/payroll/" + path, headers=headers(manager))
+            assert response.status_code == 200, response.text
+>           assert [row["staff_id"] for row in response.json()["data"]] == [str(data["teacher"].id)], response.text
+E           AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[{"id":"2992a9ff-097e-4adf-99f6-c7de5fa3e581","staff_id":"57ae8e99-d7df-4aed-aaae-bf736f8211d3","staff_name":"Teacher Test","period":"MONTHLY","year":2026,"month":11,"base_salary":50000.0,"additional_course_payment":0.0,"bonus":0.0,"advance_payment":0.0,"deductions":0.0,"net_salary":50000.0,"payment_date":null,"payment_method":null,"bank_account":null,"status":"DRAFT","approved_by":null,"approved_by_name":null,"approved_at":null,"notes":null,"created_at":"2026-11-03T09:13:42"},{"id":"5014a2a7-491d-47b6-8502-e8df4a949a47","staff_id":"d886a019-2b22-4173-80df-79d663ec960a","staff_name":null,"period":"MONTHLY","year":2026,"month":11,"base_salary":50000.0,"additional_course_payment":0.0,"bonus":0.0,"advance_payment":0.0,"deductions":0.0,"net_salary":50000.0,"payment_date":null,"payment_method":null,"bank_account":null,"status":"DRAFT","approved_by":null,"approved_by_name":null,"approved_at":null,"notes":null,"created_at":"2026-11-03T09:13:42"}]}
+E           assert ['57ae8e99-d7...79d663ec960a'] == ['57ae8e99-d7...bf736f8211d3']
+E             
+E             Left contains one more item: 'd886a019-2b22-4173-80df-79d663ec960a'
+E             Use -v to get more diff
+
+tests\integration\test_payroll_branch_scope.py:29: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-11-03 12:13:43 [info     ] request_completed              duration_ms=1784.5 method=GET path=/api/payroll/records request_id=2906c4ee-1f82-447f-84b5-eeebe0ac4c24 status=200
+_ test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff[postgresql] _
+
+materials_client = (<httpx.AsyncClient object at 0x0000019151BE9310>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x0000019151BE8910>, 'org': <app.infrastructure.models.models.Organization object at 0x0000019151657ED0>, ...})
+
+    async def test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff(materials_client):
+        client, sessions, data = materials_client
+        async with sessions() as db:
+            branch = Branch(organization_id=data["org"].id, name="Private other branch")
+            db.add(branch); await db.flush()
+            manager = User(email="payroll-branch@scope.invalid", password_hash="unused", first_name="Scoped", last_name="Manager",
+                organization_id=data["org"].id, branches=[data["branch"]],
+                roles=[Role(name="Scoped Payroll", slug="branch_manager", organization_id=data["org"].id,
+                    permissions=[Permission(code=code, name=code, module="payroll") for code in ("payroll.read", "payroll.write")])])
+            other = User(email="other-staff@scope.invalid", password_hash="unused", first_name="Private", last_name="Salary",
+                organization_id=data["org"].id, branches=[branch])
+            db.add_all([manager, other]); await db.flush()
+            for staff in (data["teacher"], other):
+                db.add(PayrollRecord(staff_id=staff.id, period="MONTHLY", year=2026, month=11, base_salary=50000, net_salary=50000))
+                db.add(StaffTimesheet(staff_id=staff.id, date=date(2026, 11, 3), work_hours=8))
+                db.add(AdditionalCourseHours(staff_id=staff.id, period="MONTHLY", year=2026, month=11, total_hours=8))
+            await db.commit()
+        for path in ("records", "timesheets", "additional-hours"):
+            response = await client.get("/api/payroll/" + path, headers=headers(manager))
+            assert response.status_code == 200, response.text
+>           assert [row["staff_id"] for row in response.json()["data"]] == [str(data["teacher"].id)], response.text
+E           AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[{"id":"dba2afe9-072d-490b-b96d-f17769418d3a","staff_id":"0f16fca8-564e-4bef-82a2-10c2d3547309","staff_name":"Teacher Test","period":"MONTHLY","year":2026,"month":11,"base_salary":50000.0,"additional_course_payment":0.0,"bonus":0.0,"advance_payment":0.0,"deductions":0.0,"net_salary":50000.0,"payment_date":null,"payment_method":null,"bank_account":null,"status":"DRAFT","approved_by":null,"approved_by_name":null,"approved_at":null,"notes":null,"created_at":"2026-11-03T09:13:46.158187+00:00"},{"id":"739baa7b-fcf2-4d65-95dd-a8e490872605","staff_id":"b80e0b9a-42f0-43cb-a2a0-19fc6706cfc3","staff_name":null,"period":"MONTHLY","year":2026,"month":11,"base_salary":50000.0,"additional_course_payment":0.0,"bonus":0.0,"advance_payment":0.0,"deductions":0.0,"net_salary":50000.0,"payment_date":null,"payment_method":null,"bank_account":null,"status":"DRAFT","approved_by":null,"approved_by_name":null,"approved_at":null,"notes":null,"created_at":"2026-11-03T09:13:46.158187+00:00"}]}
+E           assert ['0f16fca8-56...19fc6706cfc3'] == ['0f16fca8-56...10c2d3547309']
+E             
+E             Left contains one more item: 'b80e0b9a-42f0-43cb-a2a0-19fc6706cfc3'
+E             Use -v to get more diff
+
+tests\integration\test_payroll_branch_scope.py:29: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-11-03 12:13:46 [info     ] request_completed              duration_ms=63.18 method=GET path=/api/payroll/records request_id=14a153bb-c6e2-467b-ae36-794ef34c9747 status=200
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_payroll_branch_scope.py::test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff[sqlite]
+FAILED tests/integration/test_payroll_branch_scope.py::test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staff[postgresql]
+2 failed, 20 warnings in 6.66s

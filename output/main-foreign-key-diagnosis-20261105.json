@@ -1,0 +1,58 @@
+{
+  "backup": {
+    "raw_foreign_key_violations": 432,
+    "semantic_uuid_match": {
+      "user_roles": 6,
+      "receipts": 15,
+      "attendance_records": 28,
+      "students": 125,
+      "parents": 50,
+      "users": 3,
+      "refresh_tokens": 30,
+      "debts": 27,
+      "user_branches": 6,
+      "audit_logs": 31,
+      "payments": 15
+    },
+    "missing_parent": {
+      "ai_chat_audit_logs": 5,
+      "user_roles": 2,
+      "branches": 1,
+      "parents": 10,
+      "classes": 1,
+      "users": 1,
+      "debts": 50,
+      "announcements": 16,
+      "notification_jobs": 10
+    },
+    "ambiguous_or_composite": {}
+  },
+  "current": {
+    "raw_foreign_key_violations": 432,
+    "semantic_uuid_match": {
+      "user_roles": 6,
+      "receipts": 15,
+      "attendance_records": 28,
+      "students": 125,
+      "parents": 50,
+      "users": 3,
+      "refresh_tokens": 30,
+      "debts": 27,
+      "user_branches": 6,
+      "audit_logs": 31,
+      "payments": 15
+    },
+    "missing_parent": {
+      "ai_chat_audit_logs": 5,
+      "user_roles": 2,
+      "branches": 1,
+      "parents": 10,
+      "classes": 1,
+      "users": 1,
+      "debts": 50,
+      "announcements": 16,
+      "notification_jobs": 10
+    },
+    "ambiguous_or_composite": {}
+  }
+}

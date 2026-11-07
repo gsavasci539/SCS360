@@ -1,0 +1,4 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+{"revision": "034", "tables_verified": 107, "existing_rows_unchanged": true, "report": "C:\\Okul360\\.codex-build\\local\\migration034-clone-verification.json"}

@@ -7,8 +7,10 @@ from pydantic import BaseModel
 
 class ChatMessage(BaseModel):
     id: UUID
+    conversation_id: Optional[UUID] = None
     sender_id: UUID
-    receiver_id: UUID
+    sender_role: Optional[str] = None  # 'PARENT', 'TEACHER', 'SYSTEM'
+    recipient_id: UUID
     class_id: Optional[UUID] = None
     content: str
     attachment_url: Optional[str] = None
@@ -20,7 +22,8 @@ class ChatMessage(BaseModel):
 
 
 class ChatMessageCreate(BaseModel):
-    receiver_id: UUID
+    conversation_id: Optional[UUID] = None
+    recipient_id: UUID
     class_id: Optional[UUID] = None
     content: str
     attachment_url: Optional[str] = None

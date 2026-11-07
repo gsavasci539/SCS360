@@ -11,5 +11,5 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-# Rate limit disabled for development
+# Routes opt into their own budgets; there is no blanket default limit.
 limiter = Limiter(key_func=get_client_ip, storage_uri="memory://", default_limits=[])

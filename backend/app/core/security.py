@@ -4,7 +4,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 from uuid import UUID
 
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError as JWTError
 from passlib.context import CryptContext
 from fastapi import Security, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -12,7 +13,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import get_settings
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
 
@@ -21,7 +22,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except (ValueError, TypeError):
+        # Missing or damaged legacy hashes must fail authentication instead of
+        # turning a login attempt into an internal server error.
+        return False
 
 
 def create_access_token(subject: str | UUID, extra_claims: dict[str, Any] | None = None) -> str:
@@ -41,7 +47,8 @@ def hash_token(token: str) -> str:
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM],
+        options={"require": ["sub", "exp", "type"]})
 
 
 def verify_access_token(token: str) -> dict[str, Any] | None:
@@ -80,10 +87,12 @@ class TenantContext:
     def __init__(self):
         self.tenant_id: str | None = None
         self.user_id: str | None = None
+        self.organization_id: str | None = None
 
-    def set_context(self, tenant_id: str, user_id: str):
+    def set_context(self, tenant_id: str, user_id: str, organization_id: str | None = None):
         self.tenant_id = tenant_id
         self.user_id = user_id
+        self.organization_id = organization_id
 
     def get_tenant_id(self) -> str:
         return self.tenant_id or ""

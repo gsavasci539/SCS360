@@ -1,0 +1,1676 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run --run
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/inventory.test.tsx (2 tests | 1 failed) 2661ms
+   × demirbaş ve zimmet formlarını izinli API yollarına kaydeder 1133ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/inventory.test.tsx > demirbaş ve zimmet formlarını izinli API yollarına kaydeder
+TestingLibraryElementError: Unable to find role="option" and name "PC-1 · Tablet"
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Envanter
+        </div>
+        <h1>
+          Demirbaş & Envanter
+        </h1>
+        <p>
+          Demirbaşlar, konumlar, zimmetler ve bakım talepleri
+        </p>
+      </div>
+    </header>
+    <section
+      aria-label="Envanter özeti"
+      class="card card-pad"
+    >
+      <h2>
+        Envanter özeti
+      </h2>
+      <div
+        class="grid"
+        style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 16px;"
+      >
+        <div>
+          <p>
+            Toplam kalem
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            300
+          </strong>
+        </div>
+        <div>
+          <p>
+            Zimmetli
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            20
+          </strong>
+        </div>
+        <div>
+          <p>
+            Kullanılabilir
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            280
+          </strong>
+        </div>
+        <div>
+          <p>
+            Açık bakım
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            0
+          </strong>
+        </div>
+      </div>
+    </section>
+    <section
+      aria-label="Envanter işlemleri"
+      class="card card-pad inventory-workspace"
+      style="margin-top: 20px;"
+    >
+      <h2>
+        Envanter işlemleri
+      </h2>
+      <div
+        class="toolbar"
+        style="flex-wrap: wrap; margin: 12px 0px;"
+      >
+        <label>
+          Envanter şubesi
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Şube seçin
+            </option>
+          </select>
+        </label>
+        <label>
+          Demirbaş ara
+          <input
+            class="filter-select"
+            placeholder="Kod veya ad"
+            value=""
+          />
+        </label>
+        <label>
+          İşlem demirbaşı
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Demirbaş seçin
+            </option>
+          </select>
+        </label>
+        <label>
+          Sorumlu ara
+          <input
+            class="filter-select"
+            placeholder="Ad veya e-posta"
+            value=""
+          />
+        </label>
+        <label>
+          Zimmet sorumlusu
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Kişi seçin
+            </option>
+          </select>
+        </label>
+      </div>
+      <div
+        class="grid"
+        style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px;"
+      >
+        <form
+          aria-label="Envanter konumu oluştur"
+          style="display: grid; gap: 10px; align-content: start;"
+        >
+          <h3>
+            Yeni konum
+          </h3>
+          <input
+            aria-label="Konum adı"
+            class="filter-select"
+            maxlength="255"
+            name="location_name"
+            placeholder="Konum adı"
+            required=""
+          />
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Konumu oluştur
+          </button>
+        </form>
+        <form
+          aria-label="Demirbaş oluştur"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Yeni demirbaş
+          </h3>
+          <input
+            aria-label="Demirbaş kodu"
+            class="filter-select"
+            maxlength="50"
+            name="item_code"
+            placeholder="Demirbaş kodu"
+            required=""
+          />
+          <input
+            aria-label="Demirbaş adı"
+            class="filter-select"
+            maxlength="255"
+            name="item_name"
+            placeholder="Demirbaş adı"
+            required=""
+          />
+          <select
+            aria-label="Demirbaş konumu"
+            class="filter-select"
+            name="location_id"
+          >
+            <option
+              value=""
+            >
+              Konum seçin
+            </option>
+          </select>
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Demirbaşı oluştur
+          </button>
+        </form>
+        <form
+          aria-label="Demirbaş zimmeti"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Zimmet oluştur
+          </h3>
+          <label>
+            Planlanan iade tarihi
+            <input
+              class="filter-select"
+              name="return_date"
+              type="date"
+            />
+          </label>
+          <textarea
+            aria-label="Zimmet notu"
+            class="filter-select"
+            name="notes"
+            placeholder="Not"
+          />
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Zimmeti kaydet
+          </button>
+        </form>
+        <form
+          aria-label="Bakım talebi oluştur"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Bakım talebi
+          </h3>
+          <textarea
+            aria-label="Bakım açıklaması"
+            class="filter-select"
+            name="issue_description"
+            placeholder="Sorun açıklaması"
+            required=""
+          />
+          <select
+            aria-label="Bakım önceliği"
+            class="filter-select"
+            name="priority"
+          >
+            <option
+              value="MEDIUM"
+            >
+              Normal
+            </option>
+            <option
+              value="LOW"
+            >
+              Düşük
+            </option>
+            <option
+              value="HIGH"
+            >
+              Yüksek
+            </option>
+            <option
+              value="URGENT"
+            >
+              Acil
+            </option>
+          </select>
+          <select
+            aria-label="Bakım sorumlusu"
+            class="filter-select"
+            name="assigned_to"
+          >
+            <option
+              value=""
+            >
+              Sorumlu seçin (isteğe bağlı)
+            </option>
+          </select>
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Bakım talebini kaydet
+          </button>
+        </form>
+      </div>
+    </section>
+    <section
+      aria-label="Envanter kalemleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Envanter Kalemleri
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Kod
+              </th>
+              <th>
+                Ad
+              </th>
+              <th>
+                Kategori
+              </th>
+              <th>
+                Konum
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                PC-0
+              </td>
+              <td>
+                Tablet 0
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-1
+              </td>
+              <td>
+                Tablet 1
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-2
+              </td>
+              <td>
+                Tablet 2
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-3
+              </td>
+              <td>
+                Tablet 3
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-4
+              </td>
+              <td>
+                Tablet 4
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-5
+              </td>
+              <td>
+                Tablet 5
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-6
+              </td>
+              <td>
+                Tablet 6
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-7
+              </td>
+              <td>
+                Tablet 7
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-8
+              </td>
+              <td>
+                Tablet 8
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-9
+              </td>
+              <td>
+                Tablet 9
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-10
+              </td>
+              <td>
+                Tablet 10
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-11
+              </td>
+              <td>
+                Tablet 11
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-12
+              </td>
+              <td>
+                Tablet 12
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-13
+              </td>
+              <td>
+                Tablet 13
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-14
+              </td>
+              <td>
+                Tablet 14
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-15
+              </td>
+              <td>
+                Tablet 15
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-16
+              </td>
+              <td>
+                Tablet 16
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-17
+              </td>
+              <td>
+                Tablet 17
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-18
+              </td>
+              <td>
+                Tablet 18
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-19
+              </td>
+              <td>
+                Tablet 19
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        aria-label="Demirbaş sayfaları"
+        class="toolbar"
+      >
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Önceki
+        </button>
+        <span>
+          Sayfa 
+          1
+        </span>
+        <button
+          class="btn btn-secondary"
+        >
+          Sonraki
+        </button>
+      </div>
+    </section>
+    <section
+      aria-label="Demirbaş zimmetleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Zimmetler
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <p>
+          Henüz zimmet yok.
+        </p>
+      </div>
+    </section>
+    <section
+      aria-label="Demirbaş bakım talepleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Bakım Talepleri
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <p>
+          Henüz bakım talebi yok.
+        </p>
+      </div>
+    </section>
+    <div
+      aria-live="polite"
+      class="toast-region"
+    />
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Envanter
+        </div>
+        <h1>
+          Demirbaş & Envanter
+        </h1>
+        <p>
+          Demirbaşlar, konumlar, zimmetler ve bakım talepleri
+        </p>
+      </div>
+    </header>
+    <section
+      aria-label="Envanter özeti"
+      class="card card-pad"
+    >
+      <h2>
+        Envanter özeti
+      </h2>
+      <div
+        class="grid"
+        style="grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 16px;"
+      >
+        <div>
+          <p>
+            Toplam kalem
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            300
+          </strong>
+        </div>
+        <div>
+          <p>
+            Zimmetli
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            20
+          </strong>
+        </div>
+        <div>
+          <p>
+            Kullanılabilir
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            280
+          </strong>
+        </div>
+        <div>
+          <p>
+            Açık bakım
+          </p>
+          <strong
+            style="font-size: 26px;"
+          >
+            0
+          </strong>
+        </div>
+      </div>
+    </section>
+    <section
+      aria-label="Envanter işlemleri"
+      class="card card-pad inventory-workspace"
+      style="margin-top: 20px;"
+    >
+      <h2>
+        Envanter işlemleri
+      </h2>
+      <div
+        class="toolbar"
+        style="flex-wrap: wrap; margin: 12px 0px;"
+      >
+        <label>
+          Envanter şubesi
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Şube seçin
+            </option>
+          </select>
+        </label>
+        <label>
+          Demirbaş ara
+          <input
+            class="filter-select"
+            placeholder="Kod veya ad"
+            value=""
+          />
+        </label>
+        <label>
+          İşlem demirbaşı
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Demirbaş seçin
+            </option>
+          </select>
+        </label>
+        <label>
+          Sorumlu ara
+          <input
+            class="filter-select"
+            placeholder="Ad veya e-posta"
+            value=""
+          />
+        </label>
+        <label>
+          Zimmet sorumlusu
+          <select
+            class="filter-select"
+          >
+            <option
+              value=""
+            >
+              Kişi seçin
+            </option>
+          </select>
+        </label>
+      </div>
+      <div
+        class="grid"
+        style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px;"
+      >
+        <form
+          aria-label="Envanter konumu oluştur"
+          style="display: grid; gap: 10px; align-content: start;"
+        >
+          <h3>
+            Yeni konum
+          </h3>
+          <input
+            aria-label="Konum adı"
+            class="filter-select"
+            maxlength="255"
+            name="location_name"
+            placeholder="Konum adı"
+            required=""
+          />
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Konumu oluştur
+          </button>
+        </form>
+        <form
+          aria-label="Demirbaş oluştur"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Yeni demirbaş
+          </h3>
+          <input
+            aria-label="Demirbaş kodu"
+            class="filter-select"
+            maxlength="50"
+            name="item_code"
+            placeholder="Demirbaş kodu"
+            required=""
+          />
+          <input
+            aria-label="Demirbaş adı"
+            class="filter-select"
+            maxlength="255"
+            name="item_name"
+            placeholder="Demirbaş adı"
+            required=""
+          />
+          <select
+            aria-label="Demirbaş konumu"
+            class="filter-select"
+            name="location_id"
+          >
+            <option
+              value=""
+            >
+              Konum seçin
+            </option>
+          </select>
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Demirbaşı oluştur
+          </button>
+        </form>
+        <form
+          aria-label="Demirbaş zimmeti"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Zimmet oluştur
+          </h3>
+          <label>
+            Planlanan iade tarihi
+            <input
+              class="filter-select"
+              name="return_date"
+              type="date"
+            />
+          </label>
+          <textarea
+            aria-label="Zimmet notu"
+            class="filter-select"
+            name="notes"
+            placeholder="Not"
+          />
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Zimmeti kaydet
+          </button>
+        </form>
+        <form
+          aria-label="Bakım talebi oluştur"
+          style="display: grid; gap: 10px;"
+        >
+          <h3>
+            Bakım talebi
+          </h3>
+          <textarea
+            aria-label="Bakım açıklaması"
+            class="filter-select"
+            name="issue_description"
+            placeholder="Sorun açıklaması"
+            required=""
+          />
+          <select
+            aria-label="Bakım önceliği"
+            class="filter-select"
+            name="priority"
+          >
+            <option
+              value="MEDIUM"
+            >
+              Normal
+            </option>
+            <option
+              value="LOW"
+            >
+              Düşük
+            </option>
+            <option
+              value="HIGH"
+            >
+              Yüksek
+            </option>
+            <option
+              value="URGENT"
+            >
+              Acil
+            </option>
+          </select>
+          <select
+            aria-label="Bakım sorumlusu"
+            class="filter-select"
+            name="assigned_to"
+          >
+            <option
+              value=""
+            >
+              Sorumlu seçin (isteğe bağlı)
+            </option>
+          </select>
+          <button
+            class="btn btn-primary"
+            disabled=""
+          >
+            Bakım talebini kaydet
+          </button>
+        </form>
+      </div>
+    </section>
+    <section
+      aria-label="Envanter kalemleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Envanter Kalemleri
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <table
+          class="data-table"
+        >
+          <thead>
+            <tr>
+              <th>
+                Kod
+              </th>
+              <th>
+                Ad
+              </th>
+              <th>
+                Kategori
+              </th>
+              <th>
+                Konum
+              </th>
+              <th>
+                Durum
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                PC-0
+              </td>
+              <td>
+                Tablet 0
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-1
+              </td>
+              <td>
+                Tablet 1
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-2
+              </td>
+              <td>
+                Tablet 2
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-3
+              </td>
+              <td>
+                Tablet 3
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-4
+              </td>
+              <td>
+                Tablet 4
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-5
+              </td>
+              <td>
+                Tablet 5
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-6
+              </td>
+              <td>
+                Tablet 6
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-7
+              </td>
+              <td>
+                Tablet 7
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-8
+              </td>
+              <td>
+                Tablet 8
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-9
+              </td>
+              <td>
+                Tablet 9
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-10
+              </td>
+              <td>
+                Tablet 10
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-11
+              </td>
+              <td>
+                Tablet 11
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-12
+              </td>
+              <td>
+                Tablet 12
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-13
+              </td>
+              <td>
+                Tablet 13
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-14
+              </td>
+              <td>
+                Tablet 14
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-15
+              </td>
+              <td>
+                Tablet 15
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-16
+              </td>
+              <td>
+                Tablet 16
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-17
+              </td>
+              <td>
+                Tablet 17
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-18
+              </td>
+              <td>
+                Tablet 18
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                PC-19
+              </td>
+              <td>
+                Tablet 19
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                —
+              </td>
+              <td>
+                <span
+                  class="badge badge-success"
+                >
+                  Aktif
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div
+        aria-label="Demirbaş sayfaları"
+        class="toolbar"
+      >
+        <button
+          class="btn btn-secondary"
+          disabled=""
+        >
+          Önceki
+        </button>
+        <span>
+          Sayfa 
+          1
+        </span>
+        <button
+          class="btn btn-secondary"
+        >
+          Sonraki
+        </button>
+      </div>
+    </section>
+    <section
+      aria-label="Demirbaş zimmetleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Zimmetler
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <p>
+          Henüz zimmet yok.
+        </p>
+      </div>
+    </section>
+    <section
+      aria-label="Demirbaş bakım talepleri"
+      class="card"
+      style="margin-top: 20px;"
+    >
+      <div
+        class="card-head"
+      >
+        <h2>
+          Bakım Talepleri
+        </h2>
+      </div>
+      <div
+        class="card-pad table-wrap"
+      >
+        <p>
+          Henüz bakım talebi yok.
+        </p>
+      </div>
+    </section>
+    <div
+      aria-live="polite"
+      class="toast-region"
+    />
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/inventory.test.tsx:35:16
+     33| it("demirbaş ve zimmet formlarını izinli API yollarına kaydeder", asyn…
+     34|   open();
+     35|   await screen.findByRole("option", { name: "PC-1 · Tablet" });
+       |                ^
+     36|   fireEvent.change(screen.getByLabelText("Demirbaş kodu"), { target: {…
+     37|   fireEvent.change(screen.getByLabelText("Demirbaş adı"), { target: { …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 17 passed (18)
+      Tests  1 failed | 116 passed (117)
+   Start at  12:49:55
+   Duration  320.12s (transform 6.52s, setup 81.49s, import 57.62s, tests 42.01s, environment 417.51s)
+

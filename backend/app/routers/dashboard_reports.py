@@ -1,7 +1,9 @@
+from app.core.dates import school_today
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +11,7 @@ from app.application.schemas.common import AnnouncementCreate
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
+from app.core.integration_config import IntegrationUpdate
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
@@ -41,12 +44,22 @@ from app.infrastructure.repositories.base import BaseRepository
 router = APIRouter(tags=["Dashboard & Reports"])
 
 
+class NotificationCreate(BaseModel):
+    """Payload used by the notification management screen."""
+
+    title: str = Field(min_length=1, max_length=255)
+    type: NotificationChannel
+    target_audience: str = Field(pattern="^(ALL|PARENTS|STAFF|STUDENTS)$")
+    content: str = Field(min_length=1)
+    scheduled_for: datetime | None = None
+
+
 @router.get("/api/dashboard/summary")
 async def dashboard_summary(
     tenant: TenantContext = Depends(PermissionChecker("dashboard.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    today = date.today()
+    today = school_today()
     month_start = today.replace(day=1)
 
     student_q = select(func.count()).select_from(Student).where(Student.deleted_at.is_(None))
@@ -120,7 +133,7 @@ async def dashboard_summary(
 @router.get("/api/dashboard/charts")
 async def dashboard_charts(
     tenant: TenantContext = Depends(PermissionChecker("dashboard.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
     classes_query = select(ClassRoom).where(ClassRoom.deleted_at.is_(None))
@@ -138,7 +151,7 @@ async def dashboard_charts(
         ).scalar() or 0
         occupancy.append({"name": c.name, "count": count, "capacity": c.capacity})
 
-    month_start = date.today().replace(day=1)
+    month_start = school_today().replace(day=1)
     collection_query = select(func.coalesce(func.sum(Payment.amount), 0)).where(
         Payment.payment_date
         >= datetime.combine(month_start, datetime.min.time()).replace(tzinfo=UTC),
@@ -159,7 +172,7 @@ async def dashboard_charts(
         {
             "class_occupancy": occupancy,
             "monthly_income": [
-                {"month": date.today().strftime("%Y-%m"), "amount": str(collection)}
+                {"month": school_today().strftime("%Y-%m"), "amount": str(collection)}
             ],
             "debt_vs_collection": {"debt": str(pending), "collection": str(collection)},
         }
@@ -172,7 +185,7 @@ async def monthly_payments_report(
     month: int = Query(..., ge=1, le=12),
     branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     start = date(year, month, 1)
     end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
@@ -222,7 +235,7 @@ async def debts_report(
     status: DebtStatus | None = None,
     type: str | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = (
         select(Debt, Student, Branch)
@@ -273,9 +286,9 @@ async def overdue_debts_report(
     days_overdue: int = Query(0, ge=0),
     branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    cutoff = date.today() - timedelta(days=days_overdue)
+    cutoff = school_today() - timedelta(days=days_overdue)
     query = (
         select(Debt, Student, Branch)
         .join(Student, Student.id == Debt.student_id)
@@ -317,7 +330,7 @@ async def overdue_debts_report(
                 "remaining_amount": str(debt.remaining_amount),
                 "remaining": str(debt.remaining_amount),
                 "due_date": debt.due_date.isoformat(),
-                "days_overdue": (date.today() - debt.due_date).days,
+                "days_overdue": (school_today() - debt.due_date).days,
                 "parent_phone": (parent.sms_phone or parent.phone) if parent else None,
                 "parent_email": parent.email if parent else None,
             }
@@ -330,7 +343,7 @@ async def remind_overdue_debts(
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     raw_ids = body.get("debt_ids", [])
     debt_ids = [UUID(str(value)) for value in raw_ids]
@@ -404,7 +417,7 @@ async def class_occupancy_report(
     branch_id: UUID | None = None,
     academic_year: str | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = (
         select(ClassRoom, Branch)
@@ -451,7 +464,7 @@ async def branch_performance_report(
     start_date: date | None = None,
     end_date: date | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(Branch).where(Branch.deleted_at.is_(None))
     if not tenant.is_super_admin and tenant.organization_id:
@@ -513,20 +526,15 @@ async def branch_performance_report(
 @router.get("/api/reports/export/csv")
 async def export_csv(
     report_type: str = Query("debts"),
+    year: int | None = None,
+    month: int | None = Query(None, ge=1, le=12),
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    from app.infrastructure.reports.csv_export import export_debts_csv
-
-    if report_type == "debts":
-        query = select(Debt).where(Debt.deleted_at.is_(None))
-        repo = BaseRepository(db, tenant)
-        query = repo._org_filter(query, Debt)
-        query = repo._branch_filter(query, Debt)
-        result = await db.execute(query)
-        csv_content = export_debts_csv(result.scalars().all())
-        return success_response({"content": csv_content, "filename": "debts.csv"})
-    return success_response({"content": "", "filename": "report.csv"})
+    from app.infrastructure.reports.tabular_export import export_rows
+    rows = await _export_report_rows(report_type, year, month, branch_id, tenant, db)
+    return success_response({"content": export_rows(rows, "csv"), "filename": f"{report_type}.csv"})
 
 
 @router.get("/api/reports/attendance")
@@ -538,7 +546,7 @@ async def attendance_report(
     class_id: UUID | None = None,
     student_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = (
         select(AttendanceRecord, Student, ClassRoom, Branch)
@@ -589,35 +597,49 @@ async def attendance_report(
 @router.get("/api/reports/export/excel")
 async def export_excel(
     report_type: str = Query("debts"),
+    year: int | None = None,
+    month: int | None = Query(None, ge=1, le=12),
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("report.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    from app.infrastructure.reports.excel_export import export_debts_excel
+    import base64
+    from app.infrastructure.reports.tabular_export import export_rows
+    rows = await _export_report_rows(report_type, year, month, branch_id, tenant, db)
+    return success_response({
+        "content": base64.b64encode(export_rows(rows, "excel")).decode(),
+        "filename": f"{report_type}.xlsx", "encoding": "base64",
+    })
 
-    if report_type == "debts":
-        query = select(Debt).where(Debt.deleted_at.is_(None))
-        repo = BaseRepository(db, tenant)
-        query = repo._org_filter(query, Debt)
-        query = repo._branch_filter(query, Debt)
-        result = await db.execute(query)
-        excel_bytes = export_debts_excel(result.scalars().all())
-        import base64
 
-        return success_response(
-            {
-                "content": base64.b64encode(excel_bytes).decode(),
-                "filename": "debts.xlsx",
-                "encoding": "base64",
-            }
-        )
-    return success_response({"content": "", "filename": "report.xlsx"})
+async def _export_report_rows(report_type, year, month, branch_id, tenant, db):
+    from fastapi import HTTPException
+    today = school_today()
+    year = year or today.year
+    month = month or today.month
+    if report_type == "monthly-payments":
+        result = await monthly_payments_report(year=year, month=month, branch_id=branch_id, tenant=tenant, db=db)
+    elif report_type == "debts":
+        result = await debts_report(branch_id=branch_id, tenant=tenant, db=db)
+    elif report_type == "overdue-debts":
+        result = await overdue_debts_report(days_overdue=0, branch_id=branch_id, tenant=tenant, db=db)
+    elif report_type == "class-occupancy":
+        result = await class_occupancy_report(branch_id=branch_id, tenant=tenant, db=db)
+    elif report_type == "branch-performance":
+        result = await branch_performance_report(tenant=tenant, db=db)
+    elif report_type == "attendance":
+        result = await attendance_report(year=year, month=month, tenant=tenant, db=db)
+    else:
+        raise HTTPException(status_code=422, detail="Desteklenmeyen rapor türü")
+    rows = result["data"]
+    return rows if isinstance(rows, list) else rows.get("items", [])
 
 
 @router.get("/api/announcements/{announcement_id}")
 async def get_announcement(
     announcement_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("announcement.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     jobs = (
@@ -670,7 +692,7 @@ async def get_announcement(
 async def announcement_results(
     announcement_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("announcement.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     jobs = (
@@ -714,7 +736,7 @@ async def announcement_results(
 async def retry_announcement(
     announcement_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     jobs = (
@@ -762,7 +784,7 @@ async def update_announcement(
     announcement_id: UUID,
     body: AnnouncementCreate,
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     if announcement.status == AnnouncementStatus.SENT:
@@ -780,7 +802,7 @@ async def update_announcement(
 async def delete_announcement(
     announcement_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     announcement.deleted_at = datetime.now(UTC)
@@ -792,7 +814,7 @@ async def send_notification(
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     channel = body.get("channel", "EMAIL")
     job = NotificationJob(
@@ -820,7 +842,7 @@ async def send_notification(
 async def create_template(
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     template = MessageTemplate(
         organization_id=tenant.organization_id,
@@ -840,7 +862,7 @@ async def update_template(
     template_id: UUID,
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(MessageTemplate).where(
         MessageTemplate.id == template_id,
@@ -861,7 +883,7 @@ async def update_template(
 async def get_template(
     template_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("notification.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     template = (
         await db.execute(
@@ -894,33 +916,42 @@ async def get_template(
 
 @router.put("/api/settings/integrations")
 async def update_integrations(
-    body: dict,
+    body: IntegrationUpdate,
     tenant: TenantContext = Depends(PermissionChecker("settings.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    from app.application.services.platform_service import lock_organization
+    from app.core.integration_config import merge_config
     from app.infrastructure.models.models import IntegrationProvider
 
-    provider = body.get("provider")
-    config = body.get("config", {})
+    try:
+        provider = IntegrationProvider(body.provider)
+    except (ValueError, TypeError) as exc:
+        raise ValidationException("Geçerli bir entegrasyon sağlayıcısı seçin") from exc
+    # Serialise both initial creation and partial updates in SQLite/PostgreSQL.
+    # Re-read after the lock so concurrent requests merge the current JSON.
+    await lock_organization(db, tenant.organization_id)
     result = await db.execute(
         select(IntegrationSetting).where(
             IntegrationSetting.organization_id == tenant.organization_id,
-            IntegrationSetting.provider == IntegrationProvider(provider),
-        )
+            IntegrationSetting.provider == provider,
+        ).execution_options(populate_existing=True).with_for_update()
     )
     integration = result.scalar_one_or_none()
+    config = merge_config(integration.config if integration else {}, body.config)
     if integration:
         integration.config = config
-        integration.is_active = body.get("is_active", True)
+        if "is_active" in body.model_fields_set:
+            integration.is_active = body.is_active
         integration.updated_by = user.id
     else:
         db.add(
             IntegrationSetting(
                 organization_id=tenant.organization_id,
-                provider=IntegrationProvider(provider),
+                provider=provider,
                 config=config,
-                is_active=body.get("is_active", True),
+                is_active=body.is_active,
                 updated_by=user.id,
             )
         )
@@ -930,14 +961,14 @@ async def update_integrations(
 @router.get("/api/announcements")
 async def list_announcements(
     tenant: TenantContext = Depends(PermissionChecker("announcement.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(Announcement).where(Announcement.deleted_at.is_(None))
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, Announcement)
     query = repo._branch_filter(query, Announcement)
     result = await db.execute(query.order_by(Announcement.created_at.desc()))
-    items = result.scalars().all()
+    items = [item for item in result.scalars().all() if item is not None]
     return success_response(
         [
             {
@@ -957,7 +988,7 @@ async def create_announcement(
     body: AnnouncementCreate,
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     org_id = tenant.organization_id
     if not org_id:
@@ -1011,7 +1042,7 @@ async def send_announcement(
     announcement_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     parents_q = (
@@ -1070,7 +1101,7 @@ async def send_announcement(
 @router.get("/api/notifications")
 async def list_notifications(
     tenant: TenantContext = Depends(PermissionChecker("notification.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(NotificationJob)
     repo = BaseRepository(db, tenant)
@@ -1078,36 +1109,160 @@ async def list_notifications(
     query = repo._branch_filter(query, NotificationJob)
     result = await db.execute(query.order_by(NotificationJob.created_at.desc()).limit(50))
     jobs = result.scalars().all()
+    valid_jobs = [job for job in jobs if job is not None]
     return success_response(
         [
             {
                 "id": str(j.id),
+                "title": j.subject or "Bildirim",
+                "type": j.channel.value,
+                "target_audience": j.reference_type or "ALL",
+                "scheduled_for": j.scheduled_at.isoformat() if j.scheduled_at else None,
                 "channel": j.channel.value,
                 "status": j.status.value,
                 "retry_count": j.retry_count,
                 "created_at": j.created_at.isoformat(),
             }
-            for j in jobs
+            for j in valid_jobs
         ]
     )
+
+
+@router.post("/api/notifications")
+async def create_notification(
+    payload: NotificationCreate,
+    tenant: TenantContext = Depends(PermissionChecker("notification.write")),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    """Queue a manually created notification and resolve its intended recipients."""
+    organization_id = tenant.organization_id or user.organization_id
+    if not organization_id:
+        raise ValidationException("Bildirim oluşturmak için bir kurum seçilmelidir")
+
+    scheduled_at = payload.scheduled_for or datetime.now(UTC)
+    if scheduled_at.tzinfo is None:
+        scheduled_at = scheduled_at.replace(tzinfo=UTC)
+
+    job = NotificationJob(
+        organization_id=organization_id,
+        branch_id=tenant.branch_ids[0] if len(tenant.branch_ids) == 1 else None,
+        channel=payload.type,
+        subject=payload.title,
+        body=payload.content,
+        scheduled_at=scheduled_at,
+        reference_type=payload.target_audience,
+        created_by=user.id,
+    )
+    db.add(job)
+    await db.flush()
+
+    recipients: list[NotificationRecipient] = []
+    include_parents = payload.target_audience in {"ALL", "PARENTS", "STUDENTS"}
+    include_staff = payload.target_audience in {"ALL", "STAFF"}
+
+    if include_parents:
+        parent_query = select(Parent).where(
+            Parent.organization_id == organization_id,
+            Parent.deleted_at.is_(None),
+            Parent.receive_notifications.is_(True),
+        )
+        for parent in (await db.execute(parent_query)).scalars():
+            address = (
+                parent.email
+                if payload.type == NotificationChannel.EMAIL
+                else parent.whatsapp_phone
+                if payload.type == NotificationChannel.WHATSAPP
+                else parent.sms_phone or parent.phone
+            )
+            if address:
+                recipients.append(
+                    NotificationRecipient(
+                        notification_job_id=job.id,
+                        parent_id=parent.id,
+                        recipient_name=f"{parent.first_name} {parent.last_name}",
+                        recipient_address=address,
+                    )
+                )
+
+    if include_staff:
+        staff_query = select(User).where(
+            User.organization_id == organization_id,
+            User.deleted_at.is_(None),
+        )
+        for staff_member in (await db.execute(staff_query)).scalars():
+            address = staff_member.email if payload.type == NotificationChannel.EMAIL else staff_member.phone
+            if address:
+                recipients.append(
+                    NotificationRecipient(
+                        notification_job_id=job.id,
+                        user_id=staff_member.id,
+                        recipient_name=f"{staff_member.first_name} {staff_member.last_name}",
+                        recipient_address=address,
+                    )
+                )
+
+    if not recipients:
+        await db.rollback()
+        raise ValidationException("Seçilen hedef kitle için bu kanalın iletişim bilgisi bulunamadı")
+
+    db.add_all(recipients)
+    await db.commit()
+    return success_response(
+        {"id": str(job.id), "recipient_count": len(recipients)},
+        "Bildirim gönderim kuyruğuna alındı",
+    )
+
+
+@router.delete("/api/notifications/{job_id}")
+async def delete_notification(
+    job_id: UUID,
+    tenant: TenantContext = Depends(PermissionChecker("notification.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
+    if job.locked_until and job.locked_until.replace(tzinfo=UTC) > datetime.now(UTC):
+        from app.core.exceptions import ConflictException
+        raise ConflictException("İşlenen gönderim silinemez")
+    recipients = await db.execute(
+        select(NotificationRecipient).where(NotificationRecipient.notification_job_id == job.id)
+    )
+    for recipient in recipients.scalars():
+        await db.delete(recipient)
+    await db.delete(job)
+    await db.commit()
+    return success_response(message="Bildirim silindi")
 
 
 @router.post("/api/notifications/{job_id}/retry")
 async def retry_notification(
     job_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
+    from app.core.exceptions import ConflictException
+    if job.status == NotificationStatus.SENT:
+        raise ConflictException("Gönderilmiş bildirim yeniden gönderilemez")
+    if job.locked_until and job.locked_until.replace(tzinfo=UTC) > datetime.now(UTC):
+        raise ConflictException("Bildirim şu anda işleniyor")
+    recipients = (await db.execute(select(NotificationRecipient).where(NotificationRecipient.notification_job_id == job.id))).scalars().all()
+    if not recipients:
+        raise ConflictException("Bildirimin alıcı kaydı yok")
+    for recipient in recipients:
+        if recipient.status != NotificationStatus.SENT:
+            recipient.status = NotificationStatus.PENDING
+            recipient.error_message = None
     job.status = NotificationStatus.PENDING
-    job.retry_count += 1
+    job.retry_count = 0
+    job.scheduled_at = datetime.now(UTC)
     return success_response(message="Bildirim tekrar kuyruğa alındı")
 
 
 @router.get("/api/notifications/templates")
 async def list_templates(
     tenant: TenantContext = Depends(PermissionChecker("notification.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(MessageTemplate).where(MessageTemplate.deleted_at.is_(None))
     if not tenant.is_super_admin:
@@ -1134,7 +1289,7 @@ async def list_templates(
 async def get_notification(
     job_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("notification.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
     recipients = (
@@ -1154,7 +1309,7 @@ async def get_notification(
             "channel": job.channel.value,
             "status": job.status.value,
             "retry_count": job.retry_count,
-            "body": job.body,
+            "body": "Şifre sıfırlama e-postası" if job.reference_type == "PASSWORD_RESET" else job.body,
             "recipients": [
                 {
                     "address": recipient.recipient_address,
@@ -1170,7 +1325,7 @@ async def get_notification(
 @router.get("/api/settings")
 async def get_settings(
     tenant: TenantContext = Depends(PermissionChecker("settings.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(AppSetting)
     if tenant.organization_id:
@@ -1185,7 +1340,7 @@ async def update_settings(
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("settings.write")),
     user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
     for key, value in body.items():
         result = await db.execute(
@@ -1213,25 +1368,24 @@ async def update_settings(
 @router.get("/api/settings/integrations")
 async def get_integrations(
     tenant: TenantContext = Depends(PermissionChecker("settings.read")),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    from app.core.integration_config import config_view
+
     result = await db.execute(
         select(IntegrationSetting).where(
             IntegrationSetting.organization_id == tenant.organization_id
         )
     )
     integrations = result.scalars().all()
-    return success_response(
-        [
-            {
-                "id": str(i.id),
-                "provider": i.provider.value,
-                "is_active": i.is_active,
-                "config": {
-                    k: "***" if "password" in k.lower() or "token" in k.lower() else v
-                    for k, v in i.config.items()
-                },
-            }
-            for i in integrations
-        ]
-    )
+    records = []
+    for integration in integrations:
+        public_config, requires_review = config_view(integration.config)
+        records.append({
+            "id": str(integration.id),
+            "provider": integration.provider.value,
+            "is_active": integration.is_active,
+            "config": public_config,
+            "requires_review": requires_review,
+        })
+    return success_response(records)

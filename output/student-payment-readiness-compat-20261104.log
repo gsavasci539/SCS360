@@ -1,0 +1,176 @@
+FF....                                                                   [100%]
+================================== FAILURES ===================================
+__ test_checkout_verifies_provider_result_and_callback_is_idempotent[sqlite] __
+
+portal_db = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x0000018DAB23FF1...ject at 0x0000018DAB3D6E40>, 'org': <app.infrastructure.models.models.Organization object at 0x0000018DAB3D57F0>, ...})
+
+    @pytest.mark.asyncio
+    async def test_checkout_verifies_provider_result_and_callback_is_idempotent(portal_db):
+        import hashlib
+        import hmac
+        from types import SimpleNamespace
+        from decimal import Decimal
+        from sqlalchemy import func
+        from app.application.services import online_payment_service as payments
+        from app.core.exceptions import AppException
+        from app.infrastructure.models.models import Debt, DebtType, Payment, Receipt
+        from app.routers.payments import IyzicoPaymentRequest
+    
+        sessions, data = portal_db
+        tenant = TenantContext(user_id=data["user"].id, organization_id=data["org"].id, role_slugs={"parent"})
+        class Gateway(payments.IyzicoGateway):
+            def __init__(self):
+                super().__init__(SimpleNamespace(IYZICO_SECRET_KEY="isolated-test-secret", IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True))
+                self.result = {}
+            def configured(self): pass
+            async def initialize(self, payload):
+                self.payload = payload
+                self.result = {"status": "success", "paymentStatus": "SUCCESS", "paymentId": "provider-123",
+                    "currency": "TRY", "basketId": payload["basketId"], "conversationId": payload["conversationId"],
+                    "price": "25.0", "paidPrice": "25.00", "token": "random-test-token", "fraudStatus": 1}
+                self.sign()
+                initial = {"status": "success", "conversationId": payload["conversationId"], "token": self.result["token"],
+                    "paymentPageUrl": "https://sandbox-api.iyzipay.com/checkoutform/test"}
+                initial["signature"] = hmac.new(self.settings.IYZICO_SECRET_KEY.encode(),
+                    f"{payload['conversationId']}:{initial['token']}".encode(), hashlib.sha256).hexdigest()
+                return initial
+            def sign(self):
+                fields = ("paymentStatus", "paymentId", "currency", "basketId", "conversationId", "paidPrice", "price", "token")
+                values = [str(self.result[field]) if field not in {"paidPrice", "price"} else
+                    format(Decimal(self.result[field]).normalize(), 'f') for field in fields]
+                self.result["signature"] = hmac.new(self.settings.IYZICO_SECRET_KEY.encode(), ":".join(values).encode(), hashlib.sha256).hexdigest()
+            async def retrieve(self, token, conversation_id):
+                assert str(conversation_id) == self.result["conversationId"]
+                return self.result
+        gateway = Gateway()
+        async with sessions() as db:
+            child = data["children"][0]
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=date.today())
+            db.add(debt); await db.flush()
+            body = IyzicoPaymentRequest(debt_id=debt.id, amount="25.00", buyer={"identityNumber": "test-id",
+                "registrationAddress": "Test billing address", "city": "Istanbul", "country": "Turkey"})
+>           result = await payments.initialize(db, tenant, data["user"], body, "127.0.0.1", gateway)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_homework_outbox.py:245: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000018DAB324050>
+tenant = TenantContext(user_id=UUID('24854626-7eec-4e45-9995-0a2ddbe97cad'), organization_id=UUID('f931b60b-94e6-4ec6-b48c-07c4...lass_ids=[], permissions=set(), role_slugs={'parent'}, is_super_admin=False, platform_admin=False, parent_portal=False)
+user = <app.infrastructure.models.models.User object at 0x0000018DAB3D67B0>
+body = IyzicoPaymentRequest(debt_id=UUID('614a6010-ba39-4724-ac38-aaf7cab57681'), amount=Decimal('25.00'), currency='TRY', pa...ddress': 'Test billing address', 'city': 'Istanbul', 'country': 'Turkey'}, shipping_address=None, billing_address=None)
+ip = '127.0.0.1'
+gateway = <test_parent_homework_outbox.test_checkout_verifies_provider_result_and_callback_is_idempotent.<locals>.Gateway object at 0x0000018DAB3D6F90>
+
+    async def initialize(db, tenant, user, body, ip, gateway=None):
+        gateway = gateway or IyzicoGateway()
+        repo = BaseRepository(db, tenant)
+        debt = await repo.get_by_id(body.debt_id, Debt)
+        if not tenant.has_permission("finance.write"):
+            await require_parent_child_access(db, tenant.user_id, debt.student_id)
+        await require_student_access(db, tenant, debt.student_id)
+        await repo.get_by_id(debt.student_id, Student)
+        gateway.require_organization(debt.organization_id)
+        amount = Decimal(str(body.amount)).quantize(Decimal("0.01"))
+        if debt.status == DebtStatus.CANCELLED:
+            raise ConflictException("�ptal edilen borca �deme yap�lamaz")
+>       if not debt.amount.is_finite() or not debt.paid_amount.is_finite() or debt.amount <= 0 or debt.paid_amount < 0 or debt.paid_amount > debt.amount:
+               ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'int' object has no attribute 'is_finite'
+
+app\application\services\online_payment_service.py:136: AttributeError
+_ test_checkout_verifies_provider_result_and_callback_is_idempotent[postgresql] _
+
+portal_db = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x0000018DAB917A9...ject at 0x0000018DAB941950>, 'org': <app.infrastructure.models.models.Organization object at 0x0000018DAB940B90>, ...})
+
+    @pytest.mark.asyncio
+    async def test_checkout_verifies_provider_result_and_callback_is_idempotent(portal_db):
+        import hashlib
+        import hmac
+        from types import SimpleNamespace
+        from decimal import Decimal
+        from sqlalchemy import func
+        from app.application.services import online_payment_service as payments
+        from app.core.exceptions import AppException
+        from app.infrastructure.models.models import Debt, DebtType, Payment, Receipt
+        from app.routers.payments import IyzicoPaymentRequest
+    
+        sessions, data = portal_db
+        tenant = TenantContext(user_id=data["user"].id, organization_id=data["org"].id, role_slugs={"parent"})
+        class Gateway(payments.IyzicoGateway):
+            def __init__(self):
+                super().__init__(SimpleNamespace(IYZICO_SECRET_KEY="isolated-test-secret", IYZICO_ORGANIZATION_ID=str(data["org"].id), IYZICO_PAYMENT_ENABLED=True))
+                self.result = {}
+            def configured(self): pass
+            async def initialize(self, payload):
+                self.payload = payload
+                self.result = {"status": "success", "paymentStatus": "SUCCESS", "paymentId": "provider-123",
+                    "currency": "TRY", "basketId": payload["basketId"], "conversationId": payload["conversationId"],
+                    "price": "25.0", "paidPrice": "25.00", "token": "random-test-token", "fraudStatus": 1}
+                self.sign()
+                initial = {"status": "success", "conversationId": payload["conversationId"], "token": self.result["token"],
+                    "paymentPageUrl": "https://sandbox-api.iyzipay.com/checkoutform/test"}
+                initial["signature"] = hmac.new(self.settings.IYZICO_SECRET_KEY.encode(),
+                    f"{payload['conversationId']}:{initial['token']}".encode(), hashlib.sha256).hexdigest()
+                return initial
+            def sign(self):
+                fields = ("paymentStatus", "paymentId", "currency", "basketId", "conversationId", "paidPrice", "price", "token")
+                values = [str(self.result[field]) if field not in {"paidPrice", "price"} else
+                    format(Decimal(self.result[field]).normalize(), 'f') for field in fields]
+                self.result["signature"] = hmac.new(self.settings.IYZICO_SECRET_KEY.encode(), ":".join(values).encode(), hashlib.sha256).hexdigest()
+            async def retrieve(self, token, conversation_id):
+                assert str(conversation_id) == self.result["conversationId"]
+                return self.result
+        gateway = Gateway()
+        async with sessions() as db:
+            child = data["children"][0]
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=child.id,
+                debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=date.today())
+            db.add(debt); await db.flush()
+            body = IyzicoPaymentRequest(debt_id=debt.id, amount="25.00", buyer={"identityNumber": "test-id",
+                "registrationAddress": "Test billing address", "city": "Istanbul", "country": "Turkey"})
+>           result = await payments.initialize(db, tenant, data["user"], body, "127.0.0.1", gateway)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_parent_homework_outbox.py:245: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000018DAB7E96E0>
+tenant = TenantContext(user_id=UUID('30dc30c1-8d23-44be-85c1-34502d6bf02d'), organization_id=UUID('04127c26-d8bf-4ef4-b8f8-f419...lass_ids=[], permissions=set(), role_slugs={'parent'}, is_super_admin=False, platform_admin=False, parent_portal=False)
+user = <app.infrastructure.models.models.User object at 0x0000018DAB941090>
+body = IyzicoPaymentRequest(debt_id=UUID('5458bee8-33b4-4718-a59b-4ce21b2b2462'), amount=Decimal('25.00'), currency='TRY', pa...ddress': 'Test billing address', 'city': 'Istanbul', 'country': 'Turkey'}, shipping_address=None, billing_address=None)
+ip = '127.0.0.1'
+gateway = <test_parent_homework_outbox.test_checkout_verifies_provider_result_and_callback_is_idempotent.<locals>.Gateway object at 0x0000018DAB73F8C0>
+
+    async def initialize(db, tenant, user, body, ip, gateway=None):
+        gateway = gateway or IyzicoGateway()
+        repo = BaseRepository(db, tenant)
+        debt = await repo.get_by_id(body.debt_id, Debt)
+        if not tenant.has_permission("finance.write"):
+            await require_parent_child_access(db, tenant.user_id, debt.student_id)
+        await require_student_access(db, tenant, debt.student_id)
+        await repo.get_by_id(debt.student_id, Student)
+        gateway.require_organization(debt.organization_id)
+        amount = Decimal(str(body.amount)).quantize(Decimal("0.01"))
+        if debt.status == DebtStatus.CANCELLED:
+            raise ConflictException("�ptal edilen borca �deme yap�lamaz")
+>       if not debt.amount.is_finite() or not debt.paid_amount.is_finite() or debt.amount <= 0 or debt.paid_amount < 0 or debt.paid_amount > debt.amount:
+               ^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'int' object has no attribute 'is_finite'
+
+app\application\services\online_payment_service.py:136: AttributeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_parent_homework_outbox.py::test_checkout_verifies_provider_result_and_callback_is_idempotent[sqlite]
+FAILED tests/integration/test_parent_homework_outbox.py::test_checkout_verifies_provider_result_and_callback_is_idempotent[postgresql]
+2 failed, 4 passed, 20 warnings in 21.95s

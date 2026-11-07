@@ -1,0 +1,691 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/app-shell.test.tsx src/test/navigation-contract.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/navigation-contract.test.tsx (64 tests | 1 failed) 328ms
+     × aynı sayfa menüde tek bağlantı olarak tanımlıdır 10ms
+ ❯ src/test/app-shell.test.tsx (6 tests | 5 failed) 1140ms
+   × veli ve öğretmen birlikte her iki yetkili çalışma alanını görür 851ms
+   × veli özel sağlık okuma yetkisini de kullanır, yetkisiz modül görünmez 51ms
+   × kantin ve öğretmen rolleri birbirinin alanlarını gizlemez 60ms
+   × özel role verilen finans okuması kantin yazması nedeniyle gizlenmez 37ms
+   × öğretmen paneli özel okuma yetkisini gerektirir; veli rolü olmayan yöneticiye veli alanı açılmaz 55ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/app-shell.test.tsx > veli ve öğretmen birlikte her iki yetkili çalışma alanını görür
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Eğitim"
+
+Here are the accessible roles:
+
+  button:
+
+  Name "Veli Portalı":
+  <button
+    class="nav-section"
+    style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+  />
+
+  --------------------------------------------------
+  link:
+
+  Name "Genel Bakış":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/dashboard"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Çocuğum":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/children"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Akademik Durum":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/academic"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Ders Programı":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/schedule"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Ödevler":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/homework"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Ders Materyalleri":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/materials"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Sağlık ve İzinler":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/health"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "İletişim Geçmişi":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/communication"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Canlı Sohbet":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/chat"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Okul Duyuruları":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/announcements"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Kulüp ve Aktiviteler":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/activities"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "İzin ve Onaylar":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/consents"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Veli Anketleri":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/surveys"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  Name "Haftalık Raporlar":
+  <a
+    class="nav-item"
+    data-discover="true"
+    href="/parent/reports"
+    style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<nav
+  aria-label="Ana menü"
+  class="nav-list"
+>
+  <div>
+    <button
+      class="nav-section"
+      style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+    >
+      <div
+        style="display: flex; align-items: center; gap: 8px;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-shield-check"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: rgb(122, 136, 136);"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+          />
+          <path
+            d="m9 12 2 2 4-4"
+          />
+        </svg>
+        Veli Portalı
+      </div>
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-right"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        style="transition: transform 0.2s; transform: rotate(90deg);"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m9 18 6-6-6-6"
+        />
+      </svg>
+    </button>
+    <div
+      style="padding-left: 8px; margin-top: 4px;"
+    >
+      <a
+        class="nav-item"
+        data-discover="true"
+        href="/parent/dashboard"
+        style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-layout-dashboard"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: inherit;"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            height="9"
+            rx="1"
+            width="7"
+            x="3"
+            y="3"
+          />
+          <rect
+            height="5"
+            rx="1"
+            width="7"
+            x="14"
+            y="3"
+          />
+          <rect
+            height="9"
+            rx="1"
+            width="7"
+            x="14"
+            y="12"
+          />
+          <rect
+            height="5"
+            rx="1"
+            width="7"
+            x="3"
+            y="16"
+          />
+        </svg>
+        <span>
+          Genel Bakış
+        </span>
+      </a>
+      <a
+        class="nav-item"
+        data-discover="true"
+        href="/parent/children"
+        style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-graduation-cap"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: inherit;"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"
+          />
+          <path
+            d="M22 10v6"
+          />
+          <path
+            d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"
+          />
+        </svg>
+        <span>
+          Çocuğum
+        </span>
+      </a>
+      <a
+        class="nav-item"
+        data-discover="true"
+        href="/parent/academic"
+        style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-book-marked"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-lin...
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/app-shell.test.tsx:22:23
+     20|   fireEvent.click(nav.getByRole("button", { name: "Veli Portalı" }));
+     21|   expect(nav.getByRole("link", { name: "Çocuğum" })).toHaveAttribute("…
+     22|   fireEvent.click(nav.getByRole("button", { name: "Eğitim" }));
+       |                       ^
+     23|   expect(nav.getByRole("link", { name: "Sınıflar & Program" })).toBeVi…
+     24|   fireEvent.click(nav.getByRole("button", { name: "Yönetim" }));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/test/app-shell.test.tsx > veli özel sağlık okuma yetkisini de kullanır, yetkisiz modül görünmez
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Operasyon"
+
+Here are the accessible roles:
+
+  button:
+
+  Name "Veli Portalı":
+  <button
+    class="nav-section"
+    style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<nav
+  aria-label="Ana menü"
+  class="nav-list"
+>
+  <div>
+    <button
+      class="nav-section"
+      style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+    >
+      <div
+        style="display: flex; align-items: center; gap: 8px;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-shield-check"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: rgb(122, 136, 136);"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+          />
+          <path
+            d="m9 12 2 2 4-4"
+          />
+        </svg>
+        Veli Portalı
+      </div>
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-right"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        style="transition: transform 0.2s; transform: rotate(0deg);"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m9 18 6-6-6-6"
+        />
+      </svg>
+    </button>
+  </div>
+</nav>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/app-shell.test.tsx:30:23
+     28| it("veli özel sağlık okuma yetkisini de kullanır, yetkisiz modül görün…
+     29|   const nav = open(["parent"], ["parent.view_children", "health.read"]…
+     30|   fireEvent.click(nav.getByRole("button", { name: "Operasyon" }));
+       |                       ^
+     31|   expect(nav.getByRole("link", { name: "Revir ve İlaç Kayıtları" })).t…
+     32|   expect(nav.queryByRole("link", { name: "Öğrenci Teslim Masası" })).n…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/test/app-shell.test.tsx > kantin ve öğretmen rolleri birbirinin alanlarını gizlemez
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Eğitim"
+
+Here are the accessible roles:
+
+  button:
+
+  Name "Operasyon":
+  <button
+    class="nav-section"
+    style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<nav
+  aria-label="Ana menü"
+  class="nav-list"
+>
+  <div>
+    <button
+      class="nav-section"
+      style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+    >
+      <div
+        style="display: flex; align-items: center; gap: 8px;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: rgb(122, 136, 136);"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+        Operasyon
+      </div>
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-right"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        style="transition: transform 0.2s; transform: rotate(0deg);"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m9 18 6-6-6-6"
+        />
+      </svg>
+    </button>
+  </div>
+</nav>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/app-shell.test.tsx:37:23
+     35| it("kantin ve öğretmen rolleri birbirinin alanlarını gizlemez", () => {
+     36|   const nav = open(["canteen_staff", "teacher"], ["canteen.read", "can…
+     37|   fireEvent.click(nav.getByRole("button", { name: "Eğitim" }));
+       |                       ^
+     38|   expect(nav.getByRole("link", { name: "Sınıflar & Program" })).toBeVi…
+     39| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/test/app-shell.test.tsx > özel role verilen finans okuması kantin yazması nedeniyle gizlenmez
+TestingLibraryElementError: Unable to find an accessible element with the role "button" and name "Finans"
+
+Here are the accessible roles:
+
+  button:
+
+  Name "Operasyon":
+  <button
+    class="nav-section"
+    style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+  />
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+<nav
+  aria-label="Ana menü"
+  class="nav-list"
+>
+  <div>
+    <button
+      class="nav-section"
+      style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 12px; background: none; border: medium; cursor: pointer; color: rgb(94, 108, 109); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px; transition: background 0.2s;"
+    >
+      <div
+        style="display: flex; align-items: center; gap: 8px;"
+      >
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-bus"
+          fill="none"
+          height="16"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          style="color: rgb(122, 136, 136);"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8 6v6"
+          />
+          <path
+            d="M15 6v6"
+          />
+          <path
+            d="M2 12h19.6"
+          />
+          <path
+            d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"
+          />
+          <circle
+            cx="7"
+            cy="18"
+            r="2"
+          />
+          <path
+            d="M9 18h5"
+          />
+          <circle
+            cx="16"
+            cy="18"
+            r="2"
+          />
+        </svg>
+        Operasyon
+      </div>
+      <svg
+        aria-hidden="true"
+        class="lucide lucide-chevron-right"
+        fill="none"
+        height="14"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        style="transition: transform 0.2s; transform: rotate(0deg);"
+        viewBox="0 0 24 24"
+        width="14"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="m9 18 6-6-6-6"
+        />
+      </svg>
+    </button>
+  </div>
+</nav>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/app-shell.test.tsx:51:23
+     49| it("özel role verilen finans okuması kantin yazması nedeniyle gizlenme…
+     50|   const nav = open(["custom"], ["canteen.read", "canteen.write", "fina…
+     51|   fireEvent.click(nav.getByRole("button", { name: "Finans" }));
+       |                       ^
+     52|   expect(nav.getByRole("link", { name: "Borçlar" })).toBeVisible();
+     53| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/test/app-shell.test.tsx > öğretmen paneli özel okuma yetkisini gerektirir; veli rolü olmayan yöneticiye veli alanı açılmaz
+Error: expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <a
+  class="nav-item"
+  data-discover="true"
+  href="/teacher"
+  style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; transition: all 0.2s;"
+>
+  <svg
+    aria-hidden="true"
+    class="lucide lucide-graduation-cap"
+    fill="none"
+    height="16"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    style="color: inherit;"
+    viewBox="0 0 24 24"
+    width="16"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"
+    />
+    <path
+      d="M22 10v6"
+    />
+    <path
+      d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"
+    />
+  </svg>
+  <span>
+    Öğretmen Paneli
+  </span>
+</a> instead
+ ❯ src/test/app-shell.test.tsx:58:68
+     56|   const nav = open(["accountant"], ["dashboard.read"]);
+     57|   fireEvent.click(nav.getByRole("button", { name: "Yönetim" }));
+     58|   expect(nav.queryByRole("link", { name: "Öğretmen Paneli" })).not.toB…
+       |                                                                    ^
+     59|   expect(nav.queryByRole("button", { name: "Veli Portalı" })).not.toBe…
+     60| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/test/navigation-contract.test.tsx > menü ve sayfa yetkisi sözleşmesi > aynı sayfa menüde tek bağlantı olarak tanımlıdır
+AssertionError: expected [ '/my-surveys' ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "/my-surveys",
++ ]
+
+ ❯ src/test/navigation-contract.test.tsx:15:74
+     13|   it("aynı sayfa menüde tek bağlantı olarak tanımlıdır", () => {
+     14|     const paths = navigation.flatMap((section) => section.items.map((i…
+     15|     expect(paths.filter((path, index) => paths.indexOf(path) !== index…
+       |                                                                          ^
+     16|   });
+     17|   it("ekranlardaki sabit bağlantılar kayıtlı bir sayfaya gider", () =>…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  6 failed | 64 passed (70)
+   Start at  19:53:37
+   Duration  4.44s (transform 598ms, setup 575ms, import 2.16s, tests 1.47s, environment 3.90s)
+

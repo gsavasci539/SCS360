@@ -5,6 +5,7 @@ import App from "./App";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
 import "./styles/global.css";
+import "./styles/fonts.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

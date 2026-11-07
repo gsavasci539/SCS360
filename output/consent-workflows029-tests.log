@@ -1,0 +1,41 @@
+F.......                                                                 [100%]
+================================== FAILURES ===================================
+________ test_guardian_decision_version_freeze_retry_and_audit[sqlite] ________
+
+materials_client = (<httpx.AsyncClient object at 0x00000223EF3EC830>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000223EF3EC1A0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000223EEEE2A50>, ...})
+
+    async def test_guardian_decision_version_freeze_retry_and_audit(materials_client):
+        client, sessions, data = materials_client
+        manager, doc, payload = await setup(client, sessions, data)
+        path = f'/api/parent/child/{data["children"][0].id}/consents'
+        listing = await client.get(path, headers=headers(data["user"]))
+        assert listing.status_code == 200 and listing.json()["data"][0]["content"] == payload["content"]
+        responses = await asyncio.gather(*[client.post(path + "/" + doc["id"], headers=headers(data["user"]), json=decision(doc)) for _ in range(2)])
+        assert all(response.status_code == 200 for response in responses), [response.text for response in responses]
+>       assert responses[0].json()["data"] == responses[1].json()["data"]
+E       AssertionError: assert {'consent_sta...e1e4efac6e7c'} == {'consent_sta...e1e4efac6e7c'}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'consented_at': '2026-11-03T08:37:39.521874+00:00'} != {'consented_at': '2026-11-03T08:37:39.521874'}
+E         Use -v to get more diff
+
+tests\integration\test_consent_workflows.py:46: AssertionError
+---------------------------- Captured stdout call -----------------------------
+2026-11-03 11:37:39 [info     ] request_completed              duration_ms=888.27 method=POST path=/api/consents/documents request_id=db593bb9-7be0-480b-a1f6-81329d44091d status=200
+2026-11-03 11:37:39 [info     ] request_completed              duration_ms=48.57 method=GET path=/api/parent/child/c73b1e2e-8ed1-4a26-a839-fb891dd4f9ab/consents request_id=1d6c5f77-75e0-4164-bdb3-0d02ced22eab status=200
+2026-11-03 11:37:39 [info     ] request_completed              duration_ms=92.48 method=POST path=/api/parent/child/c73b1e2e-8ed1-4a26-a839-fb891dd4f9ab/consents/084a317c-6d79-4c44-9ed2-c57a95ffc73b request_id=76521457-b4f3-43db-9748-d128e6757c27 status=200
+2026-11-03 11:37:39 [info     ] request_completed              duration_ms=111.15 method=POST path=/api/parent/child/c73b1e2e-8ed1-4a26-a839-fb891dd4f9ab/consents/084a317c-6d79-4c44-9ed2-c57a95ffc73b request_id=24327c49-f9ce-45ff-936b-72a4f55f4772 status=200
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_consent_workflows.py::test_guardian_decision_version_freeze_retry_and_audit[sqlite]
+1 failed, 7 passed, 20 warnings in 17.01s

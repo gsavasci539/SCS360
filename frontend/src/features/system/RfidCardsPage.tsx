@@ -1,3 +1,4 @@
+import { reportClientError } from "../../lib/diagnostics";
 import { Plus, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams, useParams } from "react-router-dom";
@@ -348,7 +349,7 @@ function CreateModal({ open, onClose, onSuccess, holderId }: { open: boolean; on
       try {
         const [studentsRes, staffRes, cardNumbersRes, rfidCardsRes] = await Promise.all([
           api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/students", { params: { page_size: 100, limit: 100 } }),
-          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/staff", { params: { page_size: 100, limit: 100 } }),
+          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/users", { params: { page_size: 100, limit: 100 } }),
           api.get<ApiResponse<DataRecord[]>>("/card-numbers/available"),
           api.get<ApiResponse<DataRecord[]>>("/rfid-cards")
         ]);
@@ -373,7 +374,7 @@ function CreateModal({ open, onClose, onSuccess, holderId }: { open: boolean; on
         setStaff(allStaff.filter((s: DataRecord) => !activeHolderIds.has(s.id)));
         setCardNumbers(Array.isArray(cardNumbersData) ? cardNumbersData : []);
       } catch (e) {
-        console.error("Failed to load options", e);
+        reportClientError("Failed to load options", e);
         showToast("Yükleme hatası", "Öğrenci, personel ve kart numaraları listesi yüklenemedi.", "error");
       }
     }

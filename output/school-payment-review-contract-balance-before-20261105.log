@@ -1,0 +1,116 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+_ test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x000001F4B946FCB0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x000001F4B946FB60>, ...}, <test_school_checkout_durability.Provider object at 0x000001F4BA86CEC0>)
+
+    async def test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope(review_client):
+        client, sessions, data, _ = review_client
+        values = await detail(client, data)
+        assert (await post(client, data, request(values), data["user"])).status_code == 403
+        assert (await post(client, data, request(values, expected_revision="0"*64))).status_code == 409
+        assert (await post(client, data, request(values, debt_id=str(uuid4())))).status_code == 422
+        raw_root = await post(client, data, request(values), data["root"])
+        assert raw_root.status_code == 403, raw_root.text
+        foreign = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(data["other_owner"]))
+        assert foreign.status_code in {403, 404}
+        listing = await client.get("/api/payments/iyzico/reviews", headers=headers(data["finance"]))
+        assert listing.status_code == 200 and listing.json()["data"]["total"] == 1, listing.text
+        row = listing.json()["data"]["items"][0]
+>       assert row["review_events"] == [] and row["environment"] == "LIVE" and row["revision"] == values["revision"]
+               ^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'review_events'
+
+tests\integration\test_school_payment_review.py:77: KeyError
+_ test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x000001F4BBBC7110>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x000001F4BC1E87D0>, ...}, <test_school_checkout_durability.Provider object at 0x000001F4BC1E9A90>)
+
+    async def test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope(review_client):
+        client, sessions, data, _ = review_client
+        values = await detail(client, data)
+        assert (await post(client, data, request(values), data["user"])).status_code == 403
+        assert (await post(client, data, request(values, expected_revision="0"*64))).status_code == 409
+        assert (await post(client, data, request(values, debt_id=str(uuid4())))).status_code == 422
+        raw_root = await post(client, data, request(values), data["root"])
+        assert raw_root.status_code == 403, raw_root.text
+        foreign = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(data["other_owner"]))
+        assert foreign.status_code in {403, 404}
+        listing = await client.get("/api/payments/iyzico/reviews", headers=headers(data["finance"]))
+        assert listing.status_code == 200 and listing.json()["data"]["total"] == 1, listing.text
+        row = listing.json()["data"]["items"][0]
+>       assert row["review_events"] == [] and row["environment"] == "LIVE" and row["revision"] == values["revision"]
+               ^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'review_events'
+
+tests\integration\test_school_payment_review.py:77: KeyError
+_ test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x000001F4BD3CA850>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x000001F4BC2410F0>, ...}, <test_school_checkout_durability.Provider object at 0x000001F4BD3CA990>)
+
+    async def test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch(review_client):
+        from app.core.database import Base
+        client, sessions, data, _ = review_client
+        async with sessions() as db:
+            branch = Branch(name="Other historical branch", organization_id=data["org"].id)
+            db.add(branch); await db.flush()
+            sibling = Debt(organization_id=data["org"].id, branch_id=branch.id, student_id=data["children"][0].id,
+                debt_type=DebtType.EDUCATION, amount=75, paid_amount=0, due_date=datetime.now(UTC).date())
+            db.add(sibling)
+            await db.execute(Base.metadata.tables["user_branches"].insert().values(user_id=data["finance"].id, branch_id=data["branch"].id))
+            await db.commit()
+        values = await detail(client, data)
+        assert values["can_apply"] is True
+        applied = await post(client, data, request(values))
+        assert applied.status_code == 200, applied.text
+        async with sessions() as db:
+>           assert (await db.execute(select(Receipt))).scalar_one().remaining_debt == 200
+E           AssertionError: assert Decimal('125.00') == 200
+E            +  where Decimal('125.00') = <app.infrastructure.models.models.Receipt object at 0x000001F4BD3CA0D0>.remaining_debt
+E            +    where <app.infrastructure.models.models.Receipt object at 0x000001F4BD3CA0D0> = scalar_one()
+E            +      where scalar_one = <sqlalchemy.engine.result.ChunkedIteratorResult object at 0x000001F4BD615110>.scalar_one
+
+tests\integration\test_school_payment_review.py:140: AssertionError
+_ test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x000001F4BC2423F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x000001F4BD475F20>, ...}, <test_school_checkout_durability.Provider object at 0x000001F4BC243100>)
+
+    async def test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch(review_client):
+        from app.core.database import Base
+        client, sessions, data, _ = review_client
+        async with sessions() as db:
+            branch = Branch(name="Other historical branch", organization_id=data["org"].id)
+            db.add(branch); await db.flush()
+            sibling = Debt(organization_id=data["org"].id, branch_id=branch.id, student_id=data["children"][0].id,
+                debt_type=DebtType.EDUCATION, amount=75, paid_amount=0, due_date=datetime.now(UTC).date())
+            db.add(sibling)
+            await db.execute(Base.metadata.tables["user_branches"].insert().values(user_id=data["finance"].id, branch_id=data["branch"].id))
+            await db.commit()
+        values = await detail(client, data)
+        assert values["can_apply"] is True
+        applied = await post(client, data, request(values))
+        assert applied.status_code == 200, applied.text
+        async with sessions() as db:
+>           assert (await db.execute(select(Receipt))).scalar_one().remaining_debt == 200
+E           AssertionError: assert Decimal('125.00') == 200
+E            +  where Decimal('125.00') = <app.infrastructure.models.models.Receipt object at 0x000001F4BC2435C0>.remaining_debt
+E            +    where <app.infrastructure.models.models.Receipt object at 0x000001F4BC2435C0> = scalar_one()
+E            +      where scalar_one = <sqlalchemy.engine.result.ChunkedIteratorResult object at 0x000001F4BD2B3E10>.scalar_one
+
+tests\integration\test_school_payment_review.py:140: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_school_payment_review.py::test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[postgresql]
+FAILED tests/integration/test_school_payment_review.py::test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_branch_review_uses_whole_student_balance_and_cannot_read_other_branch[postgresql]
+4 failed, 20 warnings in 13.37s

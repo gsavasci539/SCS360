@@ -1,0 +1,230 @@
+FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+_ test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0CAAFE00>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F0CAAF770>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0CEF8AD0>)
+
+    async def test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer(review_client):
+        client, sessions, data, provider = review_client
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0CAAFE00>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0CAAE510>, 'checkout_id': '21267e8e-870a-4321-...t at 0x0000011F0CEA0A50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F0CAAF770>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"a05ba57d-6fdf-4f3b-96dc-d657657b657c"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0F33A5D0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F0F33BED0>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0F7E51D0>)
+
+    async def test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer(review_client):
+        client, sessions, data, provider = review_client
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0F33A5D0>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0F33B610>, 'checkout_id': '06bcaf61-7dca-4ef8-...t at 0x0000011F0F79FAD0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F0F33BED0>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"34cb9d3b-2457-4814-9034-6f2daecb440d"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0F748B90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F0F805A70>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0F748CD0>)
+
+    async def test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope(review_client):
+        client, sessions, data, _ = review_client
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0F748B90>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0F805E00>, 'checkout_id': '40d2bc89-9c98-4102-...t at 0x0000011F0F819050>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F0F805A70>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"723c733c-164e-41c9-a069-3036fd590ae0"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0F806650>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F0F9AD590>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0F323A80>)
+
+    async def test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope(review_client):
+        client, sessions, data, _ = review_client
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0F806650>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0F9AC5A0>, 'checkout_id': '54550178-db77-4354-...t at 0x0000011F0FA26C50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F0F9AD590>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"69f1bba8-321b-472b-b5de-dc2e39aa5fb6"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F10BE4E90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F10B48B50>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F10BE5E00>)
+
+    async def test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger(review_client):
+        client, sessions, data, provider = review_client
+        async with sessions() as db:
+            row = await db.get(PaymentCheckout, UUID(data["checkout_id"]))
+            row.review_reason = "PROOF_MISMATCH"; row.provider_transaction_id = None
+            row.verified_metadata = {**row.verified_metadata, "matches_checkout": False, "transaction_id": None}
+            await db.commit()
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F10BE4E90>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0FA26850>, 'checkout_id': 'b8d4cbc2-59f7-46c0-...t at 0x0000011F10B48A50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F10B48B50>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"e5c5e94b-a942-434c-b73f-069112178b19"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0FA12B10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F10A1BF20>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0F1C83B0>)
+
+    async def test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger(review_client):
+        client, sessions, data, provider = review_client
+        async with sessions() as db:
+            row = await db.get(PaymentCheckout, UUID(data["checkout_id"]))
+            row.review_reason = "PROOF_MISMATCH"; row.provider_transaction_id = None
+            row.verified_metadata = {**row.verified_metadata, "matches_checkout": False, "transaction_id": None}
+            await db.commit()
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0FA12B10>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F10A1B890>, 'checkout_id': 'e7902776-58ea-4cc2-...t at 0x0000011F0F819F50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F10A1BF20>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"9cac67a2-40d8-42ac-825e-1e705002210c"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot[sqlite] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0F393130>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F0F059EF0>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0C8A7AC0>)
+
+    async def test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot(review_client):
+        client, sessions, data, _ = review_client
+        async with sessions() as db:
+            debt = await db.get(Debt, data["debt"].id); debt.deleted_at = datetime.now(UTC)
+            await db.commit()
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0F393130>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F0CE9FE70>, 'checkout_id': '96cf89ca-db6c-4a73-...t at 0x0000011F0F0E7850>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F0F059EF0>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"0a884827-8850-41e0-8d20-51338240ddee"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+_ test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot[postgresql] _
+
+review_client = (<httpx.AsyncClient object at 0x0000011F0F0907C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ClassRoom object at 0x0000011F10FC4530>, ...}, <test_school_checkout_durability.Provider object at 0x0000011F0F091370>)
+
+    async def test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot(review_client):
+        client, sessions, data, _ = review_client
+        async with sessions() as db:
+            debt = await db.get(Debt, data["debt"].id); debt.deleted_at = datetime.now(UTC)
+            await db.commit()
+>       values = await detail(client, data)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_school_payment_review.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <httpx.AsyncClient object at 0x0000011F0F0907C0>
+data = {'branch': <app.infrastructure.models.models.Branch object at 0x0000011F10F09230>, 'checkout_id': '65ea9fc6-cc14-4850-...t at 0x0000011F10E4BD50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000011F10FC4530>, ...}
+actor = None
+
+    async def detail(client, data, actor=None):
+        reply = await client.get(f'/api/payments/iyzico/checkouts/{data["checkout_id"]}/review', headers=headers(actor or data["finance"]))
+>       assert reply.status_code == 200, reply.text
+E       AssertionError: {"success":false,"message":"Not Found","errors":[],"detail":"Not Found","request_id":"7d81b129-df6b-4c5a-a31a-595415ef686b"}
+E       assert 404 == 200
+E        +  where 404 = <Response [404 Not Found]>.status_code
+
+tests\integration\test_school_payment_review.py:33: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_school_payment_review.py::test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_review_apply_atomic_replay_preserves_original_checkout_and_records_actual_reviewer[postgresql]
+FAILED tests/integration/test_school_payment_review.py::test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_review_rejects_parent_wrong_actor_nonce_stale_revision_and_foreign_scope[postgresql]
+FAILED tests/integration/test_school_payment_review.py::test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_recorded_full_refund_accepts_mismatch_without_transaction_and_never_touches_ledger[postgresql]
+FAILED tests/integration/test_school_payment_review.py::test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot[sqlite]
+FAILED tests/integration/test_school_payment_review.py::test_soft_deleted_debt_can_only_record_external_refund_and_unverified_data_cannot[postgresql]
+8 failed, 20 warnings in 21.70s

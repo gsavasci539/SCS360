@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
-import { BookOpen, Calendar, Users, FileText, CheckCircle, Clock, MessageCircle } from "lucide-react";
+import { reportClientError } from "../../lib/diagnostics";
+import { useState, useEffect, useRef } from "react";
+import { BookOpen, Calendar, Users, FileText, CheckCircle, Clock, MessageCircle, Pill } from "lucide-react";
 import { api, apiMessage } from "../../lib/api";
 import { PageHeader, LoadingState, ErrorState, Badge, Tabs } from "../../components/ui";
 import { ChatInterface } from "../parent/ChatInterface";
+import { useAuthStore } from "../../stores/auth";
 
 interface ClassInfo {
   id: string;
@@ -23,122 +25,144 @@ interface ScheduleItem {
 
 interface Task {
   id: string;
-  type: 'attendance' | 'grading' | 'material' | 'message';
+  type: 'attendance' | 'daily_report' | 'grading' | 'material' | 'message' | 'medicine';
   title: string;
   description: string;
   due_date: string;
   priority: 'high' | 'medium' | 'low';
 }
 
+interface MedicineRequest {
+  id: string;
+  student_name: string;
+  class_name: string;
+  medicine_name: string;
+  dosage: string;
+  time_to_give: string;
+  instructions?: string;
+  status: string;
+  created_at?: string;
+}
+
 interface StudentWithParent {
   student_id: string;
   student_name: string;
-  parent_id: string;
+  parent_id: string | null;
   parent_name: string;
   is_primary: boolean;
 }
 
 export default function TeacherPortalPage() {
+  const canReadMedicine = useAuthStore((state) => state.can("health.read") || state.can("teacher.view_medicine_requests"));
   const [activeTab, setActiveTab] = useState("classes");
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [medicineRequests, setMedicineRequests] = useState<MedicineRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const loadSequence = useRef(0);
+  const studentSequence = useRef(0);
   
   // Chat state
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [students, setStudents] = useState<StudentWithParent[]>([]);
   const [chatStudentId, setChatStudentId] = useState<string>("");
   const [chatParentName, setChatParentName] = useState<string>("");
+  const [chatParentId, setChatParentId] = useState<string>("");
 
   useEffect(() => {
     load();
-  }, []);
+  }, [canReadMedicine]);
 
-  const load = async () => {
-    console.log("Loading data, activeTab:", activeTab);
+  async function load() {
+    const request = ++loadSequence.current;
     setLoading(true);
     setError("");
     try {
-      const [classesResult, scheduleResult, tasksResult] = await Promise.allSettled([
+      const [classesResult, scheduleResult, tasksResult, medicineResult] = await Promise.allSettled([
         api.get("/teacher/my-classes"),
         api.get("/teacher/today-schedule"),
-        api.get("/teacher/pending-tasks")
+        api.get("/teacher/pending-tasks"),
+        canReadMedicine ? api.get("/teacher/medicine-requests") : Promise.resolve({ data: { data: [] } })
       ]);
+      if (request !== loadSequence.current) return;
+      const failed = [classesResult, scheduleResult, tasksResult, medicineResult].find((result) => result.status === "rejected");
+      if (failed?.status === "rejected") setError(apiMessage(failed.reason));
       if (classesResult.status === "fulfilled") {
-        console.log("Classes full response:", classesResult.value);
+        
         const classesData = classesResult.value.data.data || [];
-        console.log("Classes data:", classesData);
+        
         setClasses(classesData);
       } else {
-        console.error("Classes error:", classesResult.reason);
+        reportClientError("Classes error:", classesResult.reason);
         setError(apiMessage(classesResult.reason));
       }
       if (scheduleResult.status === "fulfilled") {
-        console.log("Schedule full response:", scheduleResult.value);
+        
         const scheduleData = scheduleResult.value.data.data || [];
-        console.log("Schedule data:", scheduleData);
+        
         setSchedule(scheduleData.map((item: any) => ({
           id: item.timetable_id,
-          subject: item.subject_id || "Ders",
+          subject: item.subject || "Ders",
           class_name: item.class_name,
           room: item.room_number || "Belirtilmedi",
           time: `${item.start_time} - ${item.end_time}`,
           day: item.day
         })));
       } else {
-        console.error("Schedule error:", scheduleResult.reason);
+        reportClientError("Schedule error:", scheduleResult.reason);
       }
       if (tasksResult.status === "fulfilled") {
         const tasksData = tasksResult.value.data.data;
         setTasks((tasksData?.tasks || []).map((task: any) => ({
-          id: task.task_id || Math.random().toString(),
+          id: task.task_id || `${task.class_id}-${task.task_type}`,
           type: task.task_type,
           title: task.class_name || "Görev",
-          description: task.task_type === "attendance" ? "Yoklama almayı bekliyor" : task.task_type === "daily_report" ? "Günlük rapor girişi" : "Diğer",
+          description: task.task_type === "attendance" ? `Yoklama bekleyen: ${task.remaining_count ?? "—"} öğrenci` : task.task_type === "daily_report" ? `Günlük raporu bekleyen: ${task.remaining_count ?? "—"} öğrenci` : "Diğer",
           due_date: task.due_date,
           priority: task.priority
         })));
       }
+      if (medicineResult.status === "fulfilled") {
+        setMedicineRequests(medicineResult.value.data.data || []);
+      }
     } catch (err) {
-      setError(apiMessage(err));
+      if (request === loadSequence.current) setError(apiMessage(err));
     } finally {
-      setLoading(false);
+      if (request === loadSequence.current) setLoading(false);
     }
-  };
+  }
 
   const loadClassStudents = async (classId: string) => {
+    const request = ++studentSequence.current;
+    setSelectedClass(classId); setStudents([]); setChatStudentId(""); setChatParentId("");
     try {
       const result = await api.get(`/teacher/class/${classId}/students`);
+      if (request !== studentSequence.current) return;
       setStudents(result.data.data || []);
-      setSelectedClass(classId);
     } catch (err) {
-      setError(apiMessage(err));
+      if (request === studentSequence.current) setError(apiMessage(err));
     }
   };
 
-  const openChat = (studentId: string, parentName: string) => {
+  const openChat = (studentId: string, parentName: string, parentId: string | null) => {
+    if (!parentId) return;
     setChatStudentId(studentId);
     setChatParentName(parentName);
+    setChatParentId(parentId);
   };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [activeTab]);
 
   if (loading) return <LoadingState label="Yükleniyor..." />;
   if (error) return <ErrorState message={error} retry={load} />;
 
   const taskIcons = {
     attendance: <CheckCircle size={16} />,
+    daily_report: <FileText size={16} />,
     grading: <FileText size={16} />,
     material: <BookOpen size={16} />,
-    message: <Clock size={16} />
+    message: <Clock size={16} />,
+    medicine: <Pill size={16} />
   };
 
   return (
@@ -158,6 +182,7 @@ export default function TeacherPortalPage() {
             { id: "classes", label: "Sınıflarım" },
             { id: "schedule", label: "Bugünkü Program" },
             { id: "tasks", label: "Görevler" },
+            ...(canReadMedicine ? [{ id: "medicine", label: "İlaç Talepleri" }] : []),
             { id: "chat", label: "Mesajlar" }
           ]}
         />
@@ -300,11 +325,41 @@ export default function TeacherPortalPage() {
             {tasks.length === 0 && <p className="text-gray-500 mt-4">Bekleyen göreviniz yok.</p>}
           </div>
         )}
+        {activeTab === "medicine" && canReadMedicine && (
+          <div className="tab-content">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Öğrenci</th>
+                  <th>Sınıf</th>
+                  <th>İlaç</th>
+                  <th>Doz</th>
+                  <th>Saat</th>
+                  <th>Durum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medicineRequests.map((request) => (
+                  <tr key={request.id}>
+                    <td>{request.student_name}</td>
+                    <td>{request.class_name}</td>
+                    <td>{request.medicine_name}</td>
+                    <td>{request.dosage}</td>
+                    <td>{request.time_to_give}</td>
+                    <td><Badge value={request.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {medicineRequests.length === 0 && <p className="text-gray-500 mt-4">Sınıflarınız için ilaç talebi yok.</p>}
+          </div>
+        )}
         {activeTab === "chat" && (
           <div className="tab-content">
             {chatStudentId ? (
               <ChatInterface
                 studentId={chatStudentId}
+                parentId={chatParentId}
                 teacherName={chatParentName}
                 onBack={() => {
                   setChatStudentId("");
@@ -317,15 +372,16 @@ export default function TeacherPortalPage() {
                 <h3 style={{ marginBottom: 16 }}>Sınıf Seçin</h3>
                 <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
                   {classes.map((cls) => (
-                    <div
+                    <button type="button"
                       key={cls.id}
                       className="card"
                       style={{ padding: 16, cursor: "pointer", textAlign: "center" }}
                       onClick={() => loadClassStudents(cls.id)}
+                      aria-pressed={selectedClass === cls.id}
                     >
                       <div style={{ fontWeight: 600, marginBottom: 8 }}>{cls.name}</div>
                       <div style={{ fontSize: 12, color: "#666" }}>{cls.student_count} öğrenci</div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
@@ -334,11 +390,12 @@ export default function TeacherPortalPage() {
                     <h3 style={{ marginBottom: 16 }}>Öğrenciler ve Veliler</h3>
                     <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
                       {students.map((student) => (
-                        <div
-                          key={student.student_id}
+                        <button type="button"
+                          key={`${student.student_id}-${student.parent_id}`}
                           className="card"
                           style={{ padding: 16, cursor: "pointer" }}
-                          onClick={() => openChat(student.student_id, student.parent_name)}
+                          onClick={() => openChat(student.student_id, student.parent_name, student.parent_id)}
+                          disabled={!student.parent_id}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                             <div style={{
@@ -366,7 +423,7 @@ export default function TeacherPortalPage() {
                             <MessageCircle size={16} style={{ marginRight: 8 }} />
                             Mesaj Gönder
                           </button>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </>

@@ -1,0 +1,220 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [19380]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "2f1dc8bd-f9a5-4234-80a1-409bd4af434e", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.85, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:46.725870Z"}
+[WebServer] (node:9564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:9960) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:20940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "befddd94-c9be-471c-ac10-0049eb590a03", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 1697.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:52.067929Z"}
+[WebServer] {"request_id": "a2521977-2e29-413f-8f40-5448dff4eea2", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 712.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:53.662406Z"}
+[WebServer] {"request_id": "3ced66c2-e570-4e0c-bd8b-d0e2f0e1d796", "method": "POST", "path": "/api/platform/plans", "status": 200, "duration_ms": 27.5, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:53.701456Z"}
+[WebServer] {"request_id": "5e2cb5aa-974f-4944-9aea-842df7b88215", "method": "POST", "path": "/api/platform/tenants", "status": 200, "duration_ms": 424.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.141290Z"}
+[WebServer] {"request_id": "09a54320-845e-42b7-912e-9758248957f4", "method": "POST", "path": "/api/branches", "status": 200, "duration_ms": 42.74, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.195915Z"}
+[WebServer] {"request_id": "b0dfee4e-5e04-4b83-bcef-7057114a26ab", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 51.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.258661Z"}
+[WebServer] {"request_id": "14a5864e-5342-4abb-9a80-f91b854072c4", "method": "GET", "path": "/api/users/options", "status": 200, "duration_ms": 39.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.308585Z"}
+[WebServer] {"request_id": "73d63bf4-e383-49a5-8749-9718c1d0f4ee", "method": "GET", "path": "/api/permissions", "status": 200, "duration_ms": 20.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.341626Z"}
+[WebServer] {"request_id": "e648e808-1c98-419e-9ac7-3c4139f223d4", "method": "PUT", "path": "/api/roles/00a21c5c-d975-4a8f-be6a-2bdb8c94c2c9/permissions", "status": 200, "duration_ms": 33.7, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.388079Z"}
+[WebServer] {"request_id": "f85bfaf9-51a2-43b9-bfbf-47df34573044", "method": "POST", "path": "/api/users", "status": 200, "duration_ms": 336.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.734344Z"}
+[WebServer] {"request_id": "5b2bafdf-fee5-43fc-b583-e0348ec3e975", "method": "PUT", "path": "/api/users/2f9186cb-29b6-4733-9fdb-be9e0fce4dd4/access", "status": 200, "duration_ms": 38.43, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.784079Z"}
+[WebServer] {"request_id": "c198cddb-e6be-43d0-941b-56de4011c682", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 40.7, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.833686Z"}
+[WebServer] {"request_id": "ddc61cec-270d-44c0-9667-ff66de8696f8", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 27.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.871639Z"}
+[WebServer] {"request_id": "1d4ab2ca-7344-4dfe-8bf0-8842e34ebc2b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 29.06, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.910924Z"}
+[WebServer] {"request_id": "8eaa0e02-5567-40e2-a70d-c2bdfcde23f3", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.44, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.946065Z"}
+[WebServer] {"request_id": "afda1648-003f-4b1e-bf36-59c873c2ab05", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:54.980169Z"}
+[WebServer] {"request_id": "a6a8013b-1e06-4277-9851-540de9545087", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.015710Z"}
+[WebServer] {"request_id": "282f2aee-b2ea-4f3c-8614-b989cc7a89d2", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 21.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.047639Z"}
+[WebServer] {"request_id": "04f05f1c-9bc2-4a06-8f89-12b325ad5752", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.080001Z"}
+[WebServer] {"request_id": "1011abd8-d801-4894-a25c-83da4b81ab6a", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.112722Z"}
+[WebServer] {"request_id": "88ed4fc9-f040-4ca6-ab96-6b2d00995d91", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.146402Z"}
+[WebServer] {"request_id": "b0eb8024-4eb4-453e-8678-1f27a4ebb507", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.178921Z"}
+[WebServer] {"request_id": "478b37af-32d5-45c7-b63e-bc9425015bc8", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.58, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.211071Z"}
+[WebServer] {"request_id": "f6e1244c-79d4-4582-87e4-add2cacb3302", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.58, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.243532Z"}
+[WebServer] {"request_id": "876709cf-35ee-40d3-babd-982879b55fef", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 21.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.281867Z"}
+[WebServer] {"request_id": "dcda9c45-4154-4bae-aa2c-676b509d21c4", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.311991Z"}
+[WebServer] {"request_id": "968cee23-8dee-4d87-bf91-c93ec203e060", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.343594Z"}
+[WebServer] {"request_id": "474dfc3a-a316-42a1-94e4-2b7e1304a142", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.375774Z"}
+[WebServer] {"request_id": "5fb7816f-99c1-4ea4-b9f2-6c2b2eb8fd3c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 28.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.414868Z"}
+[WebServer] {"request_id": "19bae4d5-c012-499b-970e-ac78fc6885b0", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.73, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.448196Z"}
+[WebServer] {"request_id": "ef67458d-bc13-4404-97e3-f0644fc47f85", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.480601Z"}
+[WebServer] {"request_id": "9d3ad55d-5aad-4b7e-828c-c23b5513a3b1", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.512627Z"}
+[WebServer] {"request_id": "05135c94-efb7-42ba-b763-70ef6451721c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.546842Z"}
+[WebServer] {"request_id": "5c3d7fa5-7cd8-4116-ab83-84a032120ded", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.580351Z"}
+[WebServer] {"request_id": "7623ae29-e87d-4335-932a-a29faf7f1759", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 26.79, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.617529Z"}
+[WebServer] {"request_id": "85c1ebc4-83c1-4347-978d-e84c25a0432f", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 30.54, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.658112Z"}
+[WebServer] {"request_id": "38ec09ee-c3f0-4953-a2ef-8115ec0f4e20", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 26.93, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.694225Z"}
+[WebServer] {"request_id": "3aad6885-ff71-4d51-ac16-b53543979508", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.26, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.728454Z"}
+[WebServer] {"request_id": "81ea8bc1-c2bf-48d3-b0b7-11ec508e4a7d", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.762379Z"}
+[WebServer] {"request_id": "0720ee86-d0f9-4c1e-98c7-33d6c0c80732", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.39, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.795666Z"}
+[WebServer] {"request_id": "e163d592-a332-44ee-9e9e-767b55e4b625", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 32.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.837394Z"}
+[WebServer] {"request_id": "ed281c7c-7fd7-4e77-a02a-5dbd3bfb1b0c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 17.9, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.863798Z"}
+[WebServer] {"request_id": "5297fef6-cfd3-44ab-ae64-bb4ee4de1310", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.1, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.897321Z"}
+[WebServer] {"request_id": "40cb42e3-0964-4c0c-9288-646cd48396ed", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 37.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.950008Z"}
+[WebServer] {"request_id": "2ceac12d-c14d-4b1c-9ee7-44388a795f33", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 18.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:55.976713Z"}
+[WebServer] {"request_id": "72edc54e-14ca-42f7-94d9-c8dc1cd1b8a4", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 26.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.010924Z"}
+[WebServer] {"request_id": "1e1e4d7f-b6eb-47b6-b45d-5f92ff6262db", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 41.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.061010Z"}
+[WebServer] {"request_id": "ce5a8610-98fd-47f1-93ec-033165098f46", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 51.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.119878Z"}
+[WebServer] {"request_id": "5db5555c-c8b7-44f4-914a-448d59dac1e4", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.57, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.152946Z"}
+[WebServer] {"request_id": "56665765-d645-4a2e-a209-5dce570d18e7", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 30.25, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.191371Z"}
+[WebServer] {"request_id": "1f0607d8-37b7-441b-98de-5440ca1613c3", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.225937Z"}
+[WebServer] {"request_id": "e979f664-8013-49ae-9385-ceba45f6cd9b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 40.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.276230Z"}
+[WebServer] {"request_id": "1c24044f-0bb9-4cc9-b8ba-d1ff702b7885", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 38.48, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.324862Z"}
+[WebServer] {"request_id": "c564cf6e-5e8a-4314-9523-e2f8f28b20b3", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 37.07, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.370433Z"}
+[WebServer] {"request_id": "ffb6e1fa-c087-4e90-8bbd-d3b2f376c08c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 43.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.422433Z"}
+[WebServer] {"request_id": "671ab122-a6d1-4127-8723-83710560ec1c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 49.77, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.480855Z"}
+[WebServer] {"request_id": "836567ad-a75c-4143-b61d-ab3a1fcaaa4c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 53.83, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.543704Z"}
+[WebServer] {"request_id": "38d67814-f0f7-4804-b057-6ff5dc6ffbb7", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.54, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.575855Z"}
+[WebServer] {"request_id": "36dc8f4a-4555-42cc-ba5f-4a283631c03c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.608796Z"}
+[WebServer] {"request_id": "dd5a298a-a6fd-4a9b-a5eb-85d0a3206d72", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.639917Z"}
+[WebServer] {"request_id": "7f469379-f17b-4e65-91ca-8741e2ec0f99", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.3, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.668389Z"}
+[WebServer] {"request_id": "929d4e94-a3b2-4ed0-8f1c-546f4c01b238", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 16.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.692921Z"}
+[WebServer] {"request_id": "bde77ac7-6465-499f-bf56-43742e28ec81", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.12, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.714660Z"}
+[WebServer] {"request_id": "e099d6e3-be77-4ac8-8d8e-a291ead872de", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 13.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.742812Z"}
+[WebServer] {"request_id": "dbb9e40f-20df-4ab7-ab93-da9627744c3c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.2, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.765191Z"}
+[WebServer] {"request_id": "89ef43f2-e848-449b-901b-5e74a7d11075", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 15.51, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.789350Z"}
+[WebServer] {"request_id": "15276634-f5df-4ce6-bd85-94ab6730abbc", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 12.53, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.810247Z"}
+[WebServer] {"request_id": "275522ea-146a-497c-a5ee-c5452fe0eff0", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 13.9, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.832142Z"}
+[WebServer] {"request_id": "b540d6b0-c5af-432e-8fd5-f8fd8196a385", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 16.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.855244Z"}
+[WebServer] {"request_id": "9a5ba144-6e01-4444-9873-ef45f98b2726", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.5, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.877811Z"}
+[WebServer] {"request_id": "33510adb-7218-4a1f-a3da-3e10a815670f", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.48, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.901116Z"}
+[WebServer] {"request_id": "8e07f840-419d-4a39-81bb-c624cf2ec8c3", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.66, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.922942Z"}
+[WebServer] {"request_id": "b1eee06f-7959-4a72-a035-eb4162d9c172", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.4, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.944994Z"}
+[WebServer] {"request_id": "41523e56-181c-4947-a3b6-1fab589a3f49", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.967911Z"}
+[WebServer] {"request_id": "1747856f-fe40-46f7-b7e8-b9589bac532a", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 15.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:56.990632Z"}
+[WebServer] {"request_id": "f4434d2f-f743-4ee2-bfc6-293b4fd4d973", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 13.28, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.010598Z"}
+[WebServer] {"request_id": "a9b63e62-71a4-4411-8613-9d393d78db62", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.032974Z"}
+[WebServer] {"request_id": "9169240e-ace1-4e85-b113-64618353b698", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 16.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.057155Z"}
+[WebServer] {"request_id": "d4797a70-5ecf-4fb8-9c32-926910023f1b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 15.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.080367Z"}
+[WebServer] {"request_id": "e43b0308-6ecd-4c5a-a2b7-6058518584c1", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 15.91, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.104387Z"}
+[WebServer] {"request_id": "f7513e14-6172-4840-912b-f043d61150a7", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.131031Z"}
+[WebServer] {"request_id": "78b9d19e-7579-4f3c-875d-1ee052e3b761", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.153398Z"}
+[WebServer] {"request_id": "ac0ae02b-7ae3-49f0-ad6e-39f835c877c2", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.188179Z"}
+[WebServer] {"request_id": "622743ad-60a7-4f15-93bf-f115bcff5827", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.210256Z"}
+[WebServer] {"request_id": "3e9c3985-f8e2-43f4-b4d8-62b997d820a7", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 14.7, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.233288Z"}
+[WebServer] {"request_id": "67c1a883-7231-4596-818c-56faf54a06f4", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 15.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.257042Z"}
+[WebServer] {"request_id": "06ad05df-0c1e-430d-87cb-763d8a5115f8", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 13.51, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.278010Z"}
+[WebServer] {"request_id": "ffb95c43-cc08-4421-aa2b-38b294d6b42b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 18.38, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.306534Z"}
+[WebServer] {"request_id": "be944b46-5db1-4ed4-a0f0-02dea7eca67f", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.07, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.338571Z"}
+[WebServer] {"request_id": "e92ff78c-bd45-4306-9807-4f878edce74b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.59, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.366536Z"}
+[WebServer] {"request_id": "1dd2123a-0e77-4988-8124-f0513d7cd88d", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 16.82, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.391794Z"}
+[WebServer] {"request_id": "f13ddc99-0377-4f35-be26-7af1f0f52681", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.419886Z"}
+[WebServer] {"request_id": "06dea011-86f3-44c6-9680-9014e30f0cde", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.451402Z"}
+[WebServer] {"request_id": "4b18fe21-f9b3-40a6-90d3-50a699dccdad", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.484085Z"}
+[WebServer] {"request_id": "3dd58f3e-7b63-40bc-b436-7dab97cf3cb9", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.517385Z"}
+[WebServer] {"request_id": "56a43992-7d5d-4ece-afda-54330449d813", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.549930Z"}
+[WebServer] {"request_id": "5b73e74d-c4e4-42b3-862d-5b3cf3f06eec", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 25.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.584100Z"}
+[WebServer] {"request_id": "c10cffab-38bd-4e97-854c-37f0a7e5ca60", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.612774Z"}
+[WebServer] {"request_id": "d9cefc17-c93a-495d-9aef-86ad0f37398b", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.647565Z"}
+[WebServer] {"request_id": "9fa84a99-04e1-4904-abe4-5f09060b7e78", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.54, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.679290Z"}
+[WebServer] {"request_id": "ed700861-3cdf-412c-990c-3e5f0fb0e44a", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 24.06, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.712797Z"}
+[WebServer] {"request_id": "093df1f7-523b-455a-86fb-5dd162610fcb", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.07, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.744546Z"}
+[WebServer] {"request_id": "050c1e82-8c57-46a2-8c4a-7b6b454a5dd7", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.775936Z"}
+[WebServer] {"request_id": "6803ef0d-ec27-42d5-9a8d-edc88e8c4909", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.808541Z"}
+[WebServer] {"request_id": "6771ba3e-37ba-42ad-be26-d8b0cf63b475", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 23.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.841146Z"}
+[WebServer] {"request_id": "61418f21-010f-4dec-b7b9-5da7689db911", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 22.53, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.874464Z"}
+[WebServer] {"request_id": "4ea2236b-3d29-453d-b9d9-f6643ea32f52", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 18.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.901419Z"}
+[WebServer] {"request_id": "854d1cf0-29c7-40c1-a8c8-f9fe94f7bc55", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.35, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.929580Z"}
+[WebServer] {"request_id": "8425d5c0-9fb6-4f5b-bbc2-5a78ff1d9a38", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.959425Z"}
+[WebServer] {"request_id": "673da996-6a51-428d-9a96-89e9361a4150", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:57.988011Z"}
+[WebServer] {"request_id": "cc4f961a-7399-4835-a529-07531e2d7216", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 26.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.022839Z"}
+[WebServer] {"request_id": "a65429b8-ab85-4df0-ba86-d687a8d06a8c", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 27.25, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.059940Z"}
+[WebServer] {"request_id": "7ae81fa3-a7b4-41ee-a6f7-a737e6e42072", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 20.52, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.089622Z"}
+[WebServer] {"request_id": "1f3d18f6-e96c-4169-9f92-663185838869", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.118489Z"}
+[WebServer] {"request_id": "ce52aa97-6fae-4ce6-8b6c-4afe0a470685", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 17.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.145041Z"}
+[WebServer] {"request_id": "a08ec3bb-5539-4aac-8592-7a4c0cdb4d6f", "method": "POST", "path": "/api/debts", "status": 200, "duration_ms": 19.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:58.173292Z"}
+[WebServer] {"request_id": "289d06f0-e0a6-4226-95de-755911fbb11c", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 340.07, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:24:59.347054Z"}
+[WebServer] {"request_id": "af8f1020-6b4c-4b48-b064-c6d61604272d", "method": "GET", "path": "/api/payments/debt-options", "status": 200, "duration_ms": 34.25, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:25:00.122239Z"}
+[WebServer] {"request_id": "54ea2ed5-c96e-4146-b892-bd4c0c03a537", "method": "GET", "path": "/api/payments/debt-options", "status": 200, "duration_ms": 43.23, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:25:00.461566Z"}
+[WebServer] {"request_id": "c0af0cca-2666-4de2-b7e6-ac8314fd55d9", "method": "POST", "path": "/api/payments", "status": 200, "duration_ms": 123.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T17:25:04.009273Z"}
+  x  1 [edge] › e2e\cash-payments.spec.ts:10:1 › collector retries a committed cash payment once and the selected cancellation preserves the other payment (29.0s)
+
+
+  1) [edge] › e2e\cash-payments.spec.ts:10:1 › collector retries a committed cash payment once and the selected cancellation preserves the other payment 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected substring: "Sunucuya ulaşılamadı"
+    Received string:    "Sunucu yanıt vermedi. Lütfen tekrar deneyin."
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('alert') with timeout 15000ms
+      - waiting for getByRole('alert')
+        30 × locator resolved to <p role="alert">Sunucu yanıt vermedi. Lütfen tekrar deneyin.</p>
+           - unexpected value "Sunucu yanıt vermedi. Lütfen tekrar deneyin."
+
+
+      61 |   });
+      62 |   await page.getByRole("button", { name: "Tahsilatı tamamla", exact: true }).click();
+    > 63 |   await expect(page.getByRole("alert")).toContainText("Sunucuya ulaşılamadı");
+         |                                         ^
+      64 |   await page.getByRole("button", { name: "Tahsilatı tamamla", exact: true }).click();
+      65 |   await expect(page.getByRole("region", { name: "Tahsilat sonucu", exact: true })).toContainText("RCP-");
+      66 |   await expect(page).toHaveURL(/\/finance\/payments\/new$/);
+        at C:\Okul360\frontend\e2e\cash-payments.spec.ts:63:41
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\cash-payments-collector-re-adebe-preserves-the-other-payment-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\cash-payments-collector-re-adebe-preserves-the-other-payment-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cash-payments-collector-re-adebe-preserves-the-other-payment-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cash-payments-collector-re-adebe-preserves-the-other-payment-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\cash-payments.spec.ts:10:1 › collector retries a committed cash payment once and the selected cancellation preserves the other payment 

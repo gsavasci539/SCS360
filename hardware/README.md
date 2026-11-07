@@ -1,6 +1,6 @@
 # RFID Hardware Integration
 
-Bu proje, Okul360 sistemi için RFID kart okuyucu ve turnike donanımlarının entegrasyonunu içerir.
+Bu proje, SCS360 sistemi için RFID kart okuyucu ve turnike donanımlarının entegrasyonunu içerir.
 
 ## Donanım Bileşenleri
 
@@ -263,4 +263,4 @@ Sorunlar için:
 
 ## Lisans
 
-Bu proje Okul360 projesinin bir parçasıdır.
+Bu proje SCS360 projesinin bir parçasıdır.

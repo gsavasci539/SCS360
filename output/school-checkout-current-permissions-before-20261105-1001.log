@@ -1,0 +1,104 @@
+FFF...F..                                                                [100%]
+================================== FAILURES ===================================
+_ test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored[sqlite] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x0000019669E5BE00>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001966B1ED7F0>, ...}, <test_school_checkout_durability.Provider object at 0x000001966B1ECAD0>)
+
+    async def test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored(school_checkout_client):
+        client, sessions, data, _provider = school_checkout_client
+        request = payment(data)
+        started = await client.post("/api/payments/iyzico/initialize", headers=headers(data["finance"]), json=request)
+        assert started.status_code == 200, started.text
+        identifier = request["request_id"]
+        async with sessions() as db:
+            role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "org_admin", Role.organization_id == data["org"].id))).scalar_one()
+            role.permissions = [permission for permission in role.permissions if permission.code != "finance.write"]
+            await db.commit()
+        metadata = await client.get(f"/api/payments/iyzico/checkouts/{identifier}", headers=headers(data["finance"]))
+        assert metadata.status_code == 200, metadata.text
+>       assert metadata.json()["data"]["can_resume"] is False and metadata.json()["data"]["can_refresh"] is False
+E       assert (True is False)
+
+tests\integration\test_school_checkout_current_permissions.py:29: AssertionError
+_ test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored[postgresql] _
+
+school_checkout_client = (<httpx.AsyncClient object at 0x000001966C5CEAD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...dels.Debt object at 0x000001966CA57650>, ...}, <test_school_checkout_durability.Provider object at 0x000001966CA75310>)
+
+    async def test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored(school_checkout_client):
+        client, sessions, data, _provider = school_checkout_client
+        request = payment(data)
+        started = await client.post("/api/payments/iyzico/initialize", headers=headers(data["finance"]), json=request)
+        assert started.status_code == 200, started.text
+        identifier = request["request_id"]
+        async with sessions() as db:
+            role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "org_admin", Role.organization_id == data["org"].id))).scalar_one()
+            role.permissions = [permission for permission in role.permissions if permission.code != "finance.write"]
+            await db.commit()
+        metadata = await client.get(f"/api/payments/iyzico/checkouts/{identifier}", headers=headers(data["finance"]))
+        assert metadata.status_code == 200, metadata.text
+>       assert metadata.json()["data"]["can_resume"] is False and metadata.json()["data"]["can_refresh"] is False
+E       assert (True is False)
+
+tests\integration\test_school_checkout_current_permissions.py:29: AssertionError
+_ test_checkout_action_capabilities_follow_current_route_permission_and_purpose[False-True-permissions0-False] _
+
+parent_purpose = False, own = True, permissions = {'finance.read'}
+allowed = False
+
+    @pytest.mark.parametrize("parent_purpose,own,permissions,allowed", [
+        (False, True, {"finance.read"}, False),
+        (False, False, {"finance.write"}, True),
+        (False, True, {"parent.make_payment"}, True),
+        (False, False, {"parent.make_payment"}, False),
+        (True, True, {"finance.write"}, False),
+        (True, True, {"parent.make_payment"}, True),
+        (True, False, {"finance.write", "parent.make_payment"}, False),
+    ])
+    def test_checkout_action_capabilities_follow_current_route_permission_and_purpose(parent_purpose, own, permissions, allowed):
+        actor = uuid4()
+        tenant = TenantContext(user_id=actor, permissions=permissions, parent_portal=parent_purpose)
+        row = SimpleNamespace(created_by=actor if own else uuid4())
+>       assert actions(tenant, row) is allowed
+E       AssertionError: assert True is False
+E        +  where True = actions(TenantContext(user_id=UUID('0a4fb727-5f93-4b70-a62d-aeaeed199565'), organization_id=None, branch_ids=[], class_ids=[], permissions={'finance.read'}, role_slugs=set(), is_super_admin=False, platform_admin=False, parent_portal=False), namespace(created_by=UUID('0a4fb727-5f93-4b70-a62d-aeaeed199565')))
+
+tests\integration\test_school_checkout_current_permissions.py:55: AssertionError
+_ test_checkout_action_capabilities_follow_current_route_permission_and_purpose[True-True-permissions4-False] _
+
+parent_purpose = True, own = True, permissions = {'finance.write'}
+allowed = False
+
+    @pytest.mark.parametrize("parent_purpose,own,permissions,allowed", [
+        (False, True, {"finance.read"}, False),
+        (False, False, {"finance.write"}, True),
+        (False, True, {"parent.make_payment"}, True),
+        (False, False, {"parent.make_payment"}, False),
+        (True, True, {"finance.write"}, False),
+        (True, True, {"parent.make_payment"}, True),
+        (True, False, {"finance.write", "parent.make_payment"}, False),
+    ])
+    def test_checkout_action_capabilities_follow_current_route_permission_and_purpose(parent_purpose, own, permissions, allowed):
+        actor = uuid4()
+        tenant = TenantContext(user_id=actor, permissions=permissions, parent_portal=parent_purpose)
+        row = SimpleNamespace(created_by=actor if own else uuid4())
+>       assert actions(tenant, row) is allowed
+E       AssertionError: assert True is False
+E        +  where True = actions(TenantContext(user_id=UUID('15d6d4d8-4f21-4983-a870-23822ccb8c51'), organization_id=None, branch_ids=[], class_ids=[], permissions={'finance.write'}, role_slugs=set(), is_super_admin=False, platform_admin=False, parent_portal=True), namespace(created_by=UUID('15d6d4d8-4f21-4983-a870-23822ccb8c51')))
+
+tests\integration\test_school_checkout_current_permissions.py:55: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored[sqlite]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_creator_losing_finance_write_has_no_actions_until_current_permission_is_restored[postgresql]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_checkout_action_capabilities_follow_current_route_permission_and_purpose[False-True-permissions0-False]
+FAILED tests/integration/test_school_checkout_current_permissions.py::test_checkout_action_capabilities_follow_current_route_permission_and_purpose[True-True-permissions4-False]
+4 failed, 5 passed, 20 warnings in 5.77s

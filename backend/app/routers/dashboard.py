@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from sqlalchemy import select
+from app.core.dates import school_today
+from app.infrastructure.models.models import ClassRoom as Class
+from typing import Optional, Literal
+from pydantic import BaseModel, Field
 from uuid import UUID
-from datetime import datetime, date
+from datetime import UTC, datetime, date
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
@@ -17,75 +21,43 @@ router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
 @router.get("/summary")
 async def get_dashboard_summary(
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("dashboard.view"))
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("dashboard.read", "dashboard.view")),
 ):
-    """Get dashboard summary statistics"""
-    
-    from app.repositories import (
-        StudentRepository,
-        ClassRepository,
-        DebtRepository,
-        PaymentRepository,
-        AttendanceRepository
-    )
-    
-    student_repo = StudentRepository()
-    class_repo = ClassRepository()
-    debt_repo = DebtRepository()
-    payment_repo = PaymentRepository()
-    attendance_repo = AttendanceRepository()
-    
-    # Get counts
-    total_students = await student_repo.count(db, {"organization_id": tenant.organization_id})
-    active_students = await student_repo.count(db, {"organization_id": tenant.organization_id, "status": "active"})
-    total_classes = await class_repo.count(db, {"organization_id": tenant.organization_id})
-    
-    # Get financial summary
-    try:
-        debts = await debt_repo.get_by_organization(db, tenant.organization_id)
-        total_debt = sum(d.remaining_amount for d in debts if d.remaining_amount > 0)
-        pending_debt = sum(d.remaining_amount for d in debts if d.remaining_amount > 0 and d.status == "pending")
-        overdue_debt = sum(d.remaining_amount for d in debts if d.remaining_amount > 0 and d.due_date < datetime.utcnow())
-    except:
-        total_debt = 0
-        pending_debt = 0
-        overdue_debt = 0
-    
-    try:
-        payments = await payment_repo.get_by_organization(db, tenant.organization_id)
-        monthly_payments = sum(p.amount for p in payments if p.status == "completed" and p.payment_date and p.payment_date.month == datetime.utcnow().month)
-    except:
-        monthly_payments = 0
-    
-    # Get today's attendance
-    today = datetime.utcnow().date()
-    absent_today = 0
-    try:
-        for cls in await class_repo.get_active_classes(db, tenant.organization_id):
-            class_attendance = await attendance_repo.get_by_class_and_date(
-                db, cls.id, datetime(today.year, today.month, today.day)
-            )
-            absent_today += len([a for a in class_attendance if a.status == "absent"])
-    except:
-        pass
-    
-    return success_response({
-        "total_students": total_students,
-        "active_students": active_students,
-        "total_branches": 1,  # Placeholder
-        "total_classes": total_classes,
-        "absent_today": absent_today,
-        "monthly_payments": monthly_payments,
-        "pending_debt": pending_debt,
-        "overdue_debt": overdue_debt
-    })
+    from sqlalchemy import func
+    from app.infrastructure.models.models import Student, StudentStatus, Branch, Debt, DebtStatus, Payment, AttendanceRecord, AttendanceStatus
+    from app.infrastructure.repositories.base import BaseRepository
+    from datetime import UTC, time
+    repo = BaseRepository(db, tenant)
+    def scoped(model):
+        return repo._branch_filter(repo._org_filter(select(model), model), model)
+    async def count(query):
+        return (await db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
+    students = scoped(Student).where(Student.deleted_at.is_(None))
+    classes = scoped(Class).where(Class.deleted_at.is_(None))
+    branches = repo._org_filter(select(Branch), Branch).where(Branch.deleted_at.is_(None))
+    if tenant.branch_ids and not tenant.is_super_admin:
+        branches = branches.where(Branch.id.in_(tenant.branch_ids))
+    today = school_today()
+    start = datetime.combine(today.replace(day=1), time.min, tzinfo=UTC)
+    end = start.replace(year=start.year + (start.month == 12), month=start.month % 12 + 1)
+    payments = (await db.execute(scoped(Payment).where(Payment.cancelled_at.is_(None),
+        Payment.payment_date >= start, Payment.payment_date < end).with_only_columns(Payment.amount))).all()
+    debts = (await db.execute(scoped(Debt).where(Debt.deleted_at.is_(None), Debt.status != DebtStatus.CANCELLED)
+        .with_only_columns((Debt.amount - Debt.paid_amount).label("remaining_amount"), Debt.due_date))).all()
+    absent = scoped(AttendanceRecord).where(AttendanceRecord.attendance_date == today, AttendanceRecord.status == AttendanceStatus.ABSENT)
+    return success_response({"total_students": await count(students),
+        "active_students": await count(students.where(Student.status == StudentStatus.ACTIVE)),
+        "total_branches": await count(branches), "total_classes": await count(classes),
+        "absent_today": await count(absent), "monthly_payments": float(sum(row.amount for row in payments)),
+        "pending_debt": float(sum(row.remaining_amount for row in debts if row.remaining_amount > 0 and row.due_date >= today)),
+        "overdue_debt": float(sum(row.remaining_amount for row in debts if row.remaining_amount > 0 and row.due_date < today))})
 
 
 @router.get("/charts")
 async def get_dashboard_charts(
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("dashboard.view"))
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
     """Get dashboard chart data"""
     
@@ -131,8 +103,8 @@ async def get_dashboard_charts(
 
 @router.get("/overview")
 async def get_dashboard_overview(
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("dashboard.view"))
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
     """Get dashboard overview statistics"""
     
@@ -168,7 +140,7 @@ async def get_dashboard_overview(
         total_payments = 0
     
     # Get today's attendance
-    today = datetime.utcnow().date()
+    today = school_today()
     present_today = 0
     absent_today = 0
     try:
@@ -198,7 +170,7 @@ async def get_dashboard_overview(
 @require_permission("dashboard.view")
 async def get_recent_activity(
     limit: int = Query(10, ge=1, le=50),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get recent activity"""
@@ -221,7 +193,7 @@ async def get_recent_activity(
 @require_permission("dashboard.view")
 async def get_upcoming_events(
     limit: int = Query(5, ge=1, le=20),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get upcoming events (announcements, payment due dates, etc.)"""
@@ -236,11 +208,11 @@ async def get_upcoming_events(
         .where(
             and_(
                 Announcement.organization_id == current_user.organization_id,
-                Announcement.status == "scheduled",
-                Announcement.scheduled_for >= datetime.utcnow()
+                Announcement.status == "SCHEDULED",
+                Announcement.scheduled_at >= datetime.utcnow()
             )
         )
-        .order_by(Announcement.scheduled_for)
+        .order_by(Announcement.scheduled_at)
         .limit(limit)
     )
     announcements = result.scalars().all()
@@ -252,7 +224,7 @@ async def get_upcoming_events(
             and_(
                 Debt.organization_id == current_user.organization_id,
                 Debt.due_date >= datetime.utcnow(),
-                Debt.remaining_amount > 0
+                Debt.amount > Debt.paid_amount
             )
         )
         .order_by(Debt.due_date)
@@ -271,7 +243,7 @@ async def get_upcoming_events(
 async def get_financial_summary(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get financial summary for dashboard"""
@@ -293,7 +265,7 @@ async def get_attendance_summary(
     class_id: Optional[UUID] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get attendance summary for dashboard"""
@@ -316,7 +288,7 @@ async def get_attendance_summary(
 async def get_owner_dashboard_overview(
     academic_year_id: Optional[UUID] = None,
     date_range: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get consolidated dashboard overview for Owner/Kurum Sahibi"""
@@ -373,7 +345,7 @@ async def get_owner_dashboard_overview(
             branch_collected = 0
         
         # Attendance rate for today
-        today = datetime.utcnow().date()
+        today = school_today()
         present_count = 0
         absent_count = 0
         try:
@@ -434,7 +406,7 @@ async def get_owner_dashboard_overview(
 @router.get("/owner/branches/metrics-comparison")
 @require_permission("branch.view_all")
 async def get_branches_metrics_comparison(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get metrics comparison across all branches for Owner"""
@@ -484,7 +456,7 @@ async def get_branches_metrics_comparison(
         
         # Get attendance metrics for last 30 days
         from datetime import timedelta
-        thirty_days_ago = datetime.utcnow().date() - timedelta(days=30)
+        thirty_days_ago = school_today() - timedelta(days=30)
         
         attendance_rate = 0
         try:
@@ -499,7 +471,7 @@ async def get_branches_metrics_comparison(
             for cls in branch_classes_list:
                 # Get attendance for this period
                 class_attendance = await attendance_repo.get_by_class_and_date_range(
-                    db, cls.id, thirty_days_ago, datetime.utcnow().date()
+                    db, cls.id, thirty_days_ago, school_today()
                 )
                 total_present += len([a for a in class_attendance if a.status == "present"])
                 total_absent += len([a for a in class_attendance if a.status == "absent"])
@@ -527,7 +499,7 @@ async def get_branches_metrics_comparison(
 @require_permission("finance.view_summary")
 async def get_owner_financial_trends(
     interval: str = Query("monthly", description="monthly, quarterly, yearly"),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get financial trends across all branches for Owner"""
@@ -621,7 +593,7 @@ async def get_owner_financial_trends(
 @require_permission("dashboard.view")
 async def get_branch_summary(
     branch_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user)
 ):
     """Get branch summary statistics for Admin"""
@@ -668,12 +640,12 @@ async def get_branch_summary(
 
     try:
         payments = await payment_repo.get_by_branch(db, branch_id)
-        daily_payments = sum(p.amount for p in payments if p.status == "completed" and p.payment_date and p.payment_date.date() == datetime.utcnow().date())
+        daily_payments = sum(p.amount for p in payments if p.status == "completed" and p.payment_date and p.payment_date.date() == school_today())
     except:
         daily_payments = 0
 
     # Get today's attendance
-    today = datetime.utcnow().date()
+    today = school_today()
     present_today = 0
     absent_today = 0
     excused_today = 0
@@ -714,187 +686,97 @@ async def get_branch_summary(
 async def get_daily_stats(
     branch_id: UUID,
     date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
 ):
-    """Get daily statistics for Admin"""
-
-    from app.repositories import (
-        StudentRepository,
-        ClassRepository,
-        AttendanceRepository,
-        DailyDevelopmentReport
-    )
-    from app.infrastructure.models.models import Branch
-
-    student_repo = StudentRepository()
-    class_repo = ClassRepository()
-    attendance_repo = AttendanceRepository()
-
-    # Verify branch access
-    result = await db.execute(
-        select(Branch).where(Branch.id == branch_id)
-    )
-    branch = result.scalar_one_or_none()
-
-    if not branch:
+    from sqlalchemy import func, cast, String
+    from app.infrastructure.models.models import Branch, AttendanceRecord, DailyDevelopmentReport, Student
+    branch = (await db.execute(select(Branch).where(Branch.id == branch_id))).scalar_one_or_none()
+    if branch is None:
         raise HTTPException(status_code=404, detail="Şube bulunamadı")
-
-    target_date = date or datetime.utcnow().date()
-
-    # Get attendance stats
-    present_count = 0
-    absent_count = 0
-    excused_count = 0
-    late_count = 0
-
-    try:
-        for cls in await class_repo.get_active_classes(db, branch_id):
-            class_attendance = await attendance_repo.get_by_class_and_date(
-                db, cls.id, datetime(target_date.year, target_date.month, target_date.day)
-            )
-            present_count += len([a for a in class_attendance if a.status == "present"])
-            absent_count += len([a for a in class_attendance if a.status == "absent"])
-            excused_count += len([a for a in class_attendance if a.status == "excused"])
-            late_count += len([a for a in class_attendance if a.status == "late"])
-    except:
-        pass
-
-    # Get meal stats from daily reports
-    meal_full = 0
-    meal_half = 0
-    meal_none = 0
-
-    try:
-        from app.infrastructure.models.models import DailyDevelopmentReport as DailyReport
-        report_result = await db.execute(
-            select(DailyReport).where(DailyReport.date == target_date)
-        )
-        reports = report_result.scalars().all()
-
-        for report in reports:
-            if report.meal_status == "ALL":
-                meal_full += 1
-            elif report.meal_status == "HALF":
-                meal_half += 1
-            elif report.meal_status == "NONE":
-                meal_none += 1
-    except:
-        pass
-
-    return success_response({
-        "branch_id": str(branch_id),
-        "date": target_date.isoformat(),
-        "attendance": {
-            "present": present_count,
-            "absent": absent_count,
-            "excused": excused_count,
-            "late": late_count,
-            "total": present_count + absent_count + excused_count + late_count,
-            "rate": round(present_count / (present_count + absent_count + excused_count + late_count) * 100, 1) if (present_count + absent_count + excused_count + late_count) > 0 else 0
-        },
-        "meals": {
-            "full": meal_full,
-            "half": meal_half,
-            "none": meal_none,
-            "total": meal_full + meal_half + meal_none
-        }
-    })
+    target_date = date or school_today()
+    normalized_status = func.upper(cast(AttendanceRecord.status, String))
+    rows = (await db.execute(select(normalized_status, func.count()).where(
+        AttendanceRecord.branch_id == branch_id, AttendanceRecord.attendance_date == target_date,
+        AttendanceRecord.deleted_at.is_(None)).group_by(normalized_status))).all()
+    counts = {getattr(status, "value", status): count for status, count in rows}
+    total = sum(counts.values())
+    meal_rows = (await db.execute(select(DailyDevelopmentReport.meal_status, func.count())
+        .join(Student, Student.id == DailyDevelopmentReport.student_id)
+        .where(Student.branch_id == branch_id, Student.deleted_at.is_(None),
+            DailyDevelopmentReport.date == target_date).group_by(DailyDevelopmentReport.meal_status))).all()
+    meals = dict(meal_rows)
+    return success_response({"branch_id": str(branch_id), "date": target_date.isoformat(),
+        "attendance": {"present": counts.get("PRESENT", 0), "absent": counts.get("ABSENT", 0),
+            "excused": counts.get("EXCUSED", 0), "late": counts.get("LATE", 0),
+            "half_day": counts.get("HALF_DAY", 0), "total": total,
+            "rate": round(counts.get("PRESENT", 0) / total * 100, 1) if total else 0},
+        "meals": {"full": meals.get("ALL", 0), "half": meals.get("HALF", 0), "none": meals.get("NONE", 0),
+            "total": sum(meals.values())}})
 
 
 @router.get("/pending-actions")
 @require_permission("dashboard.view")
 async def get_pending_actions(
     branch_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
-    """Get pending actions for Admin"""
-
-    from app.infrastructure.models.models import Branch, MedicineRequest, ExcuseRequest, Debt
-
-    # Verify branch access
-    result = await db.execute(
-        select(Branch).where(Branch.id == branch_id)
-    )
-    branch = result.scalar_one_or_none()
-
-    if not branch:
+    from sqlalchemy import func, or_, cast, String
+    from app.domain.entities.health import MedicationSchedule
+    from app.infrastructure.models.models import Branch, Debt, Student, OperationalRecord
+    from app.application.services.excuse_service import serialize
+    branch = (await db.execute(select(Branch).where(Branch.id == branch_id))).scalar_one_or_none()
+    if branch is None:
         raise HTTPException(status_code=404, detail="Şube bulunamadı")
+    today = school_today()
+    medicine_query = select(MedicationSchedule, Student).join(Student, MedicationSchedule.student_id == Student.id).where(
+        Student.branch_id == branch_id, Student.deleted_at.is_(None), MedicationSchedule.is_active.is_(True),
+        MedicationSchedule.updated_by.is_(None), MedicationSchedule.start_date <= today,
+        or_(MedicationSchedule.end_date.is_(None), MedicationSchedule.end_date >= today))
+    from app.application.services.infirmary_service import status_expression
+    medicine_query = medicine_query.where(status_expression() == "PENDING")
+    if not tenant.has_permission("health.read"):
+        medicine_query = medicine_query.where(False)
+    medicine_count = (await db.execute(medicine_query.with_only_columns(func.count()).order_by(None))).scalar_one()
+    medicine_rows = (await db.execute(medicine_query.order_by(MedicationSchedule.created_at.desc()).limit(10))).all()
+    medicine = [{"id": str(row.id), "student_id": str(row.student_id),
+        "student_name": f"{student.first_name} {student.last_name}", "medicine_name": row.medication_name,
+        "dosage": row.dosage, "time_to_give": row.frequency, "created_at": row.created_at.isoformat()}
+        for row, student in medicine_rows]
+    excuse_query = select(OperationalRecord).where(OperationalRecord.kind == "STUDENT_EXCUSE",
+        OperationalRecord.branch_id == branch_id, OperationalRecord.status == "PENDING")
+    excuse_count = (await db.execute(excuse_query.with_only_columns(func.count()).select_from(OperationalRecord))).scalar_one()
+    excuses = [serialize(row) for row in (await db.execute(excuse_query.order_by(
+        OperationalRecord.created_at.desc()).limit(10))).scalars()]
+    debt_query = select(Debt).where(Debt.branch_id == branch_id, Debt.deleted_at.is_(None),
+        Debt.due_date < today, Debt.amount > Debt.paid_amount)
+    debt_count = (await db.execute(debt_query.with_only_columns(func.count()).select_from(Debt))).scalar_one()
+    debt_items = debt_query.with_only_columns(cast(Debt.id, String).label("id"),
+        cast(Debt.student_id, String).label("student_id"), (Debt.amount - Debt.paid_amount).label("remaining_amount"), Debt.due_date)
+    debts = [{"id": str(row.id), "student_id": str(row.student_id), "amount": float(row.remaining_amount),
+        "due_date": row.due_date.isoformat(), "days_overdue": (today - row.due_date).days}
+        for row in (await db.execute(debt_items.order_by(Debt.due_date).limit(10))).all()]
+    return success_response({"branch_id": str(branch_id),
+        "medicine_requests": {"count": medicine_count, "items": medicine},
+        "excuse_requests": {"count": excuse_count, "items": excuses},
+        "overdue_debts": {"count": debt_count, "items": debts},
+        "total_pending": medicine_count + excuse_count + debt_count})
 
-    # Get pending medicine requests
-    medicine_requests = []
-    try:
-        result = await db.execute(
-            select(MedicineRequest).where(
-                MedicineRequest.status == "PENDING"
-            ).limit(10)
-        )
-        for req in result.scalars().all():
-            medicine_requests.append({
-                "id": str(req.id),
-                "student_id": str(req.student_id),
-                "medicine_name": req.medicine_name,
-                "dosage": req.dosage,
-                "time_to_give": req.time_to_give,
-                "created_at": req.created_at.isoformat()
-            })
-    except:
-        pass
 
-    # Get pending excuse requests
-    excuse_requests = []
-    try:
-        result = await db.execute(
-            select(ExcuseRequest).where(
-                ExcuseRequest.status == "PENDING"
-            ).limit(10)
-        )
-        for req in result.scalars().all():
-            excuse_requests.append({
-                "id": str(req.id),
-                "student_id": str(req.student_id),
-                "start_date": req.start_date.isoformat(),
-                "end_date": req.end_date.isoformat(),
-                "reason_type": req.reason_type,
-                "created_at": req.created_at.isoformat()
-            })
-    except:
-        pass
+class ExcuseReview(BaseModel):
+    status: Literal["APPROVED", "REJECTED"]
+    comment: str | None = Field(None, max_length=2000)
 
-    # Get overdue debts
-    overdue_debts = []
-    try:
-        result = await db.execute(
-            select(Debt).where(
-                Debt.due_date < datetime.utcnow().date(),
-                Debt.remaining_amount > 0
-            ).limit(10)
-        )
-        for debt in result.scalars().all():
-            overdue_debts.append({
-                "id": str(debt.id),
-                "student_id": str(debt.student_id),
-                "amount": float(debt.remaining_amount),
-                "due_date": debt.due_date.isoformat(),
-                "days_overdue": (datetime.utcnow().date() - debt.due_date).days
-            })
-    except:
-        pass
 
-    return success_response({
-        "branch_id": str(branch_id),
-        "medicine_requests": {
-            "count": len(medicine_requests),
-            "items": medicine_requests
-        },
-        "excuse_requests": {
-            "count": len(excuse_requests),
-            "items": excuse_requests
-        },
-        "overdue_debts": {
-            "count": len(overdue_debts),
-            "items": overdue_debts
-        },
-        "total_pending": len(medicine_requests) + len(excuse_requests) + len(overdue_debts)
-    })
+@router.put("/excuse-requests/{request_id}")
+async def review_excuse_request(
+    request_id: UUID,
+    body: ExcuseReview,
+    tenant: TenantContext = Depends(PermissionChecker("students.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    from app.application.services import excuse_service
+    return success_response(await excuse_service.review(db, tenant, request_id, body.status, body.comment),
+        "Mazeret talebi değerlendirildi")

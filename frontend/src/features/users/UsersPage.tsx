@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import type { ApiResponse, Paginated } from "../../types/api";
+import { useAuthStore } from "../../stores/auth";
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
   phone: string | null;
   status: string;
   organization_id: string | null;
+  is_super_admin?: boolean;
   roles: Array<{ id: string; name: string; slug: string }>;
 }
 
@@ -23,16 +25,18 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const can = useAuthStore((state) => state.can);
 
   useEffect(() => {
     loadUsers();
   }, [page, search]);
 
-  const loadUsers = async () => {
+  async function loadUsers() {
     setLoading(true);
+    setError("");
     try {
       const response = await api.get<ApiResponse<Paginated<User>>>(
-        `/users?page=${page}&page_size=20${search ? `&search=${search}` : ""}`
+        "/users", { params: { page, page_size: 20, search } }
       );
       setUsers(response.data.data.items || []);
       setTotal(response.data.data.total || 0);
@@ -41,14 +45,14 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleDelete = async (userId: string) => {
     if (!confirm("Bu kullanıcıyı silmek istediğinize emin misiniz?")) return;
     
     try {
       await api.delete(`/users/${userId}`);
-      setUsers(users.filter(u => u.id !== userId));
+      await loadUsers();
     } catch (err) {
       setError(apiMessage(err));
     }
@@ -64,9 +68,9 @@ export function UsersPage() {
         title="Kullanıcılar"
         description="Sistem kullanıcılarını görüntüleyin ve yönetin."
       >
-        <Link className="btn btn-primary" to="/users/new">
+        {can("user.write") && <Link className="btn btn-primary" to="/users/new">
           <Plus size={16} />Yeni Kullanıcı
-        </Link>
+        </Link>}
       </PageHeader>
 
       <div className="card" style={{ marginTop: 18 }}>
@@ -80,7 +84,7 @@ export function UsersPage() {
               type="text"
               placeholder="İsim, soyisim veya e-posta ile ara..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Kullanıcı ara" onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               style={{
                 flex: 1,
                 padding: "8px 12px",
@@ -88,7 +92,7 @@ export function UsersPage() {
                 borderRadius: 4
               }}
             />
-            <button className="btn btn-secondary" onClick={() => loadUsers()}>
+            <button className="btn btn-secondary" aria-label="Kullanıcı listesini yenile" onClick={() => loadUsers()}>
               <Search size={16} />
             </button>
           </div>
@@ -133,16 +137,18 @@ export function UsersPage() {
                           className="btn btn-secondary"
                           style={{ padding: "4px 8px", fontSize: 12 }}
                           to={`/users/${user.id}`}
+                          aria-label={`${user.first_name} ${user.last_name} profilini aç`}
                         >
                           <Pencil size={14} />
                         </Link>
-                        <button
+                        {can("user.write") && !user.is_super_admin && <button
                           className="btn btn-danger"
                           style={{ padding: "4px 8px", fontSize: 12 }}
                           onClick={() => handleDelete(user.id)}
+                          aria-label={`${user.first_name} ${user.last_name} hesabını kaldır`}
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </button>}
                       </div>
                     </td>
                   </tr>

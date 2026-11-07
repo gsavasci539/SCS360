@@ -1,0 +1,62 @@
+
+> okul360-frontend@1.0.0 test:e2e
+> playwright test --grep exchange persistent
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO:     Started server process [22592]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "aa0fb0bb-8a80-4a69-9159-751941e79500", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:21.698222Z"}
+[WebServer] (node:23272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:21932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:9848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] {"request_id": "077c4838-be10-4a31-9006-0e7acaf873f7", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 1287.12, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:30.668807Z"}
+[WebServer] {"request_id": "dee44a06-6aee-40d2-ae05-6f9a0220727d", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 293.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:31.019792Z"}
+[WebServer] {"request_id": "51d62b64-c658-453f-8864-10e5eda24064", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 45.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:31.438054Z"}
+[WebServer] {"request_id": "9d92b80f-5c26-4a78-ac43-e9e2e69df53d", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 133.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:31.576266Z"}
+[WebServer] {"request_id": "709b6988-b870-4bc9-baa8-6f95dfb2e860", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/today-status", "status": 200, "duration_ms": 541.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:32.078380Z"}
+[WebServer] {"request_id": "e83d318e-ffd1-4668-90c4-d9dc5496ae87", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/teachers", "status": 200, "duration_ms": 547.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:32.109966Z"}
+[WebServer] {"request_id": "3f46a96d-ea2c-47d2-89eb-87b4951ba122", "method": "GET", "path": "/api/ai/student-performance/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 692.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:32.272885Z"}
+[WebServer] {"request_id": "2443e740-6842-48ef-bada-68ed74ce1bf0", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 311.93, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:32.725349Z"}
+[WebServer] {"request_id": "ebeab609-1099-4bb5-98ed-427826f818ee", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 414.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:33.174058Z"}
+[WebServer] {"request_id": "f8342e07-c48f-4131-9b4d-256065d4abb4", "method": "POST", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 547.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:33.257780Z"}
+[WebServer] {"request_id": "a2220fb2-96c1-4555-a02c-2a1062724f59", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 229.4, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:33.650810Z"}
+[WebServer] {"request_id": "594cf049-3877-42f1-a0ab-80e7ae449ae7", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 318.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:34.647239Z"}
+[WebServer] {"request_id": "f2fc79a2-8bd9-4271-8c36-8e30d1ba6035", "method": "GET", "path": "/api/teacher/today-schedule", "status": 200, "duration_ms": 1017.55, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:35.725306Z"}
+[WebServer] {"request_id": "661ea5e1-0997-492e-9698-a9fa4796284d", "method": "GET", "path": "/api/teacher/my-classes", "status": 200, "duration_ms": 1041.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:35.743878Z"}
+[WebServer] {"request_id": "19deefab-b647-4210-8eb0-f80d85da921e", "method": "GET", "path": "/api/teacher/medicine-requests", "status": 200, "duration_ms": 1132.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:35.857040Z"}
+[WebServer] {"request_id": "39ad0ca1-f67e-4c1b-ba90-7815a7d759f0", "method": "GET", "path": "/api/teacher/pending-tasks", "status": 200, "duration_ms": 1182.45, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:35.890311Z"}
+[WebServer] {"request_id": "10a06b68-e061-44a5-801f-eca00df9d9c4", "method": "GET", "path": "/api/teacher/today-schedule", "status": 200, "duration_ms": 1123.59, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.358602Z"}
+[WebServer] {"request_id": "b1820f63-361b-414f-962a-a4b5f7f561d7", "method": "GET", "path": "/api/teacher/today-schedule", "status": 200, "duration_ms": 1124.56, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.459679Z"}
+[WebServer] {"request_id": "1fb7a2af-9c7b-4ea1-92b0-d51c7b561afc", "method": "GET", "path": "/api/teacher/my-classes", "status": 200, "duration_ms": 1315.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.624139Z"}
+[WebServer] {"request_id": "09807030-05cf-4453-a16c-e3c8495c464d", "method": "GET", "path": "/api/teacher/medicine-requests", "status": 200, "duration_ms": 1351.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.742928Z"}
+[WebServer] {"request_id": "08185d2d-49dc-4c89-a06d-7c27c7545fd1", "method": "GET", "path": "/api/teacher/pending-tasks", "status": 200, "duration_ms": 1408.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.776577Z"}
+[WebServer] {"request_id": "85a27f63-809b-40c2-9f37-2607ea8fa58e", "method": "GET", "path": "/api/teacher/today-schedule", "status": 200, "duration_ms": 210.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.864077Z"}
+[WebServer] {"request_id": "c7da73ba-a4d8-4607-ae7e-93df6f5b21ad", "method": "GET", "path": "/api/teacher/my-classes", "status": 200, "duration_ms": 177.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.886869Z"}
+[WebServer] {"request_id": "59f9bff2-fc05-48a9-9cd6-799bf76ad280", "method": "GET", "path": "/api/teacher/medicine-requests", "status": 200, "duration_ms": 152.73, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.944332Z"}
+[WebServer] {"request_id": "713e427a-f017-4e45-ad1c-f2927f8fb515", "method": "GET", "path": "/api/teacher/pending-tasks", "status": 200, "duration_ms": 125.5, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:36.973961Z"}
+[WebServer] {"request_id": "7444defd-221b-433f-a015-c0509315d984", "method": "GET", "path": "/api/teacher/class/37d94457-47f1-46f7-9380-f5a982cfabc0/students", "status": 200, "duration_ms": 103.44, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:37.404405Z"}
+[WebServer] {"request_id": "8430c162-4a31-4468-94f4-e24f14327d16", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 161.95, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:37.581021Z"}
+[WebServer] {"request_id": "809b4c3f-9e7c-465e-bdcc-45a33bd03694", "method": "GET", "path": "/api/teacher/chat/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 206.72, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:37.717141Z"}
+[WebServer] {"request_id": "8049fbed-038c-4fe3-84a1-8ae6ec87ab2e", "method": "GET", "path": "/api/teacher/chat/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 258.82, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:37.990035Z"}
+[WebServer] {"request_id": "d003ee90-9922-46ba-b3af-18b4a945d4e6", "method": "POST", "path": "/api/teacher/chat/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 160.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:38.104777Z"}
+[WebServer] {"request_id": "e8296146-2459-4a63-80a4-7e68e82560a7", "method": "GET", "path": "/api/teacher/chat/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 82.54, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:38.203245Z"}
+[WebServer] {"request_id": "4112ce1b-1631-454d-acaa-ac4f1287424d", "method": "GET", "path": "/api/parent/child/fd33435c-7be3-463d-a697-312020812812/chat/2ed23941-45ac-4d94-9fbe-10c5f1f2deb4", "status": 200, "duration_ms": 49.24, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:42.470394Z"}
+[WebServer] {"request_id": "6e9a51f0-76c6-4cf5-9bf5-a72c5f38be50", "method": "GET", "path": "/api/teacher/chat/fd33435c-7be3-463d-a697-312020812812", "status": 200, "duration_ms": 70.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-02T17:29:42.586426Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:77:1 › parent and teacher exchange persistent messages for the same child (18.6s)
+
+  1 passed (28.9s)

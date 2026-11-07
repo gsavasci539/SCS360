@@ -2,12 +2,14 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/ui";
+import { ReceiptBrand } from "../../components/Brand";
 import { api, apiMessage } from "../../lib/api";
 import { textValue } from "../../lib/data";
 import { money, shortDate } from "../../lib/format";
 import type { ApiResponse } from "../../types/api";
 
 interface Receipt {
+  status?: string;
   id: string;
   payment_id?: string;
   receipt_number: string;
@@ -61,6 +63,7 @@ export function ReceiptPrintPage() {
           id: textValue(receiptRecord.id, id || ""),
           payment_id: paymentId,
           receipt_number: textValue(receiptRecord.receipt_number),
+          status: textValue(receiptRecord.status, "ACTIVE"),
           payment_date: textValue(payment.payment_date || receiptRecord.payment_date || receiptRecord.issued_at, ""),
           amount: Number(payment.amount || receiptRecord.amount || 0),
           payment_method: textValue(payment.payment_method || receiptRecord.payment_method),
@@ -93,8 +96,9 @@ export function ReceiptPrintPage() {
   if (loading) return <div className="card"><LoadingState label="Makbuz yükleniyor" /></div>;
   if (error || !receipt) return <div className="card"><ErrorState message={error || "Makbuz bulunamadı."} /></div>;
 
-  function ReceiptCopy({ copyType }: { copyType: "parent" | "management" }) {
-    if (!receipt) return null;
+  const printReceipt = receipt;
+
+  function renderReceiptCopy(copyType: "parent" | "management") {
     return (
       <div style={{
         width: "100%",
@@ -107,6 +111,7 @@ export function ReceiptPrintPage() {
         boxSizing: "border-box"
       }}>
         {/* Header */}
+        <ReceiptBrand />
         <div style={{
           background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           color: "white",
@@ -119,7 +124,7 @@ export function ReceiptPrintPage() {
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
         }}>
           <h3 style={{ font: "700 12px Manrope", margin: 0, letterSpacing: "0.5px" }}>
-            {receipt.organization_name}
+            {printReceipt.organization_name}
           </h3>
           <span style={{
             fontSize: "9px",
@@ -139,11 +144,11 @@ export function ReceiptPrintPage() {
           <h2 style={{ 
             font: "700 14px Manrope", 
             margin: "0 0 4px", 
-            color: "#333",
+            color: receipt?.status === "CANCELLED" ? "#b42318" : "#333",
             letterSpacing: "1px",
             textTransform: "uppercase"
           }}>
-            TAHSİLAT MAKBUZU
+            {receipt?.status === "CANCELLED" ? "İPTAL EDİLMİŞ MAKBUZ" : "TAHSİLAT MAKBUZU"}
           </h2>
         </div>
 
@@ -159,11 +164,11 @@ export function ReceiptPrintPage() {
         }}>
           <div style={{ display: "flex", gap: "2mm", alignItems: "center" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", textTransform: "uppercase" }}>Makbuz No:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.receipt_number}</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.receipt_number}</span>
           </div>
           <div style={{ display: "flex", gap: "2mm", alignItems: "center" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", textTransform: "uppercase" }}>Tarih:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{shortDate(receipt.payment_date)}</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{shortDate(printReceipt.payment_date)}</span>
           </div>
         </div>
 
@@ -171,48 +176,48 @@ export function ReceiptPrintPage() {
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Şube:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.branch_name}</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.branch_name}</span>
           </div>
           <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Öğrenci:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.student_name}</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.student_name}</span>
           </div>
-          {receipt.student_number && (
+          {printReceipt.student_number && (
             <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
               <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Öğrenci No:</span>
-              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.student_number}</span>
+              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.student_number}</span>
             </div>
           )}
-          {receipt.parent_name && (
+          {printReceipt.parent_name && (
             <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
               <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Veli:</span>
-              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.parent_name}</span>
+              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.parent_name}</span>
             </div>
           )}
           <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Ödeme Tutarı:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{money(receipt.amount)} TL</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{money(printReceipt.amount)} TL</span>
           </div>
           <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
             <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Ödeme Yöntemi:</span>
-            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.payment_method}</span>
+            <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.payment_method}</span>
           </div>
-          {receipt.remaining_debt !== undefined && receipt.remaining_debt > 0 && (
+          {printReceipt.remaining_debt !== undefined && printReceipt.remaining_debt > 0 && (
             <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
               <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Kalan Borç:</span>
-              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{money(receipt.remaining_debt)} TL</span>
+              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{money(printReceipt.remaining_debt)} TL</span>
             </div>
           )}
-          {receipt.received_by && (
+          {printReceipt.received_by && (
             <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
               <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Tahsilatı Alan:</span>
-              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.received_by}</span>
+              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.received_by}</span>
             </div>
           )}
-          {receipt.notes && (
+          {printReceipt.notes && (
             <div style={{ display: "flex", marginBottom: "3mm", padding: "2mm 0", borderBottom: "1px solid #f0f0f0" }}>
               <span style={{ fontWeight: "600", fontSize: "8px", color: "#555", width: "25mm", textTransform: "uppercase" }}>Not:</span>
-              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{receipt.notes}</span>
+              <span style={{ fontSize: "8px", color: "#333", fontWeight: "500" }}>{printReceipt.notes}</span>
             </div>
           )}
         </div>
@@ -224,7 +229,7 @@ export function ReceiptPrintPage() {
           borderTop: "1px solid #f0f0f0"
         }}>
           <p style={{ fontSize: "7px", color: "#666", fontStyle: "italic", margin: "0 0 4mm 0", textAlign: "center" }}>
-            Bu belge resmi makbuz niteliğindedir.
+            Bu belge SCS360 üzerinden oluşturulmuştur.
           </p>
           {copyType === "management" && (
             <div style={{ display: "flex", alignItems: "center", gap: "2mm", justifyContent: "center" }}>
@@ -283,8 +288,8 @@ export function ReceiptPrintPage() {
         }}
         className="print-page"
       >
-        <ReceiptCopy copyType="parent" />
-        <ReceiptCopy copyType="management" />
+        {renderReceiptCopy("parent")}
+        {renderReceiptCopy("management")}
       </div>
 
       <style>{`

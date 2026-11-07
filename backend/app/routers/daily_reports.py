@@ -1,260 +1,163 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
-from typing import Optional, List
+from datetime import date
 from uuid import UUID
-from datetime import datetime, date
-from pydantic import BaseModel, Field
+
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel, field_validator
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_tenant_context
+from app.core.exceptions import ConflictException, NotFoundException, ValidationException
 from app.core.permissions import PermissionChecker
-from app.core.responses import success_response, paginate
-from app.domain.entities.user import User
-from app.domain.entities.daily_development_report import DailyDevelopmentReport, DailyDevelopmentReportCreate, DailyDevelopmentReportUpdate
+from app.core.responses import paginate, success_response
+from app.core.student_access import accessible_student_ids, require_student_access
 from app.core.tenant import TenantContext
+from app.infrastructure.models.models import DailyDevelopmentReport, Student
+from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/daily-reports", tags=["Daily Reports"])
 
 
-class BulkDailyReportCreate(BaseModel):
+class ReportFields(BaseModel):
+    meal_status: str | None = None
+    meal_breakfast: str | None = None
+    meal_lunch: str | None = None
+    meal_snack: str | None = None
+    sleep_status: str | None = None
+    mood: str | None = None
+    activities: list[str] | None = None
+    teacher_notes: str | None = None
+
+    @field_validator("activities", mode="before")
+    @classmethod
+    def activities_list(cls, value):
+        return [item.strip() for item in value.split(",") if item.strip()] if isinstance(value, str) else value
+
+
+class ReportCreate(ReportFields):
+    student_id: UUID
+    class_id: UUID | None = None
+    date: date
+
+
+class BulkReportCreate(ReportFields):
     class_id: UUID
     date: date
-    reports: List[DailyDevelopmentReportCreate]
+    reports: list[ReportCreate] | None = None
 
 
-def report_to_dict(report: DailyDevelopmentReport) -> dict:
-    return {
-        "id": str(report.id),
-        "student_id": str(report.student_id),
-        "class_id": str(report.class_id),
-        "date": report.date.isoformat() if report.date else None,
-        "meal_status": report.meal_status,
-        "sleep_status": report.sleep_status,
-        "mood": report.mood,
-        "activities": report.activities,
-        "teacher_notes": report.teacher_notes,
-        "recorded_by": str(report.recorded_by) if report.recorded_by else None,
-        "created_at": report.created_at.isoformat() if report.created_at else None,
-        "updated_at": report.updated_at.isoformat() if report.updated_at else None
-    }
+async def scoped(db, tenant):
+    repo = BaseRepository(db, tenant)
+    query = repo._branch_filter(repo._org_filter(select(DailyDevelopmentReport)
+        .join(Student, Student.id == DailyDevelopmentReport.student_id), Student), Student)
+    ids = await accessible_student_ids(db, tenant)
+    return query.where(Student.id.in_(ids)) if ids is not None else query
 
 
-@router.get("/")
-async def list_daily_reports(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    class_id: Optional[UUID] = None,
-    student_id: Optional[UUID] = None,
-    date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("daily_reports.read"))
-):
-    """List daily reports with pagination and filters"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    from app.infrastructure.models.models import Student
-    
-    query = select(DailyReportModel)
-    
-    # Apply tenant filters
-    if tenant.organization_id:
-        query = query.join(Student, DailyReportModel.student_id == Student.id)
-        query = query.where(Student.organization_id == tenant.organization_id)
-    
-    if tenant.branch_ids:
-        query = query.where(Student.branch_id.in_(tenant.branch_ids))
-    
-    # Apply additional filters
-    if class_id:
-        query = query.where(DailyReportModel.class_id == class_id)
-    if student_id:
-        query = query.where(DailyReportModel.student_id == student_id)
-    if date:
-        query = query.where(DailyReportModel.date == date)
-    
-    query = query.order_by(DailyReportModel.date.desc(), DailyReportModel.created_at.desc())
-    
-    result = await db.execute(query)
-    reports = result.scalars().all()
-    
-    total = len(reports)
-    start = (page - 1) * page_size
-    end = start + page_size
-    paginated_reports = reports[start:end]
-    
-    return paginate(
-        [report_to_dict(DailyDevelopmentReport.model_validate(r)) for r in paginated_reports],
-        total,
-        page,
-        page_size
-    )
+async def get(db, tenant, identifier):
+    row = (await db.execute((await scoped(db, tenant)).where(DailyDevelopmentReport.id == identifier))).scalar_one_or_none()
+    if row is None:
+        raise NotFoundException("Günlük rapor bulunamadı")
+    return row
 
 
-@router.get("/{report_id}")
-async def get_daily_report(
-    report_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("academic.read"))
-):
-    """Get a specific daily report"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    
-    result = await db.execute(
-        select(DailyReportModel).where(DailyReportModel.id == report_id)
-    )
-    report = result.scalar_one_or_none()
-    
-    if not report:
-        raise HTTPException(status_code=404, detail="Daily report not found")
-    
-    return success_response(report_to_dict(DailyDevelopmentReport.model_validate(report)))
+async def serialize(db, row):
+    student = await db.get(Student, row.student_id)
+    return {"id": str(row.id), "student_id": str(row.student_id), "class_id": str(row.class_id),
+        "student_name": f"{student.first_name} {student.last_name}" if student else None,
+        "date": row.date.isoformat(), "meal_status": row.meal_status, "sleep_status": row.sleep_status,
+        "mood": row.mood, "activities": row.activities, "teacher_notes": row.teacher_notes,
+        "recorded_by": str(row.recorded_by) if row.recorded_by else None}
 
 
-@router.post("/")
-async def create_daily_report(
-    report: DailyDevelopmentReportCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("academic.write"))
-):
-    """Create a new daily report"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    
-    # Check if report already exists for this student on this date
-    existing_result = await db.execute(
-        select(DailyReportModel).where(
-            and_(
-                DailyReportModel.student_id == report.student_id,
-                DailyReportModel.date == report.date
-            )
-        )
-    )
-    existing = existing_result.scalar_one_or_none()
-    
+def apply_fields(row, body):
+    values = body.model_dump(exclude_unset=True)
+    meal_parts = [f"{label}: {values[key]}" for key, label in
+        (("meal_breakfast", "Kahvaltı"), ("meal_lunch", "Öğle"), ("meal_snack", "Ara öğün")) if values.get(key)]
+    if meal_parts:
+        values["meal_status"] = " / ".join(meal_parts)
+    for key in ("meal_status", "sleep_status", "mood", "activities", "teacher_notes"):
+        if key in values:
+            setattr(row, key, values[key])
+
+
+async def save(db, tenant, body):
+    student = await BaseRepository(db, tenant).get_by_id(body.student_id, Student)
+    await require_student_access(db, tenant, student.id)
+    if student.class_id is None or body.class_id and body.class_id != student.class_id:
+        raise ValidationException("Öğrencinin sınıfı ile rapor sınıfı eşleşmiyor")
+    existing = (await db.execute(select(DailyDevelopmentReport.id).where(
+        DailyDevelopmentReport.student_id == student.id, DailyDevelopmentReport.date == body.date))).scalar_one_or_none()
     if existing:
-        raise HTTPException(status_code=400, detail="Report already exists for this student on this date")
-    
-    new_report = DailyReportModel(
-        student_id=report.student_id,
-        class_id=report.class_id,
-        date=report.date,
-        meal_status=report.meal_status,
-        sleep_status=report.sleep_status,
-        mood=report.mood,
-        activities=report.activities,
-        teacher_notes=report.teacher_notes,
-        recorded_by=tenant.id
-    )
-    
-    db.add(new_report)
-    await db.commit()
-    await db.refresh(new_report)
-    
-    return success_response(report_to_dict(DailyDevelopmentReport.model_validate(new_report)), "Daily report created")
+        raise ConflictException("Bu öğrenci ve tarihe ait rapor zaten var")
+    row = DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=body.date, recorded_by=tenant.user_id)
+    apply_fields(row, body)
+    db.add(row); await db.flush()
+    return await serialize(db, row)
+
+
+@router.get("")
+@router.get("/")
+async def list_daily_reports(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+    class_id: UUID | None = None, student_id: UUID | None = None, date: date | None = None,
+    report_date: str | None = None, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.read", "academic.read"))):
+    query = await scoped(db, tenant)
+    if class_id: query = query.where(DailyDevelopmentReport.class_id == class_id)
+    if student_id: query = query.where(DailyDevelopmentReport.student_id == student_id)
+    if date: query = query.where(DailyDevelopmentReport.date == date)
+    if report_date:
+        from datetime import date as Date
+        try: query = query.where(DailyDevelopmentReport.date == Date.fromisoformat(report_date))
+        except ValueError as exc: raise ValidationException("Geçerli bir tarih girin") from exc
+    rows, total = await BaseRepository(db, tenant).paginate(query.order_by(DailyDevelopmentReport.date.desc()), page, page_size)
+    return success_response(paginate([await serialize(db, row) for row in rows], total, page, page_size))
+
+
+@router.post("")
+@router.post("/")
+async def create_daily_report(report: ReportCreate, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
+    return success_response(await save(db, tenant, report), "Günlük rapor kaydedildi")
 
 
 @router.post("/bulk")
-async def create_bulk_daily_reports(
-    bulk_data: BulkDailyReportCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("academic.write"))
-):
-    """Create multiple daily reports at once (for a class)"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    
-    created_reports = []
-    
-    for report_data in bulk_data.reports:
-        # Check if report already exists
-        existing_result = await db.execute(
-            select(DailyReportModel).where(
-                and_(
-                    DailyReportModel.student_id == report_data.student_id,
-                    DailyReportModel.date == bulk_data.date
-                )
-            )
-        )
-        existing = existing_result.scalar_one_or_none()
-        
-        if not existing:
-            new_report = DailyReportModel(
-                student_id=report_data.student_id,
-                class_id=bulk_data.class_id,
-                date=bulk_data.date,
-                meal_status=report_data.meal_status,
-                sleep_status=report_data.sleep_status,
-                mood=report_data.mood,
-                activities=report_data.activities,
-                teacher_notes=report_data.teacher_notes,
-                recorded_by=tenant.id
-            )
-            db.add(new_report)
-            created_reports.append(new_report)
-    
-    await db.commit()
-    
-    for report in created_reports:
-        await db.refresh(report)
-    
-    return success_response(
-        [report_to_dict(DailyDevelopmentReport.model_validate(r)) for r in created_reports],
-        f"{len(created_reports)} daily reports created"
-    )
+async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
+    from app.application.services.homework_service import class_scope
+    from app.infrastructure.models.models import ClassRoom
+    if (await db.execute(class_scope(tenant).where(ClassRoom.id == body.class_id))).scalar_one_or_none() is None:
+        raise ValidationException("Bu sınıfa rapor yazma yetkiniz yok")
+    records = body.reports
+    if records is None:
+        ids = (await db.execute(select(Student.id).where(Student.class_id == body.class_id, Student.deleted_at.is_(None)))).scalars()
+        values = body.model_dump(exclude={"reports"})
+        records = [ReportCreate(**values, student_id=identifier) for identifier in ids]
+    result = []
+    for record in records:
+        if record.class_id and record.class_id != body.class_id:
+            raise ValidationException("Toplu rapordaki sınıflar eşleşmeli")
+        result.append(await save(db, tenant, record.model_copy(update={"class_id": body.class_id, "date": body.date})))
+    return success_response(result, f"{len(result)} rapor kaydedildi")
+
+
+@router.get("/{report_id}")
+async def get_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.read", "academic.read"))):
+    return success_response(await serialize(db, await get(db, tenant, report_id)))
 
 
 @router.put("/{report_id}")
-async def update_daily_report(
-    report_id: UUID,
-    report_update: DailyDevelopmentReportUpdate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("academic.write"))
-):
-    """Update a daily report"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    
-    result = await db.execute(
-        select(DailyReportModel).where(DailyReportModel.id == report_id)
-    )
-    report = result.scalar_one_or_none()
-    
-    if not report:
-        raise HTTPException(status_code=404, detail="Daily report not found")
-    
-    # Update fields
-    if report_update.meal_status is not None:
-        report.meal_status = report_update.meal_status
-    if report_update.sleep_status is not None:
-        report.sleep_status = report_update.sleep_status
-    if report_update.mood is not None:
-        report.mood = report_update.mood
-    if report_update.activities is not None:
-        report.activities = report_update.activities
-    if report_update.teacher_notes is not None:
-        report.teacher_notes = report_update.teacher_notes
-    
-    await db.commit()
-    await db.refresh(report)
-    
-    return success_response(report_to_dict(DailyDevelopmentReport.model_validate(report)), "Daily report updated")
+async def update_daily_report(report_id: UUID, body: ReportFields, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
+    row = await get(db, tenant, report_id)
+    apply_fields(row, body)
+    row.recorded_by = tenant.user_id
+    return success_response(await serialize(db, row))
 
 
 @router.delete("/{report_id}")
-async def delete_daily_report(
-    report_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("academic.write"))
-):
-    """Delete a daily report"""
-    from app.infrastructure.models.models import DailyDevelopmentReport as DailyReportModel
-    
-    result = await db.execute(
-        select(DailyReportModel).where(DailyReportModel.id == report_id)
-    )
-    report = result.scalar_one_or_none()
-    
-    if not report:
-        raise HTTPException(status_code=404, detail="Daily report not found")
-    
-    await db.delete(report)
-    await db.commit()
-    
-    return success_response({"message": "Daily report deleted successfully"})
+async def delete_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
+    await db.delete(await get(db, tenant, report_id))
+    return success_response(message="Günlük rapor silindi")

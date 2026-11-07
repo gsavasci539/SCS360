@@ -1,0 +1,46 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test --grep material upload and authenticated downloads
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO:     Started server process [24320]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "83801a1a-72f8-4930-9d86-bc100f87c37a", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:47:53.077263Z"}
+[WebServer] (node:1668) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:15228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:24704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] {"request_id": "ac56e58f-f767-4a4b-9559-851c4e12ea37", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 2957.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:04.225928Z"}
+[WebServer] {"request_id": "a9194e3c-af84-4352-85cc-e1d9a902850f", "method": "GET", "path": "/api/materials", "status": 200, "duration_ms": 61.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:05.880595Z"}
+[WebServer] {"request_id": "8fad623c-9c16-4fe0-8746-09dad704b7c0", "method": "GET", "path": "/api/materials", "status": 200, "duration_ms": 14.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:05.899990Z"}
+[WebServer] {"request_id": "6b0f6977-8b0f-4082-9a87-a9e710bd345a", "method": "GET", "path": "/api/classes", "status": 200, "duration_ms": 295.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:06.124729Z"}
+[WebServer] {"request_id": "a32baefd-ffb0-4f40-8469-cd6627d25c20", "method": "GET", "path": "/api/classes", "status": 200, "duration_ms": 25.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:06.163240Z"}
+[WebServer] {"request_id": "d4e20178-bdd4-43a1-8e3f-1be16a2285d7", "method": "POST", "path": "/api/materials/upload", "status": 200, "duration_ms": 115.38, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:06.586865Z"}
+[WebServer] {"request_id": "18bcb0d4-1036-4b6e-b8ac-31b1a5c226db", "method": "GET", "path": "/api/materials", "status": 200, "duration_ms": 51.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:06.656555Z"}
+[WebServer] {"request_id": "eb78cee6-5d06-4991-96f7-ba53bdc671dd", "method": "GET", "path": "/api/materials/472e12c2-172e-42c5-a392-318af075322d/file", "status": 200, "duration_ms": 338.11, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:07.116649Z"}
+[WebServer] {"request_id": "27fdeeb3-7e43-40fa-afc0-0102538c68f6", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 478.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:09.448058Z"}
+[WebServer] {"request_id": "f9764ea8-dff7-4b42-ad48-17b7292ea633", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 133.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:10.635421Z"}
+[WebServer] {"request_id": "be0fb0e0-7c1f-472d-b0da-1b50d4bc3e97", "method": "GET", "path": "/api/parent/my-children", "status": 200, "duration_ms": 341.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:10.985503Z"}
+[WebServer] {"request_id": "8ee21fc7-c2c1-49b1-938a-f0df61327268", "method": "GET", "path": "/api/parent/child/b6c39ed4-53ad-4777-9af6-10148b218e88/today-status", "status": 200, "duration_ms": 528.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:11.228360Z"}
+[WebServer] {"request_id": "796a81a6-164a-43be-aca5-8b687ea8df37", "method": "GET", "path": "/api/parent/child/b6c39ed4-53ad-4777-9af6-10148b218e88/materials", "status": 200, "duration_ms": 1060.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:11.769060Z"}
+[WebServer] {"request_id": "ff0ff91e-60ee-4ae7-a969-04904a15a70b", "method": "GET", "path": "/api/ai/student-performance/b6c39ed4-53ad-4777-9af6-10148b218e88", "status": 200, "duration_ms": 1101.23, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:11.846963Z"}
+[WebServer] {"request_id": "687f8e90-79cb-4ebb-9e0e-b04e0b6cc3a8", "method": "GET", "path": "/api/parent/child/b6c39ed4-53ad-4777-9af6-10148b218e88/materials/472e12c2-172e-42c5-a392-318af075322d/download", "status": 200, "duration_ms": 172.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:12.567017Z"}
+[WebServer] {"request_id": "4c5bc847-75a5-44a8-b6f8-365b5fd72b61", "method": "DELETE", "path": "/api/materials/472e12c2-172e-42c5-a392-318af075322d", "status": 200, "duration_ms": 52.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:15.418583Z"}
+[WebServer] {"request_id": "33f585ba-e6d1-4c89-9563-7f0fa1117fce", "method": "GET", "path": "/api/materials", "status": 200, "duration_ms": 45.64, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T03:48:15.495919Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:114:1 › material upload and authenticated downloads work for admin and linked parent (18.5s)
+
+  1 passed (41.0s)

@@ -1,0 +1,6 @@
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 035 -> 036, Add nullable timetable actor references without rebuilding legacy tables.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+{"target": "C:\\Okul360\\output\\school-management-036-clone-20261105.db", "backup": null, "before": {"version": "035", "integrity": "ok", "foreign_key_violations": 432, "timetable_columns": ["id", "class_id", "slot_id", "classroom_assignment_id", "academic_year", "semester", "is_active", "created_at", "updated_at"]}, "after": {"version": "036", "integrity": "ok", "foreign_key_violations": 432, "timetable_columns": ["id", "class_id", "slot_id", "classroom_assignment_id", "academic_year", "semester", "is_active", "created_at", "updated_at", "created_by", "updated_by"]}, "orm_before": {"select_ok": false, "error_type": "missing_column"}, "orm_after": {"select_ok": true}, "old_columns_preserved": true, "old_tables": 107, "identities_accounts_business_rows_unchanged": true}

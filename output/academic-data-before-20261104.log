@@ -1,0 +1,183 @@
+FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+_ test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F6579B7770>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F6579B70E0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F6579B5A90>, ...})
+
+    async def test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add_all([grade(data, 0, ago=2), grade(data, 40, maximum=80, ago=1)])
+            await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data))
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]
+>       assert result["total_analyzed"] == 1 and result["students_without_grades"] == 1, result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 0.75, 'current_average': 40.0, 'predicted_grade': 42.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (2 == 1)
+
+tests\integration\test_academic_summary_data.py:28: AssertionError
+_ test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A504B90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A504190>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F65A06B390>, ...})
+
+    async def test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add_all([grade(data, 0, ago=2), grade(data, 40, maximum=80, ago=1)])
+            await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data))
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]
+>       assert result["total_analyzed"] == 1 and result["students_without_grades"] == 1, result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 0.75, 'current_average': 40.0, 'predicted_grade': 42.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (2 == 1)
+
+tests\integration\test_academic_summary_data.py:28: AssertionError
+_ test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A507610>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A1028B0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F65A102650>, ...})
+
+    async def test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add_all([grade(data, score, ago=6-index) for index, score in reversed(list(enumerate([10, 20, 30, 80, 90, 100])))])
+            db.add(grade(data, 10, maximum=0, ago=0)); await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data))
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]; risk = result["risk_students"][0]
+>       assert risk["current_average"] == 55 and risk["trend"] == "art�yor", result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 1.05, 'current_average': 48.6, 'predicted_grade': 51.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (48.6 == 55)
+
+tests\integration\test_academic_summary_data.py:44: AssertionError
+_ test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A102780>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A5408D0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F65A04ECF0>, ...})
+
+    async def test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add_all([grade(data, score, ago=6-index) for index, score in reversed(list(enumerate([10, 20, 30, 80, 90, 100])))])
+            db.add(grade(data, 10, maximum=0, ago=0)); await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data))
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]; risk = result["risk_students"][0]
+>       assert risk["current_average"] == 55 and risk["trend"] == "art�yor", result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 1.05, 'current_average': 48.6, 'predicted_grade': 51.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (48.6 == 55)
+
+tests\integration\test_academic_summary_data.py:44: AssertionError
+_ test_selected_period_and_empty_data_are_reported_without_all_good_fallback[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A621A70>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A5F6F50>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F659F3AC50>, ...})
+
+    async def test_selected_period_and_empty_data_are_reported_without_all_good_fallback(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add(grade(data, 40, ago=60)); await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data), params={"days": 7})
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]
+>       assert result["total_analyzed"] == 0 and result["students_without_grades"] == 2, result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 0.75, 'current_average': 40.0, 'predicted_grade': 42.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (2 == 0)
+
+tests\integration\test_academic_summary_data.py:55: AssertionError
+_ test_selected_period_and_empty_data_are_reported_without_all_good_fallback[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A5C57F0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A7695E0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F657A5C140>, ...})
+
+    async def test_selected_period_and_empty_data_are_reported_without_all_good_fallback(platform_client):
+        client, sessions, data = platform_client
+        async with sessions() as db:
+            db.add(grade(data, 40, ago=60)); await db.commit()
+        response = await client.get("/api/ai/ai-academic-predictions", headers=auth(data), params={"days": 7})
+        assert response.status_code == 200, response.text
+        result = response.json()["data"]
+>       assert result["total_analyzed"] == 0 and result["students_without_grades"] == 2, result
+E       AssertionError: {'ai_model': 'Linear Regression v1.0', 'confidence_threshold': 0.75, 'recommendations': ['1 ��rencinin akademik perfor..._students': [{'confidence': 0.75, 'current_average': 40.0, 'predicted_grade': 42.0, 'risk_level': 'y�ksek', ...}], ...}
+E       assert (2 == 0)
+
+tests\integration\test_academic_summary_data.py:55: AssertionError
+_ test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A540D10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65A9650F0>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F65A8F0670>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F65A6D1FD0>
+
+    async def test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="GRADES", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+        exam = await client.post("/api/exams", headers=root, json={"class_id": str(data["classroom"].id),
+            "title": "Ger�ek Matematik S�nav�", "exam_type": "QUIZ", "exam_date": school_today().isoformat(), "max_score": 80})
+        assert exam.status_code == 200, exam.text
+        saved = await client.post("/api/exams/bulk-grade-entry", headers=root, json={"exam_id": exam.json()["data"]["id"],
+            "grades": [{"student_id": str(child.id), "score": score} for child, score in zip(data["children"], [40, 0])]})
+        assert saved.status_code == 200, saved.text
+        parent = headers(data["user"]); child = data["children"][0]
+        grades = await client.get(f"/api/parent/child/{child.id}/grades", headers=parent)
+>       assert grades.status_code == 200 and len(grades.json()["data"]) == 1, grades.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[]}
+E       assert (200 == 200 and 0 == 1)
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +  and   0 = len([])
+
+tests\integration\test_exam_grade_visibility.py:23: AssertionError
+_ test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql] _
+
+platform_client = (<httpx.AsyncClient object at 0x000001F65A9A87C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000001F65AB11D90>, 'org': <app.infrastructure.models.models.Organization object at 0x000001F65A98B450>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F65AA38FA0>
+
+    async def test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary(platform_client, monkeypatch):
+        from app.routers import chatbot
+        async def intent(query, context):
+            return ChatbotIntent(intent="GRADES", confidence=1)
+        monkeypatch.setattr(chatbot.intent_service, "detect_intent_with_fallback", intent)
+        client, sessions, data = platform_client
+        root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+        exam = await client.post("/api/exams", headers=root, json={"class_id": str(data["classroom"].id),
+            "title": "Ger�ek Matematik S�nav�", "exam_type": "QUIZ", "exam_date": school_today().isoformat(), "max_score": 80})
+        assert exam.status_code == 200, exam.text
+        saved = await client.post("/api/exams/bulk-grade-entry", headers=root, json={"exam_id": exam.json()["data"]["id"],
+            "grades": [{"student_id": str(child.id), "score": score} for child, score in zip(data["children"], [40, 0])]})
+        assert saved.status_code == 200, saved.text
+        parent = headers(data["user"]); child = data["children"][0]
+        grades = await client.get(f"/api/parent/child/{child.id}/grades", headers=parent)
+>       assert grades.status_code == 200 and len(grades.json()["data"]) == 1, grades.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":[]}
+E       assert (200 == 200 and 0 == 1)
+E        +  where 200 = <Response [200 OK]>.status_code
+E        +  and   0 = len([])
+
+tests\integration\test_exam_grade_visibility.py:23: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+  C:\Okul360\backend\app\routers\exams.py:407: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    submitted_at=datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_academic_summary_data.py::test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence[sqlite]
+FAILED tests/integration/test_academic_summary_data.py::test_zero_grade_and_maximum_are_normalized_without_inventing_predictions_or_confidence[postgresql]
+FAILED tests/integration/test_academic_summary_data.py::test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores[sqlite]
+FAILED tests/integration/test_academic_summary_data.py::test_recent_trend_uses_chronological_nonoverlapping_groups_and_skips_invalid_scores[postgresql]
+FAILED tests/integration/test_academic_summary_data.py::test_selected_period_and_empty_data_are_reported_without_all_good_fallback[sqlite]
+FAILED tests/integration/test_academic_summary_data.py::test_selected_period_and_empty_data_are_reported_without_all_good_fallback[postgresql]
+FAILED tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[sqlite]
+FAILED tests/integration/test_exam_grade_visibility.py::test_real_exam_results_reach_parent_student_insights_chatbot_and_school_summary[postgresql]
+8 failed, 24 warnings in 23.68s

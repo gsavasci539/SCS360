@@ -1,0 +1,16 @@
+Collecting cryptography==50.0.2
+  Using cached cryptography-50.0.2-cp311-abi3-win_amd64.whl.metadata (4.4 kB)
+Requirement already satisfied: cffi>=2.0.0 in c:\okul360\backend\.venv\lib\site-packages (from cryptography==50.0.2) (2.1.1)
+Requirement already satisfied: pycparser in c:\okul360\backend\.venv\lib\site-packages (from cffi>=2.0.0->cryptography==50.0.2) (3.0)
+Using cached cryptography-50.0.2-cp311-abi3-win_amd64.whl (3.8 MB)
+Installing collected packages: cryptography
+  Attempting uninstall: cryptography
+    Found existing installation: cryptography 50.0.1
+    Uninstalling cryptography-50.0.1:
+      Successfully uninstalled cryptography-50.0.1
+  WARNING: Failed to remove contents in a temporary directory 'C:\Okul360\backend\.venv\Lib\site-packages\~ryptography'.
+  You can safely remove it manually.
+Successfully installed cryptography-50.0.2
+
+[notice] A new release of pip is available: 24.3.1 -> 26.2.2
+[notice] To update, run: C:\Okul360\backend\.venv\Scripts\python.exe -m pip install --upgrade pip

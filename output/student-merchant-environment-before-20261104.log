@@ -1,0 +1,145 @@
+F..F..F..                                                                [100%]
+================================== FAILURES ===================================
+_ test_student_merchant_environment_gate_preserves_live_and_development[production-sandbox-api.iyzipay.com-False] _
+
+environment = 'production', host = 'sandbox-api.iyzipay.com', allowed = False
+
+    @pytest.mark.parametrize("environment,host,allowed", [
+        ("production", "sandbox-api.iyzipay.com", False),
+        ("production", "api.iyzipay.com", True),
+        ("development", "sandbox-api.iyzipay.com", True),
+    ])
+    def test_student_merchant_environment_gate_preserves_live_and_development(environment, host, allowed):
+        school = uuid4()
+        gateway = payments.IyzicoGateway(settings(environment, host, school))
+        if allowed:
+            gateway.configured()
+        else:
+>           with pytest.raises(AppException) as blocked:
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'app.core.exceptions.AppException'>
+
+tests\integration\test_student_checkout_environment.py:37: Failed
+_ test_callback_uses_environment_gate_before_provider_and_ledger[sqlite-production-sandbox-api.iyzipay.com-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000251F1373A10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000251F1373380>, 'org': <app.infrastructure.models.models.Organization object at 0x00000251F1372120>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000251F108B100>
+environment = 'production', host = 'sandbox-api.iyzipay.com', allowed = False
+
+    @pytest.mark.parametrize("environment,host,allowed", [
+        ("production", "sandbox-api.iyzipay.com", False),
+        ("production", "api.iyzipay.com", True),
+        ("development", "sandbox-api.iyzipay.com", True),
+    ])
+    async def test_callback_uses_environment_gate_before_provider_and_ledger(materials_client, monkeypatch, environment, host, allowed):
+        client, sessions, data = materials_client
+        token = "acceptance-environment-token"
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                amount=100, paid_amount=0, due_date=date.today())
+            db.add(debt); await db.flush()
+            checkout = PaymentCheckout(organization_id=data["org"].id, debt_id=debt.id,
+                created_by=data["user"].id, amount=25, currency="TRY", token_hash=payments.token_hash(token))
+            db.add(checkout); await db.commit()
+        source = settings(environment, host, data["org"].id)
+        gateway_class = payments.IyzicoGateway
+        monkeypatch.setattr(payments, "IyzicoGateway", lambda: gateway_class(source))
+        result = {"status": "success", "paymentStatus": "SUCCESS", "paymentId": "environment-proof-001",
+            "currency": "TRY", "basketId": str(debt.id), "conversationId": str(checkout.id),
+            "paidPrice": "25.00", "price": "25.0", "token": token, "fraudStatus": 1}
+        fields = ("paymentStatus", "paymentId", "currency", "basketId", "conversationId", "paidPrice", "price", "token")
+        values = [format(Decimal(result[key]).normalize(), "f") if key in {"paidPrice", "price"} else str(result[key]) for key in fields]
+        result["signature"] = hmac.new(source.IYZICO_SECRET_KEY.encode(), ":".join(values).encode(), hashlib.sha256).hexdigest()
+        provider_calls = []
+    
+        class FakeReply:
+            def raise_for_status(self): pass
+            def json(self): return result
+    
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                provider_calls.append(url)
+                return FakeReply()
+    
+        # The real gateway configuration/signing/retrieve path runs; HTTP never leaves this fixture.
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/payments/iyzico/callback", data={"token": token})
+>       assert reply.status_code == (200 if allowed else 503), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"status":"SUCCESS","payment_id":"af2a3b30-7253-407e-a992-ebb9bf82afb2","debt_id":"18f27f16-6e5d-4873-a5e1-1e5b0d126ef1","amount":"25.00","remaining_amount":"75.00"}}
+E       assert 200 == 503
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_environment.py:85: AssertionError
+_ test_callback_uses_environment_gate_before_provider_and_ledger[postgresql-production-sandbox-api.iyzipay.com-False] _
+
+materials_client = (<httpx.AsyncClient object at 0x00000251F3801BA0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x00000251F394BDF0>, 'org': <app.infrastructure.models.models.Organization object at 0x00000251F146FF00>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000251F3E27C50>
+environment = 'production', host = 'sandbox-api.iyzipay.com', allowed = False
+
+    @pytest.mark.parametrize("environment,host,allowed", [
+        ("production", "sandbox-api.iyzipay.com", False),
+        ("production", "api.iyzipay.com", True),
+        ("development", "sandbox-api.iyzipay.com", True),
+    ])
+    async def test_callback_uses_environment_gate_before_provider_and_ledger(materials_client, monkeypatch, environment, host, allowed):
+        client, sessions, data = materials_client
+        token = "acceptance-environment-token"
+        async with sessions() as db:
+            debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                amount=100, paid_amount=0, due_date=date.today())
+            db.add(debt); await db.flush()
+            checkout = PaymentCheckout(organization_id=data["org"].id, debt_id=debt.id,
+                created_by=data["user"].id, amount=25, currency="TRY", token_hash=payments.token_hash(token))
+            db.add(checkout); await db.commit()
+        source = settings(environment, host, data["org"].id)
+        gateway_class = payments.IyzicoGateway
+        monkeypatch.setattr(payments, "IyzicoGateway", lambda: gateway_class(source))
+        result = {"status": "success", "paymentStatus": "SUCCESS", "paymentId": "environment-proof-001",
+            "currency": "TRY", "basketId": str(debt.id), "conversationId": str(checkout.id),
+            "paidPrice": "25.00", "price": "25.0", "token": token, "fraudStatus": 1}
+        fields = ("paymentStatus", "paymentId", "currency", "basketId", "conversationId", "paidPrice", "price", "token")
+        values = [format(Decimal(result[key]).normalize(), "f") if key in {"paidPrice", "price"} else str(result[key]) for key in fields]
+        result["signature"] = hmac.new(source.IYZICO_SECRET_KEY.encode(), ":".join(values).encode(), hashlib.sha256).hexdigest()
+        provider_calls = []
+    
+        class FakeReply:
+            def raise_for_status(self): pass
+            def json(self): return result
+    
+        class FakeClient:
+            def __init__(self, **kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def post(self, url, **kwargs):
+                provider_calls.append(url)
+                return FakeReply()
+    
+        # The real gateway configuration/signing/retrieve path runs; HTTP never leaves this fixture.
+        monkeypatch.setattr(payments.httpx, "AsyncClient", FakeClient)
+        reply = await client.post("/api/payments/iyzico/callback", data={"token": token})
+>       assert reply.status_code == (200 if allowed else 503), reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"status":"SUCCESS","payment_id":"9bc42af5-bf1c-47b4-998a-7f33827340c0","debt_id":"37377644-f987-45ad-9a13-5383a84b97b4","amount":"25.00","remaining_amount":"75.00"}}
+E       assert 200 == 503
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_student_checkout_environment.py:85: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_student_checkout_environment.py::test_student_merchant_environment_gate_preserves_live_and_development[production-sandbox-api.iyzipay.com-False]
+FAILED tests/integration/test_student_checkout_environment.py::test_callback_uses_environment_gate_before_provider_and_ledger[sqlite-production-sandbox-api.iyzipay.com-False]
+FAILED tests/integration/test_student_checkout_environment.py::test_callback_uses_environment_gate_before_provider_and_ledger[postgresql-production-sandbox-api.iyzipay.com-False]
+3 failed, 6 passed, 20 warnings in 17.54s

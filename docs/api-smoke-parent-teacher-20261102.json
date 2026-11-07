@@ -1,0 +1,1853 @@
+[
+  {
+    "role": "teacher",
+    "path": "/api/health",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ready",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/organizations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: org.read\",\"errors\":[],\"request_id\":\"c7eecd6d-4caa-40d4-aa75-4f88d09c6263\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/branches",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.read\",\"errors\":[],\"request_id\":\"0b8e1376-6280-4777-a15c-10aacc45ab7f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/users",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"aa6678f9-04da-4df5-925d-4581fea43020\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/roles",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"05aa58b7-db59-4906-90b4-5a3b7154fe37\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/permissions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"59b5f923-31fa-4be7-8dc9-aa23a49045cf\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/staff-operations/transport/routes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: transport.manage\",\"errors\":[],\"request_id\":\"9c5d9b99-332e-4840-9172-a8ff59da4ab9\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/staff-operations/library/books",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.manage\",\"errors\":[],\"request_id\":\"394931a4-b09e-499a-bec4-eb5ae44fabee\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/admin/students",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/students",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/classes",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/attendance",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/debts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.read\",\"errors\":[],\"request_id\":\"c4ee5071-e18d-41d7-9012-fd2afd866ad7\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/payments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.read\",\"errors\":[],\"request_id\":\"7c5e05cc-4f2e-4ab8-9dbb-15fd9ceda778\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/receipts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: receipt.read\",\"errors\":[],\"request_id\":\"7656b0d6-5a46-4473-8559-febac1a5a24d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/summary",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/charts",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/overview",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/recent-activity",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.view\",\"errors\":[],\"request_id\":\"497d7bc7-dc59-4ca0-bb7a-adcda66aa163\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/upcoming-events",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.view\",\"errors\":[],\"request_id\":\"02e745a6-504d-478b-8533-ea96742ae258\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/financial-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.financial\",\"errors\":[],\"request_id\":\"768e1d04-5f72-4c87-aff3-f4c29db51efc\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/attendance-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.attendance\",\"errors\":[],\"request_id\":\"bafb3bef-4bd5-4776-9ebe-1fdf63c22455\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/owner/dashboard/overview",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.view_all\",\"errors\":[],\"request_id\":\"3f462805-0e20-4da7-bb20-7ae95ff11af7\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/owner/branches/metrics-comparison",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.view_all\",\"errors\":[],\"request_id\":\"d0e85a59-9702-4b13-bf51-d8c2899d4d3f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dashboard/owner/financial-trends",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.view_summary\",\"errors\":[],\"request_id\":\"239c6776-0bd3-4a2b-968c-af93b267386f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/reports/debts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"56329eba-93dd-40fb-81f8-c56ca52fa43f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/reports/overdue-debts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"c9c0a748-01e6-461b-b85d-9b923b52acce\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/reports/class-occupancy",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"99458b69-59e1-4923-b3a6-01f5b9e1d383\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/reports/branch-performance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"f5659575-ad1d-451d-9c69-f4f0c7d28188\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/reports/attendance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"e517e6c5-cf64-43ea-a165-8ce0533e6c76\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/notifications/templates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: notification.read\",\"errors\":[],\"request_id\":\"ea21f24f-883b-462d-a263-4553a76cb93c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/settings/integrations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"2cf0e481-6a2c-4b61-853f-bbbb57ccd337\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/announcements",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: announcement.read\",\"errors\":[],\"request_id\":\"3787e8c5-4791-4e4d-85cb-9e5b2030a7c8\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/notifications",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: notification.read\",\"errors\":[],\"request_id\":\"92d34f11-7e48-4258-a156-01f905c87f64\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/settings",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"52d2104a-15c8-4bf8-9a13-d061d7a37b8c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/daily-reports/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: daily_reports.read, academic.read\",\"errors\":[],\"request_id\":\"47c5f8b0-4276-4a1c-857c-a2f297e8aa29\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/daily-reports",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: daily_reports.read, academic.read\",\"errors\":[],\"request_id\":\"7bc85520-84e0-47c1-a984-6281e8a326d1\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/homework/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read\",\"errors\":[],\"request_id\":\"f3356e2e-d98c-477a-ad24-841f517aafe4\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/homework",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read\",\"errors\":[],\"request_id\":\"8a62de8d-b475-4dc7-b736-11a789d574b6\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/homework/classes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read, homework.write\",\"errors\":[],\"request_id\":\"3a0494da-7cb4-4240-999c-8035aaae2cc8\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/homework/submissions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read, parent.view_children\",\"errors\":[],\"request_id\":\"7a0868ff-44b5-477a-be4e-fd82ae3c316f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/rfid-cards",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"9a8b753b-bab9-4abc-976d-bb217a6d4d9a\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/card-numbers",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"863f3bc9-d524-49d4-bc49-6b7457761902\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/card-numbers/available",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"43067380-ebcf-4b9b-9004-11e0d30cc47d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/devices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"88b6b6af-17ad-4964-a29d-a1f7838ad3db\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/parent-notices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: parent_notices.read\",\"errors\":[],\"request_id\":\"e72e47c8-07ed-4d3a-b144-f545ee3b5d12\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/outbox/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: outbox.read, notification.read\",\"errors\":[],\"request_id\":\"b76fc120-7491-4466-afc4-854fd324b7d8\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/outbox",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: outbox.read, notification.read\",\"errors\":[],\"request_id\":\"8ab1dc8c-6383-4a8d-a1ca-9aaa7eb91c32\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/expenses",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.read\",\"errors\":[],\"request_id\":\"e3c1f380-b82c-4029-8e92-0df3e7c913c1\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/appointments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: appointments.read\",\"errors\":[],\"request_id\":\"96b039b8-f23e-4dbb-a4ca-557060ac4379\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/transport/routes",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/canteen/transactions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read, canteen.manage, finance.read\",\"errors\":[],\"request_id\":\"01e84035-311c-4c3a-a5dc-772af2f7fd0f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/library/books",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"5feab32a-4601-48f9-befa-baf6e028dd8c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/library/loans",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"eaed2ae9-029f-4ff0-97da-afa9d2db4d49\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/staff/duty-rosters",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"3abeaf0e-cbf8-49de-87a3-e7ea8df4c0a2\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/staff/leave-requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"3e6c54c1-8e26-4386-a622-73b67a64dfc8\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/parent/notices",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/finance/analytics",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.read\",\"errors\":[],\"request_id\":\"dc5325b7-3e18-4f2c-b779-d1a48ae845e2\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/notifications/unread-count",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/finance/expenses",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.read\",\"errors\":[],\"request_id\":\"e19e82a8-4e04-467f-b127-cf6225a5d0df\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/security/digital-ids",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"4a53c17b-9bd3-4931-a684-a40abd5c4a6b\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/security/gate-logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"1e5d6e11-5c11-490a-8320-c36774007f96\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/security/gate-logs/stats",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"03647fd6-b312-4d63-9b6d-6c5c28230614\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/timetable/slots",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: timetable.read\",\"errors\":[],\"request_id\":\"8091ab38-46e7-4611-925c-694d5031922f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/timetable/classroom-assignments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: timetable.read\",\"errors\":[],\"request_id\":\"283f454b-bdf3-45d7-878a-87b074ffb854\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/exams",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: exam.read\",\"errors\":[],\"request_id\":\"2ebc2233-fadd-424a-ab9c-2b9b7b371f7d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/materials",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: material.read\",\"errors\":[],\"request_id\":\"7fc88318-0fe9-4607-9c96-e9cf681ffc80\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/materials/stats/summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: material.read\",\"errors\":[],\"request_id\":\"80a2ee94-20e2-49c9-8374-553a2095c89c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/canteen/products",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"e1c092ea-0428-48ab-93f8-e20c240f5b62\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/canteen/dietary-restrictions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"2e5df1ed-1cef-471b-8b3f-c64968fe2419\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/canteen/orders",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"1d670d8e-09d9-4137-be07-efc82d50e921\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/infirmary/health-records",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/infirmary/medication-schedules",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/infirmary/medication-logs",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/infirmary/infirmary-visits",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/infirmary/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/guidance/sessions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"9218e19b-b9d7-49d7-b2c3-dee5c5421ff8\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/guidance/incidents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"6bd9d9d4-3dd5-49e0-a146-7f2f7e57823d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/guidance/notes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"606483d5-62dd-49bf-b928-1eff71b31fb9\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/bus/routes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"534c8aac-a1c3-47bc-b064-78da3c146649\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/bus/stops",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"800d7403-f405-4952-9c39-2e9c8feedd6d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/bus/attendance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"1c04b6a1-b1c8-4cc5-8b6a-3fa9130288c6\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dismissal/authorizations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"f8a5fd51-93ba-41b0-8f0e-05dc24bb52c1\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dismissal/logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"7f7b10db-ff20-4890-a62d-d5ac333c9828\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/dismissal/today-pickups",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"9d16c957-179c-4499-8629-ea1a24b9dbbc\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/communications/sms-providers",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"a553ea15-2b69-44c3-88a9-3d5a85bb3118\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/communications/broadcast-jobs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"5e29b56f-de60-4eeb-b84f-8465fb57e974\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/communications/delivery-reports",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"fc346a15-f91a-45c3-b586-d577d47798d5\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/communications/message-templates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"117f40d1-0ef4-4569-9a1c-426bc6c4bc6c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/hq/financial-consolidation",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: hq.read\",\"errors\":[],\"request_id\":\"50e5251f-2b9d-4470-b681-b05c3b634881\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/tutoring/sessions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"665207ce-cae2-4e49-a12b-bb473e68513f\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/tutoring/requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"0577d8e4-16a7-48f7-8261-a7629499943e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/tutoring/availability",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"7bedd616-b889-4210-a43c-f98841d90085\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/clubs/clubs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"369c1446-adbb-4493-95b3-d83acc6bed4a\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/clubs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"b37b2b4b-56e2-47a2-bc72-c6a6cb4ff5fe\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/clubs/memberships",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"8145cf26-5cad-474b-8a10-2c18e9b90a8c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/clubs/events",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"ec4c43a5-407a-48e6-ada3-455bf4e406a5\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/clubs/certificates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"2c35830c-cbd9-4b9d-86d7-08be83f4bb24\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/payroll/timesheets",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"f7b2cae9-36de-43df-9445-28c309146213\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/payroll/additional-hours",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"62a38ced-82ff-4fdc-ad4f-0faea5fbf509\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/payroll/records",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"92862042-f4c4-4737-990c-2bd4354a8d1a\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/inventory/items",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"ddd59ca0-a203-4d39-b076-056ec07dc90d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/inventory/locations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"b48588d3-0100-4e32-bd0d-0c0d887d20be\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/inventory/assignments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"3a514266-fc20-4d01-96be-274ca218d94e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/inventory/maintenance-requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"3fad2438-2c7f-4a4b-9109-6414d230b0c6\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/surveys/surveys",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"c2452668-f63e-4705-91ca-6df92b070c9e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/surveys/questions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"b2f0f17d-8b46-4e27-b171-b8ae6a6124ec\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/surveys/responses",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"72720bd4-9eb1-41d6-b72b-6c74ff997e9c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/consents/documents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"611b43f8-5b98-4be3-b404-acf99c6bf632\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/consents/student-consents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"064e6b57-4247-401b-8390-b96e683d84cf\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/consents/consent-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"83bca344-0cbf-484a-8de3-19cdfa1cc68e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/messages/conversations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: messaging.read\",\"errors\":[],\"request_id\":\"9d0b22f0-8158-42bd-a669-2f47efe2c65b\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/parent/my-children",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: parent.view_children\",\"errors\":[],\"request_id\":\"1d213e44-4a06-4c9f-8532-cb028ecc531d\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/parents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: parents.read\",\"errors\":[],\"request_id\":\"9f6004b8-e265-45b7-a8cc-18fe167b901e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/teacher/my-classes",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/teacher/today-schedule",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/teacher/pending-tasks",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/teacher/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/appointments/my-appointments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: appointments.read\",\"errors\":[],\"request_id\":\"c7085b8b-57d5-4534-86c7-4e0175dd648e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/library/loans/overdue",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"4f07fabe-9c7a-4841-9b1a-44e36d49ea7c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/hardware/devices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"c34295cd-9405-4902-a3c3-63e9c8ad594e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/hardware/wifi/card-reads",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-academic-predictions",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-attendance-predictions",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-financial-predictions",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-parent-sentiment",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-operational-optimization",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/insights-report",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-homework-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/ai-daily-reports-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/attendance-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/payment-forecast",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/canteen-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/students-overview",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/parents-overview",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/parent-satisfaction",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/academic-performance",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/communication-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/inventory-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/staff-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/library-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/payroll-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/health-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/transport-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/tutoring-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/surveys-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/guidance-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/clubs-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/classes-overview",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/student-performance-trends",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/organization-health",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/executive-summary",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/comparative-analysis",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/resource-utilization",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/staff-productivity",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/risk-management",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/ai/operational-metrics",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/role-config",
+    "status": 200
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/ai/audit-logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"c80a1933-e8b1-493a-8ad0-ce5908fcaaca\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/ai/analytics/overview",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"befe4f9d-a357-469e-98bf-f0f7e586aa0e\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/ai/analytics/trends",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"d150d15a-552a-477e-ad94-72f102209b4c\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/ai/analytics/intent-performance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"32f9719c-e049-43b7-92af-fa18f42bb403\"}"
+  },
+  {
+    "role": "teacher",
+    "path": "/api/v1/chatbot/ai/conversation/my-stats",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/health",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ready",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/auth/me",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/organizations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: org.read\",\"errors\":[],\"request_id\":\"b7648d9f-978f-43b2-b4e5-f9d731b2b298\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/branches",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.read\",\"errors\":[],\"request_id\":\"1c32fb67-dfa0-4926-add6-f1e3f0705711\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/users",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"982303ca-4b5e-421c-ad87-85e3ee4b0d75\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/roles",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"baa6947a-1f73-44ef-9b50-1da9c6ae28df\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/permissions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"5ca31cee-bf9e-459a-b9b1-0156d528f954\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/staff-operations/transport/routes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: transport.manage\",\"errors\":[],\"request_id\":\"bd9daf4f-9e03-4858-8cf8-1883918b14e9\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/staff-operations/library/books",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.manage\",\"errors\":[],\"request_id\":\"9132d9ed-2f6d-473a-8d61-d32c0a33024e\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/admin/students",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/students",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/classes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: class.read\",\"errors\":[],\"request_id\":\"c75d83f0-545e-47cf-bdfa-099c1081a6a2\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/attendance",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/debts",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/payments",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/receipts",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/summary",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/charts",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/overview",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/recent-activity",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.view\",\"errors\":[],\"request_id\":\"80063c68-cde2-4ab3-a12c-c431428a3f15\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/upcoming-events",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.view\",\"errors\":[],\"request_id\":\"f9d75685-0595-4773-b569-7ecb58fe78d2\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/financial-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.financial\",\"errors\":[],\"request_id\":\"80d7ee4e-d7c1-4960-9dc9-3b54089debab\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/attendance-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dashboard.attendance\",\"errors\":[],\"request_id\":\"f8d00cdb-f4f2-4da9-8d49-eba76c3983f8\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/owner/dashboard/overview",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.view_all\",\"errors\":[],\"request_id\":\"67c3a6ef-2bb3-440f-9d34-ab538645f20d\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/owner/branches/metrics-comparison",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: branch.view_all\",\"errors\":[],\"request_id\":\"528a704f-2a51-46d1-bec7-a076f5133777\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dashboard/owner/financial-trends",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: finance.view_summary\",\"errors\":[],\"request_id\":\"1e538d25-b091-4461-a5d2-0648d2817b24\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/reports/debts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"cee6c5cc-1320-4e73-861c-2a5cdf7a1c4c\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/reports/overdue-debts",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"a66850b9-80c7-4889-aa18-f13208a051e1\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/reports/class-occupancy",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"9d085714-a40d-4a1c-8fd6-91fd7a171116\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/reports/branch-performance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"bce5f494-d194-4e35-9566-e4938f10f839\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/reports/attendance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: report.read\",\"errors\":[],\"request_id\":\"e767159c-d1d8-4259-92da-5ab1b7ad33c2\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/notifications/templates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: notification.read\",\"errors\":[],\"request_id\":\"7f28f153-8cc2-4f30-8c3f-ec593092e872\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/settings/integrations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"11db37b5-05ba-4660-bf7e-46017ab66110\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/announcements",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/notifications",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: notification.read\",\"errors\":[],\"request_id\":\"97cd4f53-b74e-46a8-8b33-fe760280024b\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/settings",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"e353add0-0519-4a82-a5b5-d4aa4ec37d2c\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/daily-reports/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: daily_reports.read, academic.read\",\"errors\":[],\"request_id\":\"9af02941-869d-4206-9c06-839666b95bcf\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/daily-reports",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: daily_reports.read, academic.read\",\"errors\":[],\"request_id\":\"b740f888-bcdb-4d9a-b69b-4fe20f399777\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/homework/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read\",\"errors\":[],\"request_id\":\"8d30dc3a-7f8b-4a79-ba41-d9ecbba81747\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/homework",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read\",\"errors\":[],\"request_id\":\"fc294ce8-0689-4a4e-ba74-c897d246fd4b\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/homework/classes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: homework.read, homework.write\",\"errors\":[],\"request_id\":\"adbc0a31-4495-4833-8122-6e7b67522cec\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/homework/submissions",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/rfid-cards",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"fecd2927-a7a7-4dc9-b6da-82d5702b72ae\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/card-numbers",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"0a84ae6f-898b-4de2-bb66-1e421fd9868d\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/card-numbers/available",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"941dc425-0cb4-48fe-b328-cba37e9aa832\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/devices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"d57d825b-7175-474f-9ddc-0793f69c7725\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/parent-notices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: parent_notices.read\",\"errors\":[],\"request_id\":\"c502cb49-f485-4db6-83ce-a812ac2f627a\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/outbox/",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: outbox.read, notification.read\",\"errors\":[],\"request_id\":\"9f348334-d311-4933-bcdf-1f1f770a920e\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/outbox",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: outbox.read, notification.read\",\"errors\":[],\"request_id\":\"fe5b32c2-7901-4c50-ae96-29af31e36dbc\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/expenses",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/appointments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: appointments.read\",\"errors\":[],\"request_id\":\"918fc337-7062-4821-91c2-eb55df4cd3c6\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/transport/routes",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/canteen/transactions",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/library/books",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"785575cb-ad9b-4c74-85aa-73bb4383879a\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/library/loans",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"35e4ae34-756d-499f-ad41-64a68086d275\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/staff/duty-rosters",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"47f58be2-7e37-4cd7-afc4-f256365f5032\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/staff/leave-requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: user.read\",\"errors\":[],\"request_id\":\"1d1d8c0a-a0e5-4438-a45a-f7bea3f7bc9c\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/parent/notices",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/finance/analytics",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/notifications/unread-count",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/finance/expenses",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/security/digital-ids",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"c1bcb47e-260d-4ad6-aaab-7210630dd26a\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/security/gate-logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"44a1e89c-bcda-44ce-9ed6-13c28fc3bad6\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/security/gate-logs/stats",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: security.read\",\"errors\":[],\"request_id\":\"7d631f67-53fe-476d-b04a-afb79d0481a5\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/timetable/slots",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: timetable.read\",\"errors\":[],\"request_id\":\"4424d1f5-fab2-435a-9e29-4c5c0e9b3cf0\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/timetable/classroom-assignments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: timetable.read\",\"errors\":[],\"request_id\":\"0056b926-1685-40c2-8288-e48ddf7e2abc\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/exams",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: exam.read\",\"errors\":[],\"request_id\":\"d01ac23a-5146-4fa0-8fb4-64076a0d9a17\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/materials",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: material.read\",\"errors\":[],\"request_id\":\"10983a58-5c3f-4dfa-8ed0-23f1d501ac14\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/materials/stats/summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: material.read\",\"errors\":[],\"request_id\":\"a013c106-213a-4d77-8853-f36f506b911f\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/canteen/products",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"ab127f13-60fe-477b-94b3-44ae4c124e27\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/canteen/dietary-restrictions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"357d8891-0b89-455d-8c6a-2726bf66da35\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/canteen/orders",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: canteen.read\",\"errors\":[],\"request_id\":\"648b4c08-5b29-4c12-aac0-33a370e47406\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/infirmary/health-records",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/infirmary/medication-schedules",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/infirmary/medication-logs",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/infirmary/infirmary-visits",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/infirmary/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/guidance/sessions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"4fc7f34f-678f-42ad-85bf-163c78ab0765\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/guidance/incidents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"59286a37-6a59-43d1-9491-67e9c0162af1\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/guidance/notes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: guidance.read\",\"errors\":[],\"request_id\":\"40cbf612-4922-41a4-8f6b-abf1a7a47378\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/bus/routes",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"a68c91cf-b133-4fed-87fa-eebe69b9647e\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/bus/stops",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"1178c6bc-fcec-4d45-a9bc-9317fc74eef0\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/bus/attendance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: bus.read\",\"errors\":[],\"request_id\":\"f6f329a2-7d51-4194-80bc-8514f7199640\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dismissal/authorizations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"c2ce0bd9-057c-42bf-b293-500f85f4387d\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dismissal/logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"9d17c794-22db-477a-9fd8-bfd3edec6431\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/dismissal/today-pickups",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: dismissal.read\",\"errors\":[],\"request_id\":\"9bb6d85b-c818-482e-9309-060ecba4ef11\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/communications/sms-providers",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"a09d1eec-f610-4edb-8d5e-5b419b6f70da\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/communications/broadcast-jobs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"cd44bc1d-fa36-4258-99cb-78a68ad490c4\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/communications/delivery-reports",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"b8d90e8d-217c-46dd-8c00-f207b9125a6b\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/communications/message-templates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: communications.read\",\"errors\":[],\"request_id\":\"91e37532-3513-4962-8d88-4ab85331f253\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/hq/financial-consolidation",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: hq.read\",\"errors\":[],\"request_id\":\"091bf757-6ff1-4c5b-9dbf-ad80ba40efb0\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/tutoring/sessions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"f9c88e42-a7a8-49c7-84c7-36f7773b6761\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/tutoring/requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"aa80c297-8598-4e2e-b7a3-f0dada48abf7\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/tutoring/availability",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: tutoring.read\",\"errors\":[],\"request_id\":\"2d8a9881-e791-427d-a78e-ebe793d6f185\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/clubs/clubs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"abb45f88-1d80-468a-b20f-2cca107d86f6\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/clubs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"6ef1c753-6b78-4236-90ad-8db156b26d82\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/clubs/memberships",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"f0a7fcf9-e1d9-4a6c-98bc-ba1dcad3e5e7\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/clubs/events",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"9662c5bf-62b2-486d-9ca5-5f82b7743f30\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/clubs/certificates",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: clubs.read\",\"errors\":[],\"request_id\":\"b02fd39b-9256-490c-9b22-6ac6c8e41a40\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/payroll/timesheets",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"1a0fb9a1-a1fc-4737-b9d0-ccbd61b1d7f2\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/payroll/additional-hours",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"a9a72f20-973b-45ac-ae03-5486ec0f9bf0\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/payroll/records",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: payroll.read\",\"errors\":[],\"request_id\":\"e2c3d05a-cea0-4bc7-94f7-80d881231251\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/inventory/items",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"2f86b685-6f7a-4ae8-8c37-56dfc983094c\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/inventory/locations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"136ecf77-7d72-4e5a-81a8-954f1bb71f41\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/inventory/assignments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"e23ebcb6-ffcb-4414-9c9b-018f982e49a7\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/inventory/maintenance-requests",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: inventory.read\",\"errors\":[],\"request_id\":\"b21fa567-39c4-4611-a5cf-f7cd9c3edcfd\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/surveys/surveys",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"ce7ad726-b147-4b21-9963-9b09380bebea\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/surveys/questions",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"36d6b6bf-2063-428f-908e-a471f05a1822\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/surveys/responses",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: surveys.read\",\"errors\":[],\"request_id\":\"8556948a-3dd9-4fc3-a7a5-7dfcfd96a49c\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/consents/documents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"9dcfe575-6f32-4b86-82b8-4c21298d8e07\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/consents/student-consents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"115fdb8a-6ff7-4f83-91fa-667007265f25\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/consents/consent-summary",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: consents.read\",\"errors\":[],\"request_id\":\"8bcae12a-d285-447d-8ff4-11669ee1f02a\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/messages/conversations",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: messaging.read\",\"errors\":[],\"request_id\":\"c7e8fa1b-1474-4d2d-acec-e86b46f991f5\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/parent/my-children",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/parents",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: parents.read\",\"errors\":[],\"request_id\":\"afda671d-29a8-4e1a-8220-11b7af52b870\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/teacher/my-classes",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/teacher/today-schedule",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/teacher/pending-tasks",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/teacher/medicine-requests",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/appointments/my-appointments",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: appointments.read\",\"errors\":[],\"request_id\":\"cfe7abce-6ba6-499c-9fea-0d7a7d8563f6\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/library/loans/overdue",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: library.read\",\"errors\":[],\"request_id\":\"0ab3c24b-7ba3-4e48-980c-fe32b0010b85\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/hardware/devices",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Gerekli yetki: settings.read\",\"errors\":[],\"request_id\":\"a1531af2-2513-4e0f-9161-cb9de9974979\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/hardware/wifi/card-reads",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-academic-predictions",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-attendance-predictions",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-financial-predictions",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-parent-sentiment",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-operational-optimization",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/insights-report",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-homework-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/ai-daily-reports-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/attendance-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/payment-forecast",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/canteen-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/students-overview",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/parents-overview",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/parent-satisfaction",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/academic-performance",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/communication-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/inventory-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/staff-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/library-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/payroll-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/health-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/transport-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/tutoring-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/surveys-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/guidance-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/clubs-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/classes-overview",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/student-performance-trends",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/organization-health",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/executive-summary",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/comparative-analysis",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/resource-utilization",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/staff-productivity",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/risk-management",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/ai/operational-metrics",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/role-config",
+    "status": 200
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/ai/audit-logs",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"d98180cd-1f58-41e5-88f1-fea9f6c1a375\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/ai/analytics/overview",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"6e9bd8d6-203d-467c-8d0e-3b34ec0f05d6\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/ai/analytics/trends",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"86b66b75-a92e-43bc-8eb0-f0c3776893bd\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/ai/analytics/intent-performance",
+    "status": 403,
+    "detail": "{\"success\":false,\"message\":\"Bu işlem için süper admin yetkisi gereklidir\",\"errors\":[],\"request_id\":\"3b9c7cbc-2f3d-440a-97ae-8f83c9c643ad\"}"
+  },
+  {
+    "role": "parent",
+    "path": "/api/v1/chatbot/ai/conversation/my-stats",
+    "status": 200
+  }
+]

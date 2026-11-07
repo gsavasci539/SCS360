@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/auth-store.test.ts src/test/navigation-contract.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  57 passed (57)
+   Start at  08:12:56
+   Duration  7.78s (transform 659ms, setup 1.47s, import 1.88s, tests 387ms, environment 9.29s)
+

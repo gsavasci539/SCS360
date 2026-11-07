@@ -28,6 +28,7 @@ export function printReport({ title, subtitle, organization, columns, rows, summ
   printWindow.opener = null;
 
   const generatedAt = new Date().toLocaleString("tr-TR");
+  const logoUrl = new URL(`${import.meta.env.BASE_URL}scs360-mark.svg?v=2`, window.location.origin).href;
   const tableRows = rows.length
     ? rows.map((row) => `<tr>${columns.map((column) => {
       const raw = row[column.key];
@@ -43,6 +44,8 @@ export function printReport({ title, subtitle, organization, columns, rows, summ
   body { margin: 0; color: #17282b; font: 12px Arial, sans-serif; background: #fff; }
   header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 16px; border-bottom: 3px solid #176b5b; }
   .brand { color: #176b5b; font-size: 13px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+  .product-logo { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; color: #163b3b; font-size: 17px; font-weight: 800; }
+  .product-logo img { width: 34px; height: 34px; }
   h1 { margin: 6px 0 4px; font-size: 23px; }
   p { margin: 0; color: #647275; }
   .meta { text-align: right; color: #647275; line-height: 1.6; }
@@ -57,7 +60,7 @@ export function printReport({ title, subtitle, organization, columns, rows, summ
   .empty { padding: 30px; color: #647275; text-align: center; }
   footer { margin-top: 14px; padding-top: 9px; border-top: 1px solid #dfe6e1; color: #7b8789; font-size: 10px; }
 </style></head><body>
-<header><div><div class="brand">${escapeHtml(organization || "SCS Okul Yönetim Sistemi")}</div><h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "")}</p></div><div class="meta">Oluşturulma<br><strong>${escapeHtml(generatedAt)}</strong></div></header>
+<header><div><div class="product-logo"><img src="${escapeHtml(logoUrl)}" alt="SCS360 logosu"><span>SCS360</span></div>${organization ? `<div class="brand">${escapeHtml(organization)}</div>` : ""}<h1>${escapeHtml(title)}</h1><p>${escapeHtml(subtitle || "")}</p></div><div class="meta">Oluşturulma<br><strong>${escapeHtml(generatedAt)}</strong></div></header>
 ${summary.length ? `<section class="summary">${summary.map((item) => `<div><small>${escapeHtml(item.label)}</small><strong>${escapeHtml(item.value)}</strong></div>`).join("")}</section>` : ""}
 <table><thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead><tbody>${tableRows}</tbody></table>
 <footer>Bu belge sistemdeki güncel kayıtlar kullanılarak otomatik oluşturulmuştur.</footer>
@@ -65,7 +68,14 @@ ${summary.length ? `<section class="summary">${summary.map((item) => `<div><smal
   printWindow.document.close();
   printWindow.focus();
   window.setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
+    const finish = () => { printWindow.print(); printWindow.close(); };
+    const loading = Array.from(printWindow.document.images || []).filter((image) => !image.complete);
+    if (!loading.length) { finish(); return; }
+    let remaining = loading.length;
+    for (const image of loading) {
+      const ready = () => { if (--remaining === 0) finish(); };
+      image.addEventListener("load", ready, { once: true });
+      image.addEventListener("error", ready, { once: true });
+    }
   }, 250);
 }

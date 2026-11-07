@@ -1,0 +1,25 @@
+..F....                                                                  [100%]
+================================== FAILURES ===================================
+_ test_each_registered_analytics_route_has_its_feature_policy_and_frontend_export_matches _
+
+    def test_each_registered_analytics_route_has_its_feature_policy_and_frontend_export_matches():
+        routes = [route for route in app.routes if getattr(route, "path", "").startswith("/api/ai/")]
+>       assert len(routes) == len(POLICY)
+E       AssertionError: assert 0 == 40
+E        +  where 0 = len([])
+E        +  and   40 = len({'/academic-performance': [['academic.read']], '/ai-academic-predictions': [['academic.read']], '/ai-attendance-predictions': [['attendance.read', 'teacher.view_attendance']], '/ai-daily-reports-analysis': [['daily_reports.read']], ...})
+
+tests\unit\test_analysis_permissions.py:10: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_analysis_permissions.py::test_each_registered_analytics_route_has_its_feature_policy_and_frontend_export_matches
+1 failed, 6 passed, 20 warnings in 10.99s

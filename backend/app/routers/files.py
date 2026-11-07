@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,7 @@ async def upload_file(
     file: UploadFile = File(...),
     subfolder: str = "general",
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     file_service = FileService()
     
@@ -41,7 +42,7 @@ async def upload_file(
 async def delete_file(
     file_path: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     file_service = FileService()
     
@@ -66,7 +67,7 @@ async def delete_file(
 async def get_file(
     file_path: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db, scope="function")
 ):
     file_service = FileService()
     

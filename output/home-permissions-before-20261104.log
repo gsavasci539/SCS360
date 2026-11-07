@@ -1,0 +1,68 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run --run src/test/home.test.ts -t yetkisi kaldırılmış
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/home.test.ts (12 tests | 3 failed | 9 skipped) 15ms
+     × teacher için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer 10ms
+     × accountant için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer 1ms
+     × cashier için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/home.test.ts > giriş sonrası rol ana sayfası > teacher için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer
+AssertionError: expected '/teacher' to be '/exams' // Object.is equality
+
+Expected: "/exams"
+Received: "/teacher"
+
+ ❯ src/test/home.test.ts:53:54
+     51|     ["cashier", ["finance.write"], "/finance/payments/new"],
+     52|   ])("%s için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışm…
+     53|     expect(getHomePath(userWith(role, permissions))).toBe(path);
+       |                                                      ^
+     54|   });
+     55| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/test/home.test.ts > giriş sonrası rol ana sayfası > accountant için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer
+AssertionError: expected '/finance/debts' to be '/finance/payments/new' // Object.is equality
+
+Expected: "/finance/payments/new"
+Received: "/finance/debts"
+
+ ❯ src/test/home.test.ts:53:54
+     51|     ["cashier", ["finance.write"], "/finance/payments/new"],
+     52|   ])("%s için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışm…
+     53|     expect(getHomePath(userWith(role, permissions))).toBe(path);
+       |                                                      ^
+     54|   });
+     55| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/test/home.test.ts > giriş sonrası rol ana sayfası > cashier için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışma sayfasını seçer
+AssertionError: expected '/forbidden' to be '/finance/payments/new' // Object.is equality
+
+Expected: "/finance/payments/new"
+Received: "/forbidden"
+
+ ❯ src/test/home.test.ts:53:54
+     51|     ["cashier", ["finance.write"], "/finance/payments/new"],
+     52|   ])("%s için yetkisi kaldırılmış başlangıç yerine erişilebilir çalışm…
+     53|     expect(getHomePath(userWith(role, permissions))).toBe(path);
+       |                                                      ^
+     54|   });
+     55| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 9 skipped (12)
+   Start at  20:08:04
+   Duration  2.91s (transform 90ms, setup 269ms, import 90ms, tests 15ms, environment 2.08s)
+

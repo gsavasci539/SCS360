@@ -1,0 +1,74 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_ test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back[sqlite] _
+
+portal_db = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x0000020406CF095...ject at 0x0000020408B3B0E0>, 'org': <app.infrastructure.models.models.Organization object at 0x0000020408B39940>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000204088AF230>
+
+    async def test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back(portal_db, monkeypatch):
+        from app.core import database
+        from app.core.exceptions import AppException
+        from app.core.middleware import app_exception_handler
+        from app.infrastructure.models.models import Permission
+        sessions, _ = portal_db
+        sessions.configure(autoflush=False)
+        monkeypatch.setattr(database, "AsyncSessionLocal", sessions)
+        local = FastAPI()
+        local.add_exception_handler(AppException, app_exception_handler)
+    
+        @local.post("/deferred")
+        async def deferred(db=Depends(database.get_db, scope="function")):
+            db.add(Permission(code="students.read", name="Duplicate", module="students"))
+            return {"success": True}
+    
+        async with AsyncClient(transport=ASGITransport(app=local, raise_app_exceptions=False), base_url="http://test") as client:
+            response = await client.post("/deferred")
+>       assert response.status_code == 409, response.text
+E       AssertionError: Internal Server Error
+E       assert 500 == 409
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\integration\test_response_transaction_boundary.py:53: AssertionError
+_ test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back[postgresql] _
+
+portal_db = (async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyncio.engine.AsyncEngine object at 0x000002040900E69...ject at 0x0000020409085450>, 'org': <app.infrastructure.models.models.Organization object at 0x0000020409084690>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000204089687C0>
+
+    async def test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back(portal_db, monkeypatch):
+        from app.core import database
+        from app.core.exceptions import AppException
+        from app.core.middleware import app_exception_handler
+        from app.infrastructure.models.models import Permission
+        sessions, _ = portal_db
+        sessions.configure(autoflush=False)
+        monkeypatch.setattr(database, "AsyncSessionLocal", sessions)
+        local = FastAPI()
+        local.add_exception_handler(AppException, app_exception_handler)
+    
+        @local.post("/deferred")
+        async def deferred(db=Depends(database.get_db, scope="function")):
+            db.add(Permission(code="students.read", name="Duplicate", module="students"))
+            return {"success": True}
+    
+        async with AsyncClient(transport=ASGITransport(app=local, raise_app_exceptions=False), base_url="http://test") as client:
+            response = await client.post("/deferred")
+>       assert response.status_code == 409, response.text
+E       AssertionError: Internal Server Error
+E       assert 500 == 409
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests\integration\test_response_transaction_boundary.py:53: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_response_transaction_boundary.py::test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back[sqlite]
+FAILED tests/integration/test_response_transaction_boundary.py::test_a_deferred_unique_constraint_returns_a_conflict_and_rolls_back[postgresql]
+2 failed, 2 deselected, 20 warnings in 5.07s

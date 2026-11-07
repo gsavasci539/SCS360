@@ -1,0 +1,12 @@
+{
+  "rootPlatform": true,
+  "readiness": true,
+  "schoolSelection": true,
+  "settingsEntry": true,
+  "liveDefaultDisabled": true,
+  "secretsEmpty": true,
+  "paymentReturnRoute": true,
+  "aboutAuthenticated": true,
+  "noConfigurationSaved": true,
+  "failures": []
+}

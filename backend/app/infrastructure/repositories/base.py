@@ -21,12 +21,31 @@ class BaseRepository:
             return query
         if not self.tenant.organization_id:
             raise ForbiddenException()
-        return query.where(model.organization_id == self.tenant.organization_id)
+        if getattr(model, "__tablename__", None) == "organizations":
+            return query.where(model.id == self.tenant.organization_id)
+        if hasattr(model, "organization_id"):
+            return query.where(model.organization_id == self.tenant.organization_id)
+        from app.infrastructure.models.models import Branch, Student
+        if hasattr(model, "branch_id"):
+            return query.where(model.branch_id.in_(select(Branch.id).where(Branch.organization_id == self.tenant.organization_id)))
+        if hasattr(model, "student_id"):
+            return query.where(model.student_id.in_(select(Student.id).where(Student.organization_id == self.tenant.organization_id)))
+        if hasattr(model, "club_id"):
+            from app.domain.entities.clubs import SchoolClub
+            clubs = select(SchoolClub.id).join(Branch, Branch.id == SchoolClub.branch_id).where(Branch.organization_id == self.tenant.organization_id)
+            return query.where(model.club_id.in_(clubs))
+        if getattr(model, "__tablename__", None) in {"asset_assignments", "maintenance_requests"}:
+            from app.domain.entities.inventory import InventoryItem
+            items = select(InventoryItem.id).join(Branch, Branch.id == InventoryItem.branch_id).where(Branch.organization_id == self.tenant.organization_id)
+            return query.where(model.item_id.in_(items))
+        raise ForbiddenException("Kayıt için kurum kapsamı çözülemedi")
 
     def _branch_filter(self, query, model=None):
         model = model or self.model
         if self.tenant.is_super_admin or not self.tenant.branch_ids:
             return query
+        if getattr(model, "__tablename__", None) == "branches":
+            return query.where(model.id.in_(self.tenant.branch_ids))
         return query.where(
             or_(model.branch_id.in_(self.tenant.branch_ids), model.branch_id.is_(None))
         )
@@ -44,6 +63,8 @@ class BaseRepository:
         if not item:
             raise NotFoundException()
         if hasattr(item, "branch_id") and not self.tenant.can_access_branch(item.branch_id):
+            raise ForbiddenException()
+        if getattr(model, "__tablename__", None) == "branches" and not self.tenant.can_access_branch(item.id):
             raise ForbiddenException()
         return item
 

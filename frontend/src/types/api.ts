@@ -15,6 +15,16 @@ export interface Paginated<T> {
 
 export interface Role { id: string; name: string; slug: string }
 
+export interface OrganizationAccess {
+  status: "PLATFORM" | "LEGACY" | "ACTIVE" | "GRACE" | "PAST_DUE" | "SUSPENDED" | "UNCONFIGURED" | "UNASSIGNED" | "REVIEW_REQUIRED" | "NOT_STARTED" | "PENDING_PAYMENT";
+  restricted: boolean;
+  warning: string | null;
+  period_end: string | null;
+  grace_end: string | null;
+  billing_path: "/subscription";
+  days_remaining: number | null;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -28,6 +38,7 @@ export interface AuthUser {
   permissions: string[];
   branch_ids: string[];
   last_login_at?: string;
+  organization_access?: OrganizationAccess;
 }
 
 export interface AuthPayload {
@@ -50,9 +61,11 @@ export interface FieldConfig {
   placeholder?: string;
   options?: SelectOption[];
   optionSource?: string;
+  searchable?: boolean;
   optionLabel?: string;
   optionValue?: string;
   min?: number;
+  step?: number;
   full?: boolean;
   hideOnEdit?: boolean;
   defaultValue?: string | boolean | number;
@@ -77,4 +90,6 @@ export interface ResourceConfig {
   fields: FieldConfig[];
   filters?: SelectOption[];
   detailPath?: string;
+  listPath?: string;
+  parentOnly?: boolean;
 }

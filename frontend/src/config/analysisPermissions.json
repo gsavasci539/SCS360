@@ -1,0 +1,367 @@
+{
+  "/ai/ai-academic-predictions": [
+    [
+      "academic.read"
+    ]
+  ],
+  "/ai/ai-attendance-predictions": [
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/ai-financial-predictions": [
+    [
+      "finance.read"
+    ],
+    [
+      "parents.read"
+    ]
+  ],
+  "/ai/ai-parent-sentiment": [
+    [
+      "parents.read"
+    ],
+    [
+      "notification.read"
+    ]
+  ],
+  "/ai/ai-operational-optimization": [
+    [
+      "classes.read"
+    ],
+    [
+      "students.read"
+    ],
+    [
+      "users.read"
+    ]
+  ],
+  "/ai/insights-report": [
+    [
+      "report.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "parents.read"
+    ]
+  ],
+  "/ai/ai-homework-analysis": [
+    [
+      "homework.read"
+    ],
+    [
+      "academic.read"
+    ]
+  ],
+  "/ai/ai-daily-reports-analysis": [
+    [
+      "daily_reports.read"
+    ]
+  ],
+  "/ai/student-performance/{student_id}": [
+    [
+      "students.read",
+      "parent.view_children"
+    ]
+  ],
+  "/ai/attendance-analysis": [
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/payment-forecast": [
+    [
+      "finance.read"
+    ]
+  ],
+  "/ai/canteen-analysis": [
+    [
+      "canteen.read"
+    ]
+  ],
+  "/ai/students-overview": [
+    [
+      "students.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/parents-overview": [
+    [
+      "parents.read"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "notification.read"
+    ],
+    [
+      "announcements.read"
+    ]
+  ],
+  "/ai/parent-analysis/{parent_id}": [
+    [
+      "parents.read"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/parent-satisfaction": [
+    [
+      "parents.read"
+    ],
+    [
+      "notification.read"
+    ],
+    [
+      "announcements.read"
+    ]
+  ],
+  "/ai/teacher-performance/{teacher_id}": [
+    [
+      "users.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/academic-performance": [
+    [
+      "academic.read"
+    ]
+  ],
+  "/ai/communication-analysis": [
+    [
+      "notification.read"
+    ]
+  ],
+  "/ai/inventory-analysis": [
+    [
+      "inventory.read"
+    ]
+  ],
+  "/ai/staff-analysis": [
+    [
+      "staff.read"
+    ],
+    [
+      "users.read"
+    ]
+  ],
+  "/ai/library-analysis": [
+    [
+      "library.read"
+    ]
+  ],
+  "/ai/payroll-analysis": [
+    [
+      "payroll.read"
+    ]
+  ],
+  "/ai/health-analysis": [
+    [
+      "health.read"
+    ]
+  ],
+  "/ai/transport-analysis": [
+    [
+      "bus.read"
+    ]
+  ],
+  "/ai/tutoring-analysis": [
+    [
+      "tutoring.read"
+    ]
+  ],
+  "/ai/surveys-analysis": [
+    [
+      "surveys.read"
+    ]
+  ],
+  "/ai/guidance-analysis": [
+    [
+      "guidance.read"
+    ]
+  ],
+  "/ai/clubs-analysis": [
+    [
+      "clubs.read"
+    ]
+  ],
+  "/ai/card-analysis": [
+    [
+      "canteen.read"
+    ]
+  ],
+  "/ai/class-analysis/{class_id}": [
+    [
+      "classes.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/classes-overview": [
+    [
+      "classes.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/student-performance-trends": [
+    [
+      "academic.read"
+    ]
+  ],
+  "/ai/organization-health": [
+    [
+      "report.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "parents.read"
+    ]
+  ],
+  "/ai/executive-summary": [
+    [
+      "report.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "parents.read"
+    ],
+    [
+      "users.read"
+    ]
+  ],
+  "/ai/comparative-analysis": [
+    [
+      "report.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ]
+  ],
+  "/ai/resource-utilization": [
+    [
+      "report.read"
+    ],
+    [
+      "classes.read"
+    ],
+    [
+      "students.read"
+    ],
+    [
+      "users.read"
+    ]
+  ],
+  "/ai/staff-productivity": [
+    [
+      "report.read"
+    ],
+    [
+      "classes.read"
+    ],
+    [
+      "users.read"
+    ]
+  ],
+  "/ai/risk-management": [
+    [
+      "report.read"
+    ],
+    [
+      "academic.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "finance.read"
+    ],
+    [
+      "parents.read"
+    ],
+    [
+      "classes.read"
+    ],
+    [
+      "students.read"
+    ]
+  ],
+  "/ai/operational-metrics": [
+    [
+      "report.read"
+    ],
+    [
+      "attendance.read",
+      "teacher.view_attendance"
+    ],
+    [
+      "finance.read"
+    ]
+  ]
+}

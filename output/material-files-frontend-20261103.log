@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/materials.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  02:02:07
+   Duration  5.72s (transform 237ms, setup 464ms, import 646ms, tests 1.10s, environment 2.99s)
+

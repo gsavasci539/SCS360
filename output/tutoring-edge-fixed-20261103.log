@@ -1,0 +1,121 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [10300]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "333b2086-f56b-40d1-8acc-1696b518b826", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:37.594244Z"}
+[WebServer] (node:20160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:24552) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "4ec9261a-9758-4f8b-8214-98fc2229c4fe", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 2154.13, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:46.663701Z"}
+[WebServer] {"request_id": "ad051982-dc6e-4947-9b1d-97466eb1e318", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 190.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:47.756836Z"}
+[WebServer] {"request_id": "abcbb28b-b738-4a1a-9405-3c8cc428026f", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 820.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.411230Z"}
+[WebServer] {"request_id": "c9015ccf-b94c-4880-8d42-8709c24d9ca8", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 839.94, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.412346Z"}
+[WebServer] {"request_id": "c6378beb-5fd1-4f7e-a40b-e0e329d3ac04", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 832.89, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.412754Z"}
+[WebServer] {"request_id": "029dfb73-f6c1-45fa-9e8f-020fe5f411b7", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 719.89, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.680485Z"}
+[WebServer] {"request_id": "24be0107-08ee-4d53-8808-fa90137284a7", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 1083.97, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.688521Z"}
+[WebServer] {"request_id": "3f57ec8f-977d-415e-b6c6-1cf5aed8f536", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 974.86, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:48.990221Z"}
+[WebServer] {"request_id": "1dcf0342-da01-4710-9d57-08eb64cb0ae6", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 1010.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.041861Z"}
+[WebServer] {"request_id": "6572bcaf-28f7-4c60-8c4c-de944ef8c938", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 1056.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.105938Z"}
+[WebServer] {"request_id": "217244af-581e-48e6-90d5-d8fda52ad72b", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 390.57, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.238835Z"}
+[WebServer] {"request_id": "c78a4828-8b95-4ec7-ad67-d4a67bb0b7e7", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 368.81, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.240811Z"}
+[WebServer] {"request_id": "1e8fc48e-cdd2-4032-830b-a57feeef59c6", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 397.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.257391Z"}
+[WebServer] {"request_id": "752c64bf-957f-49e4-bbf0-4658463196c5", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 556.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.388201Z"}
+[WebServer] {"request_id": "3a6d01d7-8eb5-4397-871a-58acd916beb0", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 1022.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.418895Z"}
+[WebServer] {"request_id": "85cdc526-d09c-4241-a0c4-e1dabfdf03e0", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 564.95, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.442971Z"}
+[WebServer] {"request_id": "24195394-1e18-4302-9641-fadbbdb214da", "method": "POST", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 134.28, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:49.950830Z"}
+[WebServer] {"request_id": "64ec54d2-7544-4eec-8bfb-fb2c04efea5d", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 148.02, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.123527Z"}
+[WebServer] {"request_id": "5a9f2531-c422-44ef-9b2b-368bc0aae79f", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 150.16, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.149663Z"}
+[WebServer] {"request_id": "017907c5-f02e-416b-a5b4-c6fd42e0fd70", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 180.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.195098Z"}
+[WebServer] {"request_id": "897d1587-93b7-4a22-9432-2d6d1cceb8ba", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 223.59, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.243921Z"}
+[WebServer] {"request_id": "bb00b497-90bd-4bbe-9415-57793b3f9ca1", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 264.22, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.288456Z"}
+[WebServer] {"request_id": "eadabda9-f1a6-4031-8bf3-21485921d23d", "method": "POST", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 157.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:50.964890Z"}
+[WebServer] {"request_id": "8dcd70b2-196f-460e-925d-cb35db1d97ce", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 202.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:51.218002Z"}
+[WebServer] {"request_id": "60afe05b-d482-49ea-8ffd-41d9c6b38c3e", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 224.12, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:51.220581Z"}
+[WebServer] {"request_id": "32e9b328-7991-47db-bf59-5b3bb95e2e39", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 235.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:51.277198Z"}
+[WebServer] {"request_id": "795163c0-3e79-4890-b80f-77ba744acca0", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 264.4, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:51.292194Z"}
+[WebServer] {"request_id": "5731017a-c60a-464c-8616-71e5029fa709", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 295.73, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:51.341131Z"}
+[WebServer] {"request_id": "2ced28d3-59da-4069-bd3a-e0652c2093fb", "method": "POST", "path": "/api/tutoring/requests/e361af3a-7376-48ff-ad7e-1916b9714fd3/approve", "status": 200, "duration_ms": 120.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.124396Z"}
+[WebServer] {"request_id": "89b8b7d4-6030-411c-a37a-5a8d58758f88", "method": "GET", "path": "/api/tutoring/options", "status": 200, "duration_ms": 77.63, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.238402Z"}
+[WebServer] {"request_id": "b63ed327-a222-470a-91c0-3ca68cccfdca", "method": "GET", "path": "/api/tutoring/sessions", "status": 200, "duration_ms": 155.07, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.332421Z"}
+[WebServer] {"request_id": "4bced76d-cd86-466b-be39-5b85db607f5d", "method": "GET", "path": "/api/tutoring/availability", "status": 200, "duration_ms": 212.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.407531Z"}
+[WebServer] {"request_id": "ff824967-279d-471d-9ec8-3e84809cacdd", "method": "GET", "path": "/api/tutoring/requests", "status": 200, "duration_ms": 248.08, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.440056Z"}
+[WebServer] {"request_id": "f780e613-9ac9-46d0-972d-55338ef425ee", "method": "GET", "path": "/api/tutoring/summary", "status": 200, "duration_ms": 256.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T14:13:52.461198Z"}
+  x  1 [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile (31.6s)
+
+
+  1) [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile 
+
+    TimeoutError: locator.click: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByRole('region', { name: 'Ders talepleri', exact: true }).getByRole('row').filter({ hasText: 'Etüt kabulü 1793715221460' }).getByRole('button', { name: 'Bu talep için ders planla', exact: true })
+
+
+      23 |   await requestRow.getByText("Kaydı aç", { exact: true }).click();
+      24 |   await requestRow.getByRole("button", { name: "Talebi onayla", exact: true }).click();
+    > 25 |   await requestRow.getByRole("button", { name: "Bu talep için ders planla", exact: true }).click();
+         |                                                                                            ^
+      26 |   const plan = page.getByRole("form", { name: "Etüt planla", exact: true });
+      27 |   await expect(plan.getByLabel("Ders adı", { exact: true })).toHaveValue(subject);
+      28 |   await plan.getByRole("button", { name: "Dersi planla", exact: true }).click();
+        at C:\Okul360\frontend\e2e\acceptance.spec.ts:25:92
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\acceptance-tutoring-teache-5807a-ttendance-persist-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\acceptance.spec.ts:6:1 › tutoring teacher availability request approval booking and attendance persist on mobile 

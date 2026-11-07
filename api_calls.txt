@@ -1,0 +1,150 @@
+frontend/src\components\ExcelImport.tsx:45:      await api.post(endpoint, formData, {
+frontend/src\components\AppShell.tsx:92:    try { if (refreshToken) await api.post("/auth/logout", { refresh_token: refreshToken }); } catch { /* local logout must still work */ }
+frontend/src\features\infirmary\InfirmaryPage.tsx:45:        api.get("/api/infirmary/medicine-requests"),
+frontend/src\features\infirmary\InfirmaryPage.tsx:46:        api.get("/api/infirmary/infirmary-visits")
+frontend/src\features\infirmary\InfirmaryPage.tsx:74:      await api.put(`/api/infirmary/medicine-requests/${requestId}`, { status });
+frontend/src\features\users\UsersPage.tsx:50:      await api.delete(`/users/${userId}`);
+frontend/src\features\health\HealthPage.tsx:29:    api.get("/ai/health-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\users\UserCreatePage.tsx:26:      await api.post("/users", formData);
+frontend/src\features\guidance\GuidancePage.tsx:34:    api.get("/ai/guidance-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\tutoring\TutoringPage.tsx:34:    api.get("/ai/tutoring-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\classes\AssignStudentsPage.tsx:60:      await api.post(`/classes/${id}/assign-students`, {
+frontend/src\features\transport\BusPage.tsx:34:    api.get("/ai/transport-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\branches\BranchesPage.tsx:46:      await api.delete(`/branches/${row.id}`);
+frontend/src\features\branches\BranchesPage.tsx:106:      await api.post("/branches", values);
+frontend/src\features\finance\FinancePages.tsx:17:  async function load(page = data.page) { setLoading(true); try { const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/payments", { params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 } }); setData(normalize(r.data.data)); const forecastRes = await api.get("/ai/payment-forecast").catch(() => null); if (forecastRes) setAiForecast(forecastRes.data.data); } catch (e) { setError(apiMessage(e)); } finally { setLoading(false); } }
+frontend/src\features\finance\FinancePages.tsx:20:  async function cancelPayment() { if (!cancel) return; try { await api.post(`/payments/${cancel.id}/cancel`, { cancel_reason: reason }); showToast("Ödeme iptal edildi", "Borç bakiyesi yeniden hesaplandı."); setCancel(null); await load(); } catch (e) { showToast("İptal edilemedi", apiMessage(e), "error"); } }
+frontend/src\features\finance\FinancePages.tsx:36:  useEffect(() => { api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/receipts", { params: { page_size: 100 } }).then((r) => setRows(normalize(r.data.data).items)).catch((e) => setError(apiMessage(e))).finally(() => setLoading(false)); api.get("/ai/payment-forecast").then((r) => setAiInsights(r.data.data)).catch(() => {}); }, []);
+frontend/src\features\finance\FinancePages.tsx:43:  useEffect(() => { api.get<ApiResponse<DataRecord>>(`/receipts/${id}`).then((r) => setRecord(r.data.data)).catch((e) => setError(apiMessage(e))); api.get("/ai/payment-forecast").then((r) => setAiInsights(r.data.data)).catch(() => {}); }, [id]);
+frontend/src\features\finance\FinancePages.tsx:44:  async function download(path: string) { try { const response = await api.get(path, { responseType: "blob" }); const url = URL.createObjectURL(response.data); try { const a = document.createElement("a"); a.href = url; a.download = `${record?.receipt_number || "makbuz"}.pdf`; a.click(); } finally { URL.revokeObjectURL(url); } } catch (e) { showToast("Makbuz indirilemedi", apiMessage(e), "error"); } }
+frontend/src\features\finance\FinancePages.tsx:51:  useEffect(() => { api.get<ApiResponse<DataRecord>>(`/payments/${id}`).then((r) => setRecord(r.data.data)).catch((e) => setError(apiMessage(e))); api.get("/ai/payment-forecast").then((r) => setAiInsights(r.data.data)).catch(() => {}); }, [id]);
+frontend/src\features\auth\AuthPages.tsx:52:  const submit = async (values: { email: string }) => { try { await api.post("/auth/forgot-password", values); setSent(true); showToast("Bağlantı gönderildi", "E-posta kutunuzu kontrol edin."); } catch (error) { showToast("İşlem tamamlanamadı", apiMessage(error), "error"); } };
+frontend/src\features\auth\AuthPages.tsx:60:  const submit = async (values: { password: string }) => { const token = params.get("token"); if (!token) return showToast("Geçersiz bağlantı", "Sıfırlama anahtarı bulunamadı.", "error"); try { await api.post("/auth/reset-password", { token, new_password: values.password }); showToast("Şifre güncellendi", "Yeni şifrenizle giriş yapabilirsiniz."); navigate("/login"); } catch (error) { showToast("Şifre güncellenemedi", apiMessage(error), "error"); } };
+frontend/src\features\finance\ExpensesPage.tsx:46:      await api.delete(`/finance/expenses/${row.id}`);
+frontend/src\features\finance\ExpensesPage.tsx:105:      await api.post("/finance/expenses", values);
+frontend/src\features\teacher\TeacherPortalPage.tsx:65:        api.get("/teacher/my-classes"),
+frontend/src\features\teacher\TeacherPortalPage.tsx:66:        api.get("/teacher/today-schedule"),
+frontend/src\features\teacher\TeacherPortalPage.tsx:67:        api.get("/teacher/pending-tasks")
+frontend/src\features\teacher\TeacherPortalPage.tsx:113:      const result = await api.get(`/teacher/class/${classId}/students`);
+frontend/src\features\dashboard\DashboardPage.tsx:41:      const [summaryResult, chartResult, aiResult] = await Promise.allSettled([api.get<ApiResponse<Summary>>("/dashboard/summary"), api.get<ApiResponse<Charts>>("/dashboard/charts"), api.get("/ai/insights-report").catch(() => null)]);
+frontend/src\features\attendance\BulkAttendancePage.tsx:71:      await api.post("/attendance/bulk", {
+frontend/src\features\system\RfidCardsPage.tsx:124:      await api.delete(`/rfid-cards/${deleting.id}`);
+frontend/src\features\system\RfidCardsPage.tsx:139:      await api.delete(`/card-numbers/${deletingCardNumber.id}`);
+frontend/src\features\system\RfidCardsPage.tsx:392:      await api.post("/rfid-cards", {
+frontend/src\features\system\RfidCardsPage.tsx:468:      await api.post("/card-numbers", {
+frontend/src\features\system\RfidCardsPage.tsx:527:      await api.put(`/rfid-cards/${card.id}`, {
+frontend/src\features\system\DevicesPage.tsx:67:      await api.delete(`/devices/${deleting.id}`);
+frontend/src\features\system\DevicesPage.tsx:148:      await api.post("/devices", {
+frontend/src\features\system\DevicesPage.tsx:226:      await api.put(`/devices/${device.id}`, {
+frontend/src\features\resources\ResourcePages.tsx:670:      await api.delete(
+frontend/src\features\resources\ResourcePages.tsx:2252:          await api.put(
+frontend/src\features\resources\ResourcePages.tsx:2257:          await api.post(
+frontend/src\features\resources\LibraryPage.tsx:43:    api.get("/ai/library-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\resources\LibraryPage.tsx:53:      await api.delete(`/library/books/${row.id}`);
+frontend/src\features\resources\LibraryPage.tsx:172:      await api.post("/library/books", values);
+frontend/src\features\resources\DetailPage.tsx:45:      api.get(`/ai/parent-analysis/${id}`)
+frontend/src\features\resources\DetailPage.tsx:56:      api.get(`/ai/class-analysis/${id}`)
+frontend/src\features\surveys\SurveysPage.tsx:34:    api.get("/ai/surveys-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\students\StudentsPage.tsx:79:      await api.delete(`/students/${id}`);
+frontend/src\features\students\StudentParentsPage.tsx:66:      await api.delete(`/students/${id}/parents/${deleting.id}`);
+frontend/src\features\students\StudentParentsPage.tsx:81:      await api.post(`/students/${id}/parents`, formData);
+frontend/src\features\students\StudentFilesPage.tsx:15:  async function upload() { const file = input.current?.files?.[0]; if (!file || !canWrite) return; if (file.size > 10 * 1024 * 1024) { showToast("Dosya yüklenemedi", "Dosya boyutu 10 MB sınırını aşıyor.", "error"); return; } const form = new FormData(); form.append("file", file); form.append("category", category); setUploading(true); try { await api.post(`/students/${id}/files`, form); showToast("Dosya yüklendi", file.name); if (input.current) input.current.value = ""; await load(); } catch (e) { showToast("Dosya yüklenemedi", apiMessage(e), "error"); } finally { setUploading(false); } }
+frontend/src\features\students\StudentFilesPage.tsx:16:  async function remove(fileId: string) { try { await api.delete(`/students/${id}/files/${fileId}`); showToast("Dosya kaldırıldı"); await load(); } catch (e) { showToast("Dosya kaldırılamadı", apiMessage(e), "error"); } }
+frontend/src\features\students\StudentFilesPage.tsx:17:  async function download(file: DataRecord) { try { const r = await api.get(`/students/${id}/files/${file.id}/download`, { responseType: "blob" }); const url = URL.createObjectURL(r.data); try { const a = document.createElement("a"); a.href = url; a.download = String(file.original_name || file.file_name || "dosya"); a.click(); } finally { URL.revokeObjectURL(url); } } catch (e) { showToast("Dosya indirilemedi", apiMessage(e), "error"); } }
+frontend/src\features\students\StudentDetailPage.tsx:34:          api.get(`/ai/student-performance/${id}`).catch(() => null),
+frontend/src\features\reports\OverdueDebtsReport.tsx:75:      await api.post("/reports/overdue-debts/remind", {
+frontend/src\features\communications\TemplateFormPage.tsx:71:        await api.put(`/notifications/templates/${id}`, template);
+frontend/src\features\communications\TemplateFormPage.tsx:74:        await api.post("/notifications/templates", template);
+frontend/src\features\communications\ParentNoticesPage.tsx:46:      await api.delete(`/parent-notices/${row.id}`);
+frontend/src\features\communications\ParentNoticesPage.tsx:105:      await api.post("/parent-notices", values);
+frontend/src\features\staff\StaffPage.tsx:41:    api.get("/ai/staff-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\staff\StaffPage.tsx:51:      await api.delete(`/staff/${row.id}`);
+frontend/src\features\staff\StaffPage.tsx:150:      await api.post("/staff", values);
+frontend/src\features\communications\OutboxPage.tsx:41:      await api.delete(`/outbox/${row.id}`);
+frontend/src\features\staff\StaffDetailPage.tsx:34:      await api.delete(`/staff/${id}`);
+frontend/src\features\staff\StaffDetailPage.tsx:118:      await api.put(`/staff/${data.id}`, values);
+frontend/src\features\communications\OutboxDetailPage.tsx:32:      await api.delete(`/outbox/${id}`);
+frontend/src\features\attendance\AttendancePage.tsx:46:    api.get("/ai/attendance-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {}); 
+frontend/src\features\attendance\AttendancePage.tsx:55:      await api.post("/attendance/bulk", { class_id: classId, attendance_date: date, records: students.map((student) => ({ student_id: student.id, status: records[student.id]?.status || "PRESENT", notes: records[student.id]?.notes || "" })) }); 
+frontend/src\features\communications\NotificationsPage.tsx:41:    api.get("/ai/communication-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\communications\NotificationsPage.tsx:51:      await api.delete(`/notifications/${row.id}`);
+frontend/src\features\communications\NotificationsPage.tsx:149:      await api.post("/notifications", values);
+frontend/src\features\communications\CommunicationPages.tsx:19:  useEffect(() => { api.get("/ai/communication-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {}); }, []);
+frontend/src\features\communications\CommunicationPages.tsx:20:  async function send(id: string) { try { await api.post(`/announcements/${id}/send`); showToast("Duyuru gönderime alındı", "Seçili kanallar için bildirim işleri oluşturuldu."); await load(); } catch (e) { showToast("Gönderilemedi", apiMessage(e), "error"); } }
+frontend/src\features\communications\CommunicationPages.tsx:60:        await api.put(`/announcements/${id}`, { 
+frontend/src\features\communications\CommunicationPages.tsx:71:        await api.post("/announcements", { 
+frontend/src\features\communications\CommunicationPages.tsx:94:  async function retry(id: string) { try { await api.post(`/notifications/${id}/retry`); showToast("Bildirim yeniden sıraya alındı"); await load(); } catch (e) { showToast("Tekrar denenemedi", apiMessage(e), "error"); } }
+frontend/src\features\communications\CommunicationPages.tsx:103:  async function save() { try { await api.post("/notifications/templates", form); showToast("Şablon oluşturuldu"); setOpen(false); await load(); } catch (e) { showToast("Kaydedilemedi", apiMessage(e), "error"); } }
+frontend/src\features\settings\SettingsPage.tsx:102:          api.put("/settings/integrations", { provider: "SMTP", is_active: true, config: { host: integrations.smtp_host, port: integrations.smtp_port, username: integrations.smtp_username } }),
+frontend/src\features\settings\SettingsPage.tsx:103:          api.put("/settings/integrations", { provider: integrations.sms_provider, is_active: true, config: {} }),
+frontend/src\features\settings\SettingsPage.tsx:104:          api.put("/settings/integrations", { provider: "META_WHATSAPP", is_active: true, config: { phone_id: integrations.whatsapp_phone_id } }),
+frontend/src\features\settings\SettingsPage.tsx:107:        await api.put("/settings", settings);
+frontend/src\features\communications\AppointmentsPage.tsx:46:      await api.delete(`/appointments/${row.id}`);
+frontend/src\features\communications\AppointmentsPage.tsx:105:      await api.post("/appointments", values);
+frontend/src\features\communications\AnnouncementDetailPage.tsx:63:      await api.post(`/announcements/${id}/retry`);
+frontend/src\features\ai\AIAnalyticsPage.tsx:48:        api.get("/ai/ai-academic-predictions"),
+frontend/src\features\ai\AIAnalyticsPage.tsx:49:        api.get(`/ai/ai-attendance-predictions?days=${dateRange}`),
+frontend/src\features\ai\AIAnalyticsPage.tsx:50:        api.get("/ai/ai-financial-predictions"),
+frontend/src\features\ai\AIAnalyticsPage.tsx:51:        api.get("/ai/ai-parent-sentiment"),
+frontend/src\features\ai\AIAnalyticsPage.tsx:52:        api.get("/ai/ai-operational-optimization"),
+frontend/src\features\ai\AIAnalyticsPage.tsx:53:        api.get("/ai/insights-report")
+frontend/src\features\clubs\ClubsPage.tsx:34:    api.get("/ai/clubs-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\roles\RolesPage.tsx:64:      await api.post(`/roles/${selected}/permissions`, { permission_ids: [...assigned] });
+frontend/src\features\roles\RolesPage.tsx:74:      await api.post("/roles", role);
+frontend/src\features\roles\RolePermissionsPage.tsx:79:      await api.put(`/roles/${id}/permissions`, {
+frontend/src\features\parent\ParentPortalPage.tsx:92:    requests.push(api.get(`/ai/student-performance/${selectedId}`, { params: { context: view } }).catch(() => null));
+frontend/src\features\parent\ParentPortalPage.tsx:152:      await api.post(`/parent/child/${selectedId}/medicine-requests`, medicine);
+frontend/src\features\parent\ParentPortalPage.tsx:162:      await api.post(`/parent/child/${selectedId}/send-message`, newMessage);
+frontend/src\features\parent\ParentPortalPage.tsx:167:      const response = await api.get(`/parent/child/${selectedId}/communications`);
+frontend/src\features\parent\ParentPortalPage.tsx:175:      const response = await api.post("/payments/iyzico/initialize", {
+frontend/src\features\parent\ParentPortalPage.tsx:201:      api.get(`/parent/child/${selectedId}/financial-invoices`)
+frontend/src\features\parent\ParentPortalPage.tsx:238:        const response = await api.get(`/parent/child/${selectedId}/financial-invoices`);
+frontend/src\features\parent\ChatInterface.tsx:72:      await api.post(endpoint, {
+frontend/src\features\operations\OperationPages.tsx:48:      const res: any = await api.get("/appointments");
+frontend/src\features\operations\OperationPages.tsx:64:      await api.post("/appointments", formData);
+frontend/src\features\operations\OperationPages.tsx:75:      await api.patch(`/appointments/${id}/status`, { status });
+frontend/src\features\operations\OperationPages.tsx:211:      api.get("/homework"),
+frontend/src\features\operations\OperationPages.tsx:212:      api.get("/homework/submissions"),
+frontend/src\features\operations\OperationPages.tsx:225:      await api.put(`/homework/submissions/${gradeModal.id}/grade`, {
+frontend/src\features\operations\OperationPages.tsx:325:      api.get("/library/books"),
+frontend/src\features\operations\OperationPages.tsx:326:      api.get("/library/loans"),
+frontend/src\features\operations\OperationPages.tsx:338:      await api.put(`/library/loans/${loanId}/return`, {});
+frontend/src\features\operations\OperationPages.tsx:348:      await api.post(`/library/loans/${loanId}/remind`, {});
+frontend/src\features\operations\OperationPages.tsx:425:      api.get("/staff/duty-rosters"),
+frontend/src\features\operations\OperationPages.tsx:426:      api.get("/staff/leave-requests"),
+frontend/src\features\operations\OperationPages.tsx:438:      await api.put(`/staff/leave-requests/${id}/review`, { status });
+frontend/src\features\operations\OperationPages.tsx:516:      const res: any = await api.get("/expenses");
+frontend/src\features\operations\OperationPages.tsx:529:      await api.post("/expenses", form);
+frontend/src\features\operations\OperationPages.tsx:540:      await api.delete(`/expenses/${id}`);
+frontend/src\features\operations\OperationPages.tsx:634:      const res: any = await api.get("/daily-reports");
+frontend/src\features\operations\OperationPages.tsx:682:      const res: any = await api.get("/parent/notices");
+frontend/src\features\operations\OperationPages.tsx:695:      await api.patch(`/parent/notices/${id}/status`, { status });
+frontend/src\features\operations\OperationPages.tsx:747:      const res: any = await api.get("/outbox");
+frontend/src\features\operations\OperationPages.tsx:760:      await api.post(`/outbox/retry/${id}`, {});
+frontend/src\features\operations\CardBalancePage.tsx:119:      api.get(`/ai/card-analysis?card_number=${cardInfo.card_number}`)
+frontend/src\features\organizations\OrganizationsPage.tsx:46:      await api.delete(`/organizations/${row.id}`);
+frontend/src\features\organizations\OrganizationsPage.tsx:106:      await api.post("/organizations", values);
+frontend/src\features\operations\CanteenSalesPage.tsx:217:        await api.post("/canteen/pos/checkout", {
+frontend/src\features\operations\CanteenSalesPage.tsx:397:        await api.post("/canteen/pos/checkout", {
+frontend/src\features\academic\HomeworkPage.tsx:32:        api.get("/ai/ai-homework-analysis").catch(() => null)
+frontend/src\features\academic\HomeworkPage.tsx:54:      await api.delete(`/homework/${row.id}`);
+frontend/src\features\academic\HomeworkPage.tsx:166:      await api.post("/homework", values);
+frontend/src\features\academic\HomeworkPage.tsx:230:      await api.delete(`/homework/${data.id}`);
+frontend/src\features\academic\HomeworkPage.tsx:311:      await api.put(`/homework/${data.id}`, values);
+frontend/src\features\organizations\OrganizationDetailPage.tsx:34:      await api.delete(`/organizations/${id}`);
+frontend/src\features\organizations\OrganizationDetailPage.tsx:127:      await api.put(`/organizations/${data.id}`, values);
+frontend/src\features\operations\CanteenPage.tsx:60:    api.get("/ai/canteen-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\operations\CanteenPage.tsx:104:        await api.put(`/canteen/products/${editingProduct.id}`, payload);
+frontend/src\features\operations\CanteenPage.tsx:106:        await api.post("/canteen/products", payload);
+frontend/src\features\operations\CanteenPage.tsx:124:      await api.delete(`/canteen/products/${productId}`);
+frontend/src\features\academic\ExamsPage.tsx:29:    api.get("/ai/academic-performance").then((r) => setAiInsights(r.data.data)).catch(() => {});
+frontend/src\features\payroll\PayrollPage.tsx:34:    api.get("/ai/payroll-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\inventory\InventoryPage.tsx:34:    api.get("/ai/inventory-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
+frontend/src\features\academic\DailyReportsPage.tsx:32:        api.get("/ai/ai-daily-reports-analysis").catch(() => null)
+frontend/src\features\academic\DailyReportsPage.tsx:54:      await api.delete(`/daily-reports/${row.id}`);
+frontend/src\features\academic\DailyReportsPage.tsx:171:      await api.post("/daily-reports", values);
+frontend/src\features\academic\DailyReportsPage.tsx:254:      await api.delete(`/daily-reports/${data.id}`);
+frontend/src\features\academic\DailyReportsPage.tsx:344:      await api.put(`/daily-reports/${data.id}`, values);
+frontend/src\features\payment\PaymentPage.tsx:20:    api.post("/payments/iyzico/initialize", {
+frontend/src\features\payment\PaymentPage.tsx:50:              const debtResponse = await api.get(`/debts/${debtId}`);
+frontend/src\features\payment\PaymentPage.tsx:54:                const response = await api.get(`/parent/child/${studentId}/financial-invoices`);

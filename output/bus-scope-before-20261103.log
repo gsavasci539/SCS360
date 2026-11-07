@@ -1,0 +1,56 @@
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+__ test_bus_writes_require_accessible_route_and_stop_from_same_route[sqlite] __
+tests\integration\test_bus_scope.py:36: in test_bus_writes_require_accessible_route_and_stop_from_same_route
+    assert reply.status_code == 404, (path, reply.text)
+E   AssertionError: ('stops', '{"success":true,"message":"��lem ba�ar�l�","data":{"id":"c61dd178-5810-43ef-b19b-d215df9d4f5f","stop_name":"Forged","stop_order":2,"created_at":"2026-11-03T16:22:07"}}')
+E   assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_bus_writes_require_accessible_route_and_stop_from_same_route[postgresql] _
+tests\integration\test_bus_scope.py:36: in test_bus_writes_require_accessible_route_and_stop_from_same_route
+    assert reply.status_code == 404, (path, reply.text)
+E   AssertionError: ('stops', '{"success":true,"message":"��lem ba�ar�l�","data":{"id":"29173ac6-e369-4a85-adc1-e1c6634e3a30","stop_name":"Forged","stop_order":2,"created_at":"2026-11-03T16:22:09.412172+00:00"}}')
+E   assert 200 == 404
+E    +  where 200 = <Response [200 OK]>.status_code
+___ test_bus_driver_must_belong_to_route_organization_even_for_root[sqlite] ___
+tests\integration\test_bus_scope.py:51: in test_bus_driver_must_belong_to_route_organization_even_for_root
+    assert reply.status_code == 403, reply.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"4f241507-49bb-46fe-8b2a-6ceac25bf2cc","route_name":"Driver check","status":"ACTIVE","created_at":"2026-11-03T16:22:11"}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_bus_driver_must_belong_to_route_organization_even_for_root[postgresql] _
+tests\integration\test_bus_scope.py:51: in test_bus_driver_must_belong_to_route_organization_even_for_root
+    assert reply.status_code == 403, reply.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"id":"f92904e8-5431-4afa-bb3d-503b105f2ca6","route_name":"Driver check","status":"ACTIVE","created_at":"2026-11-03T16:22:13.495812+00:00"}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_transport_summary_counts_scoped_records_and_requires_bus_read[sqlite] __
+tests\integration\test_bus_scope.py:65: in test_transport_summary_counts_scoped_records_and_requires_bus_read
+    assert denied.status_code == 403, denied.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"total_routes":0,"active_routes":0,"total_students":0,"attendance_rate":0,"recommendations":["Servis rotalar�n� optimize edin","S�r�c� g�venlik e�itimleri yap�n","Kapasite kullan�m�n� izleyin"]}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+_ test_transport_summary_counts_scoped_records_and_requires_bus_read[postgresql] _
+tests\integration\test_bus_scope.py:65: in test_transport_summary_counts_scoped_records_and_requires_bus_read
+    assert denied.status_code == 403, denied.text
+E   AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"total_routes":0,"active_routes":0,"total_students":0,"attendance_rate":0,"recommendations":["Servis rotalar�n� optimize edin","S�r�c� g�venlik e�itimleri yap�n","Kapasite kullan�m�n� izleyin"]}}
+E   assert 200 == 403
+E    +  where 200 = <Response [200 OK]>.status_code
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_bus_writes_require_accessible_route_and_stop_from_same_route[postgresql]
+FAILED tests/integration/test_bus_scope.py::test_bus_driver_must_belong_to_route_organization_even_for_root[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_bus_driver_must_belong_to_route_organization_even_for_root[postgresql]
+FAILED tests/integration/test_bus_scope.py::test_transport_summary_counts_scoped_records_and_requires_bus_read[sqlite]
+FAILED tests/integration/test_bus_scope.py::test_transport_summary_counts_scoped_records_and_requires_bus_read[postgresql]
+6 failed, 20 warnings in 14.65s

@@ -1,4 +1,6 @@
-import { CreditCard, Plus, AlertCircle, CheckCircle, Search, User, GraduationCap, ShieldCheck } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { reportClientError } from "../../lib/diagnostics";
+import { CreditCard, Plus, AlertCircle, CheckCircle, Search, User, GraduationCap, ShieldCheck, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { PageHeader, Badge, LoadingState } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
@@ -41,6 +43,7 @@ export function CardBalancePage() {
   const [rfidCards, setRfidCards] = useState<RfidCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState("");
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
   // RFID kartlarını yükle
   useEffect(() => {
@@ -50,7 +53,7 @@ export function CardBalancePage() {
         const response = await api.get<ApiResponse<RfidCard[]>>("/rfid-cards");
         setRfidCards(response.data.data || []);
       } catch (err) {
-        console.error("Failed to load RFID cards:", err);
+        reportClientError("Failed to load RFID cards:", err);
       } finally {
         setCardsLoading(false);
       }
@@ -112,6 +115,17 @@ export function CardBalancePage() {
     setSelectedCard(cardNumber);
   };
 
+  // AI analizi yükle - kart seçildiğinde
+  useEffect(() => {
+    if (cardInfo) {
+      getAnalysis(`/ai/card-analysis?card_number=${cardInfo.card_number}`)
+        .then((r) => setAiAnalysis(r.data.data))
+        .catch(() => {});
+    } else {
+      setAiAnalysis(null);
+    }
+  }, [cardInfo]);
+
   const handleSearchCard = async (cardNum?: string, isRefresh: boolean = false) => {
     const numberToSearch = cardNum || cardNumber;
     if (!numberToSearch.trim()) {
@@ -172,7 +186,7 @@ export function CardBalancePage() {
         
         // Update balance from response
         if (response.data.data && response.data.data.new_balance !== undefined && cardInfo) {
-          console.log('Updating balance from response:', response.data.data.new_balance);
+          
           setCardInfo({
             ...cardInfo,
             balance: response.data.data.new_balance
@@ -331,6 +345,45 @@ export function CardBalancePage() {
 
       {cardInfo && (
         <>
+          {aiAnalysis && (
+            <div className="card" style={{ marginTop: 18 }}>
+              <div className="card-head">
+                <div>
+                  <h2>AI Kart Analizi</h2>
+                  <p>Harcama desenleri ve öneriler</p>
+                </div>
+                <CreditCard size={20} color="#176b5b" />
+              </div>
+              <div className="card-pad">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+                  <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
+                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Ortalama Günlük Harcama</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.avg_daily_spending.toFixed(2)} TL</div>
+                  </div>
+                  <div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.spending_trend === "increasing" ? "#fef3c7" : "#dcfce7" }}>
+                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Harcama Trendi</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.spending_trend === "increasing" ? "Artış" : aiAnalysis.spending_trend === "decreasing" ? "Düşüş" : "Stabil"}</div>
+                  </div>
+                  <div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.low_balance_alert ? "#fee2e2" : "#f8faf8" }}>
+                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Düşük Bakiye Uyarısı</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.low_balance_alert ? "Aktif" : "Yok"}</div>
+                  </div>
+                </div>
+                {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
+                    {aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => (
+                      <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                        <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
+                        <span style={{ fontSize: 13 }}>{rec}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="card" style={{ marginTop: 18 }}>
             <div className="card-head">
               <h2>Kart Bilgileri</h2>

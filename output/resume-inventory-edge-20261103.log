@@ -1,0 +1,114 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test --grep inventory forms
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [7792]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "316f4dd7-d304-412d-a9d9-caa37a5498b2", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.39, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:02.103889Z"}
+[WebServer] (node:13860) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:23624) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:17944) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "772b55d7-e029-462a-a093-19d750c0100c", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 2550.62, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:12.743785Z"}
+[WebServer] {"request_id": "aa6cc015-b1bf-443b-9652-0946c5c5c785", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 62.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.050468Z"}
+[WebServer] {"request_id": "f394e53b-c33d-4b5d-8b6d-9ca4a70ac4dd", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 14.78, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.070771Z"}
+[WebServer] {"request_id": "59d591ef-49b3-45b4-90e4-b6b161470b4f", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 166.8, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.171713Z"}
+[WebServer] {"request_id": "cf73c699-0aae-42e6-bce5-31eb5b8b4816", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 18.89, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.208279Z"}
+[WebServer] {"request_id": "12c4a511-76ab-421c-a76b-24934321a2e6", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 238.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.233994Z"}
+[WebServer] {"request_id": "a248cef6-e6f1-448f-8c7a-aac499b7995e", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 231.32, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.246539Z"}
+[WebServer] {"request_id": "0d077fe5-7227-4ec0-a3dd-71286f56eea5", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 18.94, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.281487Z"}
+[WebServer] {"request_id": "4615286e-8db4-4062-9be6-a6723306d061", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 27.59, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.283212Z"}
+[WebServer] {"request_id": "87faa0db-bc46-4714-97ac-30e610a5d635", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 14.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.351957Z"}
+[WebServer] {"request_id": "84a3dc8a-49ed-419a-909e-4074158819b8", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 29.74, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.510419Z"}
+[WebServer] {"request_id": "e2017ba5-ea90-4805-b0a7-3058ccde04ad", "method": "POST", "path": "/api/inventory/locations", "status": 200, "duration_ms": 34.91, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.786110Z"}
+[WebServer] {"request_id": "62081ef3-0b1b-485d-94ea-3f0e0811a77e", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 129.84, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.942670Z"}
+[WebServer] {"request_id": "173441c8-92f2-4812-b0fd-83b04cfb6fea", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 145.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.967030Z"}
+[WebServer] {"request_id": "c7307a3a-96a0-4712-bea8-5ee6bf165731", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 146.44, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.979349Z"}
+[WebServer] {"request_id": "0bc06b83-c157-4e15-b8e8-7e4f271e80e5", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 147.28, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:14.984533Z"}
+[WebServer] {"request_id": "17d9b29f-4d0f-445d-b4f9-b0dc55df27ec", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 260.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.105038Z"}
+[WebServer] {"request_id": "6c5f6271-d212-4be3-9a68-5e3db8a6f990", "method": "POST", "path": "/api/inventory/items", "status": 200, "duration_ms": 58.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.298908Z"}
+[WebServer] {"request_id": "8253d39b-6a03-4d00-b861-c1151dbc250a", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 89.16, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.440326Z"}
+[WebServer] {"request_id": "b2edeb97-93db-44de-9a49-e18a22ca0968", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 102.09, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.448811Z"}
+[WebServer] {"request_id": "9eb7818e-0515-4d5c-beb7-018c68f2520c", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 147.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.488479Z"}
+[WebServer] {"request_id": "dbbeede3-82d9-4641-8f6b-8479dfff280a", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 164.2, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.523135Z"}
+[WebServer] {"request_id": "ee126bb5-6810-48f7-ad3a-83aee4a741bf", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 157.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.535662Z"}
+[WebServer] {"request_id": "1023994e-6066-42f2-afd0-dedbe5ce9e8a", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 25.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:15.938143Z"}
+[WebServer] {"request_id": "e606eca1-1b5a-4967-ab54-dde441f82add", "method": "POST", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 35.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.127601Z"}
+[WebServer] {"request_id": "e4d4b5b7-1344-412d-bd16-cb718a68386d", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 78.36, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.265287Z"}
+[WebServer] {"request_id": "6286d28e-b6ed-46dc-a512-3da1d0d8cfb1", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 73.17, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.274260Z"}
+[WebServer] {"request_id": "a0a91d7e-75d0-4c41-ac28-3a010c0f4ea5", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 112.64, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.303253Z"}
+[WebServer] {"request_id": "c566b9d0-7d35-4eb8-add8-63a6d62fe6a1", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 109.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.316562Z"}
+[WebServer] {"request_id": "e15b1f2a-ba38-4d27-8d5d-6984e1fd160a", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 26.57, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.464171Z"}
+[WebServer] {"request_id": "c27f6dd8-fccb-4d95-ab79-9a726e043147", "method": "POST", "path": "/api/inventory/assignments/def2b897-4b7a-4853-b143-8c314db514b9/return", "status": 200, "duration_ms": 35.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.535324Z"}
+[WebServer] {"request_id": "5b24a303-8762-474d-b066-ac4571a2b19f", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 17.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.628397Z"}
+[WebServer] {"request_id": "08d11d5e-1619-40d9-81da-dce5cc1f9cb3", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 53.24, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.683821Z"}
+[WebServer] {"request_id": "37f8693b-cf22-4aaa-af7b-a8dcd5bc4173", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 58.48, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.700877Z"}
+[WebServer] {"request_id": "e6aa22ca-ac5c-412b-bce5-e305d8dfddb2", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 85.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.756069Z"}
+[WebServer] {"request_id": "9a8bb582-d10b-4e0d-a6b5-d4689c1b726b", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 29.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:16.935932Z"}
+[WebServer] {"request_id": "f81be523-e9f6-4f4b-ad7c-60cd2013625c", "method": "POST", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 54.06, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.142045Z"}
+[WebServer] {"request_id": "f46dd1e1-753a-46c6-9622-040d78958a5e", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 50.52, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.236170Z"}
+[WebServer] {"request_id": "02abb8ef-9e9a-4f86-9f6b-bc4e710ac904", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 66.03, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.368305Z"}
+[WebServer] {"request_id": "873eaf79-c7e2-49eb-8f49-172ff441e1f1", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 70.4, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.372833Z"}
+[WebServer] {"request_id": "199da707-3929-4e33-984a-1ace1863ef66", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 62.76, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.373500Z"}
+[WebServer] {"request_id": "fc6a1518-cda0-4823-9f96-77fe3616ec9b", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 43.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.527247Z"}
+[WebServer] {"request_id": "caf7a0f0-6f7e-4146-87b0-192cc92dce1e", "method": "POST", "path": "/api/inventory/maintenance-requests/8700349b-873a-4341-a728-3a7bd6fd15c2/resolve", "status": 200, "duration_ms": 31.71, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.630946Z"}
+[WebServer] {"request_id": "0b8980a4-16a2-4a9c-be61-226d60e57f99", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 53.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.719343Z"}
+[WebServer] {"request_id": "d668910e-7885-4fd3-b284-afdfeef4069a", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 61.19, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.734887Z"}
+[WebServer] {"request_id": "fffbebd8-5ca8-4a9a-8cec-1a8585843599", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 85.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.766580Z"}
+[WebServer] {"request_id": "15d4f4fd-706e-4a6f-97e1-4564a1abc584", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 84.85, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.774281Z"}
+[WebServer] {"request_id": "f286d350-ea6a-40d2-a5f0-4f8318e2c306", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 27.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:17.954332Z"}
+[WebServer] {"request_id": "1691c963-279d-4284-9085-4bcbe4b49657", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 80.2, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.684650Z"}
+[WebServer] {"request_id": "39a0014c-bc6d-44cd-917a-78a343afe9e4", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 70.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.687928Z"}
+[WebServer] {"request_id": "e5844f55-2391-4127-95d4-23845097e125", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 86.14, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.699149Z"}
+[WebServer] {"request_id": "bd0c1c8b-ed5c-454c-beca-88a9fffbe969", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 80.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.702839Z"}
+[WebServer] {"request_id": "7105041c-eb2d-4ac9-bbdc-85460f89f834", "method": "GET", "path": "/api/inventory/maintenance-requests", "status": 200, "duration_ms": 115.33, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.885066Z"}
+[WebServer] {"request_id": "ee94e317-7e20-427d-b468-9a468e276387", "method": "GET", "path": "/api/inventory/assignments", "status": 200, "duration_ms": 111.95, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.886228Z"}
+[WebServer] {"request_id": "042021c3-e92d-4338-8437-329ae57ffc0e", "method": "GET", "path": "/api/inventory/items", "status": 200, "duration_ms": 202.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.905036Z"}
+[WebServer] {"request_id": "7c5c26f4-2812-4630-a2fc-deeb1680220a", "method": "GET", "path": "/api/ai/inventory-analysis", "status": 200, "duration_ms": 131.89, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.918810Z"}
+[WebServer] {"request_id": "72298f83-3841-4332-ae73-cc0ea6fda9e4", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 15.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:18.986393Z"}
+[WebServer] {"request_id": "88e41f15-fc7e-4b0c-a2df-2914acb33b95", "method": "GET", "path": "/api/inventory/options", "status": 200, "duration_ms": 22.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T04:58:19.029561Z"}
+  ok 1 [edge] › e2e\acceptance.spec.ts:6:1 › inventory forms persist locations, assets, assignments, returns and maintenance (13.1s)
+
+  1 passed (53.5s)

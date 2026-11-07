@@ -1,4 +1,4 @@
-import { Send, ArrowLeft, MoreVertical } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { api, apiMessage } from "../../lib/api";
 import type { ApiResponse } from "../../types/api";
@@ -17,12 +17,13 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   studentId: string;
   teacherId?: string;
+  parentId?: string;
   teacherName: string;
   onBack: () => void;
   apiBase?: string;
 }
 
-export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBase = "/api/parent" }: ChatInterfaceProps) {
+export function ChatInterface({ studentId, teacherId, parentId, teacherName, onBack, apiBase = "/parent" }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,13 +44,13 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
     // Poll for new messages every 5 seconds
     const interval = setInterval(loadMessages, 5000);
     return () => clearInterval(interval);
-  }, [studentId, teacherId, apiBase]);
+  }, [studentId, teacherId, parentId, apiBase]);
 
   async function loadMessages() {
     try {
       const endpoint = teacherId 
         ? `${apiBase}/child/${studentId}/chat/${teacherId}`
-        : `${apiBase}/chat/${studentId}`;
+        : `${apiBase}/chat/${studentId}${parentId ? `?parent_id=${encodeURIComponent(parentId)}` : ""}`;
       const response = await api.get<ApiResponse<ChatMessage[]>>(endpoint);
       setMessages(response.data.data || []);
       setError("");
@@ -68,7 +69,7 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
     try {
       const endpoint = teacherId 
         ? `${apiBase}/child/${studentId}/chat/${teacherId}`
-        : `${apiBase}/chat/${studentId}`;
+        : `${apiBase}/chat/${studentId}${parentId ? `?parent_id=${encodeURIComponent(parentId)}` : ""}`;
       await api.post(endpoint, {
         message: newMessage
       });
@@ -82,7 +83,7 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
   }
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column" }}>
       {/* Chat Header */}
       <div style={{
         padding: "16px 24px",
@@ -93,6 +94,7 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
         gap: 16
       }}>
         <button
+          aria-label="Sohbeti kapat"
           onClick={onBack}
           style={{
             background: "none",
@@ -115,9 +117,6 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
             {messages.length > 0 ? `${messages.length} mesaj` : "Yeni mesaj"}
           </p>
         </div>
-        <button style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}>
-          <MoreVertical size={20} style={{ color: "#666" }} />
-        </button>
       </div>
 
       {/* Messages Area */}
@@ -221,6 +220,7 @@ export function ChatInterface({ studentId, teacherId, teacherName, onBack, apiBa
           </div>
           <button
             type="submit"
+            aria-label="Sohbet mesajını gönder"
             disabled={!newMessage.trim() || sending}
             className="btn btn-primary"
             style={{

@@ -1,4 +1,5 @@
-import { ArrowLeft, CalendarCheck2, CreditCard, FileText, Pencil, User, Phone, Mail, IdCard, Brain, TrendingUp } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { ArrowLeft, CalendarCheck2, CreditCard, FileText, Pencil, User, Phone, Mail, IdCard, Brain } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui";
@@ -31,7 +32,7 @@ export function StudentDetailPage() {
         const [parentsRes, classRes, aiRes] = await Promise.allSettled([
           api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/students/${id}/parents`),
           classId ? api.get<ApiResponse<DataRecord>>(`/classes/${classId}`) : Promise.resolve(null),
-          api.get(`/ai/student-performance/${id}`).catch(() => null),
+          getAnalysis(`/ai/student-performance/${id}`).catch(() => null),
         ]);
         if (parentsRes.status === "fulfilled") {
           setParents(toArray(parentsRes.value.data.data));
@@ -40,7 +41,7 @@ export function StudentDetailPage() {
           setClassInfo(classRes.value.data.data);
         }
         if (aiRes.status === "fulfilled" && aiRes.value) {
-          console.log("AI Response:", aiRes.value.data);
+          
           setAiPrediction(aiRes.value.data.data);
         }
       } catch (err) {
@@ -165,152 +166,12 @@ export function StudentDetailPage() {
       </div>
 
       {aiPrediction && (
-        <div className="card" style={{ marginTop: 18 }}>
-          <div className="card-head">
-            <div>
-              <h2>AI Performans Analizi</h2>
-              <p>Yapay zeka destekli kapsamlı akademik performans analizi</p>
-            </div>
-            <Brain size={20} color="#176b5b" />
+        <section className="card" style={{ marginTop: 18 }} aria-label="Öğrenci kayıt özeti">
+          <div className="card-head"><div><h2>Kayıtlara dayalı öğrenci özeti</h2><p>{aiPrediction.summary}</p></div><Brain size={20} color="#176b5b" /></div>
+          <div className="card-pad detail-list">
+            {(aiPrediction.metrics || []).map((metric: { label: string; value: string }) => <div className="detail-item" key={metric.label}><small>{metric.label}</small><strong>{metric.value}</strong></div>)}
           </div>
-          <div className="card-pad">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
-              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Tahmini Not</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#1b2b2e" }}>{aiPrediction.predicted_grade}</div>
-              </div>
-              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Mevcut Ortalama</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#1b2b2e" }}>{aiPrediction.current_average || "-"}</div>
-              </div>
-              <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Güven</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: "#1b2b2e" }}>{aiPrediction.confidence}%</div>
-              </div>
-              <div style={{ padding: 16, borderRadius: 11, background: aiPrediction.trend === "improving" ? "#dcfce7" : aiPrediction.trend === "declining" ? "#fee2e2" : "#f8faf8" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Trend</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.trend === "improving" ? "Yükselişte" : aiPrediction.trend === "declining" ? "Düşüşte" : "Stabil"}</div>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
-              <div style={{ padding: 12, borderRadius: 8, background: aiPrediction.risk_level === "critical" ? "#fee2e2" : aiPrediction.risk_level === "high" ? "#fef3c7" : "#dcfce7", border: "1px solid " + (aiPrediction.risk_level === "critical" ? "#fecaca" : aiPrediction.risk_level === "high" ? "#fde68a" : "#bbf7d0") }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Risk Seviyesi</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.risk_level === "critical" ? "Kritik" : aiPrediction.risk_level === "high" ? "Yüksek" : aiPrediction.risk_level === "medium" ? "Orta" : "Düşük"}</div>
-              </div>
-              <div style={{ padding: 12, borderRadius: 8, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Öğrenme Stili</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.learning_style === "highly_engaged" ? "Yüksek Katılımlı" : aiPrediction.learning_style === "consistent" ? "Tutarlı" : aiPrediction.learning_style === "self_motivated" ? "Öz Motivasyonlu" : "Destek Gerektiriyor"}</div>
-              </div>
-              <div style={{ padding: 12, borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
-                <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Sınıf Percentili</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.peer_percentile}%</div>
-              </div>
-            </div>
-
-            {aiPrediction.factors && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Performans Faktörleri</h3>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  <div style={{ flex: 1, minWidth: 200, padding: 12, borderRadius: 8, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                    <div style={{ fontSize: 12, color: "#166534", marginBottom: 4 }}>Notlar</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>{aiPrediction.factors.grades_impact}%</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 200, padding: 12, borderRadius: 8, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
-                    <div style={{ fontSize: 12, color: "#1e40af", marginBottom: 4 }}>Devamsızlık</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>{aiPrediction.factors.attendance_impact}%</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 200, padding: 12, borderRadius: 8, background: "#fef9c3", border: "1px solid #fde047" }}>
-                    <div style={{ fontSize: 12, color: "#854d0e", marginBottom: 4 }}>Çalışma</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#854d0e" }}>{aiPrediction.factors.study_impact}%</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {aiPrediction.historical_performance && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Geçmiş Performans</h3>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", padding: 12, borderRadius: 8, background: "#f8faf8" }}>
-                  <div style={{ fontSize: 13, color: "#6e7b7d" }}>Son notlar:</div>
-                  {aiPrediction.historical_performance.grades.map((grade: number, idx: number) => (
-                    <div key={idx} style={{ padding: "4px 8px", borderRadius: 4, background: grade >= 80 ? "#dcfce7" : grade >= 60 ? "#fef3c7" : "#fee2e2", fontSize: 12, fontWeight: 600, color: "#1b2b2e" }}>{grade}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {aiPrediction.subject_performance && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Ders Bazlı Performans</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-                  {Object.entries(aiPrediction.subject_performance).map(([subject, grade]) => (
-                    <div key={subject} style={{ padding: 12, borderRadius: 8, background: (grade as number) >= 80 ? "#dcfce7" : (grade as number) >= 60 ? "#fef3c7" : "#fee2e2", border: "1px solid " + ((grade as number) >= 80 ? "#bbf7d0" : (grade as number) >= 60 ? "#fde68a" : "#fecaca") }}>
-                      <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>{subject}</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e" }}>{String(grade)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {(aiPrediction.strengths || aiPrediction.weaknesses) && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Güçlü ve Zayıf Yönler</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-                  {aiPrediction.strengths && aiPrediction.strengths.length > 0 && (
-                    <div style={{ padding: 12, borderRadius: 8, background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
-                      <div style={{ fontSize: 12, color: "#166534", marginBottom: 8, fontWeight: 600 }}>Güçlü Yönler</div>
-                      {aiPrediction.strengths.map((strength: string, idx: number) => (
-                        <div key={idx} style={{ fontSize: 13, color: "#1b2b2e", marginBottom: 4 }}>• {strength}</div>
-                      ))}
-                    </div>
-                  )}
-                  {aiPrediction.weaknesses && aiPrediction.weaknesses.length > 0 && (
-                    <div style={{ padding: 12, borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca" }}>
-                      <div style={{ fontSize: 12, color: "#991b1b", marginBottom: 8, fontWeight: 600 }}>Geliştirme Alanları</div>
-                      {aiPrediction.weaknesses.map((weakness: string, idx: number) => (
-                        <div key={idx} style={{ fontSize: 13, color: "#1b2b2e", marginBottom: 4 }}>• {weakness}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {aiPrediction.behavioral_analysis && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Davranışsal Analiz</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-                  <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Davranış Puanı</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.behavioral_analysis.score}</div>
-                  </div>
-                  <div style={{ padding: 12, borderRadius: 8, background: aiPrediction.behavioral_analysis.assessment === "excellent" ? "#dcfce7" : aiPrediction.behavioral_analysis.assessment === "good" ? "#fef9c3" : "#fee2e2", border: "1px solid " + (aiPrediction.behavioral_analysis.assessment === "excellent" ? "#bbf7d0" : aiPrediction.behavioral_analysis.assessment === "good" ? "#fde047" : "#fecaca") }}>
-                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Değerlendirme</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.behavioral_analysis.assessment === "excellent" ? "Mükemmel" : aiPrediction.behavioral_analysis.assessment === "good" ? "İyi" : aiPrediction.behavioral_analysis.assessment === "needs_improvement" ? "Geliştirilmeli" : "Endişe Verici"}</div>
-                  </div>
-                  <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Öğrenme Potansiyeli</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#1b2b2e" }}>{aiPrediction.learning_potential === "high" ? "Yüksek" : aiPrediction.learning_potential === "moderate" ? "Orta" : "Sınırlı"}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {aiPrediction.recommendations && aiPrediction.recommendations.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>
-                {aiPrediction.recommendations.map((rec: string, index: number) => (
-                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start", padding: 12, borderRadius: 8, background: index === 0 ? "#fff7ed" : "#f8faf8", border: index === 0 ? "1px solid #fed7aa" : "none" }}>
-                    <TrendingUp size={16} color="#176b5b" style={{ flexShrink: 0, marginTop: 2 }} />
-                    <span style={{ fontSize: 13 }}>{rec}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        </section>
       )}
 
       {classInfo && (

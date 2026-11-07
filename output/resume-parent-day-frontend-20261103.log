@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/parent-timeline.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  06:14:35
+   Duration  4.04s (transform 168ms, setup 352ms, import 496ms, tests 323ms, environment 2.47s)
+

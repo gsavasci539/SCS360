@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/resource-form-options.test.tsx src/test/resource-choice.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  5 passed (5)
+   Start at  12:42:33
+   Duration  11.51s (transform 981ms, setup 2.90s, import 3.18s, tests 3.46s, environment 9.31s)
+

@@ -1,0 +1,43 @@
+import { expect, test } from "./fixtures";
+
+test("hosted subscription purchase waits for provider review and activates once on mobile", async ({ page, request }) => {
+  test.skip(process.env.SCS360_ACCEPTANCE_SAAS_GATEWAY !== "1", "Requires the disposable acceptance provider; never uses real payments");
+  const suffix = Date.now();
+  const login = await request.post("/api/auth/login", { data: { email: "admin@acceptance.example.com", password: "Acceptance-Only-2026!" } });
+  expect(login.status()).toBe(200); const root = { Authorization: `Bearer ${(await login.json()).data.access_token}` };
+  const created = await request.post("/api/platform/plans", { headers: root, data: { code: `CARD${suffix}`, name: `Kart Paketi ${suffix}`, price: "432.10", currency: "TRY", branch_limit: 3, student_limit: 25, user_limit: 8, period_months: 1 } });
+  expect(created.status()).toBe(200); const plan = (await created.json()).data;
+  const owner = `checkout-${suffix}@acceptance.example.com`;
+  const signup = await request.post("/api/public/signup", { data: { request_id: crypto.randomUUID(), plan_id: plan.id, name: `Kart Okulu ${suffix}`, owner_first_name: "Kart", owner_last_name: "Sahibi", owner_email: owner, owner_password: "AcceptancePass1!" } });
+  expect(signup.status()).toBe(200);
+  await page.setViewportSize({ width: 390, height: 844 }); await page.goto("/login");
+  await page.getByLabel("E-posta adresi", { exact: true }).fill(owner); await page.getByLabel("Şifre", { exact: true }).fill("AcceptancePass1!");
+  await page.getByRole("button", { name: "Giriş yap", exact: true }).click(); await expect(page).toHaveURL(/\/subscription$/);
+  await page.getByRole("combobox", { name: "Üyelik paketi", exact: true }).selectOption(plan.id); await page.getByRole("button", { name: "Ödeme talebi oluştur", exact: true }).click();
+  const history = page.getByRole("region", { name: "Üyelik ödeme geçmişi", exact: true });
+  await history.getByRole("button", { name: "Kartla öde", exact: true }).click();
+  const form = page.getByRole("form", { name: "Üyelik ödeme bilgileri", exact: true });
+  for (const [label, value] of [["Kimlik veya vergi numarası", "11111111111"], ["Telefon", "+905000000000"], ["Fatura adresi", "Acceptance test billing address"], ["Şehir", "Istanbul"], ["Ülke", "Turkey"]]) await form.getByLabel(label, { exact: true }).fill(value);
+  const initialized = page.waitForResponse((response) => response.url().endsWith("/checkout") && response.request().method() === "POST");
+  await form.getByRole("button", { name: "Ödeme sayfasını hazırla", exact: true }).click();
+  const init = await initialized; expect(init.status()).toBe(200); const invoiceId = (await init.json()).data.invoice.id;
+  await page.route("https://sandbox-api.iyzipay.com/checkoutform/**", async (route) => {
+    const token = new URL(route.request().url()).pathname.split("/").pop();
+    expect(token).toMatch(/^browser-acceptance-[0-9a-f-]+$/);
+    await route.fulfill({ contentType: "text/html; charset=utf-8", body: `<html lang="tr"><meta charset="utf-8"><h1>Yalnız kabul testi</h1><form method="post" action="http://127.0.0.1:5016/api/subscription/iyzico/callback"><input name="token" type="hidden" value="${token}"><button>Test sonucunu gönder</button></form></html>` });
+  });
+  await page.getByRole("link", { name: "Güvenli ödeme sayfasını aç", exact: true }).click();
+  await page.getByRole("button", { name: "Test sonucunu gönder", exact: true }).click(); await expect(page).toHaveURL(/\/subscription$/);
+  await expect(history).toContainText("Ödeme inceleniyor");
+  await expect(page.getByRole("heading", { name: "Üyeliğinizi başlatın", exact: true })).toBeVisible();
+  await expect(history.getByRole("button", { name: "Talebi iptal et", exact: true })).toHaveCount(0);
+  await history.getByRole("button", { name: "Ödeme sonucunu kontrol et", exact: true }).click();
+  await expect(history).toContainText("Ödendi"); await expect(page.getByRole("heading", { name: "Üyelik etkin", exact: true })).toBeVisible();
+  const token = await page.evaluate(() => JSON.parse(sessionStorage.getItem("scs360-session") || "{}").accessToken);
+  const auth = { Authorization: `Bearer ${token}` };
+  const first = (await (await request.get("/api/subscription/access", { headers: auth })).json()).data.access.period_end;
+  expect((await request.post(`/api/subscription/invoices/${invoiceId}/payment-status`, { headers: auth })).status()).toBe(200);
+  expect((await (await request.get("/api/subscription/access", { headers: auth })).json()).data.access.period_end).toBe(first);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: "../output/subscription-checkout-mobile-20261104.png", fullPage: true });
+});

@@ -1,0 +1,2569 @@
+{
+  "generated_at": "2026-11-05T19:05:40.070646+00:00",
+  "version": "036",
+  "mode": "read-only URI, query_only, one snapshot; no clone DML or source execution",
+  "privacy": "Field values and row payload hashes are omitted. IDs/row locators, equality flags, column names and relation counts only.",
+  "summary": {
+    "student_pairs": 25,
+    "business_identical_pairs": 0,
+    "business_different_pairs": 25,
+    "active_and_archived_pairs": 25,
+    "different_column_pair_counts": {
+      "deleted_at": 25
+    },
+    "members_with_no_declared_inbound_references": 0,
+    "source_child_templates": 25,
+    "source_ids_found": 25,
+    "source_ids_with_all_parent_fields_equal": 25
+  },
+  "student_pairs": [
+    {
+      "members": [
+        {
+          "rowid": 26,
+          "id": "436df605-34fe-46e4-892b-e89c9bcd4b57",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 1,
+          "id": "4b07e20d-77e8-4bc3-add0-86845190f4ea",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            1
+          ],
+          "semantic_counts": [
+            21,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            8,
+            0
+          ],
+          "semantic_counts": [
+            8,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            5,
+            0
+          ],
+          "semantic_counts": [
+            5,
+            0
+          ]
+        },
+        {
+          "table": "payments",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "receipts",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "medication_schedules",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 27,
+          "id": "c630f784-702d-41d3-b9bb-5736a208cb41",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 2,
+          "id": "c87e679d-9458-44aa-b651-d548a8cb07e8",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 28,
+          "id": "9800823e-fbac-413a-92f1-2f9681d33b59",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 3,
+          "id": "50f8cfdf-c192-465e-80fa-fe39964763c5",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 29,
+          "id": "5c6e2a91-171b-4b70-ba27-ef03e8b30e41",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 4,
+          "id": "b4fe1964-b73b-41d9-8327-d5986a5135bb",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 30,
+          "id": "e4599ad9-c3d9-46e6-bbf1-0a8ba95889e9",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 5,
+          "id": "6f313c60-cc02-4330-9417-124425b383b8",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 31,
+          "id": "30810254-7c11-4900-b82c-3c63d4fe2db2",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 6,
+          "id": "6b21845d-cdda-4c17-968d-6cabf4d5d1f0",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 32,
+          "id": "18b1e114-d81b-4ba2-816b-4f381b4daaca",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 7,
+          "id": "7f640a01-db1b-4dd0-9ca5-742a2cc9f2fe",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "payments",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "receipts",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 33,
+          "id": "a8bb3e49-a8a0-4d6e-885c-2e3fe6c2d794",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 8,
+          "id": "68732468-bca5-433e-b7ee-e2ff3098e320",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 34,
+          "id": "86ad72a9-6056-4812-9718-8698f98666a6",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 9,
+          "id": "6cc75e34-65ff-4356-ad8c-2433be5701ea",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 35,
+          "id": "4ad239d6-53dd-4a14-8995-a93c15d53cc5",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 10,
+          "id": "0f974cef-9869-467f-a4da-a03c80d71c1b",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            0,
+            2
+          ],
+          "semantic_counts": [
+            0,
+            2
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 36,
+          "id": "174cc338-4f4b-46a8-8fc7-bb88eb125a30",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 11,
+          "id": "c244007b-d9ee-4f69-aa90-2dca317fca34",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 37,
+          "id": "0fabf642-9aa3-4f4e-9772-01d2abe16156",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 12,
+          "id": "747e0aec-aaf1-46e3-91ee-0aedff80e215",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 38,
+          "id": "11ee332e-7e0e-4d65-9871-659e7e132302",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 13,
+          "id": "ecb89f39-cf96-4dc4-a5e4-8b4c01964406",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        },
+        {
+          "table": "payments",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "receipts",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 39,
+          "id": "d1ea1bb8-5aa9-4234-afaf-a0a8757566ea",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 14,
+          "id": "6ef90284-9452-4e58-8b56-51d065bc426b",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 40,
+          "id": "1fad98c0-f5f1-462f-ad24-d42e8a6222e2",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 15,
+          "id": "c2e55ff3-2a6d-4fae-bdd3-8355ad630b6b",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 41,
+          "id": "ea743592-22f0-474d-bfa2-151838d7ad90",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 16,
+          "id": "c8c14b28-ec6f-4629-8795-1c693baeed8a",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            0,
+            2
+          ],
+          "semantic_counts": [
+            0,
+            2
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 42,
+          "id": "646f73d8-6d18-425f-ae20-dd43aa7b0016",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 17,
+          "id": "15b77d22-0275-412f-8fac-31b6c6c54ee9",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 43,
+          "id": "74548363-9651-4c6f-ab34-ede79edda51c",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 18,
+          "id": "639baa5b-2665-40c2-b750-0263bfa70558",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 44,
+          "id": "31f237d0-8ed4-4e65-b466-8ef6de39ffe1",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 19,
+          "id": "6b6b422f-2f9e-4643-99ea-3d94125447d4",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        },
+        {
+          "table": "payments",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            1
+          ],
+          "semantic_counts": [
+            2,
+            1
+          ]
+        },
+        {
+          "table": "receipts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            1
+          ],
+          "semantic_counts": [
+            2,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 45,
+          "id": "df1098d3-fe9b-4f30-b861-35160d2feb15",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 20,
+          "id": "85b49457-1d99-4f05-bbc7-8e0b5361823b",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 46,
+          "id": "2051b593-38fe-48c1-b708-af5c51f3643b",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 21,
+          "id": "51a7c36a-dd13-4f6e-bfa5-60e527805c75",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 47,
+          "id": "2fd67bc5-7207-4e65-af6f-aa4297a6a0a9",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 22,
+          "id": "e4fef915-f9a6-483d-adc4-0292ecd97851",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            2,
+            0
+          ],
+          "semantic_counts": [
+            2,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 48,
+          "id": "91e87976-3b49-4516-a241-a8b7523ebc47",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": false
+        },
+        {
+          "rowid": 23,
+          "id": "924cdc8b-344b-4840-80fa-bca99ecff7f5",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": true
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 49,
+          "id": "b2d8ce44-17ba-4580-a7f9-c17da80cf78b",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 24,
+          "id": "00b47383-07a8-4db3-b0b8-1f8a1d5e174f",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            21,
+            0
+          ],
+          "semantic_counts": [
+            21,
+            0
+          ]
+        },
+        {
+          "table": "grades",
+          "column": "student_id",
+          "raw_counts": [
+            30,
+            0
+          ],
+          "semantic_counts": [
+            30,
+            0
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    },
+    {
+      "members": [
+        {
+          "rowid": 50,
+          "id": "ffcb106a-ea8f-46e7-a8f0-8479760538a4",
+          "stored_id_length": 36,
+          "stored_organization_length": 36,
+          "soft_deleted": true
+        },
+        {
+          "rowid": 25,
+          "id": "46081f91-4a4b-41a8-8b5e-928edb9be8b1",
+          "stored_id_length": 32,
+          "stored_organization_length": 32,
+          "soft_deleted": false
+        }
+      ],
+      "compared_business_columns": [
+        "organization_id",
+        "branch_id",
+        "class_id",
+        "student_number",
+        "first_name",
+        "last_name",
+        "gender",
+        "birth_date",
+        "enrollment_date",
+        "status",
+        "photo_url",
+        "health_notes",
+        "notes",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "address"
+      ],
+      "different_business_columns": [
+        "deleted_at"
+      ],
+      "created_at_equal": false,
+      "updated_at_equal": false,
+      "inbound_reference_counts": [
+        {
+          "table": "student_parents",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "attendance_records",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "debts",
+          "column": "student_id",
+          "raw_counts": [
+            0,
+            2
+          ],
+          "semantic_counts": [
+            0,
+            2
+          ]
+        },
+        {
+          "table": "daily_development_reports",
+          "column": "student_id",
+          "raw_counts": [
+            7,
+            0
+          ],
+          "semantic_counts": [
+            7,
+            0
+          ]
+        },
+        {
+          "table": "payments",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        },
+        {
+          "table": "receipts",
+          "column": "student_id",
+          "raw_counts": [
+            1,
+            1
+          ],
+          "semantic_counts": [
+            1,
+            1
+          ]
+        }
+      ],
+      "no_inbound_member_count": 0
+    }
+  ],
+  "source_child_comparison": [
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440007",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 483,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440008",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 497,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440009",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 511,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440010",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 525,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440011",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 539,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440012",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 553,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440013",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 567,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440014",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 581,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440015",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 595,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "debts",
+      "id": "jj0e8400-e29b-41d4-a716-446655440016",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 609,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "student_id",
+            "created_by",
+            "updated_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440001",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 645,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440002",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 657,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440003",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 669,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440004",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 681,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440005",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 693,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440006",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 705,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440007",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 717,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440008",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 729,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440009",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 741,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "notification_jobs",
+      "id": "mm0e8400-e29b-41d4-a716-446655440010",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 753,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id"
+          ],
+          "matching_parent_columns": [
+            "organization_id"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "announcements",
+      "id": "nn0e8400-e29b-41d4-a716-446655440001",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 789,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "created_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "created_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "announcements",
+      "id": "nn0e8400-e29b-41d4-a716-446655440002",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 803,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "class_id",
+            "created_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "class_id",
+            "created_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "announcements",
+      "id": "nn0e8400-e29b-41d4-a716-446655440003",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 817,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "created_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "created_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "announcements",
+      "id": "nn0e8400-e29b-41d4-a716-446655440004",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 831,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "created_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "created_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    },
+    {
+      "table": "announcements",
+      "id": "nn0e8400-e29b-41d4-a716-446655440005",
+      "source_path": "backend/scripts/seed_comprehensive_data.py",
+      "source_line": 845,
+      "matching_id_count": 1,
+      "parent_comparisons": [
+        {
+          "compared_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "class_id",
+            "created_by"
+          ],
+          "matching_parent_columns": [
+            "organization_id",
+            "branch_id",
+            "class_id",
+            "created_by"
+          ],
+          "different_parent_columns": []
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Equality with a source identifier and parent fields does not prove execution provenance, present-day test-only purpose or permission to delete.",
+    "No-inbound means declared FK columns only; JSON, untyped references, external systems and personal identity decisions remain outside this count.",
+    "Business differences never authorize automatic merge, renumbering or deletion. No repair performed."
+  ]
+}

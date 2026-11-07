@@ -1,0 +1,32 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/payment-readiness.test.tsx (2 tests | 1 failed) 466ms
+   × eksik hesap ayarlarını adlarıyla gösterir ve aktif ödeme izlenimi vermez 400ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/payment-readiness.test.tsx > eksik hesap ayarlarını adlarıyla gösterir ve aktif ödeme izlenimi vermez
+Error: expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <button
+  class="btn btn-secondary"
+>
+  Ödeme ayarlarını yenile
+</button> instead
+ ❯ src/test/payment-readiness.test.tsx:18:80
+     16|   expect(membership).toHaveTextContent("SAAS_IYZICO_API_KEY");
+     17|   expect(screen.queryByText("iyzico Sandbox · test ortamı")).not.toBeI…
+     18|   expect(screen.queryByRole("button", { name: /Etkinleştir|Öde|Kartla/…
+       |                                                                                ^
+     19| });
+     20|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  23:55:13
+   Duration  5.93s (transform 128ms, setup 518ms, import 393ms, tests 466ms, environment 3.69s)
+

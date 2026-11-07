@@ -1,0 +1,13 @@
+
+> okul360-frontend@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  70 passed (70)
+   Start at  20:46:20
+   Duration  7.95s (transform 3.81s, setup 1.38s, import 8.43s, tests 1.08s, environment 9.75s)
+

@@ -1,0 +1,30 @@
+# Runtime secrets and local data (already tracked files are not removed).
+.env
+.env.*
+!.env.example
+!.env.compose.example
+!.env.production.example
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+uploads/
+private_uploads/
+
+# Generated dependencies and caches.
+.venv/
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.tsbuildinfo
+.chart-data-*/
+.codex-build/
+playwright-report/
+test-results/
+output/postgres-acceptance-*/
+output/postgres-acceptance-*.log
+*.dump

@@ -1,0 +1,563 @@
+{
+  "generated_at": "2026-11-05T19:08:13.449288+00:00",
+  "mode": "URI mode=ro, query_only, snapshot; ORM LIMIT 0 and schema/count reads only; no lifespan or DML",
+  "version": "036",
+  "integrity": "ok",
+  "foreign_key_violation_count": 432,
+  "mapper_count": 110,
+  "mapper_pass": 110,
+  "missing_metadata_columns_or_tables": [],
+  "projections": [
+    {
+      "model": "app.domain.entities.bus.BusAttendance",
+      "table": "bus_attendance",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.bus.BusRoute",
+      "table": "bus_routes",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.bus.BusStop",
+      "table": "bus_stops",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.bus.BusTelemetryLog",
+      "table": "bus_telemetry_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.canteen.CanteenDietaryRestriction",
+      "table": "canteen_dietary_restrictions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.canteen.CanteenOrder",
+      "table": "canteen_orders",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.canteen.CanteenProduct",
+      "table": "canteen_products",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.canteen.CanteenWalletTransaction",
+      "table": "canteen_wallet_transactions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.clubs.ClubEvent",
+      "table": "club_events",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.clubs.ClubMembership",
+      "table": "club_memberships",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.clubs.SchoolClub",
+      "table": "school_clubs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.clubs.StudentCertificate",
+      "table": "student_certificates",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.communications.BroadcastJob",
+      "table": "broadcast_jobs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.communications.DeliveryReport",
+      "table": "delivery_reports",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.communications.SMSProvider",
+      "table": "sms_providers",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.consents.ConsentDocument",
+      "table": "consent_documents",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.consents.StudentConsent",
+      "table": "student_consents",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.exams.Exam",
+      "table": "exams",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.exams.ExamResult",
+      "table": "exam_results",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.exams.ReportCard",
+      "table": "report_cards",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.guidance.BehavioralIncident",
+      "table": "behavioral_incidents",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.guidance.GuidanceNote",
+      "table": "guidance_notes",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.guidance.GuidanceSession",
+      "table": "guidance_sessions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.health.HealthRecord",
+      "table": "health_records",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.health.InfirmaryVisit",
+      "table": "infirmary_visits",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.health.MedicationLog",
+      "table": "medication_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.health.MedicationSchedule",
+      "table": "medication_schedules",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.hq.BranchAcademicSummary",
+      "table": "branch_academic_summary",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.hq.BranchFinancialSummary",
+      "table": "branch_financial_summary",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.inventory.AssetAssignment",
+      "table": "asset_assignments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.inventory.InventoryItem",
+      "table": "inventory_items",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.inventory.InventoryLocation",
+      "table": "inventory_locations",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.inventory.MaintenanceRequest",
+      "table": "maintenance_requests",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.materials.CourseMaterial",
+      "table": "course_materials",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.materials.MaterialSubmission",
+      "table": "material_submissions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.payroll.AdditionalCourseHours",
+      "table": "additional_course_hours",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.payroll.PayrollRecord",
+      "table": "payroll_records",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.payroll.StaffTimesheet",
+      "table": "staff_timesheets",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.pickup.PickupAuthorization",
+      "table": "pickup_authorizations",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.pickup.PickupLog",
+      "table": "pickup_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.saas.OrganizationSubscription",
+      "table": "organization_subscriptions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.saas.SubscriptionCheckout",
+      "table": "subscription_checkouts",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.saas.SubscriptionInvoice",
+      "table": "subscription_invoices",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.saas.SubscriptionPlan",
+      "table": "subscription_plans",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.security.DigitalIdToken",
+      "table": "digital_id_tokens",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.security.GateLog",
+      "table": "gate_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.surveys.Survey",
+      "table": "surveys",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.surveys.SurveyParticipation",
+      "table": "survey_participations",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.surveys.SurveyQuestion",
+      "table": "survey_questions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.surveys.SurveyResponse",
+      "table": "survey_responses",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.timetable.ClassroomAssignment",
+      "table": "classroom_assignments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.timetable.Timetable",
+      "table": "timetables",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.timetable.TimetableSlot",
+      "table": "timetable_slots",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.tutoring.TeacherAvailability",
+      "table": "teacher_availability",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.tutoring.TutoringRequest",
+      "table": "tutoring_requests",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.domain.entities.tutoring.TutoringSession",
+      "table": "tutoring_sessions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.AiChatAuditLog",
+      "table": "ai_chat_audit_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Announcement",
+      "table": "announcements",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.AnnouncementRecipient",
+      "table": "announcement_recipients",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.AppSetting",
+      "table": "app_settings",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Appointment",
+      "table": "appointments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.AttendanceRecord",
+      "table": "attendance_records",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.AuditLog",
+      "table": "audit_logs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Branch",
+      "table": "branches",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.CardNumber",
+      "table": "card_numbers",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ChatConversation",
+      "table": "chat_conversations",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ChatMessage",
+      "table": "chat_messages",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ClassRoom",
+      "table": "classes",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ClassTeacher",
+      "table": "class_teachers",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ClassroomAssignment",
+      "table": "classroom_assignments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.DailyDevelopmentReport",
+      "table": "daily_development_reports",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Debt",
+      "table": "debts",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Device",
+      "table": "devices",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Expense",
+      "table": "expenses",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Grade",
+      "table": "grades",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Homework",
+      "table": "homework",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.HomeworkSubmission",
+      "table": "homework_submissions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.IntegrationSetting",
+      "table": "integration_settings",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.LibraryBook",
+      "table": "library_books",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.LibraryLoan",
+      "table": "library_loans",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.LoginAttempt",
+      "table": "login_attempts",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.MessageTemplate",
+      "table": "message_templates",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.NotificationJob",
+      "table": "notification_jobs",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.NotificationRecipient",
+      "table": "notification_recipients",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.OperationalRecord",
+      "table": "operational_records",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Organization",
+      "table": "organizations",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Parent",
+      "table": "parents",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.ParentNotice",
+      "table": "parent_notices",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.PasswordResetToken",
+      "table": "password_reset_tokens",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Payment",
+      "table": "payments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.PaymentCheckout",
+      "table": "payment_checkouts",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Permission",
+      "table": "permissions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Receipt",
+      "table": "receipts",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.RefreshToken",
+      "table": "refresh_tokens",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.RfidCard",
+      "table": "rfid_cards",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Role",
+      "table": "roles",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.RolePermission",
+      "table": "role_permissions",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.SchoolPaymentMerchant",
+      "table": "school_payment_merchants",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Student",
+      "table": "students",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentFile",
+      "table": "student_files",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentParent",
+      "table": "student_parents",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentTeacherAssignment",
+      "table": "student_teacher_assignments",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.StudentWallet",
+      "table": "student_wallets",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.TimeSlot",
+      "table": "appointment_time_slots",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.Timetable",
+      "table": "timetables",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.TimetableSlot",
+      "table": "timetable_slots",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.User",
+      "table": "users",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.UserBranch",
+      "table": "user_branches",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.UserDeviceToken",
+      "table": "user_device_tokens",
+      "outcome": "ok"
+    },
+    {
+      "model": "app.infrastructure.models.models.UserRole",
+      "table": "user_roles",
+      "outcome": "ok"
+    }
+  ],
+  "limits": "Projection and schema existence only; no stored row deserialization, dynamic endpoint, writes, data identity repair or external-provider acceptance is established."
+}

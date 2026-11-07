@@ -1,3 +1,4 @@
+import { getAnalysis } from "../../lib/analysis";
 import { CalendarDays, Check, Save, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "../../components/Toast";
@@ -43,7 +44,7 @@ export function AttendancePage() {
   }, [classId]);
 
   useEffect(() => { 
-    api.get("/ai/attendance-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {}); 
+    getAnalysis("/ai/attendance-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {}); 
   }, []);
 
   const counts = useMemo(() => statuses.map((status) => ({ ...status, count: Object.values(records).filter((value) => value.status === status.value).length })), [records]);

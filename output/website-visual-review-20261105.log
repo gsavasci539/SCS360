@@ -1,0 +1,44 @@
+ExpectError: expect(locator).toBeFocused() failed
+
+Locator:  getByRole('link', { name: 'İçeriğe geç' })
+Expected: focused
+Received: inactive
+Timeout:  5000ms
+
+Call log:
+  - Expect "toBeFocused" getByRole('link', { name: 'İçeriğe geç' }) with timeout 5000ms
+  - waiting for getByRole('link', { name: 'İçeriğe geç' })
+    10 × locator resolved to <a href="#public-main" class="marketing-skip">İçeriğe geç</a>
+       - unexpected value "inactive"
+
+    at captureRawStack (C:\Okul360\frontend\node_modules\playwright-core\lib\coreBundle.js:9282:17)
+    at callMatcherAsStep (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13316:57)
+    at Object.toBeFocused (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13308:23)
+    at C:\Okul360\.codex-build\local\review-website-20261105.cjs:64:67 {
+  matcherResult: {
+    message: 'expect(locator).toBeFocused() failed\n' +
+      '\n' +
+      "Locator:  getByRole('link', { name: 'İçeriğe geç' })\n" +
+      'Expected: focused\n' +
+      'Received: inactive\n' +
+      'Timeout:  5000ms\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeFocused" getByRole('link', { name: 'İçeriğe geç' }) with timeout 5000ms\n` +
+      "  - waiting for getByRole('link', { name: 'İçeriğe geç' })\n" +
+      '    10 × locator resolved to <a href="#public-main" class="marketing-skip">İçeriğe geç</a>\n' +
+      '       - unexpected value "inactive"\n',
+    pass: false,
+    actual: 'inactive',
+    name: 'toBeFocused',
+    expected: 'focused',
+    log: [
+      `  - Expect "toBeFocused" getByRole('link', { name: 'İçeriğe geç' }) with timeout 5000ms`,
+      "  - waiting for getByRole('link', { name: 'İçeriğe geç' })",
+      '    10 × locator resolved to <a href="#public-main" class="marketing-skip">İçeriğe geç</a>',
+      '       - unexpected value "inactive"'
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "İçeriğe geç":\n  - /url: "#public-main"'
+  }
+}

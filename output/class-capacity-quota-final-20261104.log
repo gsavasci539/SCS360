@@ -1,0 +1,674 @@
+............FF........................                                   [100%]
+================================== FAILURES ===================================
+_ test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted[sqlite] _
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x000002A98D482BA0>, 'asgi': {'version': '3.0'}, 'client': ('127.0.0.1', 123), 'endpoint': <function delete_class at 0x000002A982C4B2E0>, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002A9907BD260>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002A99091AAC0>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+>           await app(scope, receive, sender)
+
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\fastapi\routing.py:132: in app
+    async with AsyncExitStack() as request_stack:
+               ^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:768: in __aexit__
+    raise exc
+C:\Python313\Lib\contextlib.py:751: in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:221: in __aexit__
+    await anext(self.gen)
+tests\integration\test_material_files.py:35: in override_db
+    await db.commit()
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2028: in commit
+    trans.commit(_to_root=True)
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1313: in commit
+    self._prepare_impl()
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1288: in _prepare_impl
+    self.session.flush()
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4352: in flush
+    self._flush(objects)
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4380: in _flush
+    self.dispatch.before_flush(self, flush_context, objects)
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:378: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = <sqlalchemy.orm.session.Session object at 0x000002A99203A750>
+context = <sqlalchemy.orm.unitofwork.UOWTransaction object at 0x000002A9906AE150>
+instances = None
+
+    @event.listens_for(Session, "before_flush")
+    def enforce_class_capacity(session, context, instances):
+        if session.info.get("tenant_context") is None:
+            return
+        rows = set(session.new) | set(session.dirty) | set(session.deleted)
+        deltas, additions, changed_classes, changed_students, touched = defaultdict(int), [], {}, [], set()
+        for row in rows:
+            state = inspect(row)
+            if isinstance(row, ClassRoom):
+                if row not in session.new and (state.attrs.capacity.history.has_changes()
+                        or state.attrs.deleted_at.history.has_changes() or row in session.deleted):
+                    changed_classes[identifier(row.id)] = row
+                continue
+            if not isinstance(row, Student):
+                continue
+            # Relationship-based assignment must obey the same rule as class_id.
+            relation = state.attrs.class_room.history
+            if relation.has_changes():
+                classroom = relation.added[0] if relation.added else None
+                if classroom is not None and classroom.id is None:
+                    classroom.id = uuid4()
+                row.class_id = classroom.id if classroom is not None else None
+            current = identifier(row.class_id)
+            previous = None if row in session.new else identifier(old(state, "class_id", row.class_id))
+            was_counted = row not in session.new and old(state, "deleted_at", row.deleted_at) is None
+            counted = row not in session.deleted and row.deleted_at is None
+            if previous != current or was_counted != counted:
+                touched.update({previous, current} - {None})
+                if row not in session.new:
+                    changed_students.append(row)
+            if previous and was_counted:
+                deltas[previous] -= 1
+            if current and counted:
+                deltas[current] += 1
+                if row in session.new or previous != current or not was_counted:
+                    additions.append(row)
+        affected = touched | set(changed_classes)
+        if not affected:
+            return  # An unrelated edit never rewrites or blocks a legacy roster.
+    
+        # Lock organizations before classes, including every pending quota resource.
+        # subscription_guard runs after this listener and reuses the same locks.
+        organizations = set()
+        for row in rows:
+            if isinstance(row, (Student, ClassRoom, User, Branch)):
+                organizations.add(identifier(row.organization_id))
+                if row not in session.new:
+                    organizations.add(identifier(old(inspect(row), "organization_id", row.organization_id)))
+        org_table, classes, students = Organization.__table__, ClassRoom.__table__, Student.__table__
+        for org in sorted(organizations - {None}, key=str):
+            session.execute(org_table.update().where(org_table.c.id == org).values(updated_at=org_table.c.updated_at))
+        if changed_students:
+            actual = {row.id: row for row in session.execute(select(students).where(
+                students.c.id.in_([row.id for row in changed_students]))).mappings()}
+            for student in changed_students:
+                stored, state = actual.get(student.id), inspect(student)
+                if stored is None or any(identifier(stored[name]) != identifier(old(state, name, getattr(student, name)))
+                        for name in ("class_id", "branch_id", "organization_id")) or (
+                        (stored.deleted_at is None) != (old(state, "deleted_at", student.deleted_at) is None)):
+                    raise ConflictException("��rencinin s�n�f veya �ube kayd� de�i�ti; kayd� yenileyip tekrar deneyin")
+        for class_id in sorted(affected, key=str):
+            session.execute(classes.update().where(classes.c.id == class_id).values(updated_at=classes.c.updated_at))
+        saved = {row.id: row for row in session.execute(select(classes).where(classes.c.id.in_(affected))).mappings()}
+        pending = {identifier(row.id): row for row in session.new if isinstance(row, ClassRoom) and row.id}
+        for class_id in sorted(affected, key=str):
+            row = changed_classes.get(class_id) or pending.get(class_id) or saved.get(class_id)
+            if row is None:
+                raise ValidationException("S�n�f kayd� bulunamad�")
+            count = session.execute(select(func.count()).select_from(students).where(
+                students.c.class_id == class_id, students.c.deleted_at.is_(None))).scalar_one()
+            final_count = count + deltas.get(class_id, 0)
+            if (row in session.deleted if isinstance(row, ClassRoom) else False) or row.deleted_at is not None:
+                if final_count > 0:
+>                   raise ConflictException("��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez")
+E                   app.core.exceptions.ConflictException: ��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez
+
+app\core\class_capacity_guard.py:94: ConflictException
+
+The above exception was the direct cause of the following exception:
+
+platform_client = (<httpx.AsyncClient object at 0x000002A990BEADD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002A9907658D0>, 'org': <app.infrastructure.models.models.Organization object at 0x000002A9907149D0>, ...})
+
+    async def test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted(platform_client):
+        client, sessions, data = platform_client; h = auth(data)
+        async with sessions() as db:
+            row = await db.get(ClassRoom, data["classroom"].id); row.capacity = 1; await db.commit()
+        # Existing unrelated edits never remove or silently move legacy students.
+        changed = await client.put(f'/api/students/{data["children"][0].id}', headers=h, json={"first_name": "Preserved"})
+        assert changed.status_code == 200, changed.text
+>       deleted = await client.delete(f'/api/classes/{data["classroom"].id}', headers=h)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_class_capacity_management.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1966: in delete
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:198: in __call__
+    raise app_exc
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x000002A98D482BA0>, 'asgi': {'version': '3.0'}, 'client': ('127.0.0.1', 123), 'endpoint': <function delete_class at 0x000002A982C4B2E0>, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002A9907BD260>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002A99091AAC0>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+            await app(scope, receive, sender)
+        except Exception as exc:
+            handler = None
+    
+            if isinstance(exc, HTTPException):
+                handler = status_handlers.get(exc.status_code)
+    
+            if handler is None:
+                handler = _lookup_exception_handler(exception_handlers, exc)
+    
+            if handler is None:
+                raise exc
+    
+            if response_started:
+>               raise RuntimeError("Caught handled exception, but response already started.") from exc
+E               RuntimeError: Caught handled exception, but response already started.
+
+.venv\Lib\site-packages\starlette\_exception_handler.py:56: RuntimeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/classes/46771db6-21b7-44d5-8536-4b1415033431", "request_id": "ccb385de-371d-46af-b615-a608cf0724d6", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T05:26:23.326679Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 132, in app
+    async with AsyncExitStack() as request_stack:
+               ~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\contextlib.py", line 768, in __aexit__
+    raise exc
+  File "C:\Python313\Lib\contextlib.py", line 751, in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "C:\Okul360\backend\tests\integration\test_material_files.py", line 35, in override_db
+    await db.commit()
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1009, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2028, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4352, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4380, in _flush
+    self.dispatch.before_flush(self, flush_context, objects)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\event\attr.py", line 378, in __call__
+    fn(*args, **kw)
+    ~~^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\class_capacity_guard.py", line 94, in enforce_class_capacity
+    raise ConflictException("��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez")
+app.core.exceptions.ConflictException: ��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 198, in __call__
+    raise app_exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 56, in wrapped_app
+    raise RuntimeError("Caught handled exception, but response already started.") from exc
+RuntimeError: Caught handled exception, but response already started.
+_ test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted[postgresql] _
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x000002A98D482BA0>, 'asgi': {'version': '3.0'}, 'client': ('127.0.0.1', 123), 'endpoint': <function delete_class at 0x000002A982C4B2E0>, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002A990826200>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002A98DCEF420>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+>           await app(scope, receive, sender)
+
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\fastapi\routing.py:132: in app
+    async with AsyncExitStack() as request_stack:
+               ^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:768: in __aexit__
+    raise exc
+C:\Python313\Lib\contextlib.py:751: in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+C:\Python313\Lib\contextlib.py:221: in __aexit__
+    await anext(self.gen)
+tests\integration\test_material_files.py:35: in override_db
+    await db.commit()
+.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:1009: in commit
+    await greenlet_spawn(self.sync_session.commit)
+.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:2028: in commit
+    trans.commit(_to_root=True)
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1313: in commit
+    self._prepare_impl()
+.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:1288: in _prepare_impl
+    self.session.flush()
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4352: in flush
+    self._flush(objects)
+.venv\Lib\site-packages\sqlalchemy\orm\session.py:4380: in _flush
+    self.dispatch.before_flush(self, flush_context, objects)
+.venv\Lib\site-packages\sqlalchemy\event\attr.py:378: in __call__
+    fn(*args, **kw)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+session = <sqlalchemy.orm.session.Session object at 0x000002A9922AB550>
+context = <sqlalchemy.orm.unitofwork.UOWTransaction object at 0x000002A99256CCB0>
+instances = None
+
+    @event.listens_for(Session, "before_flush")
+    def enforce_class_capacity(session, context, instances):
+        if session.info.get("tenant_context") is None:
+            return
+        rows = set(session.new) | set(session.dirty) | set(session.deleted)
+        deltas, additions, changed_classes, changed_students, touched = defaultdict(int), [], {}, [], set()
+        for row in rows:
+            state = inspect(row)
+            if isinstance(row, ClassRoom):
+                if row not in session.new and (state.attrs.capacity.history.has_changes()
+                        or state.attrs.deleted_at.history.has_changes() or row in session.deleted):
+                    changed_classes[identifier(row.id)] = row
+                continue
+            if not isinstance(row, Student):
+                continue
+            # Relationship-based assignment must obey the same rule as class_id.
+            relation = state.attrs.class_room.history
+            if relation.has_changes():
+                classroom = relation.added[0] if relation.added else None
+                if classroom is not None and classroom.id is None:
+                    classroom.id = uuid4()
+                row.class_id = classroom.id if classroom is not None else None
+            current = identifier(row.class_id)
+            previous = None if row in session.new else identifier(old(state, "class_id", row.class_id))
+            was_counted = row not in session.new and old(state, "deleted_at", row.deleted_at) is None
+            counted = row not in session.deleted and row.deleted_at is None
+            if previous != current or was_counted != counted:
+                touched.update({previous, current} - {None})
+                if row not in session.new:
+                    changed_students.append(row)
+            if previous and was_counted:
+                deltas[previous] -= 1
+            if current and counted:
+                deltas[current] += 1
+                if row in session.new or previous != current or not was_counted:
+                    additions.append(row)
+        affected = touched | set(changed_classes)
+        if not affected:
+            return  # An unrelated edit never rewrites or blocks a legacy roster.
+    
+        # Lock organizations before classes, including every pending quota resource.
+        # subscription_guard runs after this listener and reuses the same locks.
+        organizations = set()
+        for row in rows:
+            if isinstance(row, (Student, ClassRoom, User, Branch)):
+                organizations.add(identifier(row.organization_id))
+                if row not in session.new:
+                    organizations.add(identifier(old(inspect(row), "organization_id", row.organization_id)))
+        org_table, classes, students = Organization.__table__, ClassRoom.__table__, Student.__table__
+        for org in sorted(organizations - {None}, key=str):
+            session.execute(org_table.update().where(org_table.c.id == org).values(updated_at=org_table.c.updated_at))
+        if changed_students:
+            actual = {row.id: row for row in session.execute(select(students).where(
+                students.c.id.in_([row.id for row in changed_students]))).mappings()}
+            for student in changed_students:
+                stored, state = actual.get(student.id), inspect(student)
+                if stored is None or any(identifier(stored[name]) != identifier(old(state, name, getattr(student, name)))
+                        for name in ("class_id", "branch_id", "organization_id")) or (
+                        (stored.deleted_at is None) != (old(state, "deleted_at", student.deleted_at) is None)):
+                    raise ConflictException("��rencinin s�n�f veya �ube kayd� de�i�ti; kayd� yenileyip tekrar deneyin")
+        for class_id in sorted(affected, key=str):
+            session.execute(classes.update().where(classes.c.id == class_id).values(updated_at=classes.c.updated_at))
+        saved = {row.id: row for row in session.execute(select(classes).where(classes.c.id.in_(affected))).mappings()}
+        pending = {identifier(row.id): row for row in session.new if isinstance(row, ClassRoom) and row.id}
+        for class_id in sorted(affected, key=str):
+            row = changed_classes.get(class_id) or pending.get(class_id) or saved.get(class_id)
+            if row is None:
+                raise ValidationException("S�n�f kayd� bulunamad�")
+            count = session.execute(select(func.count()).select_from(students).where(
+                students.c.class_id == class_id, students.c.deleted_at.is_(None))).scalar_one()
+            final_count = count + deltas.get(class_id, 0)
+            if (row in session.deleted if isinstance(row, ClassRoom) else False) or row.deleted_at is not None:
+                if final_count > 0:
+>                   raise ConflictException("��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez")
+E                   app.core.exceptions.ConflictException: ��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez
+
+app\core\class_capacity_guard.py:94: ConflictException
+
+The above exception was the direct cause of the following exception:
+
+platform_client = (<httpx.AsyncClient object at 0x000002A9907260B0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn...ject at 0x000002A99207E5F0>, 'org': <app.infrastructure.models.models.Organization object at 0x000002A9930BC7D0>, ...})
+
+    async def test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted(platform_client):
+        client, sessions, data = platform_client; h = auth(data)
+        async with sessions() as db:
+            row = await db.get(ClassRoom, data["classroom"].id); row.capacity = 1; await db.commit()
+        # Existing unrelated edits never remove or silently move legacy students.
+        changed = await client.put(f'/api/students/{data["children"][0].id}', headers=h, json={"first_name": "Preserved"})
+        assert changed.status_code == 200, changed.text
+>       deleted = await client.delete(f'/api/classes/{data["classroom"].id}', headers=h)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_class_capacity_management.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1966: in delete
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:198: in __call__
+    raise app_exc
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+scope = {'app': <fastapi.applications.FastAPI object at 0x000002A98D482BA0>, 'asgi': {'version': '3.0'}, 'client': ('127.0.0.1', 123), 'endpoint': <function delete_class at 0x000002A982C4B2E0>, ...}
+receive = <function BaseHTTPMiddleware.__call__.<locals>.call_next.<locals>.receive_or_disconnect at 0x000002A990826200>
+send = <function wrap_app_handling_exceptions.<locals>.wrapped_app.<locals>.sender at 0x000002A98DCEF420>
+
+    async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
+        response_started = False
+    
+        async def sender(message: Message) -> None:
+            nonlocal response_started
+    
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+    
+        try:
+            await app(scope, receive, sender)
+        except Exception as exc:
+            handler = None
+    
+            if isinstance(exc, HTTPException):
+                handler = status_handlers.get(exc.status_code)
+    
+            if handler is None:
+                handler = _lookup_exception_handler(exception_handlers, exc)
+    
+            if handler is None:
+                raise exc
+    
+            if response_started:
+>               raise RuntimeError("Caught handled exception, but response already started.") from exc
+E               RuntimeError: Caught handled exception, but response already started.
+
+.venv\Lib\site-packages\starlette\_exception_handler.py:56: RuntimeError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/classes/d88aff54-5549-4414-96af-f0303bf1ac5e", "request_id": "0c3a536b-51de-4025-a75b-1ff4bb3b7a10", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T05:26:26.435976Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 132, in app
+    async with AsyncExitStack() as request_stack:
+               ~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\contextlib.py", line 768, in __aexit__
+    raise exc
+  File "C:\Python313\Lib\contextlib.py", line 751, in __aexit__
+    cb_suppress = await cb(*exc_details)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "C:\Okul360\backend\tests\integration\test_material_files.py", line 35, in override_db
+    await db.commit()
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\ext\asyncio\session.py", line 1009, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2028, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4352, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 4380, in _flush
+    self.dispatch.before_flush(self, flush_context, objects)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\sqlalchemy\event\attr.py", line 378, in __call__
+    fn(*args, **kw)
+    ~~^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\class_capacity_guard.py", line 94, in enforce_class_capacity
+    raise ConflictException("��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez")
+app.core.exceptions.ConflictException: ��rencileri ba�ka s�n�fa aktarmadan s�n�f silinemez
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 198, in __call__
+    raise app_exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 56, in wrapped_app
+    raise RuntimeError("Caught handled exception, but response already started.") from exc
+RuntimeError: Caught handled exception, but response already started.
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_class_capacity_management.py::test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted[sqlite]
+FAILED tests/integration/test_class_capacity_management.py::test_legacy_over_capacity_records_are_preserved_and_populated_classes_cannot_be_deleted[postgresql]
+2 failed, 36 passed, 20 warnings in 89.64s (0:01:29)

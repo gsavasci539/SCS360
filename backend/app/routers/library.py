@@ -2,6 +2,8 @@
 Library Module API
 Handles book catalog, borrowing, and returns
 """
+from __future__ import annotations
+from app.core.dates import school_today
 from datetime import datetime, date
 from typing import Optional, List
 from uuid import UUID
@@ -18,6 +20,7 @@ from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
+from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/library", tags=["Library"])
 
@@ -67,7 +70,7 @@ async def get_books(
     is_available: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
     """Get books with filtering and search"""
@@ -123,13 +126,14 @@ async def get_books(
 @router.post("/books")
 async def create_book(
     book_data: BookCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.write"))
 ):
     """Create a new book"""
     from app.infrastructure.models.models import Book
     
     new_book = Book(
+        organization_id=tenant.organization_id,
         title=book_data.title,
         author=book_data.author,
         isbn=book_data.isbn,
@@ -159,7 +163,7 @@ async def create_book(
 @router.get("/books/{book_id}")
 async def get_book(
     book_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
     """Get book details"""
@@ -168,7 +172,7 @@ async def get_book(
     result = await db.execute(
         select(Book).where(Book.id == book_id)
     )
-    book = result.scalar_one_or_none()
+    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
     
     if not book:
         raise HTTPException(status_code=404, detail="Kitap bulunamadı")
@@ -194,7 +198,7 @@ async def get_book(
 async def update_book(
     book_id: UUID,
     book_data: BookUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.write"))
 ):
     """Update book details"""
@@ -203,7 +207,7 @@ async def update_book(
     result = await db.execute(
         select(Book).where(Book.id == book_id)
     )
-    book = result.scalar_one_or_none()
+    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
     
     if not book:
         raise HTTPException(status_code=404, detail="Kitap bulunamadı")
@@ -223,7 +227,7 @@ async def update_book(
 @router.delete("/books/{book_id}")
 async def delete_book(
     book_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.write"))
 ):
     """Delete a book"""
@@ -232,11 +236,14 @@ async def delete_book(
     result = await db.execute(
         select(Book).where(Book.id == book_id)
     )
-    book = result.scalar_one_or_none()
+    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
     
     if not book:
         raise HTTPException(status_code=404, detail="Kitap bulunamadı")
     
+    from app.infrastructure.models.models import BookLoan
+    if (await db.execute(select(BookLoan.id).where(BookLoan.book_id == book.id).limit(1))).first():
+        raise HTTPException(status_code=409, detail="Ödünç geçmişi olan kitap silinemez")
     await db.delete(book)
     await db.commit()
     
@@ -248,7 +255,7 @@ async def delete_book(
 @router.post("/borrow")
 async def borrow_book(
     borrow_data: BookBorrowCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("library.manage"))
 ):
@@ -294,7 +301,7 @@ async def borrow_book(
     new_loan = BookLoan(
         book_id=borrow_data.book_id,
         student_id=borrow_data.student_id,
-        borrow_date=datetime.utcnow().date(),
+        borrow_date=school_today(),
         due_date=borrow_data.due_date,
         loaned_by=current_user.id
     )
@@ -319,7 +326,7 @@ async def borrow_book(
 @router.post("/return/{loan_id}")
 async def return_book(
     loan_id: UUID,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("library.manage"))
 ):
@@ -338,7 +345,7 @@ async def return_book(
         raise HTTPException(status_code=400, detail="Bu kitap zaten iade edilmiş")
     
     # Update loan record
-    loan.return_date = datetime.utcnow().date()
+    loan.return_date = school_today()
     loan.returned_by = current_user.id
     
     # Update book available copies
@@ -367,7 +374,7 @@ async def get_loans(
     is_active: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
     """Get book loans with filtering"""
@@ -389,7 +396,7 @@ async def get_loans(
         conditions.append(
             and_(
                 BookLoan.return_date.is_(None),
-                BookLoan.due_date < datetime.utcnow().date()
+                BookLoan.due_date < school_today()
             )
         )
     
@@ -416,8 +423,8 @@ async def get_loans(
         student = student_result.scalar_one_or_none()
         
         # Calculate if overdue
-        is_loan_overdue = loan.return_date is None and loan.due_date < datetime.utcnow().date()
-        days_overdue = (datetime.utcnow().date() - loan.due_date).days if is_loan_overdue else 0
+        is_loan_overdue = loan.return_date is None and loan.due_date < school_today()
+        days_overdue = (school_today() - loan.due_date).days if is_loan_overdue else 0
         
         loans_data.append({
             "id": str(loan.id),
@@ -442,7 +449,7 @@ async def get_loans(
 @router.get("/loans/overdue")
 async def get_overdue_loans(
     limit: int = Query(50, ge=1, le=500),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
     """Get all overdue loans"""
@@ -452,7 +459,7 @@ async def get_overdue_loans(
         select(BookLoan).where(
             and_(
                 BookLoan.return_date.is_(None),
-                BookLoan.due_date < datetime.utcnow().date()
+                BookLoan.due_date < school_today()
             )
         ).order_by(BookLoan.due_date).limit(limit)
     )
@@ -472,7 +479,7 @@ async def get_overdue_loans(
         )
         student = student_result.scalar_one_or_none()
         
-        days_overdue = (datetime.utcnow().date() - loan.due_date).days
+        days_overdue = (school_today() - loan.due_date).days
         
         overdue_loans.append({
             "id": str(loan.id),

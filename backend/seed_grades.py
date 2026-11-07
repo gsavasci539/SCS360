@@ -1,7 +1,9 @@
 """
 Seed script to add sample grades for students
+WARNING: Only run in development with SEED_DEMO_DATA=true
 """
 import asyncio
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 from sqlalchemy import select
@@ -14,6 +16,14 @@ from app.infrastructure.models.models import (
 
 
 async def seed_grades():
+    # Check if running in production
+    seed_demo_data = os.getenv("SEED_DEMO_DATA", "false").lower() == "true"
+    app_env = os.getenv("APP_ENV", "production").lower()
+    
+    if not seed_demo_data and app_env == "production":
+        print("ERROR: Cannot seed grades data in production. Set SEED_DEMO_DATA=true to override.")
+        return
+    
     async for db in get_db():
         # Get organization
         org_result = await db.execute(select(Organization).limit(1))

@@ -1,0 +1,573 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+stderr | src/test/canteen-sales-summary.test.tsx > shows missing history as insufficient trend data while retaining an actual recorded zero
+An error occurred in the <CanteenSalesPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+stderr | src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (null, undefined)
+An error occurred in the <CanteenSalesPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+stderr | src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity)
+An error occurred in the <CanteenSalesPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+stderr | src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (-1, -2.00)
+An error occurred in the <CanteenSalesPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+stderr | src/test/canteen-sales-summary.test.tsx > only displays explicit stock and trend classifications supplied by the API
+An error occurred in the <CanteenSalesPage> component.
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://react.dev/link/error-boundaries to learn more about error boundaries.
+
+
+ ❯ src/test/canteen-sales-summary.test.tsx (7 tests | 7 failed) 5233ms
+   × describes unknown inventory and recorded sales without inventing critical stock or a stable trend 133ms
+   × shows missing history as insufficient trend data while retaining an actual recorded zero 1012ms
+   × keeps missing or invalid amounts unknown instead of crashing or displaying zero (null, undefined) 1016ms
+   × keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity) 33ms
+   × keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity) 1021ms
+   × keeps missing or invalid amounts unknown instead of crashing or displaying zero (-1, -2.00) 1008ms
+   × only displays explicit stock and trend classifications supplied by the API 1008ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/canteen-sales-summary.test.tsx > describes unknown inventory and recorded sales without inventing critical stock or a stable trend
+TestingLibraryElementError: Unable to find an element with the text: Stok verisi yok. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Kantin
+        </div>
+        <h1>
+          Satış Ekranı
+        </h1>
+        <p>
+          Kantin ürün satışı ve sipariş yönetimi
+        </p>
+      </div>
+    </header>
+    <div
+      class="card"
+      style="margin-bottom: 18px;"
+    >
+      <div
+        class="card-head"
+      >
+        <div>
+          <h2>
+            AI Kantin Analizi
+          </h2>
+          <p>
+            Satış trendleri ve stok durumu
+          </p>
+        </div>
+        <svg
+          aria-hidden="true"
+          class="lucide lucide-trending-up"
+          fill="none"
+          height="20"
+          stroke="#176b5b"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M16 7h6v6"
+          />
+          <path
+            d="m22 7-8.5 8.5-5-5L2 17"
+          />
+        </svg>
+      </div>
+      <div
+        class="card-pad"
+      >
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;"
+        >
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Toplam Satış
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              25.00
+               TL
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Günlük Ortalama
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              5.00
+               TL
+            </div>
+          </div>
+          <div
+            style="padding: 16px; border-radius: 11px; background: rgb(254, 226, 226);"
+          >
+            <div
+              style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+            >
+              Stok Durumu
+            </div>
+            <div
+              style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+            >
+              Kritik
+            </div>
+          </div>
+        </div>
+        <div
+          style="margin-bottom: 16px;"
+        >
+          <div
+            style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+          >
+            Trend
+          </div>
+          <div
+            style="font-size: 14px; font-weight: 600; color: rgb(27, 43, 46);"
+          >
+            Stabil
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      style="display: grid; grid-template-columns: 1fr 350px; gap: 18px; margin-top: 18px;"
+    >
+      <div
+        class="card"
+      >
+        <div
+          class="card-head"
+        >
+          <h2>
+            Ürünler
+          </h2>
+          <select
+            style="padding: 6px 12px; border: 1px solid rgb(209, 213, 219); border-radius: 4px; font-size: 14px;"
+          >
+            <option
+              value="all"
+            >
+              Tümü
+            </option>
+          </select>
+        </div>
+        <div
+          class="card-pad"
+        >
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;"
+          />
+        </div>
+      </div>
+      <div
+        style="display: flex; flex-direction: column; gap: 18px;"
+      >
+        <div
+          class="card"
+        >
+          <div
+            class="card-head"
+          >
+            <h2>
+              Öğrenci
+            </h2>
+          </div>
+          <div
+            class="card-pad"
+          >
+            <div
+              style="margin-bottom: 12px;"
+            >
+              <label
+                style="font-size: 12px; color: rgb(107, 114, 128); margin-bottom: 4px; display: block;"
+              >
+                WiFi Cihaz ID (Opsiyonel)
+              </label>
+              <input
+                placeholder="WiFi RFID cihaz ID'si girin"
+                style="width: 100%; padding: 8px 12px; border: 1px solid rgb(209, 213, 219); border-radius: 4px; font-size: 14px;"
+                type="text"
+                value=""
+              />
+            </div>
+            <div
+              style="margin-bottom: 12px;"
+            >
+              <label
+                style="font-size: 12px; color: rgb(107, 114, 128); margin-bottom: 4px; display: block;"
+              >
+                Sistemdeki Kartlardan Seçin
+              </label>
+              <select
+                style="width: 100%; padding: 10px 14px; border: 1px solid rgb(209, 213, 219); border-radius: 6px; font-size: 14px; background-color: white;"
+              >
+                <option
+                  value=""
+                >
+                  Kart seçin...
+                </option>
+              </select>
+            </div>
+            <div
+              style="display: flex; gap: 8px; margin-bottom: 12px;"
+            >
+              <input
+                placeholder="Öğrenci adı, ID veya kart okutun"
+                style="flex: 1 1 0%; padding: 8px 12px; border: 1px solid rgb(209, 213, 219); border-radius: 4px; font-size: 14px;"
+                type="text"
+                value=""
+              />
+              <button
+                class="btn btn-primary"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-search"
+                  fill="none"
+                  height="16"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="m21 21-4.34-4.34"
+                  />
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="8"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="card"
+        >
+          <div
+            class="card-head"
+          >
+            <h2>
+              Sepet
+            </h2>
+          </div>
+          <div
+            class="card-pad"
+          >
+            <p
+              style="color: rgb(107, 114, 128); font-size: 14px; text-align: center; padding: 20px;"
+            >
+              Sepet boş
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/canteen-sales-summary.test.tsx:24:17
+     22| it("describes unknown inventory and recorded sales without inventing c…
+     23|   await open({ total_sales: 25, daily_average: 5, inventory_status: "u…
+     24|   expect(screen.getByText("Stok verisi yok")).toBeInTheDocument();
+       |                 ^
+     25|   expect(screen.getByText("Kayıtlı satış özeti")).toBeInTheDocument();
+     26|   expect(screen.queryByText("Kritik")).not.toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  src/test/canteen-sales-summary.test.tsx > shows missing history as insufficient trend data while retaining an actual recorded zero
+TestingLibraryElementError: Unable to find an element with the text: Toplam Satış. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ open src/test/canteen-sales-summary.test.tsx:17:16
+     15|   vi.mocked(getAnalysis).mockResolvedValue({ data: { success: true, da…
+     16|   render(<MemoryRouter><CanteenSalesPage /></MemoryRouter>);
+     17|   await screen.findByText("Toplam Satış");
+       |                ^
+     18| }
+     19|
+ ❯ src/test/canteen-sales-summary.test.tsx:32:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (null, undefined)
+ FAIL  src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity)
+ FAIL  src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (-1, -2.00)
+TestingLibraryElementError: Unable to find an element with the text: Toplam Satış. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ open src/test/canteen-sales-summary.test.tsx:17:16
+     15|   vi.mocked(getAnalysis).mockResolvedValue({ data: { success: true, da…
+     16|   render(<MemoryRouter><CanteenSalesPage /></MemoryRouter>);
+     17|   await screen.findByText("Toplam Satış");
+       |                ^
+     18| }
+     19|
+ ❯ src/test/canteen-sales-summary.test.tsx:41:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  src/test/canteen-sales-summary.test.tsx > keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity)
+TestingLibraryElementError: Unable to find an element with the text: Tutar bilinmiyor. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<div
+  style="padding: 16px; border-radius: 11px; background: rgb(248, 250, 248);"
+>
+  <div
+    style="font-size: 12px; color: rgb(110, 123, 125); margin-bottom: 4px;"
+  >
+    Toplam Satış
+  </div>
+  <div
+    style="font-size: 24px; font-weight: 800; color: rgb(27, 43, 46);"
+  >
+    NaN
+     TL
+  </div>
+</div>
+ ❯ Object.getElementError node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/test/canteen-sales-summary.test.tsx:42:33
+     40| ])("keeps missing or invalid amounts unknown instead of crashing or di…
+     41|   await open({ total_sales: total, daily_average: average });
+     42|   expect(metric("Toplam Satış").getByText("Tutar bilinmiyor")).toBeInT…
+       |                                 ^
+     43|   expect(metric("Günlük Ortalama").getByText("Tutar bilinmiyor")).toBe…
+     44|   expect(screen.queryByText("0.00 TL")).not.toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  src/test/canteen-sales-summary.test.tsx > only displays explicit stock and trend classifications supplied by the API
+TestingLibraryElementError: Unable to find an element with the text: Toplam Satış. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+
+Ignored nodes: comments, script, style
+<body>
+  <div />
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ open src/test/canteen-sales-summary.test.tsx:17:16
+     15|   vi.mocked(getAnalysis).mockResolvedValue({ data: { success: true, da…
+     16|   render(<MemoryRouter><CanteenSalesPage /></MemoryRouter>);
+     17|   await screen.findByText("Toplam Satış");
+       |                ^
+     18| }
+     19|
+ ❯ src/test/canteen-sales-summary.test.tsx:48:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 5 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: aiAnalysis.daily_average.toFixed is not a function
+ ❯ CanteenSalesPage src/features/operations/CanteenSalesPage.tsx:453:108
+    451|               <div style={{ padding: 16, borderRadius: 11, background:…
+    452|                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBo…
+    453|                 <div style={{ fontSize: 24, fontWeight: 800, color: "#…
+       |                                                                                                            ^
+    454|               </div>
+    455|               <div style={{ padding: 16, borderRadius: 11, background:…
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+This error originated in "src/test/canteen-sales-summary.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "shows missing history as insufficient trend data while retaining an actual recorded zero". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of null (reading 'toFixed')
+ ❯ CanteenSalesPage src/features/operations/CanteenSalesPage.tsx:449:106
+    447|               <div style={{ padding: 16, borderRadius: 11, background:…
+    448|                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBo…
+    449|                 <div style={{ fontSize: 24, fontWeight: 800, color: "#…
+       |                                                                                                          ^
+    450|               </div>
+    451|               <div style={{ padding: 16, borderRadius: 11, background:…
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+This error originated in "src/test/canteen-sales-summary.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "keeps missing or invalid amounts unknown instead of crashing or displaying zero (null, undefined)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: aiAnalysis.total_sales.toFixed is not a function
+ ❯ CanteenSalesPage src/features/operations/CanteenSalesPage.tsx:449:106
+    447|               <div style={{ padding: 16, borderRadius: 11, background:…
+    448|                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBo…
+    449|                 <div style={{ fontSize: 24, fontWeight: 800, color: "#…
+       |                                                                                                          ^
+    450|               </div>
+    451|               <div style={{ padding: 16, borderRadius: 11, background:…
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+This error originated in "src/test/canteen-sales-summary.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "keeps missing or invalid amounts unknown instead of crashing or displaying zero (NaN, Infinity)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: aiAnalysis.daily_average.toFixed is not a function
+ ❯ CanteenSalesPage src/features/operations/CanteenSalesPage.tsx:453:108
+    451|               <div style={{ padding: 16, borderRadius: 11, background:…
+    452|                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBo…
+    453|                 <div style={{ fontSize: 24, fontWeight: 800, color: "#…
+       |                                                                                                            ^
+    454|               </div>
+    455|               <div style={{ padding: 16, borderRadius: 11, background:…
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+This error originated in "src/test/canteen-sales-summary.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "keeps missing or invalid amounts unknown instead of crashing or displaying zero (-1, -2.00)". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+⎯⎯⎯⎯⎯ Uncaught Exception ⎯⎯⎯⎯⎯
+TypeError: aiAnalysis.total_sales.toFixed is not a function
+ ❯ CanteenSalesPage src/features/operations/CanteenSalesPage.tsx:449:106
+    447|               <div style={{ padding: 16, borderRadius: 11, background:…
+    448|                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBo…
+    449|                 <div style={{ fontSize: 24, fontWeight: 800, color: "#…
+       |                                                                                                          ^
+    450|               </div>
+    451|               <div style={{ padding: 16, borderRadius: 11, background:…
+ ❯ Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:25904:20
+ ❯ renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:7662:22
+ ❯ updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:10166:19
+ ❯ beginWork node_modules/react-dom/cjs/react-dom-client.development.js:11778:18
+ ❯ runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:874:13
+ ❯ performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:17641:22
+ ❯ workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:17469:41
+ ❯ renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:17450:11
+ ❯ performWorkOnRoot node_modules/react-dom/cjs/react-dom-client.development.js:16583:35
+
+This error originated in "src/test/canteen-sales-summary.test.tsx" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "only displays explicit stock and trend classifications supplied by the API". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+     Errors  5 errors
+   Start at  16:14:22
+   Duration  9.97s (transform 332ms, setup 365ms, import 1.05s, tests 5.23s, environment 2.81s)
+

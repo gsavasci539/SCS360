@@ -1,0 +1,24 @@
+
+> scs360-frontend@1.0.0 lint
+> eslint .
+
+
+C:\Okul360\frontend\src\features\ai\AIAnalyticsPage.tsx
+  7:10  error  'money' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Okul360\frontend\src\features\finance\CashCollectionPage.tsx
+  72:74  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\Okul360\frontend\src\features\finance\CashCollectionPage.tsx:72:74
+  70 |       {error && <p role="alert">{error}</p>}
+  71 |       <button className="btn btn-primary" onClick={newPayment}>Yeni tahsilat</button>
+> 72 |     </section> : <form className="card form-card" onSubmit={handleSubmit(submit)}>
+     |                                                                          ^^^^^^ Passing a ref to a function may read its value during render
+  73 |       <div className="form-section"><h2>Ödeme bilgileri</h2><p>Bağlantı kesilirse aynı formdan tekrar deneyebilirsiniz. Yeni bir tahsilat açmadan önce önceki işlemin sonucunu kontrol edin.</p>
+  74 |         {error && <p role="alert">{error}</p>}
+  75 |         {attempt && <p role="status">Önceki tahsilatın sonucu bekleniyor. Aynı işlem kimliği ve kayıtlı tutarla doğrulama yapılacak; sayfayı yenilediğinizde bu bilgiler korunur.</p>}  react-hooks/refs
+
+✖ 2 problems (2 errors, 0 warnings)
+

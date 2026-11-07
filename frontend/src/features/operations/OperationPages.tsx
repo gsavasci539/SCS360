@@ -1,19 +1,7 @@
 import {
-  BadgeCheck,
-  BookMarked,
-  CalendarDays,
+  Coins,
   CheckCircle2,
-  Clock,
-  FileSpreadsheet,
-  FileText,
-  Filter,
-  Library,
-  MessageSquareQuote,
-  Phone,
   Plus,
-  Search,
-  Send,
-  Sparkles,
   Trash2,
   Video,
   XCircle,
@@ -317,7 +305,6 @@ export function HomeworkPage() {
 export function LibraryPage() {
   const [books, setBooks] = useState<any[]>([]);
   const [loans, setLoans] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
   const { showToast } = useToast();
 
   async function loadData() {
@@ -817,4 +804,3 @@ export function OutboxLogsPage() {
     </div>
   );
 }
-

@@ -1,0 +1,50 @@
+{
+  "checks": [
+    {
+      "width": 1440,
+      "home": true,
+      "image": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "about": true,
+      "publicDirectAbout": true,
+      "pricing": true,
+      "crossPageAnchors": true
+    },
+    {
+      "width": 768,
+      "home": true,
+      "image": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "about": true,
+      "publicDirectAbout": true,
+      "pricing": true,
+      "crossPageAnchors": true
+    },
+    {
+      "width": 390,
+      "home": true,
+      "image": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "about": true,
+      "publicDirectAbout": true,
+      "pricing": true,
+      "crossPageAnchors": true
+    },
+    {
+      "width": 320,
+      "home": true,
+      "image": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "about": true,
+      "publicDirectAbout": true,
+      "pricing": true,
+      "crossPageAnchors": true
+    }
+  ],
+  "keyboardSkip": true,
+  "failures": []
+}

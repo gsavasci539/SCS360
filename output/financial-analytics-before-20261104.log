@@ -1,0 +1,413 @@
+FFFFFFFF..                                                               [100%]
+================================== FAILURES ===================================
+_ test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores[sqlite] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1AC2B380>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1ADC6C10>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1AC2ACF0>, ...})
+
+    async def test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores(financial_analytics_client):
+        client, _, data = financial_analytics_client
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_finance" and result["ai_model"] is None, result
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'analysis_type'
+
+tests\integration\test_financial_analytics_data.py:32: KeyError
+_ test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores[postgresql] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1D7F9310>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1D372AD0>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1D7F8A50>, ...})
+
+    async def test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores(financial_analytics_client):
+        client, _, data = financial_analytics_client
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["analysis_type"] == "recorded_finance" and result["ai_model"] is None, result
+               ^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'analysis_type'
+
+tests\integration\test_financial_analytics_data.py:32: KeyError
+_ test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues[sqlite] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1D944E10>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1D82C350>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1D40B490>, ...})
+
+    async def test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues(financial_analytics_client):
+        client, sessions, data = financial_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            def debt(amount, paid="0", **values):
+                return Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                    amount=Decimal(amount), paid_amount=Decimal(paid), due_date=school_today() + timedelta(days=1), **values)
+            selected = debt("100", "25")
+            db.add_all([selected, debt("500", status=DebtStatus.CANCELLED), debt("777", deleted_at=now)])
+            await db.flush()
+            def payment(amount, **values):
+                return Payment(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_id=selected.id, amount=Decimal(amount),
+                    payment_date=now, payment_method=PaymentMethod.CASH, received_by=data["accountant"].id, **values)
+            db.add_all([payment("25", status="completed"), payment("80", status="pending"),
+                payment("90", status="cancelled"), payment("100", status="completed", cancelled_at=now)])
+            db.add(Debt(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                student_id=data["stranger"].id, debt_type=DebtType.EDUCATION, amount=9000, paid_amount=0, due_date=school_today()))
+            await db.commit()
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]), params={"months": 3})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert Decimal(result["outstanding_debt"]) == 75 and Decimal(result["collected_total"]) == 25
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'outstanding_debt'
+
+tests\integration\test_financial_analytics_data.py:64: KeyError
+_ test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues[postgresql] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1D409480>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1D82FE50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1D373130>, ...})
+
+    async def test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues(financial_analytics_client):
+        client, sessions, data = financial_analytics_client
+        now = datetime.now(UTC)
+        async with sessions() as db:
+            def debt(amount, paid="0", **values):
+                return Debt(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_type=DebtType.EDUCATION,
+                    amount=Decimal(amount), paid_amount=Decimal(paid), due_date=school_today() + timedelta(days=1), **values)
+            selected = debt("100", "25")
+            db.add_all([selected, debt("500", status=DebtStatus.CANCELLED), debt("777", deleted_at=now)])
+            await db.flush()
+            def payment(amount, **values):
+                return Payment(organization_id=data["org"].id, branch_id=data["branch"].id,
+                    student_id=data["children"][0].id, debt_id=selected.id, amount=Decimal(amount),
+                    payment_date=now, payment_method=PaymentMethod.CASH, received_by=data["accountant"].id, **values)
+            db.add_all([payment("25", status="completed"), payment("80", status="pending"),
+                payment("90", status="cancelled"), payment("100", status="completed", cancelled_at=now)])
+            db.add(Debt(organization_id=data["stranger"].organization_id, branch_id=data["other_branch"].id,
+                student_id=data["stranger"].id, debt_type=DebtType.EDUCATION, amount=9000, paid_amount=0, due_date=school_today()))
+            await db.commit()
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]), params={"months": 3})
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert Decimal(result["outstanding_debt"]) == 75 and Decimal(result["collected_total"]) == 25
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'outstanding_debt'
+
+tests\integration\test_financial_analytics_data.py:64: KeyError
+_ test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged[sqlite] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1D991CD0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1D9A8050>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1D9A8D50>, ...})
+
+    async def test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged(financial_analytics_client):
+        client, sessions, data = financial_analytics_client
+        async with sessions() as db:
+            row = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=data["children"][0].id,
+                debt_type=DebtType.EDUCATION, amount=100,
+                paid_amount=Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity"), due_date=school_today())
+            db.add(row); await db.commit()
+>       reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\integration\test_financial_analytics_data.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv\Lib\site-packages\httpx\_client.py:1768: in get
+    return await self.request(
+.venv\Lib\site-packages\httpx\_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1629: in send
+    response = await self._send_handling_auth(
+.venv\Lib\site-packages\httpx\_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+.venv\Lib\site-packages\httpx\_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\httpx\_transports\asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+.venv\Lib\site-packages\starlette\applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\errors.py:186: in __call__
+    raise exc
+.venv\Lib\site-packages\starlette\middleware\errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv\Lib\site-packages\starlette\middleware\base.py:193: in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\core\middleware.py:38: in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\middleware\base.py:168: in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+.venv\Lib\site-packages\starlette\middleware\base.py:144: in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+.venv\Lib\site-packages\starlette\middleware\cors.py:88: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\middleware\exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+.venv\Lib\site-packages\starlette\routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2531: in app
+    await route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1700: in handle
+    await self.original_router.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:2586: in handle
+    await included_router._handle_selected(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1720: in _handle_selected
+    await original_route.handle(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:1239: in handle
+    await app(scope, receive, send)
+.venv\Lib\site-packages\fastapi\routing.py:150: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+.venv\Lib\site-packages\starlette\_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv\Lib\site-packages\starlette\_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+.venv\Lib\site-packages\fastapi\routing.py:136: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\fastapi\routing.py:731: in app
+    response = actual_response_class(content, **response_args)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\responses.py:192: in __init__
+    super().__init__(content, status_code, headers, media_type, background)
+.venv\Lib\site-packages\starlette\responses.py:45: in __init__
+    self.body = self.render(content)
+                ^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\starlette\responses.py:195: in render
+    return json.dumps(
+C:\Python313\Lib\json\__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+C:\Python313\Lib\json\encoder.py:200: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <json.encoder.JSONEncoder object at 0x0000027B1BFD1190>
+o = {'data': {'ai_model': 'Time Series v1.0', 'forecast_months': 6, 'predictions': [{'month': 'Kas�m', 'predicted_amount':...th': 'Nisan', 'predicted_amount': 62500.0}], 'recommendations': [], ...}, 'message': '��lem ba�ar�l�', 'success': True}
+_one_shot = True
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+    
+        For example::
+    
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+    
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+    
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+    
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+    
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+    
+            return text
+    
+    
+        if self.indent is None or isinstance(self.indent, str):
+            indent = self.indent
+        else:
+            indent = ' ' * self.indent
+        if _one_shot and c_make_encoder is not None:
+            _iterencode = c_make_encoder(
+                markers, self.default, _encoder, indent,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, self.allow_nan)
+        else:
+            _iterencode = _make_iterencode(
+                markers, self.default, _encoder, indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot)
+>       return _iterencode(o, 0)
+               ^^^^^^^^^^^^^^^^^
+E       ValueError: Out of range float values are not JSON compliant: inf
+
+C:\Python313\Lib\json\encoder.py:261: ValueError
+------------------------------ Captured log call ------------------------------
+ERROR    app.core.middleware:middleware.py:91 {"path": "/api/ai/ai-financial-predictions", "request_id": "dee20fed-7633-476e-8aed-616760593c58", "exc_info": true, "event": "unhandled_exception", "logger": "app.core.middleware", "level": "error", "timestamp": "2026-11-04T19:52:33.370064Z"}
+Traceback (most recent call last):
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\app\core\middleware.py", line 38, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2531, in app
+    await route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1700, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 2586, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1720, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 1239, in handle
+    await app(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 150, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 136, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\fastapi\routing.py", line 731, in app
+    response = actual_response_class(content, **response_args)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\responses.py", line 192, in __init__
+    super().__init__(content, status_code, headers, media_type, background)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\responses.py", line 45, in __init__
+    self.body = self.render(content)
+                ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\starlette\responses.py", line 195, in render
+    return json.dumps(
+           ~~~~~~~~~~^
+        content,
+        ^^^^^^^^
+    ...<3 lines>...
+        separators=(",", ":"),
+        ^^^^^^^^^^^^^^^^^^^^^^
+    ).encode("utf-8")
+    ^
+  File "C:\Python313\Lib\json\__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ~~~~~~^^^^^
+  File "C:\Python313\Lib\json\encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "C:\Python313\Lib\json\encoder.py", line 261, in iterencode
+    return _iterencode(o, 0)
+ValueError: Out of range float values are not JSON compliant: inf
+_ test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged[postgresql] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1DC7DD90>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1DB62150>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1ED948C0>, ...})
+
+    async def test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged(financial_analytics_client):
+        client, sessions, data = financial_analytics_client
+        async with sessions() as db:
+            row = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=data["children"][0].id,
+                debt_type=DebtType.EDUCATION, amount=100,
+                paid_amount=Decimal("NaN") if db.bind.dialect.name == "postgresql" else Decimal("Infinity"), due_date=school_today())
+            db.add(row); await db.commit()
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+        assert reply.status_code == 200, reply.text
+        result = reply.json()["data"]
+>       assert result["requires_review"] is True and result["outstanding_debt"] is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'requires_review'
+
+tests\integration\test_financial_analytics_data.py:82: KeyError
+---------------------------- Captured stderr call -----------------------------
+Financial predictions error: [<class 'decimal.InvalidOperation'>]
+Traceback (most recent call last):
+  File "C:\Okul360\backend\app\routers\ai_analytics.py", line 376, in get_ai_financial_predictions
+    if outstanding_debt > 0:
+       ^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+_ test_financial_analytics_query_failure_is_503_without_database_details[sqlite] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1F02D040>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1ED9AF50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1EE62190>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027B1ED9E120>
+
+    async def test_financial_analytics_query_failure_is_503_without_database_details(financial_analytics_client, monkeypatch):
+        from app.application.services import financial_summary
+        client, _, data = financial_analytics_client
+        async def unavailable(*args, **kwargs):
+            raise SQLAlchemyError("secret financial SELECT and connection credentials")
+        monkeypatch.setattr(financial_summary, "summary", unavailable)
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+>       assert reply.status_code == 503 and reply.json()["success"] is False, reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"ai_model":"Time Series v1.0","risk_assessment":{"level":"y�ksek","collection_rate":0,"outstanding_debt":0.0},"forecast_months":6,"predictions":[{"month":"Kas�m","predicted_amount":50000.0},{"month":"Aral�k","predicted_amount":52500.0},{"month":"Ocak","predicted_amount":55000.0},{"month":"�ubat","predicted_amount":57500.0},{"month":"Mart","predicted_amount":60000.0},{"month":"Nisan","predicted_amount":62500.0}],"risk_parents":[],"recommendations":["�deme hat�rlatmalar� g�nderilmeli","Riskli velilerle g�r���lmeli"]}}
+E       assert (200 == 503)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_financial_analytics_data.py:95: AssertionError
+_ test_financial_analytics_query_failure_is_503_without_database_details[postgresql] _
+
+financial_analytics_client = (<httpx.AsyncClient object at 0x0000027B1D16E9C0>, async_sessionmaker(class_='AsyncSession', bind=<sqlalchemy.ext.asyn... at 0x0000027B1D9ABA50>], 'classroom': <app.infrastructure.models.models.ClassRoom object at 0x0000027B1F47A820>, ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027B1C0E0130>
+
+    async def test_financial_analytics_query_failure_is_503_without_database_details(financial_analytics_client, monkeypatch):
+        from app.application.services import financial_summary
+        client, _, data = financial_analytics_client
+        async def unavailable(*args, **kwargs):
+            raise SQLAlchemyError("secret financial SELECT and connection credentials")
+        monkeypatch.setattr(financial_summary, "summary", unavailable)
+        reply = await client.get("/api/ai/ai-financial-predictions", headers=auth(data["accountant"]))
+>       assert reply.status_code == 503 and reply.json()["success"] is False, reply.text
+E       AssertionError: {"success":true,"message":"��lem ba�ar�l�","data":{"ai_model":"Time Series v1.0","risk_assessment":{"level":"y�ksek","collection_rate":0,"outstanding_debt":0.0},"forecast_months":6,"predictions":[{"month":"Kas�m","predicted_amount":50000.0},{"month":"Aral�k","predicted_amount":52500.0},{"month":"Ocak","predicted_amount":55000.0},{"month":"�ubat","predicted_amount":57500.0},{"month":"Mart","predicted_amount":60000.0},{"month":"Nisan","predicted_amount":62500.0}],"risk_parents":[],"recommendations":["�deme hat�rlatmalar� g�nderilmeli","Riskli velilerle g�r���lmeli"]}}
+E       assert (200 == 503)
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\integration\test_financial_analytics_data.py:95: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/integration/test_financial_analytics_data.py::test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores[sqlite]
+FAILED tests/integration/test_financial_analytics_data.py::test_empty_financial_analytics_does_not_invent_monthly_income_or_model_scores[postgresql]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues[sqlite]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_uses_scoped_real_payment_history_and_contract_dues[postgresql]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged[sqlite]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_keeps_bad_legacy_balances_unknown_and_unchanged[postgresql]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_query_failure_is_503_without_database_details[sqlite]
+FAILED tests/integration/test_financial_analytics_data.py::test_financial_analytics_query_failure_is_503_without_database_details[postgresql]
+8 failed, 2 passed, 20 warnings in 27.34s

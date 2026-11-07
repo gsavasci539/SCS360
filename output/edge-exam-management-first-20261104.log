@@ -1,0 +1,125 @@
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 033 -> 034, Persist the student's existing address form without changing old records.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [3636]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "5d2931a1-5b0b-427e-aca7-cc74232c7aba", "method": "GET", "path": "/health", "status": 200, "duration_ms": 1.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:37.171347Z"}
+[WebServer] (node:16512) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:11376) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:604) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] Storage has been reset and all limits cleared
+[WebServer] {"request_id": "2d5aa4cf-bcfd-4c46-a964-15680427c2ed", "method": "POST", "path": "/api/__acceptance/reset-limits", "status": 200, "duration_ms": 3254.28, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:44.336606Z"}
+[WebServer] {"request_id": "677b8845-853d-4645-8131-f79ba2ed5dfd", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 709.56, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:46.195150Z"}
+[WebServer] {"request_id": "73e108a7-a374-4393-82cc-b9cefcf28c39", "method": "POST", "path": "/api/platform/plans", "status": 200, "duration_ms": 143.31, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:46.349558Z"}
+[WebServer] {"request_id": "e5375310-eaa8-498d-8e18-bf1853bb3157", "method": "POST", "path": "/api/platform/tenants", "status": 200, "duration_ms": 553.47, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:46.919826Z"}
+[WebServer] {"request_id": "2a269691-6966-43a4-a922-23a6513a62fb", "method": "POST", "path": "/api/branches", "status": 200, "duration_ms": 45.59, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:46.977064Z"}
+[WebServer] {"request_id": "a26b9f4e-b113-4521-849b-19f4023ed14f", "method": "POST", "path": "/api/classes", "status": 200, "duration_ms": 41.61, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.030439Z"}
+[WebServer] {"request_id": "831b6c6c-43d5-4237-97d6-07374dfd8b6a", "method": "POST", "path": "/api/students", "status": 200, "duration_ms": 66.99, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.108386Z"}
+[WebServer] {"request_id": "c2f0e212-3deb-4f42-969f-9d20167e30b1", "method": "POST", "path": "/api/users", "status": 200, "duration_ms": 400.68, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.520697Z"}
+[WebServer] {"request_id": "de6ddb1b-89f6-45ac-8036-0a816e0b6095", "method": "GET", "path": "/api/users/options", "status": 200, "duration_ms": 33.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.566043Z"}
+[WebServer] {"request_id": "aa24fef5-962d-444f-a3a0-15390d219027", "method": "PUT", "path": "/api/users/90534d42-7b3c-4ff6-8e21-f6141aabef36/access", "status": 200, "duration_ms": 39.01, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.616760Z"}
+[WebServer] {"request_id": "6155c196-c7e1-4992-bc6a-84375575a12d", "method": "POST", "path": "/api/parents", "status": 200, "duration_ms": 38.34, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.664338Z"}
+[WebServer] {"request_id": "d0045ef4-e9ba-40f9-9e0d-011f4bb31618", "method": "PUT", "path": "/api/parents/3a0218b9-7368-4d3d-8eb0-068695221f69/account", "status": 200, "duration_ms": 60.85, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.735166Z"}
+[WebServer] {"request_id": "f04406ff-0b3e-42e8-b45e-b91d34a9b2ef", "method": "POST", "path": "/api/students/6bf44dae-a4b8-4c8d-b951-7d11a0e0528f/parents", "status": 200, "duration_ms": 43.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.787324Z"}
+[WebServer] {"request_id": "6c5c6013-88fa-416f-a074-67e6d00f3237", "method": "POST", "path": "/api/exams", "status": 200, "duration_ms": 45.39, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.873796Z"}
+[WebServer] {"request_id": "a27a330f-b2d5-4994-a018-08619a976428", "method": "POST", "path": "/api/exams/bulk-grade-entry", "status": 200, "duration_ms": 60.41, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.944683Z"}
+[WebServer] {"request_id": "83d371a2-0a74-4012-bf1f-300c0a9b33de", "method": "POST", "path": "/api/exams", "status": 200, "duration_ms": 32.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:47.987129Z"}
+[WebServer] {"request_id": "76cda69c-b5ab-48e5-8b91-2dab9b8ce470", "method": "POST", "path": "/api/exams/bulk-grade-entry", "status": 200, "duration_ms": 37.56, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:48.035836Z"}
+[WebServer] {"request_id": "62f791a3-9134-48f3-9ebf-1acd6664b995", "method": "POST", "path": "/api/exams", "status": 200, "duration_ms": 39.46, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:48.085132Z"}
+[WebServer] {"request_id": "52b3c2d0-0137-43bc-beb8-ec133461c492", "method": "POST", "path": "/api/exams/bulk-grade-entry", "status": 200, "duration_ms": 38.56, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:48.134019Z"}
+[WebServer] {"request_id": "ef173f45-aa46-4191-b262-0502225cbc0f", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 523.39, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:49.779339Z"}
+[WebServer] {"request_id": "46c20b4a-1349-463d-9156-31ee6ef2a6b9", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 88.67, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:50.425297Z"}
+[WebServer] {"request_id": "0cdd3d04-6513-4bee-9f63-eb589c01508d", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 95.9, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:50.438427Z"}
+[WebServer] {"request_id": "48720381-55fa-4e9c-a2bc-265eb9493d3a", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 280.18, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:50.635600Z"}
+[WebServer] {"request_id": "79e40258-c756-4ab6-ad6c-469b2184f111", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 257.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:50.637522Z"}
+[WebServer] {"request_id": "ac4f5f0c-4246-4292-971d-40280a34884b", "method": "GET", "path": "/api/platform/tenants/cb54f4a8-58b4-48af-873c-936cde9b9a9a/workspace", "status": 200, "duration_ms": 21.2, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:51.021755Z"}
+[WebServer] {"request_id": "4f421ea9-661d-404a-9253-8c90088921f3", "method": "GET", "path": "/api/platform/plans", "status": 200, "duration_ms": 51.19, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:51.150820Z"}
+[WebServer] {"request_id": "2e6c5e2b-e3e0-49c9-adb4-ecf7a9f4bf97", "method": "GET", "path": "/api/platform/summary", "status": 200, "duration_ms": 186.15, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:51.296639Z"}
+[WebServer] {"request_id": "04be56bc-929a-4e0c-9824-990f2a467f63", "method": "GET", "path": "/api/platform/invoices", "status": 200, "duration_ms": 175.29, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:51.306315Z"}
+[WebServer] {"request_id": "96260c4e-af35-4f51-a094-44a3513647d5", "method": "GET", "path": "/api/platform/tenants", "status": 200, "duration_ms": 192.96, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:51.317282Z"}
+[WebServer] {"request_id": "1ada1db4-af63-459b-ac74-d1fa8d411369", "method": "GET", "path": "/api/ai/insights-report", "status": 200, "duration_ms": 97.66, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:52.132302Z"}
+[WebServer] {"request_id": "f07c74f8-7133-47c5-8d7f-6d17bfce79ef", "method": "GET", "path": "/api/ai/ai-academic-predictions", "status": 200, "duration_ms": 80.75, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:52.306741Z"}
+[WebServer] {"request_id": "defe7cbb-a206-468c-98e0-2ab1bc089f59", "method": "GET", "path": "/api/ai/ai-academic-predictions", "status": 200, "duration_ms": 44.69, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:52.466874Z"}
+[WebServer] {"request_id": "8b82181b-0a6a-4597-a9bf-b6df26dc9199", "method": "GET", "path": "/api/ai/academic-performance", "status": 200, "duration_ms": 65.94, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:53.436922Z"}
+[WebServer] {"request_id": "bea8063a-7f2c-4452-80eb-7dc69f978cbe", "method": "GET", "path": "/api/exams", "status": 200, "duration_ms": 76.37, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-04T15:05:53.439090Z"}
+  x  1 [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions (33.1s)
+
+
+  1) [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions 
+
+    TimeoutError: locator.click: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Yeni sınav', exact: true })
+
+
+      46 |   await page.screenshot({ path: "../output/academic-summary-mobile-20261104.png", fullPage: true });
+      47 |   await page.goto("/exams"); await expect(page.getByRole("cell", { name: "Sıfır not sınavı", exact: true })).toBeVisible();
+    > 48 |   await page.getByRole("button", { name: "Yeni sınav", exact: true }).click();
+         |                                                                       ^
+      49 |   const editor = page.getByRole("dialog", { name: "Yeni sınav", exact: true });
+      50 |   await editor.getByLabel("Sınav adı").fill("Panel yönetim sınavı");
+      51 |   await editor.getByRole("combobox", { name: /^Sınıf/ }).selectOption(classroom.id);
+        at C:\Okul360\frontend\e2e\academic-records.spec.ts:48:71
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\academic-records-real-exam-82a1f-ithout-invented-predictions-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\academic-records.spec.ts:8:1 › real exam grades reach parent and chatbot while academic periods include zero without invented predictions 

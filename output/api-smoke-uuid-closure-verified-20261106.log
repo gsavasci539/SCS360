@@ -1,0 +1,12 @@
+Completed role: super_admin; checks: 202
+Completed role: teacher; checks: 404
+Completed role: accountant; checks: 606
+Completed role: canteen_staff; checks: 808
+Completed role: org_admin; checks: 1010
+Completed role: branch_manager; checks: 1212
+Completed role: staff; checks: 1414
+Completed role: parent; checks: 1616
+Completed role: manager; checks: 1818
+Completed role: administrator; checks: 2020
+Completed role: owner; checks: 2222
+{"source": "C:\\Okul360\\output\\uuid-closure-rehearsal-783db58d60394feab159e9a56ade4bcb.db", "source_unchanged": true, "checks": 2222, "roles": 11, "statuses": {"200": 1112, "403": 1110}, "report": "C:\\Okul360\\docs\\api-smoke-uuid-closure-30fca856317141cfb035b7a6d74c48e9.json", "scope": "static registered GET only; dynamic/required-parameter/provider/send paths excluded"}

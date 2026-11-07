@@ -1,0 +1,41 @@
+........................................................................ [ 36%]
+........................................................................ [ 72%]
+............F...........................................                 [100%]
+================================== FAILURES ===================================
+______________ test_frontend_api_calls_are_registered_in_openapi ______________
+
+    def test_frontend_api_calls_are_registered_in_openapi():
+        compiled_paths = [
+            (path, _openapi_path_regex(path), set(operations.keys()))
+            for path, operations in app.openapi()["paths"].items()
+        ]
+        missing = []
+    
+        for source_file, method, raw_path, normalized_path in _frontend_api_calls():
+            matches = [
+                operations
+                for _, path_regex, operations in compiled_paths
+                if path_regex.match(normalized_path)
+            ]
+            if not any(method in operations for operations in matches):
+                missing.append(f"{source_file.name}: {method.upper()} {raw_path}")
+    
+>       assert not missing, "\n".join(missing)
+E       AssertionError: GuidancePage.tsx: GET /guidance/${kind}
+E         GuidancePage.tsx: POST /guidance/${kind}
+E       assert not ['GuidancePage.tsx: GET /guidance/${kind}', 'GuidancePage.tsx: POST /guidance/${kind}']
+
+tests\unit\test_api_contract.py:95: AssertionError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_api_contract.py::test_frontend_api_calls_are_registered_in_openapi
+1 failed, 199 passed, 20 warnings in 564.44s (0:09:24)

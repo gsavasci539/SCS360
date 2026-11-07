@@ -3,18 +3,22 @@ Omnichannel Communication Module API
 Handles SMS providers, broadcast jobs, and delivery reports
 """
 from datetime import datetime, date
-from typing import Optional, List
-from uuid import UUID
+from typing import Optional, List, Literal
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from pydantic import ValidationError as SchemaValidationError
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.responses import success_response
-from app.core.security import PermissionChecker, TenantContext
+from app.core.permissions import PermissionChecker
+from app.core.tenant import TenantContext
 from app.domain.entities import User, Branch, Class
+from app.application.services import broadcast_service
+from app.core.exceptions import ValidationException
 
 router = APIRouter(prefix="/api/communications", tags=["Communications"])
 
@@ -22,13 +26,13 @@ router = APIRouter(prefix="/api/communications", tags=["Communications"])
 # ==================== Schemas ====================
 
 class BroadcastJobCreate(BaseModel):
-    title: str = Field(..., max_length=255)
-    message_content: str = Field(..., description="Message content with variables like {ogrenci_adi}")
-    target_audience: str = Field(..., description="ALL_PARENTS, BRANCH_PARENTS, CLASS_PARENTS, SINGLE_STUDENT, ALL_TEACHERS, ALL_STAFF")
+    title: str = Field(..., min_length=1, max_length=255)
+    message_content: str = Field(..., min_length=1, max_length=10000)
+    target_audience: Literal["ALL_PARENTS", "BRANCH_PARENTS", "CLASS_PARENTS", "ALL_TEACHERS", "ALL_STAFF"]
     target_class_id: Optional[UUID] = None
     target_branch_id: Optional[UUID] = None
-    target_role: Optional[str] = Field(None, description="OWNER, ADMIN, TEACHER, PARENT, STAFF")
-    channel: str = Field(default="SMS", description="SMS, WHATSAPP, EMAIL")
+    target_role: Optional[Literal["OWNER", "ADMIN", "TEACHER", "STAFF"]] = None
+    channel: Literal["SMS", "WHATSAPP", "EMAIL"] = "SMS"
     scheduled_for: Optional[datetime] = None
 
 class BroadcastJobUpdate(BaseModel):
@@ -40,7 +44,7 @@ class BroadcastJobUpdate(BaseModel):
     target_role: Optional[str] = None
     channel: Optional[str] = None
     scheduled_for: Optional[datetime] = None
-    status: Optional[str] = Field(None, description="DRAFT, QUEUED, SENDING, COMPLETED, FAILED, CANCELLED")
+    status: Optional[Literal["DRAFT"]] = None
 
 class SMSProviderCreate(BaseModel):
     provider_name: str = Field(..., max_length=100)
@@ -63,8 +67,8 @@ class MessageTemplateCreate(BaseModel):
 @router.get("/sms-providers")
 async def get_sms_providers(
     is_active: Optional[bool] = Query(True),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.read"))
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("super_admin"))
 ):
     """Get SMS providers"""
     from app.domain.entities.communications import SMSProvider
@@ -97,8 +101,8 @@ async def get_sms_providers(
 @router.post("/sms-providers")
 async def create_sms_provider(
     provider: SMSProviderCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.write"))
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("super_admin"))
 ):
     """Create a new SMS provider"""
     from app.domain.entities.communications import SMSProvider
@@ -126,362 +130,106 @@ async def create_sms_provider(
 
 @router.get("/broadcast-jobs")
 async def get_broadcast_jobs(
-    status: Optional[str] = Query(None),
-    created_by: Optional[UUID] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.read"))
+    status: Optional[str] = Query(None), created_by: Optional[UUID] = Query(None),
+    start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None),
+    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    """Get broadcast jobs with filtering"""
-    from app.domain.entities.communications import BroadcastJob
-    
-    query = select(BroadcastJob)
-    
-    conditions = []
-    if status:
-        conditions.append(BroadcastJob.status == status.upper())
-    if created_by:
-        conditions.append(BroadcastJob.created_by == created_by)
-    if start_date:
-        conditions.append(BroadcastJob.created_at >= start_date)
-    if end_date:
-        conditions.append(BroadcastJob.created_at <= end_date.replace(hour=23, minute=59, second=59))
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(BroadcastJob.created_at.desc()).limit(limit).offset(offset)
-    
-    result = await db.execute(query)
-    jobs = result.scalars().all()
-    
-    enriched_jobs = []
-    for job in jobs:
-        # Get created by name
-        created_by_name = None
-        if job.created_by:
-            user_result = await db.execute(
-                select(User).where(User.id == job.created_by)
-            )
-            user = user_result.scalar_one_or_none()
-            if user:
-                created_by_name = f"{user.first_name} {user.last_name}"
-        
-        # Get target class name
-        target_class_name = None
-        if job.target_class_id:
-            class_result = await db.execute(
-                select(Class).where(Class.id == job.target_class_id)
-            )
-            cls = class_result.scalar_one_or_none()
-            if cls:
-                target_class_name = cls.name
-        
-        # Get target branch name
-        target_branch_name = None
-        if job.target_branch_id:
-            branch_result = await db.execute(
-                select(Branch).where(Branch.id == job.target_branch_id)
-            )
-            branch = branch_result.scalar_one_or_none()
-            if branch:
-                target_branch_name = branch.name
-        
-        enriched_jobs.append({
-            "id": str(job.id),
-            "title": job.title,
-            "message_content": job.message_content,
-            "target_audience": job.target_audience,
-            "target_class_id": str(job.target_class_id) if job.target_class_id else None,
-            "target_class_name": target_class_name,
-            "target_branch_id": str(job.target_branch_id) if job.target_branch_id else None,
-            "target_branch_name": target_branch_name,
-            "channel": job.channel,
-            "scheduled_for": job.scheduled_for.isoformat() if job.scheduled_for else None,
-            "status": job.status,
-            "total_recipients": job.total_recipients,
-            "sent_count": job.sent_count,
-            "failed_count": job.failed_count,
-            "created_by": str(job.created_by) if job.created_by else None,
-            "created_by_name": created_by_name,
-            "created_at": job.created_at.isoformat(),
-            "sent_at": job.sent_at.isoformat() if job.sent_at else None
-        })
-    
-    return success_response(enriched_jobs)
+    return success_response(await broadcast_service.records(db, status, created_by, start_date, end_date, limit, offset))
 
 
 @router.post("/broadcast-jobs")
 async def create_broadcast_job(
-    job: BroadcastJobCreate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.write"))
+    job: BroadcastJobCreate, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    """Create a new broadcast job"""
-    from app.domain.entities.communications import BroadcastJob
-
-    # Calculate recipients count based on target audience
-    total_recipients = 0
-    if job.target_audience == "ALL_PARENTS":
-        total_recipients = 100  # Placeholder
-    elif job.target_audience == "CLASS_PARENTS" and job.target_class_id:
-        total_recipients = 30  # Placeholder
-    elif job.target_audience == "BRANCH_PARENTS" and job.target_branch_id:
-        total_recipients = 50  # Placeholder
-    elif job.target_audience == "ALL_TEACHERS":
-        total_recipients = 25  # Placeholder
-    elif job.target_audience == "ALL_STAFF":
-        total_recipients = 40  # Placeholder
-
-    new_job = BroadcastJob(
-        title=job.title,
-        message_content=job.message_content,
-        target_audience=job.target_audience.upper(),
-        target_class_id=job.target_class_id,
-        target_branch_id=job.target_branch_id,
-        target_role=job.target_role,
-        channel=job.channel.upper(),
-        scheduled_for=job.scheduled_for,
-        status="DRAFT",
-        total_recipients=total_recipients,
-        sent_count=0,
-        failed_count=0,
-        created_by=None  # Will be set from current user context
-    )
-    db.add(new_job)
-    await db.commit()
-    await db.refresh(new_job)
-
-    return success_response({
-        "id": str(new_job.id),
-        "title": new_job.title,
-        "status": new_job.status,
-        "total_recipients": new_job.total_recipients,
-        "created_at": new_job.created_at.isoformat()
-    })
+    return success_response(await broadcast_service.create(db, tenant, job), "Toplu ileti taslağı kaydedildi")
 
 
 @router.put("/broadcast-jobs/{job_id}")
 async def update_broadcast_job(
-    job_id: UUID,
-    job: BroadcastJobUpdate,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.write"))
+    job_id: UUID, job: BroadcastJobUpdate, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    """Update a broadcast job"""
-    from app.domain.entities.communications import BroadcastJob
-    
-    result = await db.execute(
-        select(BroadcastJob).where(BroadcastJob.id == job_id)
-    )
-    existing_job = result.scalar_one_or_none()
-    
-    if not existing_job:
-        raise HTTPException(status_code=404, detail="Broadcast job not found")
-    
-    if job.title:
-        existing_job.title = job.title
-    if job.message_content:
-        existing_job.message_content = job.message_content
-    if job.target_audience:
-        existing_job.target_audience = job.target_audience.upper()
-    if job.target_class_id:
-        existing_job.target_class_id = job.target_class_id
-    if job.target_branch_id:
-        existing_job.target_branch_id = job.target_branch_id
-    if job.target_role:
-        existing_job.target_role = job.target_role
-    if job.channel:
-        existing_job.channel = job.channel.upper()
-    if job.scheduled_for:
-        existing_job.scheduled_for = job.scheduled_for
-    if job.status:
-        existing_job.status = job.status.upper()
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(existing_job.id),
-        "status": existing_job.status,
-        "updated_at": existing_job.updated_at.isoformat()
-    })
+    current = await broadcast_service.get(db, job_id)
+    config = await broadcast_service.configuration(db, current)
+    values = {key: getattr(current, key) for key in ("title", "message_content", "target_audience",
+        "target_class_id", "target_branch_id", "channel", "scheduled_for")}
+    values["scheduled_for"] = broadcast_service.stored_schedule(current.scheduled_for)
+    values["target_role"] = config.data.get("target_role") if config else None
+    changes = job.model_dump(exclude_unset=True)
+    changes.pop("status", None)
+    values.update(changes)
+    try:
+        validated = BroadcastJobCreate.model_validate(values)
+    except SchemaValidationError as exc:
+        raise ValidationException("Toplu ileti alanları geçersiz") from exc
+    return success_response(await broadcast_service.edit(db, tenant, current, validated))
 
 
 @router.post("/broadcast-jobs/{job_id}/send")
 async def send_broadcast_job(
-    job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.write"))
+    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    """Send a broadcast job (queue for processing)"""
-    from app.domain.entities.communications import BroadcastJob, DeliveryReport
-    
-    result = await db.execute(
-        select(BroadcastJob).where(BroadcastJob.id == job_id)
-    )
-    job = result.scalar_one_or_none()
-    
-    if not job:
-        raise HTTPException(status_code=404, detail="Broadcast job not found")
-    
-    if job.status != "DRAFT":
-        raise HTTPException(status_code=400, detail="Job can only be sent from DRAFT status")
-    
-    # Update job status
-    job.status = "QUEUED"
-    
-    # TODO: Queue job for background processing
-    # For now, we'll simulate sending
-    job.status = "SENDING"
-    job.sent_at = datetime.utcnow()
-    
-    # Create delivery reports (simplified)
-    # In real implementation, would get actual recipient list
-    for i in range(job.total_recipients):
-        new_report = DeliveryReport(
-            broadcast_job_id=job.id,
-            recipient_phone=f"+9055555555{i:04d}",
-            recipient_name=f"Parent {i+1}",
-            status="SENT",
-            sent_at=datetime.utcnow()
-        )
-        db.add(new_report)
-    
-    job.sent_count = job.total_recipients
-    job.status = "COMPLETED"
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(job.id),
-        "status": job.status,
-        "sent_count": job.sent_count,
-        "sent_at": job.sent_at.isoformat()
-    })
+    return success_response(await broadcast_service.send(db, tenant, job_id), "Toplu ileti gönderim kuyruğuna alındı")
 
 
 @router.delete("/broadcast-jobs/{job_id}")
 async def cancel_broadcast_job(
-    job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.write"))
+    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    """Cancel a broadcast job"""
-    from app.domain.entities.communications import BroadcastJob
-    
-    result = await db.execute(
-        select(BroadcastJob).where(BroadcastJob.id == job_id)
-    )
-    job = result.scalar_one_or_none()
-    
-    if not job:
-        raise HTTPException(status_code=404, detail="Broadcast job not found")
-    
-    if job.status in ["COMPLETED", "SENDING"]:
-        raise HTTPException(status_code=400, detail="Cannot cancel completed or sending jobs")
-    
-    job.status = "CANCELLED"
-    
-    await db.commit()
-    
-    return success_response({
-        "id": str(job.id),
-        "status": "CANCELLED",
-        "message": "Broadcast job cancelled successfully"
-    })
-
-
-# ==================== Delivery Reports Endpoints ====================
+    return success_response(await broadcast_service.cancel(db, job_id), "Toplu ileti iptal edildi")
 
 @router.get("/delivery-reports")
 async def get_delivery_reports(
-    broadcast_job_id: Optional[UUID] = Query(None),
-    status: Optional[str] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.read"))
+    broadcast_job_id: Optional[UUID] = Query(None), status: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    """Get delivery reports with filtering"""
-    from app.domain.entities.communications import DeliveryReport
-    
-    query = select(DeliveryReport)
-    
-    conditions = []
+    from app.infrastructure.models.models import NotificationJob, NotificationRecipient
+    query = select(NotificationRecipient, NotificationJob).join(NotificationJob,
+        NotificationJob.id == NotificationRecipient.notification_job_id).where(NotificationJob.reference_type == "BROADCAST")
     if broadcast_job_id:
-        conditions.append(DeliveryReport.broadcast_job_id == broadcast_job_id)
+        await broadcast_service.get(db, broadcast_job_id)
+        query = query.where(NotificationJob.reference_id == broadcast_job_id)
     if status:
-        conditions.append(DeliveryReport.status == status.upper())
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(DeliveryReport.created_at.desc()).limit(limit).offset(offset)
-    
-    result = await db.execute(query)
-    reports = result.scalars().all()
-    
-    enriched_reports = []
-    for report in reports:
-        enriched_reports.append({
-            "id": str(report.id),
-            "broadcast_job_id": str(report.broadcast_job_id),
-            "recipient_phone": report.recipient_phone,
-            "recipient_name": report.recipient_name,
-            "status": report.status,
-            "provider_response": report.provider_response,
-            "error_message": report.error_message,
-            "sent_at": report.sent_at.isoformat() if report.sent_at else None,
-            "delivered_at": report.delivered_at.isoformat() if report.delivered_at else None,
-            "created_at": report.created_at.isoformat()
-        })
-    
-    return success_response(enriched_reports)
+        from app.infrastructure.models.models import NotificationStatus
+        try:
+            query = query.where(NotificationRecipient.status == NotificationStatus(status.upper()))
+        except ValueError as exc:
+            raise ValidationException("Geçersiz gönderim durumu") from exc
+    rows = (await db.execute(query.order_by(NotificationRecipient.created_at.desc()).offset(offset).limit(limit))).all()
+    return success_response([{"id": str(row.id), "broadcast_job_id": str(job.reference_id),
+        "recipient_phone": row.recipient_address, "recipient_name": row.recipient_name, "status": row.status.value,
+        "provider_response": row.provider_response, "error_message": row.error_message,
+        "sent_at": row.sent_at.isoformat() if row.sent_at else None, "delivered_at": None,
+        "created_at": row.created_at.isoformat()} for row, job in rows])
 
 
 @router.get("/broadcast-jobs/{job_id}/delivery-summary")
 async def get_delivery_summary(
-    job_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    tenant: TenantContext = Depends(PermissionChecker("communications.read"))
+    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    """Get delivery summary for a broadcast job"""
-    from app.domain.entities.communications import DeliveryReport
-    
-    result = await db.execute(
-        select(DeliveryReport).where(DeliveryReport.broadcast_job_id == job_id)
-    )
-    reports = result.scalars().all()
-    
-    # Calculate summary
-    total = len(reports)
-    sent = sum(1 for r in reports if r.status == "SENT")
-    delivered = sum(1 for r in reports if r.status == "DELIVERED")
-    failed = sum(1 for r in reports if r.status in ["FAILED", "BOUNCED"])
-    pending = sum(1 for r in reports if r.status == "PENDING")
-    
-    return success_response({
-        "broadcast_job_id": str(job_id),
-        "total": total,
-        "sent": sent,
-        "delivered": delivered,
-        "failed": failed,
-        "pending": pending,
-        "delivery_rate": (delivered / total * 100) if total > 0 else 0
-    })
-
-
-# ==================== Message Templates Endpoints ====================
+    await broadcast_service.get(db, job_id)
+    rows = await broadcast_service.delivery_rows(db, job_id)
+    from app.infrastructure.models.models import NotificationStatus
+    sent = sum(row.status == NotificationStatus.SENT for row in rows)
+    failed = sum(row.status == NotificationStatus.FAILED for row in rows)
+    pending = sum(row.status == NotificationStatus.PENDING for row in rows)
+    return success_response({"broadcast_job_id": str(job_id), "total": len(rows), "sent": sent,
+        "delivered": 0, "failed": failed, "pending": pending, "delivery_rate": 0})
 
 @router.get("/message-templates")
 async def get_message_templates(
     channel: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read"))
 ):
     """Get message templates"""
@@ -503,9 +251,9 @@ async def get_message_templates(
             "id": str(template.id),
             "name": template.name,
             "subject": template.subject,
-            "content": template.content,
+            "content": template.body_template,
             "channel": template.channel,
-            "variables": template.variables,
+            "variables": [],
             "is_active": template.is_active,
             "created_at": template.created_at.isoformat()
         })
@@ -516,7 +264,7 @@ async def get_message_templates(
 @router.post("/message-templates")
 async def create_message_template(
     template: MessageTemplateCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write"))
 ):
     """Create a new message template"""
@@ -525,9 +273,10 @@ async def create_message_template(
     new_template = MessageTemplate(
         name=template.name,
         subject=template.subject,
-        content=template.content,
+        organization_id=tenant.organization_id,
+        code=f"custom-{uuid4()}",
+        body_template=template.content,
         channel=template.channel.upper(),
-        variables=template.variables or [],
         is_active=template.is_active
     )
     db.add(new_template)

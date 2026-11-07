@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/teacher-portal.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  07:25:14
+   Duration  4.77s (transform 491ms, setup 305ms, import 1.11s, tests 487ms, environment 2.39s)
+

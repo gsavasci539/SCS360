@@ -1,0 +1,230 @@
+{
+  "ready": false,
+  "scope": "application_only",
+  "checks": {
+    "production_environment": false,
+    "postgresql_database": false,
+    "https_cors_origins": false,
+    "strong_jwt_secret": true,
+    "https_password_reset": false,
+    "schema_current": true,
+    "database_integrity": false
+  },
+  "provider_configuration": {
+    "smtp": false,
+    "sms": false,
+    "whatsapp": false,
+    "iyzico": false,
+    "notification_delivery_enabled": false,
+    "notification_webhook_configured": false
+  },
+  "database_integrity": {
+    "ready": false,
+    "schema_current": true,
+    "snapshot_read_only": true,
+    "checks": {
+      "physical_foreign_keys": {
+        "ok": false,
+        "count": 432
+      },
+      "uuid_literals": {
+        "ok": false,
+        "count": 43
+      },
+      "model_columns": {
+        "ok": true,
+        "count": 0
+      },
+      "canonical_keys": {
+        "ok": false,
+        "count": 25
+      }
+    },
+    "issues": [
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 1,
+        "table": "branches",
+        "columns": [
+          "organization_id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 1,
+        "table": "users",
+        "columns": [
+          "organization_id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 1,
+        "table": "classes",
+        "columns": [
+          "organization_id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 10,
+        "table": "parents",
+        "columns": [
+          "organization_id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 10,
+        "table": "debts",
+        "columns": [
+          "id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 5,
+        "table": "announcements",
+        "columns": [
+          "id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 10,
+        "table": "notification_jobs",
+        "columns": [
+          "id"
+        ]
+      },
+      {
+        "check": "uuid_literals",
+        "reason": "invalid_uuid_literals",
+        "count": 5,
+        "table": "ai_chat_audit_logs",
+        "columns": [
+          "organization_id"
+        ]
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 5,
+        "table": "ai_chat_audit_logs"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 8,
+        "table": "user_roles"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 15,
+        "table": "receipts"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 28,
+        "table": "attendance_records"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 1,
+        "table": "branches"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 125,
+        "table": "students"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 60,
+        "table": "parents"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 1,
+        "table": "classes"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 4,
+        "table": "users"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 30,
+        "table": "refresh_tokens"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 77,
+        "table": "debts"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 16,
+        "table": "announcements"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 6,
+        "table": "user_branches"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 10,
+        "table": "notification_jobs"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 31,
+        "table": "audit_logs"
+      },
+      {
+        "check": "physical_foreign_keys",
+        "reason": "foreign_key_violations",
+        "count": 15,
+        "table": "payments"
+      },
+      {
+        "check": "canonical_keys",
+        "reason": "canonical_key_collisions",
+        "count": 25,
+        "table": "students",
+        "columns": [
+          "organization_id",
+          "student_number"
+        ]
+      }
+    ],
+    "tables_checked": 108,
+    "table_rows_checked": 2646,
+    "max_scan_rows": 250000,
+    "complete": true,
+    "unsupported_count": 0
+  },
+  "provider_live_acceptance": "requires separate sandbox/delivery verification"
+}

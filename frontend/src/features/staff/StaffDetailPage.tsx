@@ -18,7 +18,7 @@ export function StaffDetailPage() {
   async function load() {
     setLoading(true);
     try {
-      const r = await api.get<ApiResponse<DataRecord>>(`/staff/${id}`);
+      const r = await api.get<ApiResponse<DataRecord>>(`/users/${id}`);
       setData(r.data.data);
     } catch (e) {
       setError(apiMessage(e));
@@ -31,7 +31,7 @@ export function StaffDetailPage() {
 
   async function handleDelete() {
     try {
-      await api.delete(`/staff/${id}`);
+      await api.delete(`/users/${id}`);
       showToast("Personel silindi", "Personel başarıyla silindi.");
     } catch (e) {
       showToast("Silinemedi", apiMessage(e), "error");
@@ -115,7 +115,7 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
   async function submit(values: any) {
     if (!data) return;
     try {
-      await api.put(`/staff/${data.id}`, values);
+      await api.put(`/users/${data.id}`, values);
       showToast("Personel güncellendi", "Personel bilgileri başarıyla güncellendi.");
       onClose();
       onSuccess();

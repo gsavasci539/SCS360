@@ -1,0 +1,32 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/resource-form-options.test.tsx (4 tests | 1 failed) 3677ms
+   × yalnız öğrenci yazma yetkisiyle kayıt sonrası yasak genel listeye yönlenmez 757ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/resource-form-options.test.tsx > yalnız öğrenci yazma yetkisiyle kayıt sonrası yasak genel listeye yönlenmez
+Error: expect(element).toBeInTheDocument()
+
+element could not be found in the document
+ ❯ src/test/resource-form-options.test.tsx:67:75
+     65|   }
+     66|   fireEvent.submit(view.container.querySelector("form")!);
+     67|   expect(await screen.findByRole("heading", { name: "Öğrenci düzenle" …
+       |                                                                           ^
+     68|   expect(screen.queryByText("Liste")).not.toBeInTheDocument();
+     69|   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/students/…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 49 passed (50)
+      Tests  1 failed | 252 passed (253)
+   Start at  00:01:23
+   Duration  167.77s (transform 4.69s, setup 24.84s, import 46.27s, tests 72.83s, environment 162.37s)
+

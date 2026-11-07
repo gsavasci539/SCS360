@@ -1,0 +1,15 @@
+
+> scs360-frontend@1.0.0 build
+> tsc -b && vite build
+
+src/features/transport/BusRouteManager.tsx(10,109): error TS2345: Argument of type '{}' is not assignable to parameter of type 'DataRecord | (() => DataRecord)'.
+src/features/transport/BusRouteManager.tsx(69,83): error TS2322: Type 'string | number | true | Record<string, unknown>[]' is not assignable to type 'Key | null | undefined'.
+  Type 'true' is not assignable to type 'Key | null | undefined'.
+src/features/transport/BusRouteManager.tsx(70,217): error TS2339: Property 'map' does not exist on type 'string | number | true | Record<string, unknown>[]'.
+  Property 'map' does not exist on type 'string'.
+src/features/transport/BusRouteManager.tsx(72,206): error TS2339: Property 'some' does not exist on type 'string | number | true | Record<string, unknown>[]'.
+  Property 'some' does not exist on type 'string'.
+src/features/transport/BusRouteManager.tsx(72,325): error TS2339: Property 'map' does not exist on type 'string | number | true | Record<string, unknown>[]'.
+  Property 'map' does not exist on type 'string'.
+src/features/transport/BusRouteManager.tsx(82,590): error TS2339: Property 'map' does not exist on type 'string | number | true | Record<string, unknown>[]'.
+  Property 'map' does not exist on type 'string'.

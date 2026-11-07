@@ -1,3 +1,5 @@
+from __future__ import annotations
+from app.core.dates import school_today
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
@@ -51,7 +53,7 @@ def card_to_dict(card: RfidCard) -> dict:
 
 @router.get("")
 async def list_rfid_cards(
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.read"))
 ):
@@ -74,7 +76,7 @@ async def list_rfid_cards(
 @router.get("/{card_id}")
 async def get_rfid_card(
     card_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -90,7 +92,7 @@ async def get_rfid_card(
 @router.get("/number/{card_number}")
 async def get_rfid_card_by_number(
     card_number: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -106,7 +108,7 @@ async def get_rfid_card_by_number(
 @router.post("")
 async def create_rfid_card(
     card: RFIDCardCreate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -147,7 +149,7 @@ async def create_rfid_card(
         holder_name=card.holder_name,
         organization_id=org_id,
         branch_id=branch_id,
-        issue_date=datetime.now().date(),
+        issue_date=school_today(),
         status="ACTIVE"
     )
     
@@ -162,7 +164,7 @@ async def create_rfid_card(
 async def update_rfid_card(
     card_id: str,
     card: RFIDCardUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -210,7 +212,7 @@ async def update_rfid_card(
 @router.delete("/{card_id}")
 async def delete_rfid_card(
     card_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.write"))
 ):
@@ -234,7 +236,7 @@ async def delete_rfid_card(
 @router.get("/holder/{holder_id}")
 async def get_cards_by_holder(
     holder_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):
@@ -248,7 +250,7 @@ async def get_cards_by_holder(
 @router.post("/sync/mobile")
 async def sync_mobile_cards(
     holder_id: str,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("settings.read"))
 ):

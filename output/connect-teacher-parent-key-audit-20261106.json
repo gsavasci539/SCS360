@@ -1,0 +1,18 @@
+{
+  "mode": "read-only/query_only",
+  "counts": {
+    "total": 0,
+    "user_key": 0,
+    "contact_key": 0,
+    "contact_only": 0,
+    "both_identity_domains": 0,
+    "unmatched": 0,
+    "foreign_key_parent_target": [
+      [
+        "users",
+        "parent_id",
+        "id"
+      ]
+    ]
+  }
+}

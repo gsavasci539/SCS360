@@ -1,0 +1,100 @@
+
+> scs360-frontend@1.0.0 test:e2e
+> playwright test e2e/subscription-checkout.spec.ts --project=edge
+
+[WebServer] INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+[WebServer] INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade  -> 001, Initial schema - use SQL files for fresh install, Alembic for migrations.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, Create the application tables for installations where revision 001 was empty.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 002 -> 003, Seed permissions, demo organization, roles, and the initial admin account.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 003 -> 005, Add status column to payments table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 005 -> 006, Make admin@demo.com a super admin
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 006 -> 007, add rfid cards table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 007 -> 008, add card numbers table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 008 -> 009, add devices table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 009 -> 010, Add daily_development_reports and chat_messages tables according to SCS360 documentation
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 010 -> 011, Add grades table for student performance tracking
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 011 -> 012, Add teacher_id column to classes table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 012 -> 013, Add bus routes, stops, telemetry logs, and attendance tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 013 -> 014, Add canteen products, dietary restrictions, orders, and wallet transactions tables
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 014 -> 015, Add remaining entity tables to database
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 015 -> 016, Add user_id field to parents table
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 016 -> 017, Enforce parent account and teacher-class relationship lookup keys.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 017 -> 018, Grant the parent messaging permission to the system parent role.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 018 -> 019, Add chat_conversations and student_teacher_assignments tables for chatbot teacher integration
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 019 -> 020, Add ai_chat_audit_logs table for LLM fine-tuning and analytics
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 020 -> 021, Persistent, organization-scoped library catalog and loans.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 021 -> 022, Persist appointments and teacher availability.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 022 -> 023, Persist class assignments and student submissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 023 -> 024, Durable claims prevent two workers sending the same job concurrently.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 024 -> 025, Durable payment reconciliation and parent requests.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 025 -> 026, Persist operations, wallet balances and notification read state.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 026 -> 027, Install feature permissions and built-in roles without demo users or data.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 027 -> 028, Persist the previously missing material submission model.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 028 -> 029, Persist form ownership and add a separate guardian decision permission.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 029 -> 030, Separate guardian survey participation from management permissions.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 030 -> 031, Make confidential guidance visibility explicit without widening custom roles.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 031 -> 032, Keep medication decisions and each day's dose history explicit.
+[WebServer] INFO  [alembic.runtime.migration] Running upgrade 032 -> 033, Add commercial configuration without rewriting existing accounts or school data.
+[WebServer] (trapped) error reading bcrypt version
+[WebServer] Traceback (most recent call last):
+[WebServer]   File "C:\Okul360\backend\.venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+[WebServer]     version = _bcrypt.__about__.__version__
+[WebServer]               ^^^^^^^^^^^^^^^^^
+[WebServer] AttributeError: module 'bcrypt' has no attribute '__about__'
+[WebServer] INFO:     Started server process [20680]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:5016 (Press CTRL+C to quit)
+[WebServer] {"request_id": "db3cc1cc-e38d-4fad-9d6a-47749f0c5460", "method": "GET", "path": "/health", "status": 200, "duration_ms": 0.83, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:33.597546Z"}
+[WebServer] (node:6356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:20848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:22060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] {"request_id": "3bb5af9d-c345-4c69-ba56-cb5b36d021fa", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 3523.87, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:40.261113Z"}
+[WebServer] {"request_id": "8175bc26-bef1-4a54-9571-4eb873de2220", "method": "POST", "path": "/api/platform/plans", "status": 200, "duration_ms": 18.0, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:40.297446Z"}
+[WebServer] {"request_id": "68a566dd-99d1-4e1c-88eb-8f7c7b2a7e2b", "method": "POST", "path": "/api/public/signup", "status": 200, "duration_ms": 279.49, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:40.586330Z"}
+[WebServer] {"request_id": "c53e87e9-b1fa-4fdb-a648-aa47d44d87d2", "method": "POST", "path": "/api/auth/login", "status": 200, "duration_ms": 337.04, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:41.732262Z"}
+[WebServer] {"request_id": "7de357d6-7dbb-4380-9470-fbf9475c19c2", "method": "GET", "path": "/api/subscription/access", "status": 200, "duration_ms": 35.6, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:42.114465Z"}
+[WebServer] {"request_id": "d2db704a-0c76-4c02-ad13-917fbef0ead4", "method": "GET", "path": "/api/subscription/plans", "status": 200, "duration_ms": 25.42, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:42.183417Z"}
+[WebServer] {"request_id": "51ef61f9-8298-4ebd-b52b-8319bfb14b8e", "method": "GET", "path": "/api/subscription/invoices", "status": 200, "duration_ms": 128.88, "event": "request_completed", "logger": "app.core.middleware", "level": "info", "timestamp": "2026-11-03T23:49:42.313389Z"}
+  x  1 [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile (26.2s)
+
+
+  1) [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile 
+
+    TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Üyelik paketi', { exact: true })
+
+
+      14 |   await page.getByLabel("E-posta adresi", { exact: true }).fill(owner); await page.getByLabel("Şifre", { exact: true }).fill("AcceptancePass1!");
+      15 |   await page.getByRole("button", { name: "Giriş yap", exact: true }).click(); await expect(page).toHaveURL(/\/subscription$/);
+    > 16 |   await page.getByLabel("Üyelik paketi", { exact: true }).selectOption(plan.id); await page.getByRole("button", { name: "Ödeme talebi oluştur", exact: true }).click();
+         |                                                           ^
+      17 |   const history = page.getByRole("region", { name: "Üyelik ödeme geçmişi", exact: true });
+      18 |   await history.getByRole("button", { name: "Kartla öde", exact: true }).click();
+      19 |   const form = page.getByRole("form", { name: "Üyelik ödeme bilgileri", exact: true });
+        at C:\Okul360\frontend\e2e\subscription-checkout.spec.ts:16:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\subscription-checkout-host-28940-nd-activates-once-on-mobile-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [edge] › e2e\subscription-checkout.spec.ts:3:1 › hosted subscription purchase waits for provider review and activates once on mobile 

@@ -29,8 +29,8 @@ class NotFoundException(Exception):
     pass
 
 
-def success_response(data: Any = None, message: str = "İşlem başarılı") -> dict:
-    return {"success": True, "message": message, "data": data}
+def success_response(data: Any = None, message: str = "İşlem başarılı", *, success: bool = True) -> dict:
+    return {"success": success, "message": message, "data": data}
 
 
 def error_response(message: str, errors: list | None = None) -> dict:

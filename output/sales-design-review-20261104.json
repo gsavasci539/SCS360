@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "width": 1440,
+      "home": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "pricing": true,
+      "crossPageAnchor": true
+    },
+    {
+      "width": 768,
+      "home": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "pricing": true,
+      "crossPageAnchor": true
+    },
+    {
+      "width": 390,
+      "home": true,
+      "tourKeyboard": true,
+      "faq": true,
+      "pricing": true,
+      "crossPageAnchor": true
+    },
+    {
+      "width": 1440,
+      "fixtureCatalog": true,
+      "annual": true,
+      "signupForm": true
+    },
+    {
+      "width": 390,
+      "fixtureCatalog": true,
+      "annual": true,
+      "signupForm": true
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "<stdin>", line 11, in <module>
+  File "C:\Okul360\.codex-build\local\verify-035.py", line 37, in upgrade
+    command.upgrade(Config(str(ROOT / "backend" / "alembic.ini")), "035")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Okul360\backend\.venv\Lib\site-packages\alembic\command.py", line 386, in upgrade
+    script = ScriptDirectory.from_config(config)
+  File "C:\Okul360\backend\.venv\Lib\site-packages\alembic\script\base.py", line 229, in from_config
+    return ScriptDirectory(
+        util.coerce_resource_to_filename(script_location),
+    ...<10 lines>...
+        messaging_opts=config.messaging_opts,
+    )
+  File "C:\Okul360\backend\.venv\Lib\site-packages\alembic\script\base.py", line 106, in __init__
+    raise util.CommandError(
+    ...<3 lines>...
+    )
+alembic.util.exc.CommandError: Path doesn't exist: 'C:\\Okul360\\alembic'.  Please use the 'init' command to create a new scripts folder.

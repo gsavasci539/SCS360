@@ -1,0 +1,691 @@
+backend/app\core\parent_purpose.py:14:async def activate_parent_scope(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\core\dependencies.py:24:    db: AsyncSession = Depends(get_db),
+backend/app\core\dependencies.py:76:    db: AsyncSession = Depends(get_db),
+backend/app\core\dependencies.py:123:    db: AsyncSession = Depends(get_db),
+backend/app\routers\user_roles.py:21:    db: AsyncSession = Depends(get_db),
+backend/app\routers\user_roles.py:33:    db: AsyncSession = Depends(get_db),
+backend/app\routers\user_roles.py:46:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:56:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:73:async def user_options(organization_id: UUID | None = None, tenant: TenantContext = Depends(PermissionChecker("user.write")), db: AsyncSession = Depends(get_db)):
+backend/app\routers\users.py:97:async def complete_role_catalog(body: RoleCatalogRequest, tenant: TenantContext = Depends(PermissionChecker("user.write")), db: AsyncSession = Depends(get_db)):
+backend/app\routers\users.py:125:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:161:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:176:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:208:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:225:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:253:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:275:async def assign_access(user_id: UUID, body: UserAccessWrite, tenant: TenantContext = Depends(PermissionChecker("user.write")), db: AsyncSession = Depends(get_db)):
+backend/app\routers\users.py:284:    db: AsyncSession = Depends(get_db),
+backend/app\routers\users.py:299:    db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:133:    teacher_search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
+backend/app\routers\tutoring.py:139:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
+backend/app\routers\tutoring.py:146:    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:161:async def create_tutoring_session(body: TutoringSessionCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:174:async def update_tutoring_session(session_id: UUID, body: TutoringSessionCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:192:async def cancel_tutoring_session(session_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:205:async def mark_session_attendance(session_id: UUID, body: SessionAttendanceUpdate, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:222:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
+backend/app\routers\tutoring.py:232:async def create_tutoring_request(body: TutoringRequestCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:243:async def approve_tutoring_request(request_id: UUID, body: RequestApproval | None = Body(None), db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:266:    rejection_reason: str | None = Query(None, min_length=1, max_length=2000, deprecated=True), db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:284:    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:296:async def create_teacher_availability(body: TeacherAvailabilityCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\tutoring.py:311:async def disable_teacher_availability(availability_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:104:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:135:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:173:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:195:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:240:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:295:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:329:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:407:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:469:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:540:    db: AsyncSession = Depends(get_db),
+backend/app\routers\timetable.py:565:    db: AsyncSession = Depends(get_db),
+backend/app\routers\teacher.py:23:async def get_teacher_classes(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+backend/app\routers\teacher.py:28:async def get_teacher_today_schedule(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+backend/app\routers\teacher.py:33:async def get_teacher_pending_tasks(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+backend/app\routers\teacher.py:39:    db: AsyncSession = Depends(get_db),
+backend/app\routers\teacher.py:79:    db: AsyncSession = Depends(get_db),
+backend/app\routers\teacher.py:106:    db: AsyncSession = Depends(get_db),
+backend/app\routers\teacher.py:122:    db: AsyncSession = Depends(get_db),
+backend/app\routers\surveys.py:75:async def options(db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:82:async def summary(db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+backend/app\routers\surveys.py:87:async def own_surveys(limit: int = Query(21, ge=1, le=100), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\surveys.py:96:                       limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\surveys.py:115:async def create_survey(survey: SurveyCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:122:async def edit_survey(survey_id: UUID, survey: SurveyCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:133:async def get_survey(survey_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+backend/app\routers\surveys.py:138:async def publish(survey_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:157:async def close(survey_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:167:                    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+backend/app\routers\surveys.py:177:async def create_question(question: SurveyQuestionCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:186:async def delete_question(question_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
+backend/app\routers\surveys.py:197:                    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+backend/app\routers\surveys.py:202:async def respond(response: SurveyResponseCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.write", "surveys.respond"))):
+backend/app\routers\surveys.py:209:async def results(survey_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("surveys.read"))):
+backend/app\routers\subscription_payments.py:26:async def activate_free(response: Response, invoice_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\subscription_payments.py:34:    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\subscription_payments.py:43:async def resume(response: Response, invoice_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\subscription_payments.py:50:async def payment_status(request: Request, response: Response, invoice_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\subscription_payments.py:56:async def callback(token: str = Form(min_length=1, max_length=2048), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\subscription_payments.py:66:async def platform_status(response: Response, invoice_id: UUID, user: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\subscription_payments.py:72:async def review(response: Response, invoice_id: UUID, body: SubscriptionPaymentReview, user: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\students.py:27:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:50:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:94:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:111:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:134:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:155:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:237:    db: AsyncSession = Depends(get_db),
+backend/app\routers\students.py:242:    from fastapi.responses import StreamingResponse
+backend/app\routers\students.py:285:    return StreamingResponse(
+backend/app\routers\staff_operations.py:32:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:43:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:69:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:81:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:92:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:121:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:161:    db: AsyncSession = Depends(get_db),
+backend/app\routers\staff_operations.py:222:    db: AsyncSession = Depends(get_db),
+backend/app\routers\settings.py:31:    db: AsyncSession = Depends(get_db),
+backend/app\routers\settings.py:60:    db: AsyncSession = Depends(get_db),
+backend/app\routers\settings.py:99:    db: AsyncSession = Depends(get_db),
+backend/app\routers\settings.py:140:    db: AsyncSession = Depends(get_db),
+backend/app\routers\settings.py:177:    db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:43:async def options(student_id: UUID | None = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:50:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+backend/app\routers\security.py:59:async def get_digital_id(student_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:66:async def generate_digital_id(body: GenerateTokenRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:105:async def revoke_digital_id(token_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:121:async def qr_code(token_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:141:async def verify_qr_code(body: QRVerificationRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\security.py:184:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+backend/app\routers\security.py:199:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+backend/app\routers\roles.py:22:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:38:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:55:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:72:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:93:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:114:    db: AsyncSession = Depends(get_db),
+backend/app\routers\roles.py:141:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:56:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:79:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:95:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:111:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:167:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:215:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:239:    db: AsyncSession = Depends(get_db),
+backend/app\routers\rfid_cards.py:253:    db: AsyncSession = Depends(get_db),
+backend/app\routers\public_saas.py:17:async def public_plans(request: Request, db: AsyncSession = Depends(get_db)):
+backend/app\routers\public_saas.py:24:async def signup(request: Request, body: PublicSignup, db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:23:async def plans(actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:29:async def create_plan(body: PlanWrite, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:34:async def create_tenant(body: TenantProvision, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:39:async def update_plan(plan_id: UUID, body: PlanWrite, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:50:    actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:68:async def platform_summary(actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:79:async def tenant_workspace(org_id: UUID, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:88:async def tenant_users(org_id: UUID, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:95:async def configure_membership(org_id: UUID, body: MembershipWrite, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:100:async def tenant_status(org_id: UUID, body: TenantStatusWrite, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:107:async def subscription_access(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db), gateway=Depends(get_saas_gateway)):
+backend/app\routers\platform.py:118:async def available_plans(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:125:async def own_invoices(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:133:async def request_invoice(body: SubscriptionInvoiceCreate, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:138:async def cancel_invoice(invoice_id: UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:144:    actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\platform.py:156:async def settle_receipt(invoice_id: UUID, body: VerifiedReceipt, actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db)):
+backend/app\routers\pickup.py:78:async def options(student_id: Optional[UUID] = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:85:async def summary(student_id: Optional[UUID] = None, day: Optional[date] = Query(None, alias="date"), db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:95:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:165:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:218:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:261:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:295:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:354:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:423:    db: AsyncSession = Depends(get_db),
+backend/app\routers\pickup.py:460:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:60:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:78:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:94:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:135:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:181:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:200:    db: AsyncSession = Depends(get_db),
+backend/app\routers\devices.py:223:    db: AsyncSession = Depends(get_db),
+backend/app\routers\permissions.py:22:    db: AsyncSession = Depends(get_db),
+backend/app\routers\permissions.py:38:    db: AsyncSession = Depends(get_db),
+backend/app\routers\debts.py:46:    db: AsyncSession = Depends(get_db),
+backend/app\routers\debts.py:143:    db: AsyncSession = Depends(get_db),
+backend/app\routers\debts.py:160:    db: AsyncSession = Depends(get_db),
+backend/app\routers\debts.py:183:    db: AsyncSession = Depends(get_db),
+backend/app\routers\debts.py:204:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:108:async def payroll_options(search: str = Query("", max_length=100), staff_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:116:                           period: Optional[str] = None, staff_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:132:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:189:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:240:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:290:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:361:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:427:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:507:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payroll.py:586:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:60:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:73:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:86:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:99:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:112:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:125:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:138:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:151:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:234:    db: AsyncSession = Depends(get_db),
+backend/app\routers\data_import.py:315:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:52:async def checkout_debt(debt_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write")), db: AsyncSession = Depends(get_db)):
+backend/app\routers\payments.py:66:async def checkout_status(checkout_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write")), db: AsyncSession = Depends(get_db)):
+backend/app\routers\payments.py:94:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:106:    db: AsyncSession = Depends(get_db)
+backend/app\routers\payments.py:119:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:165:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:186:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:202:    db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:222:    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:230:    plan: InvoicePlanCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:240:    payment_data: PaymentCollectCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:255:    payment_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\payments.py:271:    reminder: ReminderSendCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:59:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:135:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:187:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:237:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:288:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:345:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:419:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:466:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:532:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:548:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:603:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:641:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:694:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:738:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:786:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:804:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:816:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:844:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:864:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:885:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:921:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:959:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:986:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1040:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1099:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1131:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1216:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1236:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1260:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1287:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1323:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1338:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard_reports.py:1366:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:28:    body: ChatbotQueryRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:40:    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:85:                           db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:93:                                   db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:103:                             db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:111:                            db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:127:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:182:    student_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:192:    student_id: UUID, date: Optional[date] = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:204:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:216:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:227:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:275:    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:289:    checkout_id: UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:307:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:326:    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:341:    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:360:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:440:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:451:    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+backend/app\routers\parent_portal.py:477:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:488:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:499:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:511:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:529:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:540:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:551:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:561:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:576:async def download_child_certificate(student_id: UUID, certificate_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:594:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:605:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:617:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:631:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_portal.py:648:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:24:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:59:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:106:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:173:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:196:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:246:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:268:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:291:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:409:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:502:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:596:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:689:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:722:    db: AsyncSession = Depends(get_db),
+backend/app\routers\dashboard.py:778:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_notices.py:118:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_notices.py:147:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_notices.py:179:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_notices.py:198:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parent_notices.py:230:    db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:103:    report_date: str | None = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:119:async def create_daily_report(report: ReportCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:125:async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:145:async def get_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:151:async def update_daily_report(report_id: UUID, body: ReportFields, db: AsyncSession = Depends(get_db),
+backend/app\routers\daily_reports.py:160:async def delete_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\parents.py:27:    tenant: TenantContext = Depends(get_tenant_context), db: AsyncSession = Depends(get_db)):
+backend/app\routers\parents.py:34:    actor: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\parents.py:65:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parents.py:82:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parents.py:98:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parents.py:114:    db: AsyncSession = Depends(get_db),
+backend/app\routers\parents.py:133:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:105:    tenant: TenantContext = Depends(PermissionChecker("students.write")), db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:118:    tenant: TenantContext = Depends(PermissionChecker("students.write")), db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:131:    tenant: TenantContext = Depends(PermissionChecker("students.write")), db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:142:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:158:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:188:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:238:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:251:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:300:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:314:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:346:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:394:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:473:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:500:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:530:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:562:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:583:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:612:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:626:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:643:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:661:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:701:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:724:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:739:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:768:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:797:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:828:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:864:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:904:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:924:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:938:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:970:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:992:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1028:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1057:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1082:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1114:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1129:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1143:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1170:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1198:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1224:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1318:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1350:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1369:    db: AsyncSession = Depends(get_db),
+backend/app\routers\core_modules.py:1396:    db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:46:                  search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:54:                    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("consents.read"))):
+backend/app\routers\consents.py:66:async def create_document(document: ConsentDocumentCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:77:async def edit_document(document_id: UUID, document: ConsentDocumentCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:89:async def change_status(document_id: UUID, status: ActiveUpdate, db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:100:                    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("consents.read"))):
+backend/app\routers\consents.py:105:async def create_decision(consent: StudentConsentCreate, request: Request, db: AsyncSession = Depends(get_db),
+backend/app\routers\consents.py:117:async def summary(document_id: UUID | None = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\outbox.py:21:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\outbox.py:29:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\outbox.py:36:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\outbox.py:43:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\organizations.py:86:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:104:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:123:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:136:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:158:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:176:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:197:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:213:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:227:    db: AsyncSession = Depends(get_db),
+backend/app\routers\organizations.py:243:    db: AsyncSession = Depends(get_db),
+backend/app\routers\operations.py:113:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:124:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:134:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:150:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:161:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:172:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:182:    db: AsyncSession = Depends(get_db),
+backend/app\routers\operations.py:194:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:204:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:215:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:226:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:238:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:248:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:258:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:268:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:279:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:304:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:314:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:324:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:334:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:344:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:354:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:365:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:375:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:385:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:395:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:406:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:426:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:439:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:458:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:473:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:484:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:494:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:505:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:520:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\operations.py:547:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:561:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:580:    db: AsyncSession = Depends(get_db)
+backend/app\routers\operations.py:605:    db: AsyncSession = Depends(get_db)
+backend/app\routers\communications.py:70:    db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:104:    db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:136:    db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:144:    job: BroadcastJobCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:152:    job_id: UUID, job: BroadcastJobUpdate, db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:173:    job_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:181:    job_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:190:    db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:215:    job_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:232:    db: AsyncSession = Depends(get_db),
+backend/app\routers\communications.py:267:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:38:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:124:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:168:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:218:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:245:    db: AsyncSession = Depends(get_db),
+backend/app\routers\messages.py:272:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:134:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:233:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:285:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:327:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:350:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:373:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:387:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:433:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:511:    db: AsyncSession = Depends(get_db),
+backend/app\routers\materials.py:561:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:73:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:129:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:166:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:201:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:230:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:258:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:329:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:377:    db: AsyncSession = Depends(get_db),
+backend/app\routers\library.py:452:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:72:    user_search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:84:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:146:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:156:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:168:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:218:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:250:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:304:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:314:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:329:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:387:    db: AsyncSession = Depends(get_db),
+backend/app\routers\inventory.py:397:    db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:75:    limit: int = Query(100, ge=1, le=200), db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:106:    db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:164:async def create_school_club(club: SchoolClubCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:170:async def update_school_club(club_id: UUID, club: SchoolClubCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:181:    db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:227:async def create_club_membership(membership: ClubMembershipCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:233:async def leave_club(membership_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:245:    db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:293:async def create_club_event(event: ClubEventCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:305:    db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:355:async def create_student_certificate(certificate: StudentCertificateCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\clubs.py:361:async def download_certificate(certificate_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:34:    db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:52:    db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:75:    db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:131:    db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:150:    db: AsyncSession = Depends(get_db),
+backend/app\routers\classes.py:167:    db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:121:async def options(student_id: UUID | None = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:127:async def summary(student_id: UUID | None = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:134:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("health.read"))):
+backend/app\routers\infirmary.py:150:async def get_health_record(student_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("health.read"))):
+backend/app\routers\infirmary.py:159:async def update_health_record(student_id: UUID, body: HealthRecordCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:181:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("health.read"))):
+backend/app\routers\infirmary.py:194:async def create_medication_schedule(body: MedicationScheduleCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:205:async def mark_medication_given(body: MedicationLogCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:242:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("health.read"))):
+backend/app\routers\infirmary.py:256:async def create_infirmary_visit(body: InfirmaryVisitCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:272:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("health.read"))):
+backend/app\routers\infirmary.py:285:async def complete_follow_up(visit_id: UUID, body: VisitFollowUp, db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:299:    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:318:    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db),
+backend/app\routers\infirmary.py:333:async def update_medicine_request(request_id: UUID, body: MedicineRequestDecision, db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:667:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:683:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:707:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:809:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1074:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1162:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1206:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1265:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1370:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1434:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1487:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1529:    db: AsyncSession = Depends(get_db),
+backend/app\routers\chatbot.py:1568:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:58:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:141:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:197:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:244:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:287:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hq.py:340:    db: AsyncSession = Depends(get_db),
+backend/app\routers\homework.py:76:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:83:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:91:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:115:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:121:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:130:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:140:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:149:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:187:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:222:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\homework.py:238:    db: AsyncSession = Depends(get_db)):
+backend/app\routers\health.py:17:async def ready(request: Request, db: AsyncSession = Depends(get_db)):
+backend/app\routers\hardware.py:79:    request: DeviceRegisterRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:109:    device_id: str, request: DeviceHeartbeatRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:126:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:167:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:176:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:214:    request: CardPaymentRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:229:    request: CardBalanceCheckRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:240:    db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:250:    request: WifiCardReadRequest, db: AsyncSession = Depends(get_db),
+backend/app\routers\hardware.py:274:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:128:                            db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("guidance.read", "guidance.write"))):
+backend/app\routers\guidance.py:134:async def guidance_summary(student_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:152:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:229:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:264:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:301:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:394:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:470:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:510:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:553:    db: AsyncSession = Depends(get_db),
+backend/app\routers\guidance.py:621:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:150:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:186:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:218:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:241:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:273:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:303:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:342:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:366:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:667:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:710:    db: AsyncSession = Depends(get_db),
+backend/app\routers\files_receipts.py:754:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:50:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:68:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:86:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:102:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:141:    db: AsyncSession = Depends(get_db),
+backend/app\routers\card_numbers.py:179:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:135:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:191:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:223:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:257:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:281:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:328:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:367:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:390:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:401:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:412:    db: AsyncSession = Depends(get_db),
+backend/app\routers\canteen.py:432:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:125:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:155:    search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:162:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
+backend/app\routers\bus.py:167:async def bus_route(route_id: UUID, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
+backend/app\routers\bus.py:172:async def create_bus_route(route: BusRouteCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:177:async def update_bus_route(route_id: UUID, route: BusRouteCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:187:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:220:async def create_bus_stop(stop: BusStopCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:225:async def update_bus_stop(stop_id: UUID, stop: BusStopCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:232:async def submit_telemetry(telemetry: TelemetryLogCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:239:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:275:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:327:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:356:async def create_bus_attendance(attendance: BusAttendanceCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\bus.py:364:    db: AsyncSession = Depends(get_db),
+backend/app\routers\bus.py:406:async def transport_check_in(check_in: TransportCheckInCreate, db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+backend/app\routers\auth.py:22:async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
+backend/app\routers\auth.py:31:async def refresh(body: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
+backend/app\routers\auth.py:43:    db: AsyncSession = Depends(get_db),
+backend/app\routers\auth.py:51:async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+backend/app\routers\auth.py:60:    request: Request, body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)
+backend/app\routers\auth.py:68:async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+backend/app\routers\files.py:23:    db: AsyncSession = Depends(get_db)
+backend/app\routers\files.py:45:    db: AsyncSession = Depends(get_db)
+backend/app\routers\files.py:70:    db: AsyncSession = Depends(get_db)
+backend/app\routers\expenses.py:62:    db: AsyncSession = Depends(get_db),
+backend/app\routers\expenses.py:89:    db: AsyncSession = Depends(get_db),
+backend/app\routers\expenses.py:113:    db: AsyncSession = Depends(get_db),
+backend/app\routers\expenses.py:131:    db: AsyncSession = Depends(get_db),
+backend/app\routers\expenses.py:153:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:24:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:48:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:102:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:118:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:137:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:158:    db: AsyncSession = Depends(get_db),
+backend/app\routers\attendance.py:238:    db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:46:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("exam.read", "exam.write")),
+backend/app\routers\exams.py:59:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("exam.read", "exam.write")),
+backend/app\routers\exams.py:90:    exam: ExamCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:99:    exam_id: UUID, exam: ExamCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:108:    exam_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:118:    search: str | None = Query(None, max_length=200), db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:126:    exam_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:138:    request: BulkGradeEntry, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:147:    result_id: UUID, result: ExamResultCreate, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:161:    request: ReportCardGenerate, db: AsyncSession = Depends(get_db),
+backend/app\routers\exams.py:171:    db: AsyncSession = Depends(get_db), tenant: TenantContext = Depends(PermissionChecker("exam.read", "exam.write")),
+backend/app\routers\exams.py:186:    card_id: UUID, db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:58:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:69:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:85:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:97:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:108:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:124:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:140:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:215:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:229:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:245:    db: AsyncSession = Depends(get_db),
+backend/app\routers\appointments.py:285:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:23:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:44:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:62:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:78:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:97:    db: AsyncSession = Depends(get_db),
+backend/app\routers\announcements.py:113:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:51:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:60:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:210:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:403:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:511:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:602:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:782:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:863:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1060:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1070:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1238:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1261:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1279:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1356:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1523:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1661:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1823:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1849:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:1858:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2000:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2008:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2090:async def get_inventory_analysis(tenant: TenantContext = Depends(AnalysisPermission('/inventory-analysis')), db: AsyncSession = Depends(get_db)):
+backend/app\routers\ai_analytics.py:2098:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2157:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2197:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2237:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2244:async def get_health_analysis(tenant: TenantContext = Depends(AnalysisPermission('/health-analysis')), db: AsyncSession = Depends(get_db)):
+backend/app\routers\ai_analytics.py:2252:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2261:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2270:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2279:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2288:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2298:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2339:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2457:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2565:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2643:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2797:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:2952:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3030:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3185:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3272:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3440:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3622:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3759:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3860:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:3945:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4156:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4282:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4291:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4473:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4615:    db: AsyncSession = Depends(get_db),
+backend/app\routers\ai_analytics.py:4748:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:62:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:76:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:90:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:104:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:124:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:155:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:165:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:176:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:217:    db: AsyncSession = Depends(get_db),
+backend/app\routers\admin_crud.py:229:    db: AsyncSession = Depends(get_db),

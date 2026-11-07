@@ -220,7 +220,7 @@ export function StudentPaymentsPage() {
             <PaymentReceipt 
               payment={{
                 id: selectedPayment.id,
-                payment_number: selectedPayment.receipt_id || `ODE-${Date.now()}`,
+                payment_number: selectedPayment.receipt_id || selectedPayment.id,
                 payment_date: selectedPayment.payment_date,
                 payment_time: new Date(selectedPayment.payment_date).toTimeString(),
                 amount: selectedPayment.amount,
@@ -230,7 +230,7 @@ export function StudentPaymentsPage() {
                 student_number: student.student_number as string | undefined,
                 class_name: student.class_name as string | undefined,
                 branch_name: (student.branch_name as string | undefined) || "Ana Şube",
-                organization_name: "Okul360",
+                organization_name: "SCS360",
                 organization_tax_number: "1234567890",
                 organization_address: "İstanbul, Türkiye",
                 organization_phone: "+90 212 123 4567",

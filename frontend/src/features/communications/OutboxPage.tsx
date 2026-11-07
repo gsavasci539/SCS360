@@ -3,6 +3,7 @@ import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
 import { ErrorState, LoadingState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
+import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
@@ -14,6 +15,7 @@ export function OutboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { showToast } = useToast();
+  const can = useAuthStore((state) => state.can);
 
   async function load(page = data.page) {
     setLoading(true);
@@ -76,7 +78,7 @@ export function OutboxPage() {
           onPage={load}
           detailBase="/outbox"
           canEdit={false}
-          onDelete={handleDelete}
+          onDelete={can("notification.write") ? handleDelete : undefined}
         />
       )}
     </>

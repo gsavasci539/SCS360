@@ -1,0 +1,9 @@
+*** Begin Patch
+*** Update File: C:/Okul360/frontend/src/App.tsx
+@@
+ const SchoolPaymentSettings = lazy(() => import("./features/payment/SchoolPaymentSettings").then((module) => ({ default: module.SchoolPaymentSettings })));
++const SchoolPaymentReviewPage = lazy(() => import("./features/payment/SchoolPaymentReviewPage").then((module) => ({ default: module.SchoolPaymentReviewPage })));
+@@
+         <Route path="settings/payments" element={<SchoolPaymentSettings />} />
++        <Route element={<PermissionRoute permission="finance.read" alternativePermissions={["finance.write"]} />}><Route path="finance/online-payments" element={<SchoolPaymentReviewPage />} /></Route>
+*** End Patch

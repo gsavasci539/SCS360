@@ -5,7 +5,8 @@ import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui
 import { api, apiMessage } from "../../lib/api";
 import { textValue, toArray } from "../../lib/data";
 import { shortDate, titleCase } from "../../lib/format";
-import { useAuthStore } from "../../stores/auth";
+import { useAuthStore, hasPermission } from "../../stores/auth";
+import { useWorkspaceUser } from "../../lib/workspaceUser";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 
 export function UserDetailPage() {
@@ -15,18 +16,27 @@ export function UserDetailPage() {
   const [branches, setBranches] = useState<DataRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const can = useAuthStore((state) => state.can);
+  const [accessError, setAccessError] = useState(""), [saving, setSaving] = useState(false), [message, setMessage] = useState("");
+  const [options, setOptions] = useState<{ roles: DataRecord[]; branches: DataRecord[] } | null>(null);
+  const [roleIds, setRoleIds] = useState<string[]>([]), [branchIds, setBranchIds] = useState<string[]>([]);
+  const viewer = useWorkspaceUser(), operator = useAuthStore((state) => state.user);
+  const can = (permission: string) => hasPermission(viewer, permission);
+  const writable = can("user.write");
+  const canPrepare = can("role.write") && (operator?.is_super_admin || viewer?.roles.some((role) => ["owner", "org_admin"].includes(role.slug)));
 
   useEffect(() => {
+    const controller = new AbortController();
+    setOptions(null); setAccessError(""); setMessage("");
     async function load() {
       setLoading(true);
       setError("");
       try {
         const [userRes, rolesRes, branchesRes] = await Promise.allSettled([
-          api.get<ApiResponse<DataRecord>>(`/users/${id}`),
-          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/roles`),
-          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/branches`)
+          api.get<ApiResponse<DataRecord>>(`/users/${id}`, { signal: controller.signal }),
+          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/roles`, { signal: controller.signal }),
+          api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/branches`, { signal: controller.signal })
         ]);
+        if (controller.signal.aborted) return;
 
         if (userRes.status === "fulfilled") {
           setUser(userRes.value.data.data);
@@ -36,19 +46,45 @@ export function UserDetailPage() {
 
         if (rolesRes.status === "fulfilled") {
           setRoles(toArray(rolesRes.value.data.data));
+          setRoleIds(toArray(rolesRes.value.data.data).map((row) => row.id));
         }
 
         if (branchesRes.status === "fulfilled") {
           setBranches(toArray(branchesRes.value.data.data));
+          setBranchIds(toArray(branchesRes.value.data.data).map((row) => row.id));
+        }
+        if (rolesRes.status === "rejected" || branchesRes.status === "rejected") {
+          setAccessError("Mevcut erişim yüklenemedi. Değişiklik yapmadan önce sayfayı yenileyin.");
+        } else if (writable && !userRes.value.data.data.is_super_admin) {
+          try { const response = await api.get("/users/options", { params: { organization_id: userRes.value.data.data.organization_id }, signal: controller.signal });
+            if (!controller.signal.aborted) { setOptions(response.data.data); setAccessError(""); }
+          } catch (reason) { if (!controller.signal.aborted) setAccessError(apiMessage(reason)); }
         }
       } catch (err) {
-        setError(apiMessage(err));
+        if (!controller.signal.aborted) setError(apiMessage(err));
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
     load();
-  }, [id]);
+    return () => controller.abort();
+  }, [id, writable]);
+
+  async function saveAccess(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (saving) return; setSaving(true); setMessage(""); setAccessError("");
+    try { await api.put(`/users/${id}/access`, { role_ids: roleIds, branch_ids: branchIds });
+      setRoles(options?.roles.filter((row) => roleIds.includes(row.id)) || []);
+      setBranches(options?.branches.filter((row) => branchIds.includes(row.id)) || []);
+      setMessage("Rol ve şube erişimi kaydedildi.");
+      if (useAuthStore.getState().user?.id === id) { const response = await api.get("/auth/me"); useAuthStore.getState().setUser(response.data.data); }
+    } catch (reason) { setAccessError(apiMessage(reason)); } finally { setSaving(false); }
+  }
+  function checked(values: string[], value: string, enabled: boolean) { return enabled ? [...new Set([...values, value])] : values.filter((item) => item !== value); }
+  async function prepareRoles() {
+    if (saving || !user) return; setSaving(true); setAccessError(""); setMessage("");
+    try { await api.post("/users/role-catalog", { organization_id: user.organization_id }); const response = await api.get("/users/options", { params: { organization_id: user.organization_id } }); setOptions(response.data.data); setMessage("Eksik standart kurum rolleri tamamlandı."); }
+    catch (reason) { setAccessError(apiMessage(reason)); } finally { setSaving(false); }
+  }
 
   if (loading) return <div className="card"><LoadingState label="Kullanıcı bilgileri yükleniyor" /></div>;
   if (error || !user) return <div className="card"><ErrorState message={error || "Kullanıcı bulunamadı."} /></div>;
@@ -71,6 +107,16 @@ export function UserDetailPage() {
           </Link>
         )}
       </PageHeader>
+
+      {writable && !user.is_super_admin && <section className="card card-pad account-workspace" style={{ marginBottom: 18 }}><h2>Rol ve şube erişimi</h2>
+        {canPrepare && <button className="btn btn-secondary" disabled={saving} onClick={prepareRoles}>Eksik standart rolleri ekle</button>}
+        {accessError && <p role="alert">{accessError}</p>}{message && <p role="status">{message}</p>}
+        {options && <form aria-label="Kullanıcı erişimini düzenle" onSubmit={saveAccess}><fieldset disabled={saving} style={{ border: 0, padding: 0, display: "grid", gap: 14 }}>
+          <fieldset><legend>Roller</legend>{options.roles.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={roleIds.includes(row.id)} onChange={(event) => setRoleIds(checked(roleIds, row.id, event.target.checked))} /> {String(row.name)}{row.organization_id === null ? " · Genel rol" : row.organization_id ? " · Kurum rolü" : ""}</label>)}</fieldset>
+          <fieldset><legend>Şube erişimi</legend>{options.branches.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={branchIds.includes(row.id)} onChange={(event) => setBranchIds(checked(branchIds, row.id, event.target.checked))} /> {String(row.name)}</label>)}<p>Şube seçilmezse hesap, rolünün izin verdiği kurum kapsamını kullanır.</p></fieldset>
+          <button className="btn btn-primary">Erişimi kaydet</button>
+        </fieldset></form>}
+      </section>}
 
       <div className="detail-grid">
         <div className="card">

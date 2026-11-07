@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/api-refresh.test.ts
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  01:54:05
+   Duration  3.32s (transform 126ms, setup 341ms, import 358ms, tests 20ms, environment 2.26s)
+

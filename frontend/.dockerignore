@@ -1,7 +1,7 @@
-.env
-.env.*
-!.env.example
 node_modules
 dist
-coverage
-*.log
+.env
+.env.*
+playwright-report
+test-results
+e2e

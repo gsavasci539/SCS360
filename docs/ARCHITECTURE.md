@@ -1,4 +1,4 @@
-# EduPanel — Mimari Dokümantasyon
+# SCS360 — Mimari Dokümantasyon
 
 Anaokulu, kreş, etüt ve kurs merkezleri için franchise uyumlu, çoklu şube destekli yönetim platformu.
 

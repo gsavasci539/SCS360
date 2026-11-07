@@ -1,0 +1,13 @@
+
+> scs360-frontend@1.0.0 test
+> vitest run src/test/analysis-access.test.ts src/test/parent-dashboard-permissions.test.tsx src/test/student-checkout-status.test.tsx src/test/resource-form-options.test.tsx src/test/resource-choice.test.tsx
+
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+
+ Test Files  5 passed (5)
+      Tests  9 passed (9)
+   Start at  08:02:07
+   Duration  15.83s (transform 1.02s, setup 3.13s, import 3.47s, tests 2.94s, environment 17.54s)
+

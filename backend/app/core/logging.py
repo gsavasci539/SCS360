@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger("edupanel")
+logger = logging.getLogger("scs360")

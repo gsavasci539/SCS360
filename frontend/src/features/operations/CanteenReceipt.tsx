@@ -1,5 +1,6 @@
 import { Printer, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { ReceiptBrand } from "../../components/Brand";
 import { money, shortDate, formatTime } from "../../lib/format";
 
 interface CartItem {
@@ -70,6 +71,7 @@ export function CanteenReceipt({ order, onClose }: CanteenReceiptProps) {
         className="canteen-receipt"
       >
         {/* Header */}
+        <ReceiptBrand />
         <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 15, borderBottom: "1px dashed #333" }}>
           <h1 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 5px", color: "#2d8f78" }}>
             {order.organization_name}

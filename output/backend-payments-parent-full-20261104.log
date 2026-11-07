@@ -1,0 +1,25 @@
+........................................................................ [ 21%]
+........................................................................ [ 43%]
+........................................................................ [ 65%]
+.....................................................................F.. [ 86%]
+............................................                             [100%]
+================================== FAILURES ===================================
+______________ test_frontend_api_calls_are_registered_in_openapi ______________
+tests\unit\test_api_contract.py:107: in test_frontend_api_calls_are_registered_in_openapi
+    assert not missing, "\n".join(missing)
+E   AssertionError: SubscriptionCheckout.tsx: POST /subscription/invoices/${invoice.id}/${action}
+E     SubscriptionPage.tsx: POST /subscription/invoices/${row.id}/${action}
+E   assert not ['SubscriptionCheckout.tsx: POST /subscription/invoices/${invoice.id}/${action}', 'SubscriptionPage.tsx: POST /subscription/invoices/${row.id}/${action}']
+============================== warnings summary ===============================
+.venv\Lib\site-packages\pydantic\_internal\_config.py:295: 19 warnings
+  C:\Okul360\backend\.venv\Lib\site-packages\pydantic\_internal\_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12
+  C:\Okul360\backend\.venv\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+    haveNameConstant = hasattr(ast,'NameConstant')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_api_contract.py::test_frontend_api_calls_are_registered_in_openapi
+1 failed, 331 passed, 20 warnings in 724.62s (0:12:04)

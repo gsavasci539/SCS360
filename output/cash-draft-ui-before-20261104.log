@@ -1,0 +1,480 @@
+
+ RUN  v4.1.12 C:/Okul360/frontend
+
+ ❯ src/test/cash-payments.test.tsx (8 tests | 3 failed) 3029ms
+   × sonucu belirsiz tahsilatı sayfa yeniden açıldığında aynı gövdeyle sürdürür 327ms
+   × bekleyen tahsilat taslağını başka kullanıcıya veya Root kurumuna taşımaz 439ms
+   × başarılı tahsilatı yeniden açınca yeni ödeme göndermeden makbuzu gösterir 1352ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/cash-payments.test.tsx > sonucu belirsiz tahsilatı sayfa yeniden açıldığında aynı gövdeyle sürdürür
+Error: expect(element).toHaveValue(25)
+
+Expected the element to have value:
+  25
+Received:
+  null
+ ❯ src/test/cash-payments.test.tsx:104:18
+    102|   render(<MemoryRouter><PaymentFormPage /></MemoryRouter>);
+    103|   const amount = screen.getByRole("spinbutton", { name: /Ödeme tutarı/…
+    104|   expect(amount).toHaveValue(25); expect(amount).toBeDisabled();
+       |                  ^
+    105|   fireEvent.click(screen.getByRole("button", { name: "Tahsilatı tamaml…
+    106|   await screen.findByText("RCP-ACCEPTANCE");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  src/test/cash-payments.test.tsx > bekleyen tahsilat taslağını başka kullanıcıya veya Root kurumuna taşımaz
+Error: expect(element).toHaveValue(25)
+
+Expected the element to have value:
+  25
+Received:
+  null
+ ❯ src/test/cash-payments.test.tsx:124:68
+    122|   account = { ...account, id: "cashier-a" }; workspace = { ...workspac…
+    123|   render(<MemoryRouter><PaymentFormPage /></MemoryRouter>);
+    124|   expect(screen.getByRole("spinbutton", { name: /Ödeme tutarı/ })).toH…
+       |                                                                    ^
+    125| });
+    126|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  src/test/cash-payments.test.tsx > başarılı tahsilatı yeniden açınca yeni ödeme göndermeden makbuzu gösterir
+TestingLibraryElementError: Unable to find an element with the text: RCP-ACCEPTANCE. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+<body
+  style=""
+>
+  <div />
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Yeni tahsilat
+        </h1>
+        <p>
+          Borcu seçip kayıtlı kalan tutarı aşmadan tahsilat oluşturun.
+        </p>
+      </div>
+    </header>
+    <form
+      class="card form-card"
+    >
+      <div
+        class="form-section"
+      >
+        <h2>
+          Ödeme bilgileri
+        </h2>
+        <p>
+          Bağlantı kesilirse aynı formdan tekrar deneyebilirsiniz. Yeni bir tahsilat açmadan önce önceki işlemin sonucunu kontrol edin.
+        </p>
+        <fieldset
+          style="border: 0px; padding: 0px; min-width: 0;"
+        >
+          <div
+            class="form-grid"
+          >
+            <div
+              class="field"
+            >
+              <label>
+                Borç kaydı
+                 ara
+                <input
+                  placeholder="Ad veya numara ile arayın"
+                  type="search"
+                  value=""
+                />
+              </label>
+              <div
+                class="field"
+              >
+                <label
+                  for="_r_1b_"
+                >
+                  Borç kaydı
+                  <span>
+                     *
+                  </span>
+                </label>
+                <select
+                  aria-busy="false"
+                  aria-invalid="false"
+                  id="_r_1b_"
+                  name="debt_id"
+                >
+                  <option
+                    value=""
+                  >
+                    Seçiniz
+                  </option>
+                  <option
+                    value="00000000-0000-4000-8000-000000000001"
+                  >
+                    Deniz · Kalan 100.00 TL
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div
+              class="field"
+            >
+              <label
+                for="_r_1c_"
+              >
+                Ödeme tutarı
+                <span>
+                   *
+                </span>
+              </label>
+              <input
+                aria-invalid="false"
+                id="_r_1c_"
+                max="9999999999.99"
+                min="0.01"
+                name="amount"
+                required=""
+                step="0.01"
+                type="number"
+              />
+            </div>
+            <div
+              class="field"
+            >
+              <label
+                for="_r_1d_"
+              >
+                Ödeme yöntemi
+                <span>
+                   *
+                </span>
+              </label>
+              <select
+                aria-invalid="false"
+                id="_r_1d_"
+                name="payment_method"
+                required=""
+              >
+                <option
+                  value=""
+                >
+                  Seçiniz
+                </option>
+                <option
+                  value="CASH"
+                >
+                  Nakit
+                </option>
+                <option
+                  value="CREDIT_CARD"
+                >
+                  Kredi kartı
+                </option>
+                <option
+                  value="BANK_TRANSFER"
+                >
+                  Banka havalesi
+                </option>
+                <option
+                  value="EFT"
+                >
+                  EFT
+                </option>
+                <option
+                  value="OTHER"
+                >
+                  Diğer
+                </option>
+              </select>
+            </div>
+            <div
+              class="field field-full"
+            >
+              <label
+                for="_r_1e_"
+              >
+                Açıklama
+              </label>
+              <textarea
+                aria-invalid="false"
+                id="_r_1e_"
+                maxlength="2000"
+                name="notes"
+              />
+            </div>
+          </div>
+        </fieldset>
+      </div>
+      <div
+        class="form-actions"
+      >
+        <button
+          class="btn btn-primary"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-save"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+            />
+            <path
+              d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
+            />
+            <path
+              d="M7 3v4a1 1 0 0 0 1 1h7"
+            />
+          </svg>
+          Tahsilatı tamamla
+        </button>
+      </div>
+    </form>
+  </div>
+</body>
+
+Ignored nodes: comments, script, style
+<body
+  style=""
+>
+  <div />
+  <div>
+    <header
+      class="page-head"
+    >
+      <div>
+        <div
+          class="eyebrow"
+        >
+          Finans
+        </div>
+        <h1>
+          Yeni tahsilat
+        </h1>
+        <p>
+          Borcu seçip kayıtlı kalan tutarı aşmadan tahsilat oluşturun.
+        </p>
+      </div>
+    </header>
+    <form
+      class="card form-card"
+    >
+      <div
+        class="form-section"
+      >
+        <h2>
+          Ödeme bilgileri
+        </h2>
+        <p>
+          Bağlantı kesilirse aynı formdan tekrar deneyebilirsiniz. Yeni bir tahsilat açmadan önce önceki işlemin sonucunu kontrol edin.
+        </p>
+        <fieldset
+          style="border: 0px; padding: 0px; min-width: 0;"
+        >
+          <div
+            class="form-grid"
+          >
+            <div
+              class="field"
+            >
+              <label>
+                Borç kaydı
+                 ara
+                <input
+                  placeholder="Ad veya numara ile arayın"
+                  type="search"
+                  value=""
+                />
+              </label>
+              <div
+                class="field"
+              >
+                <label
+                  for="_r_1b_"
+                >
+                  Borç kaydı
+                  <span>
+                     *
+                  </span>
+                </label>
+                <select
+                  aria-busy="false"
+                  aria-invalid="false"
+                  id="_r_1b_"
+                  name="debt_id"
+                >
+                  <option
+                    value=""
+                  >
+                    Seçiniz
+                  </option>
+                  <option
+                    value="00000000-0000-4000-8000-000000000001"
+                  >
+                    Deniz · Kalan 100.00 TL
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div
+              class="field"
+            >
+              <label
+                for="_r_1c_"
+              >
+                Ödeme tutarı
+                <span>
+                   *
+                </span>
+              </label>
+              <input
+                aria-invalid="false"
+                id="_r_1c_"
+                max="9999999999.99"
+                min="0.01"
+                name="amount"
+                required=""
+                step="0.01"
+                type="number"
+              />
+            </div>
+            <div
+              class="field"
+            >
+              <label
+                for="_r_1d_"
+              >
+                Ödeme yöntemi
+                <span>
+                   *
+                </span>
+              </label>
+              <select
+                aria-invalid="false"
+                id="_r_1d_"
+                name="payment_method"
+                required=""
+              >
+                <option
+                  value=""
+                >
+                  Seçiniz
+                </option>
+                <option
+                  value="CASH"
+                >
+                  Nakit
+                </option>
+                <option
+                  value="CREDIT_CARD"
+                >
+                  Kredi kartı
+                </option>
+                <option
+                  value="BANK_TRANSFER"
+                >
+                  Banka havalesi
+                </option>
+                <option
+                  value="EFT"
+                >
+                  EFT
+                </option>
+                <option
+                  value="OTHER"
+                >
+                  Diğer
+                </option>
+              </select>
+            </div>
+            <div
+              class="field field-full"
+            >
+              <label
+                for="_r_1e_"
+              >
+                Açıklama
+              </label>
+              <textarea
+                aria-invalid="false"
+                id="_r_1e_"
+                maxlength="2000"
+                name="notes"
+              />
+            </div>
+          </div>
+        </fieldset>
+      </div>
+      <div
+        class="form-actions"
+      >
+        <button
+          class="btn btn-primary"
+        >
+          <svg
+            aria-hidden="true"
+            class="lucide lucide-save"
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            width="16"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+            />
+            <path
+              d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"
+            />
+            <path
+              d="M7 3v4a1 1 0 0 0 1 1h7"
+            />
+          </svg>
+          Tahsilatı tamamla
+        </button>
+      </div>
+    </form>
+  </div>
+</body>
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/cash-payments.test.tsx:132:23
+    130|   fireEvent.click(screen.getByRole("button", { name: "Tahsilatı tamaml…
+    131|   render(<MemoryRouter><PaymentFormPage /></MemoryRouter>);
+    132|   expect(await screen.findByText("RCP-ACCEPTANCE")).toBeInTheDocument(…
+       |                       ^
+    133|   expect(api.post).toHaveBeenCalledTimes(1);
+    134|   fireEvent.click(screen.getByRole("button", { name: "Yeni tahsilat" }…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 5 passed (8)
+   Start at  22:36:45
+   Duration  8.02s (transform 313ms, setup 510ms, import 751ms, tests 3.03s, environment 3.33s)
+

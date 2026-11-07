@@ -1,0 +1,92 @@
+ExpectError: expect(locator).toHaveValue(expected) failed
+
+Locator: getByLabel('API key', { exact: true })
+Expected: ""
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toHaveValue" getByLabel('API key', { exact: true }) with timeout 5000ms
+  - waiting for getByLabel('API key', { exact: true })
+
+    at captureRawStack (C:\Okul360\frontend\node_modules\playwright-core\lib\coreBundle.js:9282:17)
+    at callMatcherAsStep (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13316:57)
+    at Object.toHaveValue (C:\Okul360\frontend\node_modules\playwright\lib\matchers\expect.js:13308:23)
+    at C:\Okul360\.codex-build\local\review-payment-navigation-20261105.cjs:41:63 {
+  matcherResult: {
+    name: 'toHaveValue',
+    expected: '',
+    message: 'expect(locator).toHaveValue(expected) failed\n' +
+      '\n' +
+      "Locator: getByLabel('API key', { exact: true })\n" +
+      'Expected: ""\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toHaveValue" getByLabel('API key', { exact: true }) with timeout 5000ms\n` +
+      "  - waiting for getByLabel('API key', { exact: true })\n",
+    pass: false,
+    actual: undefined,
+    log: [
+      `  - Expect "toHaveValue" getByLabel('API key', { exact: true }) with timeout 5000ms`,
+      "  - waiting for getByLabel('API key', { exact: true })"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- complementary:\n' +
+      '  - img "SCS360 logosu"\n' +
+      '  - text: SCS360 Yönetim Merkezi Aktif çalışma alanı\n' +
+      '  - strong: Demo Eğitim Kurumu\n' +
+      '  - navigation "Ana menü":\n' +
+      '    - button "Yönetim"\n' +
+      '    - button "Eğitim"\n' +
+      '    - button "İletişim"\n' +
+      '    - button "Operasyon"\n' +
+      '    - button "Finans"\n' +
+      '    - button "Analiz"\n' +
+      '    - button "Sistem"\n' +
+      '  - strong: SCS360 v1.0\n' +
+      '  - text: Veriye dayalı, güvenli eğitim yönetimi.\n' +
+      '- banner:\n' +
+      '  - button "Menüyü aç"\n' +
+      '  - text: SCS360 /\n' +
+      '  - strong: Ayarlar\n' +
+      '  - button "Öğrenci aramasına git"\n' +
+      '  - button "Bildirimler"\n' +
+      '  - button "Kullanıcı menüsü":\n' +
+      '    - strong: Sistem Yöneticisi\n' +
+      '    - text: Super Admin\n' +
+      '- main:\n' +
+      '  - region "Seçilen kurum çalışma alanı":\n' +
+      '    - strong: Demo Eğitim Kurumu\n' +
+      '    - button "Platform yönetimine dön"\n' +
+      '  - text: Kurum ayarları\n' +
+      '  - heading "Ödeme entegrasyonu" [level=1]\n' +
+      '  - paragraph: Öğrenci tahsilatları, kurumunuza ait iyzico merchant hesabı üzerinden alınır.\n' +
+      '  - region "Kurum ödeme hesabı durumu":\n' +
+      '    - heading "iyzico bağlantısı" [level=2]\n' +
+      '    - button "Ayar durumunu kontrol et"\n' +
+      '    - paragraph:\n' +
+      '      - strong: Merchant kurulumu bekleniyor\n' +
+      '    - paragraph: "API key: Eksik · Secret key: Eksik"\n' +
+      '    - paragraph: Ödeme dönüş adresi sunucuda yapılandırılmalı.\n' +
+      '    - paragraph: Ödeme sonuç sayfası sunucuda yapılandırılmalı.\n' +
+      '    - paragraph: SCS360 üyelik ödemesi bu hesaptan alınmaz. Bu form kart bilgisi almaz ve ödeme veya iade başlatmaz.\n' +
+      '  - form "Kurum iyzico hesabı ayarları":\n' +
+      '    - group:\n' +
+      '      - heading "Merchant hesabı" [level=2]\n' +
+      '      - paragraph: Hesabınıza ait anahtarları girin. Kayıtlı anahtarlar hiçbir zaman gösterilmez; mevcut hesapta boş alanlar kayıtlı değeri korur.\n' +
+      '      - text: Ödeme ortamı\n' +
+      '      - combobox "Ödeme ortamı":\n' +
+      '        - option "Canlı (LIVE)" [selected]\n' +
+      '        - option "Sandbox (test)"\n' +
+      '      - checkbox "Online öğrenci ödemesini etkinleştir"\n' +
+      '      - text: Online öğrenci ödemesini etkinleştir API key *\n' +
+      '      - textbox "API key *"\n' +
+      '      - text: Secret key *\n' +
+      '      - textbox "Secret key *"\n' +
+      '      - button "Ödeme ayarlarını kaydet"\n' +
+      `- button "Chatbot'u aç":\n` +
+      '  - img "SCS360 logosu"'
+  }
+}

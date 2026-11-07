@@ -1,0 +1,666 @@
+{
+  "summary": {
+    "missing_reference_count": 96,
+    "unique_missing_parent_keys": 21,
+    "keys_with_backup_candidate": 0,
+    "by_parent_table": {
+      "organizations": 2,
+      "users": 6,
+      "students": 10,
+      "branches": 1,
+      "classes": 2
+    },
+    "scanned_backups": 18,
+    "read_errors": []
+  },
+  "missing_parents": [
+    {
+      "parent_table": "organizations",
+      "parent_column": "id",
+      "missing_identifier": "1",
+      "references": [
+        {
+          "table": "ai_chat_audit_logs",
+          "column": "organization_id",
+          "rowid": 1
+        },
+        {
+          "table": "ai_chat_audit_logs",
+          "column": "organization_id",
+          "rowid": 2
+        },
+        {
+          "table": "ai_chat_audit_logs",
+          "column": "organization_id",
+          "rowid": 3
+        },
+        {
+          "table": "ai_chat_audit_logs",
+          "column": "organization_id",
+          "rowid": 4
+        },
+        {
+          "table": "ai_chat_audit_logs",
+          "column": "organization_id",
+          "rowid": 5
+        },
+        {
+          "table": "branches",
+          "column": "organization_id",
+          "rowid": 4
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 51
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 52
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 53
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 54
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 55
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 56
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 57
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 58
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 59
+        },
+        {
+          "table": "parents",
+          "column": "organization_id",
+          "rowid": 60
+        },
+        {
+          "table": "classes",
+          "column": "organization_id",
+          "rowid": 5
+        },
+        {
+          "table": "users",
+          "column": "organization_id",
+          "rowid": 12
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "e0000000-0000-4000-8000-000000000004",
+      "references": [
+        {
+          "table": "user_roles",
+          "column": "user_id",
+          "rowid": 7
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "e0000000-0000-4000-8000-000000000005",
+      "references": [
+        {
+          "table": "user_roles",
+          "column": "user_id",
+          "rowid": 8
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "550e8400-e29b-41d4-a716-446655440000",
+      "references": [
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 19
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 19
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 20
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 20
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 21
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 21
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 22
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 22
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 23
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 23
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 24
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 24
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 25
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 25
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 26
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 26
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 27
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 27
+        },
+        {
+          "table": "debts",
+          "column": "updated_by",
+          "rowid": 28
+        },
+        {
+          "table": "debts",
+          "column": "created_by",
+          "rowid": 28
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440006",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 19
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "branches",
+      "parent_column": "id",
+      "missing_identifier": "660e8400-e29b-41d4-a716-446655440001",
+      "references": [
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 19
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 20
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 21
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 22
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 23
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 24
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 25
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 26
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 27
+        },
+        {
+          "table": "debts",
+          "column": "branch_id",
+          "rowid": 28
+        },
+        {
+          "table": "announcements",
+          "column": "branch_id",
+          "rowid": 1
+        },
+        {
+          "table": "announcements",
+          "column": "branch_id",
+          "rowid": 2
+        },
+        {
+          "table": "announcements",
+          "column": "branch_id",
+          "rowid": 4
+        },
+        {
+          "table": "announcements",
+          "column": "branch_id",
+          "rowid": 5
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "organizations",
+      "parent_column": "id",
+      "missing_identifier": "550e8400-e29b-41d4-a716-446655440000",
+      "references": [
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 19
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 20
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 21
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 22
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 23
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 24
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 25
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 26
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 27
+        },
+        {
+          "table": "debts",
+          "column": "organization_id",
+          "rowid": 28
+        },
+        {
+          "table": "announcements",
+          "column": "organization_id",
+          "rowid": 1
+        },
+        {
+          "table": "announcements",
+          "column": "organization_id",
+          "rowid": 2
+        },
+        {
+          "table": "announcements",
+          "column": "organization_id",
+          "rowid": 3
+        },
+        {
+          "table": "announcements",
+          "column": "organization_id",
+          "rowid": 4
+        },
+        {
+          "table": "announcements",
+          "column": "organization_id",
+          "rowid": 5
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 1
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 2
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 3
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 4
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 5
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 6
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 7
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 8
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 9
+        },
+        {
+          "table": "notification_jobs",
+          "column": "organization_id",
+          "rowid": 10
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440007",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 20
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440008",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 21
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440009",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 22
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440010",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 23
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440011",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 24
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440012",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 25
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440013",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 26
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440014",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 27
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "students",
+      "parent_column": "id",
+      "missing_identifier": "cc0e8400-e29b-41d4-a716-446655440015",
+      "references": [
+        {
+          "table": "debts",
+          "column": "student_id",
+          "rowid": 28
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "990e8400-e29b-41d4-a716-446655440001",
+      "references": [
+        {
+          "table": "announcements",
+          "column": "created_by",
+          "rowid": 1
+        },
+        {
+          "table": "announcements",
+          "column": "created_by",
+          "rowid": 3
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "990e8400-e29b-41d4-a716-446655440004",
+      "references": [
+        {
+          "table": "announcements",
+          "column": "created_by",
+          "rowid": 2
+        },
+        {
+          "table": "announcements",
+          "column": "created_by",
+          "rowid": 5
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "classes",
+      "parent_column": "id",
+      "missing_identifier": "aa0e8400-e29b-41d4-a716-446655440001",
+      "references": [
+        {
+          "table": "announcements",
+          "column": "class_id",
+          "rowid": 2
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "users",
+      "parent_column": "id",
+      "missing_identifier": "990e8400-e29b-41d4-a716-446655440003",
+      "references": [
+        {
+          "table": "announcements",
+          "column": "created_by",
+          "rowid": 4
+        }
+      ],
+      "candidate_backups": []
+    },
+    {
+      "parent_table": "classes",
+      "parent_column": "id",
+      "missing_identifier": "aa0e8400-e29b-41d4-a716-446655440002",
+      "references": [
+        {
+          "table": "announcements",
+          "column": "class_id",
+          "rowid": 5
+        }
+      ],
+      "candidate_backups": []
+    }
+  ]
+}

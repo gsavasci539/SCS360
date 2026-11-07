@@ -1,4 +1,5 @@
-import { Plus, ArrowLeft, FileText, Edit, Trash2 } from "lucide-react";
+import { getAnalysis } from "../../lib/analysis";
+import { Plus, ArrowLeft, FileText, Edit, Trash2, Brain, TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DataTable } from "../../components/DataTable";
@@ -18,16 +19,23 @@ export function DailyReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [dailyReportsAI, setDailyReportsAI] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
   async function load(page = data.page) {
     setLoading(true);
     try {
-      const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
-        params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
-      });
-      setData(normalize(r.data.data));
+      const [r, aiResult] = await Promise.allSettled([
+        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
+          params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
+        }),
+        getAnalysis("/ai/ai-daily-reports-analysis").catch(() => null)
+      ]);
+      setData(normalize(r.status === "fulfilled" ? r.value.data.data : []));
+      if (aiResult.status === "fulfilled" && aiResult.value) {
+        setDailyReportsAI(aiResult.value.data.data);
+      }
     } catch (e) {
       setError(apiMessage(e));
     } finally {
@@ -66,6 +74,63 @@ export function DailyReportsPage() {
         )}
       </PageHeader>
 
+      {dailyReportsAI && (
+        <div className="card" style={{ marginBottom: 18 }}>
+          <div className="card-head">
+            <div>
+              <h2>AI Günlük Karne Analizi</h2>
+              <p>Öğrenci gelişim ve wellness analizi - {dailyReportsAI.ai_model}</p>
+            </div>
+            <Brain size={20} color="#176b5b" />
+          </div>
+          <div className="card-pad">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Toplam Rapor</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{dailyReportsAI.report_stats?.total || 0}</div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Mutlu Oranı</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.mood_rate || 0}</div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Uyku Oranı</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.sleep_rate || 0}</div>
+              </div>
+              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Beslenme Oranı</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.meal_rate || 0}</div>
+              </div>
+            </div>
+            {dailyReportsAI.students_needing_attention && dailyReportsAI.students_needing_attention.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Dikkat Gerektiren Öğrenciler</h3>
+                {dailyReportsAI.students_needing_attention.slice(0, 3).map((student: any, index: number) => (
+                  <div key={index} style={{ padding: 10, borderRadius: 6, background: student.risk_level === "yüksek" ? "#fee2e2" : "#f8faf8", marginBottom: 6, borderLeft: `3px solid ${student.risk_level === "yüksek" ? "#dc2626" : "#ca8a04"}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{student.student_name}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: student.risk_level === "yüksek" ? "#dc2626" : "#ca8a04" }}>{student.wellness_score} wellness</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6e7b7d" }}>{student.total_reports} rapor • {student.poor_mood} ruh hali sorunu • {student.poor_sleep} uyku sorunu</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {dailyReportsAI.recommendations && dailyReportsAI.recommendations.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>AI Önerileri</h3>
+                {dailyReportsAI.recommendations.map((rec: string, index: number) => (
+                  <div key={index} style={{ display: "flex", gap: 8, marginBottom: 6, padding: 8, borderRadius: 6, background: "#f0fdf4" }}>
+                    <TrendingUp size={16} color="#176b5b" />
+                    <span style={{ fontSize: 13 }}>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="card"><LoadingState /></div>
       ) : error ? (
@@ -76,9 +141,10 @@ export function DailyReportsPage() {
           columns={[
             { key: "student_name", label: "Öğrenci" },
             { key: "date", label: "Tarih", type: "date" },
-            { key: "behavior", label: "Davranış" },
-            { key: "academic_performance", label: "Akademik" },
-            { key: "notes", label: "Notlar" }
+            { key: "mood", label: "Ruh Hali" },
+            { key: "sleep_status", label: "Uyku Durumu" },
+            { key: "meal_status", label: "Beslenme" },
+            { key: "teacher_notes", label: "Öğretmen Notları" }
           ]}
           search={search}
           onSearch={setSearch}
@@ -128,14 +194,33 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
         <Field label="Tarih" error={errors.date?.message as string}>
           <input type="date" {...register("date")} />
         </Field>
-        <Field label="Davranış" error={errors.behavior?.message as string}>
-          <input {...register("behavior")} />
+        <Field label="Ruh Hali" error={errors.mood?.message as string}>
+          <select {...register("mood")}>
+            <option value="">Seçiniz</option>
+            <option value="HAPPY">Mutlu</option>
+            <option value="CALM">Sakin</option>
+            <option value="UNSETTLED">Huzursuz</option>
+            <option value="TIRED">Yorgun</option>
+          </select>
         </Field>
-        <Field label="Akademik performans" error={errors.academic_performance?.message as string}>
-          <input {...register("academic_performance")} />
+        <Field label="Uyku Durumu" error={errors.sleep_status?.message as string}>
+          <select {...register("sleep_status")}>
+            <option value="">Seçiniz</option>
+            <option value="SLEPT_WELL">İyi uyudu</option>
+            <option value="SHORT">Kısa uyku</option>
+            <option value="NO_SLEEP">Uyku yok</option>
+          </select>
         </Field>
-        <Field label="Notlar" full error={errors.notes?.message as string}>
-          <textarea {...register("notes")} />
+        <Field label="Beslenme Durumu" error={errors.meal_status?.message as string}>
+          <select {...register("meal_status")}>
+            <option value="">Seçiniz</option>
+            <option value="ALL">Tam yedi</option>
+            <option value="HALF">Yarım yedi</option>
+            <option value="NONE">Yemedi</option>
+          </select>
+        </Field>
+        <Field label="Öğretmen Notları" full error={errors.teacher_notes?.message as string}>
+          <textarea {...register("teacher_notes")} />
         </Field>
       </form>
     </Modal>
@@ -214,18 +299,32 @@ export function DailyReportsDetailPage() {
         <div className="card-pad">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
             <div>
-              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Davranış</small>
-              <strong style={{ display: "block", fontSize: 13 }}>{String(data.behavior || "-")}</strong>
+              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Ruh Hali</small>
+              <strong style={{ display: "block", fontSize: 13 }}>{String(data.mood || "-")}</strong>
             </div>
             <div>
-              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Akademik Performans</small>
-              <strong style={{ display: "block", fontSize: 13 }}>{String(data.academic_performance || "-")}</strong>
+              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Uyku Durumu</small>
+              <strong style={{ display: "block", fontSize: 13 }}>{String(data.sleep_status || "-")}</strong>
+            </div>
+            <div>
+              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Beslenme Durumu</small>
+              <strong style={{ display: "block", fontSize: 13 }}>{String(data.meal_status || "-")}</strong>
             </div>
           </div>
-          {data.notes && (
+          {data.teacher_notes && (
             <div style={{ marginTop: 16 }}>
-              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Notlar</small>
-              <p style={{ fontSize: 13, lineHeight: 1.6 }}>{String(data.notes)}</p>
+              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Öğretmen Notları</small>
+              <p style={{ fontSize: 13, lineHeight: 1.6 }}>{String(data.teacher_notes)}</p>
+            </div>
+          )}
+          {data.activities && (
+            <div style={{ marginTop: 16 }}>
+              <small style={{ display: "block", color: "var(--muted)", fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase", marginBottom: 6 }}>Aktiviteler</small>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {Array.isArray(data.activities) ? data.activities.map((activity: any, index: number) => (
+                  <span key={index} style={{ padding: "4px 8px", borderRadius: 4, background: "#f0fdf4", fontSize: 12, color: "#16a34a" }}>{String(activity)}</span>
+                )) : <span style={{ fontSize: 13 }}>{String(data.activities)}</span>}
+              </div>
             </div>
           )}
         </div>
@@ -268,14 +367,33 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
         <Field label="Tarih" error={errors.date?.message as string}>
           <input type="date" {...register("date")} defaultValue={String(data?.date || "")} />
         </Field>
-        <Field label="Davranış" error={errors.behavior?.message as string}>
-          <input {...register("behavior")} defaultValue={String(data?.behavior || "")} />
+        <Field label="Ruh Hali" error={errors.mood?.message as string}>
+          <select {...register("mood")} defaultValue={String(data?.mood || "")}>
+            <option value="">Seçiniz</option>
+            <option value="HAPPY">Mutlu</option>
+            <option value="CALM">Sakin</option>
+            <option value="UNSETTLED">Huzursuz</option>
+            <option value="TIRED">Yorgun</option>
+          </select>
         </Field>
-        <Field label="Akademik performans" error={errors.academic_performance?.message as string}>
-          <input {...register("academic_performance")} defaultValue={String(data?.academic_performance || "")} />
+        <Field label="Uyku Durumu" error={errors.sleep_status?.message as string}>
+          <select {...register("sleep_status")} defaultValue={String(data?.sleep_status || "")}>
+            <option value="">Seçiniz</option>
+            <option value="SLEPT_WELL">İyi uyudu</option>
+            <option value="SHORT">Kısa uyku</option>
+            <option value="NO_SLEEP">Uyku yok</option>
+          </select>
         </Field>
-        <Field label="Notlar" full error={errors.notes?.message as string}>
-          <textarea {...register("notes")} defaultValue={String(data?.notes || "")} />
+        <Field label="Beslenme Durumu" error={errors.meal_status?.message as string}>
+          <select {...register("meal_status")} defaultValue={String(data?.meal_status || "")}>
+            <option value="">Seçiniz</option>
+            <option value="ALL">Tam yedi</option>
+            <option value="HALF">Yarım yedi</option>
+            <option value="NONE">Yemedi</option>
+          </select>
+        </Field>
+        <Field label="Öğretmen Notları" full error={errors.teacher_notes?.message as string}>
+          <textarea {...register("teacher_notes")} defaultValue={String(data?.teacher_notes || "")} />
         </Field>
       </form>
     </Modal>

@@ -1,0 +1,30 @@
+{
+  "origin": "http://127.0.0.1:5173",
+  "login": "passed",
+  "dashboard": "passed",
+  "chatbot": "passed",
+  "quick_question": "passed",
+  "student_selector": "passed",
+  "student_option_count": 25,
+  "chatbot_response_ms": 167,
+  "inventory": "passed",
+  "consents": "passed",
+  "surveys": "passed",
+  "participation": "passed",
+  "guidance": "passed",
+  "payroll": "passed",
+  "tutoring": "passed",
+  "health": "passed",
+  "failures": [],
+  "security": "passed",
+  "dismissal": "passed",
+  "digital_id_read": "passed-without-issuing-credential",
+  "transport": "passed",
+  "platform": "passed",
+  "subscription": "passed",
+  "local_fonts": {
+    "body": true,
+    "heading": true
+  },
+  "external_font_requests": 0
+}
