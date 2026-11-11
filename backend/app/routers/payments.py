@@ -50,6 +50,7 @@ class ReminderSendCreate(BaseModel):
 # ==================== iyzico Payment Endpoints ====================
 
 @router.get("/iyzico/debts/{debt_id}")
+@router.get("/online/debts/{debt_id}")
 async def checkout_debt(debt_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write")), db: AsyncSession = Depends(get_db, scope="function")):
     from app.application.services.online_payment_service import available_for
     from app.core.student_access import require_student_access, require_parent_child_access
@@ -64,18 +65,21 @@ async def checkout_debt(debt_id: UUID, tenant: TenantContext = Depends(Permissio
 
 
 @router.get("/iyzico/checkouts/{checkout_id}")
+@router.get("/online/checkouts/{checkout_id}")
 async def checkout_status(checkout_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write", "finance.read")), db: AsyncSession = Depends(get_db, scope="function")):
     from app.application.services import school_checkout_service
     return success_response(await school_checkout_service.status(db, tenant, checkout_id))
 
 
 @router.post("/iyzico/checkouts/{checkout_id}/resume")
+@router.post("/online/checkouts/{checkout_id}/resume")
 async def resume_school_checkout(checkout_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write")), db: AsyncSession = Depends(get_db, scope="function")):
     from app.application.services import school_checkout_service
     return success_response(await school_checkout_service.resume(db, tenant, checkout_id))
 
 
 @router.post("/iyzico/checkouts/{checkout_id}/refresh")
+@router.post("/online/checkouts/{checkout_id}/refresh")
 async def refresh_school_checkout(checkout_id: UUID, tenant: TenantContext = Depends(PermissionChecker("parent.make_payment", "finance.write")), db: AsyncSession = Depends(get_db, scope="function")):
     from app.application.services import school_checkout_service
     return success_response(await school_checkout_service.refresh(db, tenant, checkout_id))
@@ -85,7 +89,7 @@ class IyzicoPaymentRequest(BaseModel):
     debt_id: UUID
     amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
     currency: Literal["TRY"] = "TRY"
-    payment_channel: str = Field(default="WEB")
+    payment_channel: Literal["WEB", "MOBILE"] = "WEB"
     basket_items: list[dict] = Field(default_factory=list)
     buyer: Optional[dict] = None
     shipping_address: Optional[dict] = None
@@ -93,6 +97,7 @@ class IyzicoPaymentRequest(BaseModel):
 
 
 @router.post("/iyzico/initialize")
+@router.post("/online/initialize")
 async def initialize_iyzico_payment(
     payment_request: IyzicoPaymentRequest,
     request: Request,
@@ -127,6 +132,105 @@ async def iyzico_callback(
             target = await school_checkout_service.callback_return(db, row)
             if target: return RedirectResponse(target, status_code=303)
     return success_response(result)
+
+
+@router.post("/{provider}/callback")
+async def provider_callback(provider: Literal["paytr", "craftgate", "sipay"], request: Request,
+    checkout_id: UUID | None = Query(None), callback_key: str | None = Query(None, max_length=128),
+    db: AsyncSession = Depends(get_db, scope="function")):
+    import hashlib
+    import hmac
+    import base64
+    import json
+    from urllib.parse import parse_qs
+    from fastapi.responses import PlainTextResponse, RedirectResponse
+    from app.application.services import school_checkout_service, school_payment_merchant
+    from app.application.services.platform_service import lock_organization
+    from app.core.exceptions import AppException, NotFoundException
+    from app.infrastructure.models.models import PaymentCheckout
+    raw = await request.body()
+    if len(raw) > 32768:
+        raise HTTPException(413, "Ödeme bildirimi çok büyük")
+    try:
+        if "application/json" in request.headers.get("content-type", ""):
+            values = json.loads(raw)
+        else:
+            values = {key: parts[-1] for key, parts in parse_qs(raw.decode(), keep_blank_values=True).items()}
+        if not isinstance(values, dict):
+            raise ValueError()
+        if provider == "paytr":
+            identifier = UUID(str(values.get("merchant_oid", "")))
+        else:
+            identifier = checkout_id or UUID(str(values.get("invoice_id", "")))
+    except (ValueError, TypeError, UnicodeError):
+        raise HTTPException(422, "Ödeme bildirim referansı geçersiz") from None
+    row = (await db.execute(select(PaymentCheckout).where(PaymentCheckout.id == identifier))).scalar_one_or_none()
+    if row is None:
+        raise NotFoundException("Ödeme oturumu bulunamadı")
+    context = await school_payment_merchant.resolve_gateway(db, row.organization_id, checkout=row)
+    adapter = context["gateway"]
+    if getattr(adapter, "provider", "iyzico") != provider:
+        raise HTTPException(400, "Ödeme sağlayıcısı eşleşmedi")
+    stored = school_checkout_service.secret(row) or {}
+    if provider == "paytr":
+        reference, outcome, amount = (values.get(field) for field in ("merchant_oid", "status", "total_amount"))
+        supplied_hash = values.get("hash")
+        if (reference != row.id.hex or outcome not in {"success", "failed"} or not isinstance(amount, str)
+            or not amount.isascii() or not amount.isdigit() or len(amount) > 12 or not isinstance(supplied_hash, str)):
+            raise HTTPException(400, "PayTR bildirim alanları geçersiz")
+        # Callback protocol places salt between the order reference and status.
+        calculated = base64.b64encode(hmac.new(adapter.values["merchant_key"].encode(),
+            (reference + adapter.values["merchant_salt"] + outcome + amount).encode(), hashlib.sha256).digest()).decode()
+        if not hmac.compare_digest(calculated, supplied_hash):
+            raise HTTPException(403, "PayTR bildirim imzası doğrulanamadı")
+        if outcome == "failed":
+            await lock_organization(db, row.organization_id, include_deleted=True)
+            await db.refresh(row)
+            if not row.payment_id and not row.verified_at and row.status in {"INITIALIZING", "PENDING"}:
+                row.status, row.review_reason = "FAILED", "VERIFIED_PROVIDER_FAILURE"
+                await db.flush()
+            return PlainTextResponse("OK", headers={"Cache-Control": "no-store"})
+        if int(amount) != int(row.amount * 100):
+            raise HTTPException(409, "PayTR bildirim tutarı oturumla eşleşmiyor; mutabakat gerekli")
+        token = reference
+    else:
+        expected = stored.get("callback_key")
+        if not isinstance(expected, str) or not callback_key or not hmac.compare_digest(expected, callback_key):
+            raise HTTPException(403, "Ödeme dönüş anahtarı doğrulanamadı")
+        token = values.get("token") if provider == "craftgate" else row.id.hex
+        if not isinstance(token, str) or not 1 <= len(token) <= 2048:
+            raise HTTPException(422, "Ödeme token bilgisi gerekli")
+    try:
+        row = await school_checkout_service.reconcile(db, token, identifier)
+    except AppException:
+        raise
+    if provider == "paytr":
+        return PlainTextResponse("OK", headers={"Cache-Control": "no-store"})
+    target = await school_checkout_service.callback_return(db, row)
+    if target:
+        return RedirectResponse(target, status_code=303, headers={"Cache-Control": "no-store"})
+    return success_response({"status": row.status})
+
+
+@router.get("/{provider}/callback")
+async def provider_browser_return(provider: Literal["paytr", "craftgate", "sipay"], checkout_id: UUID,
+    callback_key: str = Query(min_length=1, max_length=128), db: AsyncSession = Depends(get_db, scope="function")):
+    """Browser navigation never authorizes, captures, or settles a payment."""
+    import hmac
+    from fastapi.responses import RedirectResponse
+    from app.application.services import school_checkout_service, school_payment_merchant
+    from app.infrastructure.models.models import PaymentCheckout
+    row = (await db.execute(select(PaymentCheckout).where(PaymentCheckout.id == checkout_id))).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(404, "Ödeme oturumu bulunamadı")
+    context = await school_payment_merchant.resolve_gateway(db, row.organization_id, checkout=row)
+    expected = (school_checkout_service.secret(row) or {}).get("callback_key")
+    if getattr(context["gateway"], "provider", "iyzico") != provider or not isinstance(expected, str) or not hmac.compare_digest(expected, callback_key):
+        raise HTTPException(403, "Ödeme dönüş anahtarı doğrulanamadı")
+    target = await school_checkout_service.callback_return(db, row)
+    if not target:
+        raise HTTPException(503, "Ödeme sonuç adresi yapılandırılmamış")
+    return RedirectResponse(target, status_code=303, headers={"Cache-Control": "no-store"})
 
 
 @router.post("", response_model=PaymentResponse)

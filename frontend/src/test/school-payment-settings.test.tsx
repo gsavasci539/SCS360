@@ -144,3 +144,17 @@ it("bozuk yönetim yanıtı formu açmaz ve görünür hata verir", async () => 
   expect(await screen.findByRole("alert")).toHaveTextContent("Ödeme ayarlarının yanıtı geçersiz");
   expect(screen.queryByRole("form")).not.toBeInTheDocument();
 });
+
+
+it.each([['paytr', 'PayTR'], ['craftgate', 'Craftgate'], ['sipay', 'Sipay']])('saves %s using provider credentials without changing the SaaS account', async (provider) => {
+  render(<SchoolPaymentSettings />);
+  await screen.findByRole('combobox', { name: 'Ödeme sağlayıcısı' });
+  fireEvent.change(screen.getByRole('combobox', { name: 'Ödeme sağlayıcısı' }), { target: { value: provider } });
+  const passwords = form().querySelectorAll('input[type="password"]');
+  expect(passwords.length).toBe(provider === 'craftgate' ? 2 : 3);
+  passwords.forEach(input => fireEvent.change(input, { target: { value: 'synthetic-credential' } }));
+  fireEvent.submit(form());
+  await waitFor(() => expect(api.put).toHaveBeenCalled());
+  expect(vi.mocked(api.put).mock.calls[0][0]).toBe('/payments/merchant');
+  expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({ provider, credentials: expect.any(Object) });
+});

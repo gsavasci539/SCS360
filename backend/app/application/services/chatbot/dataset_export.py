@@ -114,19 +114,21 @@ class DatasetExportService:
             response = log.corrected_response if log.corrected_response else log.ai_response
             
             # Get sender role from meta_data if available
-            sender_role = log.meta_data.get("sender_role", "UNKNOWN") if log.meta_data else "UNKNOWN"
+            sender_role = log.meta_data.get("sender_role", "UNKNOWN") if isinstance(log.meta_data, dict) else "UNKNOWN"
             
             # Create a shorter ID format for CSV (LOG-001 style)
             log_id = f"LOG-{str(log.id)[:8]}"
             
-            writer.writerow([
+            cells = [
                 log_id,
                 sender_role,
                 log.topic_category or "Genel",
                 log.user_query,
                 response,
                 log.feedback_status,
-            ])
+            ]
+            writer.writerow(["'" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@"))
+                else value for value in cells])
         
         return output.getvalue()
     

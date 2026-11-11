@@ -45,6 +45,23 @@ function recordedAmount(value: unknown) {
   return Number.isFinite(amount) && amount >= 0 ? `${amount.toFixed(2)} TL` : "Tutar bilinmiyor";
 }
 
+function recordedDate(value: unknown, exclusive = false) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return "Tarih bilinmiyor";
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime())) return "Tarih bilinmiyor";
+  if (exclusive) parsed.setUTCDate(parsed.getUTCDate() - 1);
+  return parsed.toLocaleDateString("tr-TR", { timeZone: "UTC" });
+}
+
+function recordedAsOf(value: unknown, timezone: unknown) {
+  if (typeof value !== "string") return "Güncelleme zamanı bilinmiyor";
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) return "Güncelleme zamanı bilinmiyor";
+  try {
+    return parsed.toLocaleString("tr-TR", { timeZone: typeof timezone === "string" ? timezone : "Europe/Istanbul" });
+  } catch { return "Güncelleme zamanı bilinmiyor"; }
+}
+
 function stockPresentation(status: unknown) {
   if (status === "healthy") return { label: "İyi", background: "#dcfce7" };
   if (status === "warning") return { label: "Uyarı", background: "#fef3c7" };
@@ -458,13 +475,18 @@ export function CanteenSalesPage() {
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-head">
             <div>
-              <h2>AI Kantin Analizi</h2>
-              <p>Satış trendleri ve stok durumu</p>
+              <h2>Kayıtlı Kantin Özeti</h2>
+              <p>Tamamlanan cüzdan harcamaları ve doğrudan satışlar</p>
             </div>
             <TrendingUp size={20} color="#176b5b" />
           </div>
           <div className="card-pad">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+            <p style={{ fontSize: 13, marginBottom: 16 }}>
+              Dönem: {recordedDate(aiAnalysis.period_start)} – {recordedDate(aiAnalysis.period_end_exclusive, true)}
+              {Number.isInteger(aiAnalysis.observed_day_count) && aiAnalysis.observed_day_count >= 0 && <> · {aiAnalysis.observed_day_count} gözlenen gün</>}
+              <br />Son durum: {recordedAsOf(aiAnalysis.as_of, aiAnalysis.timezone)}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16, marginBottom: 16 }}>
               <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Satış</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{recordedAmount(aiAnalysis.total_sales)}</div>
@@ -478,6 +500,14 @@ export function CanteenSalesPage() {
                 <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{stockPresentation(aiAnalysis.inventory_status).label}</div>
               </div>
             </div>
+            <dl style={{ fontSize: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12, marginBottom: 16 }}>
+              <div><dt>Cüzdandan harcama</dt><dd>{recordedAmount(aiAnalysis.wallet_debit_amount)}</dd></div>
+              <div><dt>Doğrudan satış</dt><dd>{recordedAmount(aiAnalysis.direct_sale_amount)}</dd></div>
+              <div><dt>Bakiye yüklemeleri</dt><dd>{recordedAmount(aiAnalysis.topup_amount)}</dd></div>
+              <div><dt>Eski katalog siparişleri</dt><dd>{recordedAmount(aiAnalysis.catalog_orders?.amount)}</dd></div>
+            </dl>
+            <p style={{ fontSize: 13, marginBottom: 16 }}>Bakiye yüklemeleri ve eski katalog siparişleri satış toplamına dahil edilmez. Katalog kayıt sayısı ödeme fişi sayısı değildir.</p>
+            {aiAnalysis.requires_review === true && <p role="status">Bazı kayıtlar incelenmeli; belirsiz tutarlar toplam olarak gösterilmez.</p>}
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Trend</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: aiAnalysis.trend === "increasing" ? "#166534" : aiAnalysis.trend === "decreasing" ? "#991b1b" : "#1b2b2e" }}>

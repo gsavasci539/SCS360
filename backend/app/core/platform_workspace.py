@@ -28,12 +28,22 @@ class WorkspacePrincipal:
 
 
 def is_control_path(path):
-    return path.startswith(("/api/auth/", "/api/platform/", "/api/subscription/", "/api/public/"))
+    if path.startswith(("/api/auth/", "/api/platform/", "/api/subscription/", "/api/public/")) or path == "/api/organizations":
+        return True
+    if path.startswith("/api/organizations/"):
+        try:
+            UUID(path.removeprefix("/api/organizations/"))
+            return True
+        except ValueError:
+            pass
+    return False
 
 
 async def select_workspace(request, db, operator):
     value = request.headers.get(HEADER)
     if not value:
+        if operator.is_super_admin and not is_control_path(request.url.path):
+            raise ForbiddenException("Kurum işlemleri için önce bir kurum çalışma alanı seçin")
         return None
     if not operator.is_super_admin:
         raise ForbiddenException("Kurum çalışma alanını yalnız platform yöneticisi seçebilir")

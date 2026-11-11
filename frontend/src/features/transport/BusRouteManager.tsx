@@ -1,35 +1,46 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, apiMessage } from "../../lib/api";
 import { newRequestId } from "../../lib/requestId";
 import { Badge } from "../../components/ui";
 import type { DataRecord } from "../../types/api";
 
 const text = (value: unknown) => String(value ?? "");
+const timeInput = (value: unknown) => text(value).replace(/(\.\d{3})\d+$/, "$1");
 const fields = { display: "grid", gap: 12, border: 0, padding: 0 };
-interface BusOptions { branches?: DataRecord[]; drivers?: DataRecord[]; students?: DataRecord[]; today?: string; more_students?: boolean }
+interface BusOptions { branches?: DataRecord[]; drivers?: DataRecord[]; students?: DataRecord[]; today?: string; more_students?: boolean; more_drivers?: boolean }
 export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { routeId: string | null; canWrite: boolean; onClose: () => void; onRefresh: () => void }) {
   const [route, setRoute] = useState<DataRecord | null>(null), [options, setOptions] = useState<BusOptions>({}), [stops, setStops] = useState<DataRecord[]>([]), [records, setRecords] = useState<DataRecord[]>([]), [telemetry, setTelemetry] = useState<DataRecord | null>(null);
   const [branch, setBranch] = useState(""), [driver, setDriver] = useState(""), [student, setStudent] = useState(""), [search, setSearch] = useState(""), [day, setDay] = useState("");
+  const [driverSearch, setDriverSearch] = useState("");
   const [stop, setStop] = useState<DataRecord | null>(null), [page, setPage] = useState(1), [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(""), [message, setMessage] = useState("");
   const [routeNonce, setRouteNonce] = useState(newRequestId), [stopNonce, setStopNonce] = useState(newRequestId), [eventNonce, setEventNonce] = useState(newRequestId);
+  const [routeStatus, setRouteStatus] = useState<"loading" | "ready" | "error">(routeId ? "loading" : "ready");
+  const loadedRouteVersion = useRef("");
   useEffect(() => {
     const controller = new AbortController();
+    if (routeId) setRouteStatus("loading");
     if (routeId) api.get(`/bus/routes/${routeId}`, { signal: controller.signal }).then((response) => {
-      if (!controller.signal.aborted) { setRoute(response.data.data); setBranch(response.data.data.branch_id); setDriver(response.data.data.driver_id || ""); }
-    }).catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); });
+      if (!controller.signal.aborted) {
+        const version = `${routeId}:${text(response.data.data.updated_at)}`;
+        if (loadedRouteVersion.current && loadedRouteVersion.current !== version) setRouteNonce(newRequestId());
+        loadedRouteVersion.current = version;
+        setRoute(response.data.data); setBranch(response.data.data.branch_id); setDriver(response.data.data.driver_id || ""); setRouteStatus("ready");
+      }
+    }).catch((reason) => { if (!controller.signal.aborted) { setError(apiMessage(reason)); setRouteStatus("error"); } });
     return () => controller.abort();
   }, [routeId, revision]);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true);
     (async () => {
       try {
-        const response = await api.get("/bus/options", { params: { route_id: routeId || undefined, branch_id: branch || undefined, student_id: student || undefined, search }, signal: controller.signal });
+        const response = await api.get("/bus/options", { params: { route_id: routeId || undefined, branch_id: branch || undefined, student_id: student || undefined, search,
+          driver_search: driverSearch, driver_id: driver || undefined }, signal: controller.signal });
         if (controller.signal.aborted) return; setOptions(response.data.data || {}); setDay((current) => current || response.data.data.today); setError("");
       } catch (reason) { if (!controller.signal.aborted) setError(apiMessage(reason)); }
       finally { if (!controller.signal.aborted) setLoading(false); }
     })(); return () => controller.abort();
-  }, [routeId, branch, student, search, revision]);
+  }, [routeId, branch, student, search, driverSearch, driver, revision]);
   useEffect(() => {
     if (!routeId || !day) return; const controller = new AbortController();
     Promise.all([api.get("/bus/stops", { params: { route_id: routeId, limit: 101, offset: (page - 1) * 100 }, signal: controller.signal }),
@@ -39,9 +50,9 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
     }).catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); });
     return () => controller.abort();
   }, [routeId, day, student, page, revision]);
-  function refresh() { setRevision((value) => value + 1); onRefresh(); }
+  function refresh() { if (routeId) setRouteStatus("loading"); setRevision((value) => value + 1); onRefresh(); }
   async function save(event: FormEvent<HTMLFormElement>, kind: "route" | "stop" | "attendance" | "check-in") {
-    event.preventDefault(); if (busy || !canWrite) return;
+    event.preventDefault(); if (busy || !canWrite || (kind === "route" && routeStatus !== "ready") || (kind === "stop" && stop && !stop.version)) return;
     const form = event.currentTarget, values = Object.fromEntries(new FormData(form)); setBusy(true); setError(""); setMessage("");
     try {
       if (kind === "route") {
@@ -50,7 +61,9 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
         setRouteNonce(newRequestId()); refresh(); setMessage("Servis rotası kaydedildi"); if (!routeId) { onClose(); return; }
       } else if (kind === "stop") {
         const body = { ...values, route_id: routeId, stop_order: Number(values.stop_order), latitude: values.latitude ? Number(values.latitude) : null,
-          longitude: values.longitude ? Number(values.longitude) : null, estimated_arrival: values.estimated_arrival || null, request_id: stopNonce };
+          longitude: values.longitude ? Number(values.longitude) : null,
+          estimated_arrival: stop && values.estimated_arrival === timeInput(stop.estimated_arrival) ? stop.estimated_arrival || null : values.estimated_arrival || null, request_id: stopNonce,
+          ...(stop ? { expected_version: stop.version } : {}) };
         if (stop) await api.put(`/bus/stops/${stop.id}`, body); else await api.post("/bus/stops", body);
         setStop(null); form.reset(); setStopNonce(newRequestId()); refresh(); setMessage("Durak kaydedildi");
       } else if (kind === "attendance") {
@@ -61,14 +74,17 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
     } catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
   }
   function input(label: string, name: string, value: unknown, type = "text", required = false, min?: number, max?: number) {
-    return <label>{label}<input className="filter-select" name={name} type={type} defaultValue={text(value)} required={required} min={min} max={max} step={type === "number" && ["latitude", "longitude"].includes(name) ? "any" : undefined} maxLength={name === "vehicle_plate" ? 20 : name === "route_number" ? 50 : 255} /></label>;
+    return <label>{label}<input className="filter-select" name={name} type={type} defaultValue={type === "time" ? timeInput(value) : text(value)} required={required} min={min} max={max} step={type === "time" || type === "number" && ["latitude", "longitude"].includes(name) ? "any" : undefined} maxLength={name === "vehicle_plate" ? 20 : name === "route_number" ? 50 : 255} /></label>;
   }
   return <section className="card card-pad saas-workspace" aria-label="Servis rota yönetimi" style={{ marginTop: 18 }}>
     <h2>{routeId ? text(route?.route_name) || "Rota ayrıntıları" : "Yeni servis rotası"}</h2>
     <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}><button className="btn btn-secondary" onClick={refresh} disabled={busy}>Rota verilerini yenile</button><button className="btn btn-secondary" onClick={onClose} disabled={busy}>Rota panelini kapat</button></div>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
-    {canWrite && (!routeId || route) && <form aria-label="Servis rotasını kaydet" key={text(route?.updated_at) || "new"} onSubmit={(event) => save(event, "route")} onChange={() => setRouteNonce(newRequestId())}><fieldset disabled={busy || loading} style={fields}>
-      <label>Rota şubesi<select className="filter-select" value={branch} required onChange={(event) => { setBranch(event.target.value); setDriver(""); }}><option value="">Şube seçin</option>{(options.branches || []).map((row: DataRecord) => <option key={row.id} value={row.id}>{text(row.name)}</option>)}</select></label>
+    {routeStatus === "error" && <p role="alert">Rota bilgileri yüklenemedi. Kaydetmeden önce rota verilerini yenileyin.</p>}
+    {canWrite && <><label>Rota sürücüsü ara<input className="filter-select" value={driverSearch} maxLength={100} disabled={busy}
+      onChange={(event) => setDriverSearch(event.target.value)} /></label>{options.more_drivers && <p>Diğer sürücüler için ad veya soyadla arayın.</p>}</>}
+    {canWrite && (!routeId || route) && <form aria-label="Servis rotasını kaydet" key={text(route?.updated_at) || "new"} onSubmit={(event) => save(event, "route")} onChange={() => setRouteNonce(newRequestId())}><fieldset disabled={busy || loading || routeStatus !== "ready"} style={fields}>
+      <label>Rota şubesi<select className="filter-select" value={branch} required onChange={(event) => { setBranch(event.target.value); setDriver(""); setDriverSearch(""); }}><option value="">Şube seçin</option>{branch && !(options.branches || []).some((row) => row.id === branch) && <option value={branch}>{branch === route?.branch_id ? text(route.branch_name) || "Mevcut şube" : "Seçili şube"}</option>}{(options.branches || []).map((row: DataRecord) => <option key={row.id} value={row.id}>{text(row.name)}</option>)}</select></label>
       {input("Rota adı", "route_name", route?.route_name, "text", true)}{input("Rota numarası", "route_number", route?.route_number)}{input("Araç plakası", "vehicle_plate", route?.vehicle_plate)}{input("Araç kapasitesi", "capacity", route?.capacity ?? 40, "number", true, 1, 2147483647)}
       <label>Rota sürücüsü<select className="filter-select" value={driver} onChange={(event) => setDriver(event.target.value)}><option value="">Sürücü atanmamış</option>{driver && !(options.drivers || []).some((row: DataRecord) => row.id === driver) && <option value={driver}>Mevcut sürücü</option>}{(options.drivers || []).map((row: DataRecord) => <option key={row.id} value={row.id}>{text(row.name)}</option>)}</select></label>
       <label>Rota durumu<select className="filter-select" name="status" defaultValue={text(route?.status) || "ACTIVE"}><option value="ACTIVE">Aktif</option><option value="MAINTENANCE">Bakımda</option><option value="OUT_OF_SERVICE">Hizmet dışı</option></select></label>
@@ -76,7 +92,7 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
     </fieldset></form>}
     {routeId && <><section aria-label="Rota durakları"><h3>Duraklar</h3>{!stops.length ? <p>Henüz durak yok.</p> : <div style={{ overflowX: "auto" }}><table className="data-table"><thead><tr><th>Sıra</th><th>Durak</th><th>Varış</th><th>İşlem</th></tr></thead><tbody>{stops.slice(0, 100).map((row) => <tr key={row.id}><td>{text(row.stop_order)}</td><td>{text(row.stop_name)}</td><td>{text(row.estimated_arrival) || "—"}</td><td>{canWrite && <button className="btn btn-secondary" onClick={() => { setStop(row); setStopNonce(newRequestId()); }}>Durağı düzenle</button>}</td></tr>)}</tbody></table></div>}
       <nav aria-label="Durak sayfaları"><button className="btn btn-secondary" disabled={busy || page === 1} onClick={() => setPage((value) => value - 1)}>Önceki duraklar</button><span> Sayfa {page} </span><button className="btn btn-secondary" disabled={busy || stops.length <= 100} onClick={() => setPage((value) => value + 1)}>Sonraki duraklar</button></nav></section>
-      {canWrite && <form aria-label="Servis durağını kaydet" key={stop?.id || "new-stop"} onSubmit={(event) => save(event, "stop")} onChange={() => setStopNonce(newRequestId())}><h3>{stop ? "Durağı düzenle" : "Durak ekle"}</h3><fieldset disabled={busy} style={fields}>
+      {canWrite && <form aria-label="Servis durağını kaydet" key={stop ? `${stop.id}:${stop.version}` : "new-stop"} onSubmit={(event) => save(event, "stop")} onChange={() => setStopNonce(newRequestId())}><h3>{stop ? "Durağı düzenle" : "Durak ekle"}</h3>{stop && !stop.version && <p role="alert">Durağın güncel sürümü alınamadı. Durak listesini yenileyip yeniden seçin.</p>}<fieldset disabled={busy || Boolean(stop && !stop.version)} style={fields}>
         {input("Durak adı", "stop_name", stop?.stop_name, "text", true)}{input("Durak sırası", "stop_order", stop?.stop_order, "number", true, 1, 2147483647)}{input("Durak enlemi", "latitude", stop?.latitude, "number", false, -90, 90)}{input("Durak boylamı", "longitude", stop?.longitude, "number", false, -180, 180)}{input("Tahmini varış saati", "estimated_arrival", stop?.estimated_arrival, "time")}
         <button className="btn btn-primary">Servis durağını kaydet</button>{stop && <button type="button" className="btn btn-secondary" onClick={() => setStop(null)}>Yeni durak</button>}
       </fieldset></form>}

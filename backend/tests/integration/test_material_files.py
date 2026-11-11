@@ -109,7 +109,8 @@ async def test_invalid_uploads_are_validation_errors_not_server_errors(materials
         teacher.is_super_admin = True
         await db.commit()
     response = await client.post(f'/api/students/{data["children"][0].id}/files',
-        headers=headers(data["teacher"]), data={"category": "NOT_A_CATEGORY"},
+        headers={**headers(data["teacher"]), "X-SCS360-Organization-Id": str(data["org"].id)},
+        data={"category": "NOT_A_CATEGORY"},
         files={"file": ("file.pdf", b"%PDF-1.4 test", "application/pdf")})
     assert response.status_code == 422, response.text
 

@@ -45,8 +45,9 @@ interface ChatAuditLog {
 interface AnalyticsOverview {
   overview: {
     total_logs: number;
-    avg_latency_ms: number;
-    avg_quality_rating: number;
+    avg_latency_ms: number | null;
+    avg_quality_rating: number | null;
+    quality_rated_count: number;
     finetuning_ready_count: number;
   };
   distributions: {
@@ -68,6 +69,7 @@ export function ChatbotManagementPage() {
   const [filteredLogs, setFilteredLogs] = useState<ChatAuditLog[]>([]);
   const [selectedLog, setSelectedLog] = useState<ChatAuditLog | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
+  const [analyticsError, setAnalyticsError] = useState("");
   
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,7 +114,10 @@ export function ChatbotManagementPage() {
     try {
       const response = await api.get("/v1/chatbot/ai/analytics/overview");
       setAnalytics(response.data.data);
+      setAnalyticsError("");
     } catch (err) {
+      setAnalytics(null);
+      setAnalyticsError(apiMessage(err));
       reportClientError("Analytics load error:", err);
     }
   }
@@ -449,6 +454,9 @@ export function ChatbotManagementPage() {
           </div>
         )}
 
+        {activeTab === "analytics" && analyticsError && (
+          <ErrorState message={analyticsError} retry={loadAnalytics} />
+        )}
         {activeTab === "analytics" && analytics && (
           <div className="tab-content">
             <div className="grid stats-grid">
@@ -461,13 +469,14 @@ export function ChatbotManagementPage() {
               <StatCard 
                 icon={<TrendingUp size={19} />} 
                 label="Ortalama Gecikme" 
-                value={`${Math.round(analytics.overview.avg_latency_ms)}ms`} 
+                value={analytics.overview.avg_latency_ms == null ? "Veri yok" : `${Math.round(analytics.overview.avg_latency_ms)}ms`}
                 color="green"
               />
               <StatCard 
                 icon={<Star size={19} />} 
                 label="Ortalama Kalite" 
-                value={`${analytics.overview.avg_quality_rating.toFixed(1)}/5`} 
+                value={analytics.overview.avg_quality_rating == null ? "Puanlanmadı" : `${analytics.overview.avg_quality_rating.toFixed(1)}/5`}
+                meta={`${analytics.overview.quality_rated_count} puanlı kayıt`}
                 color="orange"
               />
               <StatCard 

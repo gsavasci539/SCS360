@@ -32,6 +32,10 @@ def test_actual_cli_reads_disposable_database_and_fails_closed_on_legacy_integri
             connection.execute(Student.__table__.insert().values(id=student_one, organization_id=organization_id,
                 branch_id=branch_id, student_number="TEMP-1", first_name="Temporary", last_name="One"))
             if damaged:
+                # Reproduce the pre-037 raw-key constraint in this disposable
+                # damaged database; the current canonical index prevents it.
+                connection.execute(text("DROP INDEX uq_students_org_student_number_live"))
+                connection.execute(text("CREATE UNIQUE INDEX legacy_student_number ON students(organization_id,student_number)"))
                 # Raw legacy values deliberately bypass the UUID binder only in
                 # this temporary file, reproducing the two storage spellings.
                 connection.execute(Student.__table__.insert().values(id=student_two, organization_id=organization_id,

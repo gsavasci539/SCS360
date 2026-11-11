@@ -1,5 +1,5 @@
 """Write-only merchant credentials; reading this DTO cannot reveal a secret."""
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
@@ -14,6 +14,8 @@ class SchoolPaymentMerchantUpdate(BaseModel):
     api_key: SecretStr | None = Field(default=None, max_length=2048)
     secret_key: SecretStr | None = Field(default=None, max_length=2048)
     replace_account: bool = False
+    provider: Literal["iyzico", "paytr", "craftgate", "sipay"] | None = None
+    credentials: dict[str, Annotated[SecretStr, Field(max_length=2048)]] | None = Field(default=None, max_length=8)
 
     @field_validator("api_key", "secret_key", mode="before")
     @classmethod

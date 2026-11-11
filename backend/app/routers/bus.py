@@ -36,7 +36,7 @@ class BusRouteCreate(BaseModel):
     vehicle_plate: Optional[str] = Field(None, max_length=20)
     capacity: int = Field(default=40, ge=1, le=2147483647)
     status: Literal["ACTIVE", "MAINTENANCE", "OUT_OF_SERVICE"] = "ACTIVE"
-    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma işlemi tekrarında aynı UUID")
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma veya güncelleme tekrarında aynı UUID")
     expected_updated_at: Optional[datetime] = None
 
     @field_validator("status", mode="before")
@@ -52,13 +52,14 @@ class BusRouteCreate(BaseModel):
         return value
 
 class BusStopCreate(BaseModel):
+    expected_version: Optional[str] = Field(None, pattern=r"^[0-9a-f]{64}$", description="Düzenlenen durağın GET yanıtındaki sürümü")
     route_id: UUID
     stop_name: str = Field(..., min_length=1, max_length=255)
     stop_order: int = Field(..., ge=1, le=2147483647)
     latitude: Optional[Decimal] = Field(None, ge=-90, le=90)
     longitude: Optional[Decimal] = Field(None, ge=-180, le=180)
     estimated_arrival: Optional[time] = None
-    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma işlemi tekrarında aynı UUID")
+    request_id: UUID = Field(default_factory=uuid4, description="Aynı oluşturma veya güncelleme tekrarında aynı UUID")
 
     @field_validator("estimated_arrival")
     @classmethod
@@ -152,9 +153,10 @@ async def get_bus_routes(
 
 @router.get("/options")
 async def bus_options(branch_id: Optional[UUID] = None, route_id: Optional[UUID] = None, student_id: Optional[UUID] = None,
-    search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"),
+    search: str = Query("", max_length=100), driver_search: str = Query("", max_length=100),
+    driver_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
-    return success_response(await bus_service.options(db, branch_id, route_id, student_id, search.strip()))
+    return success_response(await bus_service.options(db, branch_id, route_id, student_id, search.strip(), driver_search.strip(), driver_id))
 
 
 @router.get("/summary")
@@ -209,8 +211,9 @@ async def get_bus_stops(
             "stop_order": stop.stop_order,
             "latitude": float(stop.latitude) if stop.latitude is not None else None,
             "longitude": float(stop.longitude) if stop.longitude is not None else None,
-            "estimated_arrival": stop.estimated_arrival.strftime("%H:%M") if stop.estimated_arrival else None,
-            "created_at": bus_service.iso(stop.created_at)
+            "estimated_arrival": stop.estimated_arrival.isoformat() if stop.estimated_arrival else None,
+            "created_at": bus_service.iso(stop.created_at),
+            "version": bus_service.stop_version(stop)
         })
     
     return success_response(enriched_stops)

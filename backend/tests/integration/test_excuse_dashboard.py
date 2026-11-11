@@ -8,7 +8,10 @@ from app.core.security import create_access_token
 
 
 def auth(user):
-    return {"Authorization": "Bearer " + create_access_token(user.id)}
+    values = {"Authorization": "Bearer " + create_access_token(user.id)}
+    if user.is_super_admin:
+        values["X-SCS360-Organization-Id"] = str(user.organization_id)
+    return values
 
 
 async def test_excuse_is_persisted_reviewed_and_limited_to_the_child_and_branch(materials_client):

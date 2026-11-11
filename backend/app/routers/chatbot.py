@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import and_, case, func, select
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
+from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_super_admin
+from app.core.dependencies import get_current_user
+from app.core.platform_workspace import WorkspacePrincipal
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 
@@ -42,6 +42,7 @@ from app.infrastructure.models.models import (
 
 from app.application.services.chatbot.context_service import ContextService
 from app.application.services.chatbot.date_resolution import DateResolutionService
+from app.core.exceptions import AppException
 from app.application.services.chatbot.handlers import HandlerDispatcher
 from app.application.services.chatbot.intent_schemas import ResolvedIntent
 from app.application.services.chatbot.intent_service import IntentDetectionService
@@ -57,6 +58,13 @@ router = APIRouter(
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def require_ai_workspace_admin(user: User = Depends(get_current_user)):
+    """Only a real platform operator with an explicitly selected institution."""
+    if not isinstance(user, WorkspacePrincipal):
+        raise HTTPException(403, "Sohbet denetimi için platform yöneticisi kurum seçmelidir")
+    return user
 
 ROLE_PARENT = "parent"
 ROLE_TEACHER = "teacher"
@@ -547,7 +555,8 @@ async def _process_chatbot_query(
         # Resolve date range
         date_range = None
         if raw_intent.period:
-            date_range = date_resolver.resolve_period(raw_intent.period)
+            resolver = DateResolutionService(context.current_date) if raw_intent.intent == "CANTEEN" else date_resolver
+            date_range = resolver.resolve_period(raw_intent.period)
 
         # Build resolved intent
         resolved_intent = ResolvedIntent(
@@ -587,7 +596,7 @@ async def _process_chatbot_query(
         )
 
         suggested_actions = handler_response.suggested_actions
-        if raw_intent.operation == "details" and not suggested_actions:
+        if raw_intent.operation == "details" and not suggested_actions and raw_intent.intent != "CANTEEN":
             detail_action = detail_action_for_intent(raw_intent.intent)
             suggested_actions = [detail_action] if detail_action else []
 
@@ -646,6 +655,8 @@ async def _process_chatbot_query(
             "timestamp": datetime.now().isoformat(),
         }
 
+    except AppException:
+        raise
     except Exception as e:
         execution_time = time.time() - start_time
 
@@ -1065,15 +1076,20 @@ async def connect_teacher(
 # AI CHAT AUDIT LOGS (Super Admin Only)
 # ============================================================
 
+def normalize_audit_role(role: str) -> str:
+    value = normalize_role(role)
+    return "super_admin" if value.replace("_", "").replace("-", "").replace(" ", "") == "superadmin" else value
+
+
 @router.get("/ai/audit-logs")
 async def get_audit_logs(
-    role: Optional[str] = None,
+    role: Optional[str] = Query(None, max_length=50, description="Kayıt anındaki gönderici rolü"),
     topic: Optional[str] = None,
     feedback_status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 50,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
     """
     Get AI chat audit logs with filtering options.
@@ -1082,14 +1098,14 @@ async def get_audit_logs(
     Süper Admin: Chat Loglarını ve Niyet İstatistiklerini Getir
     """
     # Build base query
-    query = select(AiChatAuditLogModel).order_by(AiChatAuditLogModel.created_at.desc())
+    query = select(AiChatAuditLogModel).order_by(AiChatAuditLogModel.created_at.desc(), AiChatAuditLogModel.id.desc())
     
     # Apply filters
-    if role:
-        # Join with users to filter by role
-        query = query.join(UserModel, AiChatAuditLogModel.user_id == UserModel.id)
-        # This is a simplified filter - in production you'd need to check user roles properly
-        # For now, we'll filter by metadata or add a sender_role column if needed
+    if role and role.strip():
+        recorded = func.lower(func.trim(AiChatAuditLogModel.meta_data["sender_role"].as_string()))
+        compact = func.replace(func.replace(func.replace(recorded, "_", ""), "-", ""), " ", "")
+        recorded = case((compact == "superadmin", "super_admin"), else_=recorded)
+        query = query.where(recorded == normalize_audit_role(role))
     
     if topic:
         query = query.where(AiChatAuditLogModel.topic_category == topic)
@@ -1098,7 +1114,6 @@ async def get_audit_logs(
         query = query.where(AiChatAuditLogModel.feedback_status == feedback_status)
     
     # Get total count
-    from sqlalchemy import func
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar()
@@ -1115,13 +1130,15 @@ async def get_audit_logs(
     enriched_logs = []
     for log in logs:
         # Get user details
-        user_result = await db.execute(
-            select(UserModel).options(selectinload(UserModel.roles)).where(UserModel.id == log.user_id)
-        )
-        user = user_result.scalar_one_or_none()
+        if log.user_id == current_user.id:
+            user = current_user
+        else:
+            user_result = await db.execute(select(UserModel).where(UserModel.id == log.user_id))
+            user = user_result.scalar_one_or_none()
         
         sender_name = f"{user.first_name} {user.last_name}" if user else "Bilinmeyen"
-        sender_role = get_user_role(user) if user else "UNKNOWN"
+        captured_role = (log.meta_data or {}).get("sender_role") if isinstance(log.meta_data, dict) else None
+        sender_role = normalize_audit_role(captured_role) if isinstance(captured_role, str) and captured_role.strip() else "UNKNOWN"
         
         log_dict = {
             "id": str(log.id),
@@ -1161,7 +1178,7 @@ async def update_audit_log_feedback(
     log_id: str,
     feedback: FeedbackPayload,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
     """
     Update audit log feedback (RLHF - Reinforcement Learning from Human Feedback).
@@ -1205,7 +1222,7 @@ async def export_fine_tuning_dataset(
     feedback_status: Optional[str] = None,
     is_fine_tuning_ready: Optional[bool] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
     """
     Export fine-tuning dataset in various formats.
@@ -1220,6 +1237,9 @@ async def export_fine_tuning_dataset(
     - csv: Tabular CSV format for BI and Excel
     """
     try:
+        format = format.lower().strip()
+        if format not in {"jsonl", "alpaca", "llama", "csv"}:
+            raise HTTPException(status_code=400, detail="Unsupported export format")
         dataset = await DatasetExportService.export_dataset(
             db=db,
             format=format,
@@ -1250,6 +1270,8 @@ async def export_fine_tuning_dataset(
             }
         )
     
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -1264,217 +1286,110 @@ async def export_fine_tuning_dataset(
 @router.get("/ai/analytics/overview")
 async def get_analytics_overview(
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
-    """
-    Get overall analytics overview for AI chatbot.
-    Only accessible by super admins.
-    """
+    """Recorded metrics for the explicitly selected institution; zero is unrated."""
     try:
-        # Get total logs count
-        total_logs_result = await db.execute(
-            select(func.count(AiChatAuditLogModel.id))
-        )
-        total_logs = total_logs_result.scalar() or 0
-        
-        # Get logs by sentiment
-        sentiment_result = await db.execute(
-            select(
-                AiChatAuditLogModel.sentiment,
-                func.count(AiChatAuditLogModel.id)
-            )
-            .group_by(AiChatAuditLogModel.sentiment)
-        )
-        sentiment_distribution = {
-            row[0]: row[1] for row in sentiment_result.all()
-        }
-        
-        # Get logs by topic category
-        topic_result = await db.execute(
-            select(
-                AiChatAuditLogModel.topic_category,
-                func.count(AiChatAuditLogModel.id)
-            )
-            .group_by(AiChatAuditLogModel.topic_category)
-        )
-        topic_distribution = {
-            row[0]: row[1] for row in topic_result.all()
-        }
-        
-        # Get logs by intent
-        intent_result = await db.execute(
-            select(
-                AiChatAuditLogModel.detected_intent,
-                func.count(AiChatAuditLogModel.id)
-            )
-            .group_by(AiChatAuditLogModel.detected_intent)
-        )
-        intent_distribution = {
-            row[0]: row[1] for row in intent_result.all()
-        }
-        
-        # Get feedback status distribution
-        feedback_result = await db.execute(
-            select(
-                AiChatAuditLogModel.feedback_status,
-                func.count(AiChatAuditLogModel.id)
-            )
-            .group_by(AiChatAuditLogModel.feedback_status)
-        )
-        feedback_distribution = {
-            row[0]: row[1] for row in feedback_result.all()
-        }
-        
-        # Get average latency
-        latency_result = await db.execute(
-            select(func.avg(AiChatAuditLogModel.latency_ms))
-        )
-        avg_latency = latency_result.scalar() or 0
-        
-        # Get average quality rating
-        quality_result = await db.execute(
-            select(func.avg(AiChatAuditLogModel.quality_rating))
-        )
-        avg_quality = quality_result.scalar() or 0
-        
-        # Get fine-tuning ready count
-        finetuning_result = await db.execute(
-            select(func.count(AiChatAuditLogModel.id))
-            .where(AiChatAuditLogModel.is_fine_tuning_ready == True)
-        )
-        finetuning_ready = finetuning_result.scalar() or 0
-        
+        log = AiChatAuditLogModel
+        scope = log.organization_id == current_user.organization_id
+        rated = case((log.quality_rating.between(1, 5), log.quality_rating), else_=None)
+        metrics = (await db.execute(select(
+            func.count(log.id), func.avg(log.latency_ms), func.avg(rated), func.count(rated),
+            func.sum(case((log.is_fine_tuning_ready.is_(True), 1), else_=0)),
+        ).where(scope))).one()
+
+        async def distribution(column):
+            label = func.coalesce(cast(column, String), "UNKNOWN")
+            result = await db.execute(select(label, func.count(log.id)).where(scope).group_by(label))
+            return {row[0]: row[1] for row in result.all()}
+
         return success_response({
             "success": True,
             "overview": {
-                "total_logs": total_logs,
-                "avg_latency_ms": round(avg_latency, 2),
-                "avg_quality_rating": round(avg_quality, 2),
-                "finetuning_ready_count": finetuning_ready,
+                "total_logs": metrics[0],
+                "avg_latency_ms": round(metrics[1], 2) if metrics[1] is not None else None,
+                "avg_quality_rating": round(metrics[2], 2) if metrics[2] is not None else None,
+                "quality_rated_count": metrics[3],
+                "finetuning_ready_count": metrics[4] or 0,
             },
             "distributions": {
-                "sentiment": sentiment_distribution,
-                "topic": topic_distribution,
-                "intent": intent_distribution,
-                "feedback_status": feedback_distribution,
-            }
+                "sentiment": await distribution(log.sentiment),
+                "topic": await distribution(log.topic_category),
+                "intent": await distribution(log.detected_intent),
+                "feedback_status": await distribution(log.feedback_status),
+            },
         })
-    
     except Exception as e:
         logger.error(f"Analytics overview error: {e}")
-        raise HTTPException(status_code=500, detail="Analytics overview failed")
+        raise HTTPException(status_code=503, detail="Analytics overview is temporarily unavailable")
 
 
 @router.get("/ai/analytics/trends")
 async def get_analytics_trends(
-    days: int = 30,
+    days: int = Query(30, ge=1, le=366),
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
-    """
-    Get analytics trends over time.
-    Only accessible by super admins.
-    """
+    """The requested UTC calendar days, including today up to the current instant."""
     try:
-        from datetime import datetime, timedelta
-        
-        start_date = datetime.now() - timedelta(days=days)
-        
-        # Get daily log counts
-        daily_result = await db.execute(
-            select(
-                func.date(AiChatAuditLogModel.created_at).label('date'),
-                func.count(AiChatAuditLogModel.id).label('count')
-            )
-            .where(AiChatAuditLogModel.created_at >= start_date)
-            .group_by(func.date(AiChatAuditLogModel.created_at))
-            .order_by(func.date(AiChatAuditLogModel.created_at))
-        )
-        
-        daily_trends = [
-            {"date": str(row[0]), "count": row[1]}
-            for row in daily_result.all()
-        ]
-        
-        # Get daily sentiment trends
-        sentiment_trends_result = await db.execute(
-            select(
-                func.date(AiChatAuditLogModel.created_at).label('date'),
-                AiChatAuditLogModel.sentiment,
-                func.count(AiChatAuditLogModel.id).label('count')
-            )
-            .where(AiChatAuditLogModel.created_at >= start_date)
-            .group_by(
-                func.date(AiChatAuditLogModel.created_at),
-                AiChatAuditLogModel.sentiment
-            )
-            .order_by(func.date(AiChatAuditLogModel.created_at))
-        )
-        
+        now = datetime.now(UTC)
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days - 1)
+        log = AiChatAuditLogModel
+        # PostgreSQL DATE(timestamptz) otherwise uses the connection's timezone.
+        timestamp = func.timezone("UTC", log.created_at) if db.get_bind().dialect.name == "postgresql" else log.created_at
+        day = func.date(timestamp)
+        result = await db.execute(select(day, log.sentiment, func.count(log.id)).where(
+            log.organization_id == current_user.organization_id,
+            log.created_at >= start_date, log.created_at <= now,
+        ).group_by(day, log.sentiment).order_by(day, log.sentiment))
+        daily_counts = {}
         sentiment_trends = {}
-        for row in sentiment_trends_result.all():
-            date_str = str(row[0])
-            if date_str not in sentiment_trends:
-                sentiment_trends[date_str] = {}
-            sentiment_trends[date_str][row[1]] = row[2]
-        
+        for date_value, sentiment, count in result.all():
+            date_str = str(date_value)
+            daily_counts[date_str] = daily_counts.get(date_str, 0) + count
+            sentiment_trends.setdefault(date_str, {})[sentiment] = count
         return success_response({
             "success": True,
             "period_days": days,
-            "daily_trends": daily_trends,
+            "timezone": "UTC",
+            "daily_trends": [{"date": day, "count": count} for day, count in daily_counts.items()],
             "sentiment_trends": sentiment_trends,
         })
-    
     except Exception as e:
         logger.error(f"Analytics trends error: {e}")
-        raise HTTPException(status_code=500, detail="Analytics trends failed")
+        raise HTTPException(status_code=503, detail="Analytics trends is temporarily unavailable")
 
 
 @router.get("/ai/analytics/intent-performance")
 async def get_intent_performance(
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_ai_workspace_admin),
 ):
-    """
-    Get performance metrics by intent.
-    Only accessible by super admins.
-    """
+    """Measured latency and rated quality by recorded intent, within one institution."""
     try:
-        # Get intent performance metrics
-        performance_result = await db.execute(
-            select(
-                AiChatAuditLogModel.detected_intent,
-                func.count(AiChatAuditLogModel.id).label('count'),
-                func.avg(AiChatAuditLogModel.latency_ms).label('avg_latency'),
-                func.avg(AiChatAuditLogModel.quality_rating).label('avg_quality'),
-                func.sum(case(
-                    (AiChatAuditLogModel.feedback_status == 'VERIFIED', 1),
-                    else_=0
-                )).label('verified_count')
-            )
-            .group_by(AiChatAuditLogModel.detected_intent)
-            .order_by(func.count(AiChatAuditLogModel.id).desc())
-        )
-        
-        intent_performance = []
-        for row in performance_result.all():
-            intent_performance.append({
-                "intent": row[0],
-                "count": row[1],
-                "avg_latency_ms": round(row[2], 2) if row[2] else 0,
-                "avg_quality_rating": round(row[3], 2) if row[3] else 0,
-                "verified_count": row[4] or 0,
-                "verification_rate": round((row[4] / row[1] * 100), 2) if row[1] > 0 else 0
-            })
-        
+        log = AiChatAuditLogModel
+        intent = func.coalesce(log.detected_intent, "UNKNOWN")
+        rated = case((log.quality_rating.between(1, 5), log.quality_rating), else_=None)
+        performance_result = await db.execute(select(
+            intent, func.count(log.id), func.avg(log.latency_ms), func.avg(rated),
+            func.sum(case((log.feedback_status == "VERIFIED", 1), else_=0)), func.count(rated),
+        ).where(log.organization_id == current_user.organization_id)
+            .group_by(intent).order_by(func.count(log.id).desc(), intent))
         return success_response({
             "success": True,
-            "intent_performance": intent_performance,
+            "intent_performance": [{
+                "intent": row[0],
+                "count": row[1],
+                "avg_latency_ms": round(row[2], 2) if row[2] is not None else None,
+                "avg_quality_rating": round(row[3], 2) if row[3] is not None else None,
+                "quality_rated_count": row[5],
+                "verified_count": row[4] or 0,
+                "verification_rate": round((row[4] / row[1] * 100), 2) if row[1] > 0 else 0,
+            } for row in performance_result.all()],
         })
-    
     except Exception as e:
         logger.error(f"Intent performance error: {e}")
-        raise HTTPException(status_code=500, detail="Intent performance failed")
+        raise HTTPException(status_code=503, detail="Intent performance is temporarily unavailable")
 
 
 # ============================================================
@@ -1483,8 +1398,8 @@ async def get_intent_performance(
 
 @router.get("/ai/conversation/history/{session_id}")
 async def get_conversation_history(
-    session_id: str,
-    limit: int = 10,
+    session_id: str = Path(..., min_length=1, max_length=100),
+    limit: int = Query(10, ge=1, le=100),
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
 ):
@@ -1498,17 +1413,20 @@ async def get_conversation_history(
             select(AiChatAuditLogModel)
             .where(AiChatAuditLogModel.session_id == session_id)
             .where(AiChatAuditLogModel.user_id == current_user.id)
+            .where(AiChatAuditLogModel.organization_id == current_user.organization_id)
             .limit(1)
         )
         has_access = result.scalar_one_or_none()
         
-        if not has_access and not current_user.is_super_admin:
+        if not has_access:
             raise HTTPException(status_code=403, detail="Access denied to this conversation")
         
         history = await conversation_history_service.get_conversation_history(
             db=db,
             session_id=session_id,
             limit=limit,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
         )
         
         return success_response({
@@ -1521,12 +1439,12 @@ async def get_conversation_history(
         raise
     except Exception as e:
         logger.error(f"Conversation history error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get conversation history")
+        raise HTTPException(status_code=503, detail="Conversation history is temporarily unavailable")
 
 
 @router.get("/ai/conversation/summary/{session_id}")
 async def get_session_summary(
-    session_id: str,
+    session_id: str = Path(..., min_length=1, max_length=100),
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
 ):
@@ -1540,16 +1458,19 @@ async def get_session_summary(
             select(AiChatAuditLogModel)
             .where(AiChatAuditLogModel.session_id == session_id)
             .where(AiChatAuditLogModel.user_id == current_user.id)
+            .where(AiChatAuditLogModel.organization_id == current_user.organization_id)
             .limit(1)
         )
         has_access = result.scalar_one_or_none()
         
-        if not has_access and not current_user.is_super_admin:
+        if not has_access:
             raise HTTPException(status_code=403, detail="Access denied to this conversation")
         
         summary = await conversation_history_service.get_session_summary(
             db=db,
             session_id=session_id,
+            user_id=current_user.id,
+            organization_id=current_user.organization_id,
         )
         
         return success_response({
@@ -1561,7 +1482,7 @@ async def get_session_summary(
         raise
     except Exception as e:
         logger.error(f"Session summary error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get session summary")
+        raise HTTPException(status_code=503, detail="Conversation summary is temporarily unavailable")
 
 
 @router.get("/ai/conversation/my-stats")
@@ -1577,6 +1498,7 @@ async def get_my_conversation_stats(
         stats = await conversation_history_service.get_user_conversation_stats(
             db=db,
             user_id=current_user.id,
+            organization_id=current_user.organization_id,
         )
         
         return success_response({
@@ -1586,4 +1508,4 @@ async def get_my_conversation_stats(
     
     except Exception as e:
         logger.error(f"User conversation stats error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get conversation stats")
+        raise HTTPException(status_code=503, detail="Conversation statistics are temporarily unavailable")

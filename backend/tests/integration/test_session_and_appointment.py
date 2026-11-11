@@ -92,13 +92,18 @@ async def test_authorized_student_debt_payment_and_cancellation_http_lifecycle(i
     from app.main import app
     from app.core.database import get_db
     from app.core.security import create_access_token
-    from app.infrastructure.models.models import Branch
+    from app.infrastructure.models.models import Branch, Organization
 
     async with isolated_sessions() as db:
         user = (await db.execute(select(User).where(User.is_super_admin.is_(True), User.deleted_at.is_(None)))).scalars().first()
-        branch = (await db.execute(select(Branch).where(Branch.deleted_at.is_(None)))).scalars().first()
-        if user is None or branch is None:
-            pytest.skip("Admin/branch fixture unavailable")
+        if user is None:
+            pytest.skip("Admin fixture unavailable")
+        organization = Organization(name="Lifecycle acceptance " + uuid4().hex)
+        db.add(organization)
+        await db.flush()
+        branch = Branch(organization_id=organization.id, name="Lifecycle acceptance branch")
+        db.add(branch)
+        await db.commit()
         token = create_access_token(user.id)
         organization_id, branch_id = str(branch.organization_id), str(branch.id)
 
@@ -115,7 +120,8 @@ async def test_authorized_student_debt_payment_and_cancellation_http_lifecycle(i
     app.dependency_overrides[get_db] = copied_database
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test",
-                               headers={"Authorization": f"Bearer {token}"}) as client:
+                               headers={"Authorization": f"Bearer {token}",
+                                   "X-SCS360-Organization-Id": organization_id}) as client:
             async def request(method, path, payload=None):
                 response = await client.request(method, path, json=payload)
                 assert response.status_code < 400, f"{method} {path}: {response.status_code} {response.text[:500]}"

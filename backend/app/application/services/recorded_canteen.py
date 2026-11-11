@@ -53,7 +53,8 @@ async def get_recorded_canteen_summary(
     if purpose not in {"analysis", "chatbot"}:
         raise ValidationException("Geçersiz kantin özeti amacı")
     guardian = purpose == "chatbot" and _parent_mode(tenant) and tenant.has_permission("parent.view_finances")
-    if not tenant.organization_id or not (tenant.has_permission("canteen.read") or guardian):
+    permitted = guardian if purpose == "chatbot" and _parent_mode(tenant) else tenant.has_permission("canteen.read")
+    if not tenant.organization_id or not permitted:
         raise ForbiddenException("Kantin kayıtlarını görüntüleme yetkiniz yok")
     now = datetime.now(UTC)
     today = school_today(now)

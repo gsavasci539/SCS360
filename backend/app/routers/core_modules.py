@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from app.application.schemas.attendance_editor import AttendanceBatchSave
 from app.application.schemas.common import (
     AttendanceCreate,
     AttendanceUpdate,
@@ -792,7 +793,7 @@ async def list_attendance(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     class_id: UUID | None = None,
-    attendance_date: str | None = None,
+    attendance_date: date | None = None,
     tenant: TenantContext = Depends(PermissionChecker("attendance.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
@@ -803,10 +804,13 @@ async def list_attendance(
     if class_id:
         query = query.where(AttendanceRecord.class_id == class_id)
     if attendance_date:
-        query = query.where(AttendanceRecord.attendance_date == date.fromisoformat(attendance_date))
+        query = query.where(AttendanceRecord.attendance_date == attendance_date)
     items, total = await repo.paginate(
         query.order_by(AttendanceRecord.attendance_date.desc()), page, page_size
     )
+    from app.application.services.attendance_editor import version
+    student_rows = (await db.execute(select(Student).where(Student.id.in_([a.student_id for a in items])))).scalars().all()
+    student_names = {row.id: row for row in student_rows}
     data = [
         {
             "id": str(a.id),
@@ -814,6 +818,11 @@ async def list_attendance(
             "class_id": str(a.class_id),
             "attendance_date": a.attendance_date.isoformat(),
             "status": a.status.value,
+            "notes": a.notes,
+            "check_in_time": a.check_in_time.isoformat() if a.check_in_time else None,
+            "version": version(a),
+            "first_name": student_names[a.student_id].first_name if a.student_id in student_names else None,
+            "last_name": student_names[a.student_id].last_name if a.student_id in student_names else None,
         }
         for a in items
     ]
@@ -863,7 +872,7 @@ async def bulk_attendance(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    created = 0
+    created, skipped = 0, 0
     att_date = date.fromisoformat(body.attendance_date)
     repo = BaseRepository(db, tenant)
     classroom = await repo.require_related(UUID(body.class_id), ClassRoom)
@@ -877,6 +886,7 @@ async def bulk_attendance(
             )
         )
         if existing.scalar_one_or_none():
+            skipped += 1
             continue
         student = await repo.get_by_id(student_id, Student)
         if student.branch_id != classroom.branch_id:
@@ -889,11 +899,22 @@ async def bulk_attendance(
                 student_id=student_id,
                 attendance_date=att_date,
                 status=AttendanceStatus(rec["status"]),
+                notes=rec.get("notes"),
                 recorded_by=user.id,
             )
         )
         created += 1
-    return success_response({"created": created}, f"{created} yoklama kaydı oluşturuldu")
+    return success_response({"created": created, "skipped": skipped}, f"{created} yoklama kaydı oluşturuldu; {skipped} mevcut kayıt korundu")
+
+
+@router.put("/api/attendance/bulk")
+async def save_attendance_batch(
+    body: AttendanceBatchSave,
+    tenant: TenantContext = Depends(PermissionChecker("attendance.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    from app.application.services.attendance_editor import save
+    return success_response(await save(db, tenant, body), "Yoklama değişiklikleri kaydedildi")
 
 
 @router.put("/api/attendance/{attendance_id}")

@@ -20,6 +20,9 @@ class ConversationHistoryService:
         db: AsyncSession,
         session_id: str,
         limit: int = 10,
+        *,
+        user_id: UUID,
+        organization_id: UUID | None,
     ) -> list[dict]:
         """
         Get conversation history for a session.
@@ -36,7 +39,8 @@ class ConversationHistoryService:
             result = await db.execute(
                 select(AiChatAuditLogModel)
                 .where(AiChatAuditLogModel.session_id == session_id)
-                .order_by(AiChatAuditLogModel.created_at.asc())
+                .where(AiChatAuditLogModel.user_id == user_id, AiChatAuditLogModel.organization_id == organization_id)
+                .order_by(AiChatAuditLogModel.created_at.asc(), AiChatAuditLogModel.id.asc())
                 .limit(limit)
             )
             logs = result.scalars().all()
@@ -61,7 +65,7 @@ class ConversationHistoryService:
         
         except Exception as e:
             logger.error(f"Error getting conversation history: {e}")
-            return []
+            raise
     
     @staticmethod
     async def get_recent_context(
@@ -109,6 +113,9 @@ class ConversationHistoryService:
     async def get_session_summary(
         db: AsyncSession,
         session_id: str,
+        *,
+        user_id: UUID,
+        organization_id: UUID | None,
     ) -> dict:
         """
         Get summary statistics for a conversation session.
@@ -124,6 +131,8 @@ class ConversationHistoryService:
             result = await db.execute(
                 select(AiChatAuditLogModel)
                 .where(AiChatAuditLogModel.session_id == session_id)
+                .where(AiChatAuditLogModel.user_id == user_id, AiChatAuditLogModel.organization_id == organization_id)
+                .order_by(AiChatAuditLogModel.created_at.asc(), AiChatAuditLogModel.id.asc())
             )
             logs = result.scalars().all()
             
@@ -177,15 +186,14 @@ class ConversationHistoryService:
         
         except Exception as e:
             logger.error(f"Error getting session summary: {e}")
-            return {
-                "session_id": session_id,
-                "error": str(e),
-            }
+            raise
     
     @staticmethod
     async def get_user_conversation_stats(
         db: AsyncSession,
         user_id: UUID,
+        *,
+        organization_id: UUID | None,
     ) -> dict:
         """
         Get conversation statistics for a user.
@@ -201,6 +209,7 @@ class ConversationHistoryService:
             result = await db.execute(
                 select(AiChatAuditLogModel)
                 .where(AiChatAuditLogModel.user_id == user_id)
+                .where(AiChatAuditLogModel.organization_id == organization_id)
             )
             logs = result.scalars().all()
             
@@ -230,7 +239,7 @@ class ConversationHistoryService:
             )[:3]
             
             # Average quality rating
-            quality_ratings = [log.quality_rating for log in logs if log.quality_rating > 0]
+            quality_ratings = [log.quality_rating for log in logs if log.quality_rating is not None and log.quality_rating > 0]
             avg_quality = sum(quality_ratings) / len(quality_ratings) if quality_ratings else 0
             
             return {
@@ -244,10 +253,7 @@ class ConversationHistoryService:
         
         except Exception as e:
             logger.error(f"Error getting user conversation stats: {e}")
-            return {
-                "user_id": str(user_id),
-                "error": str(e),
-            }
+            raise
 
 
 # Global conversation history service instance

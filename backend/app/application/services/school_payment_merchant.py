@@ -41,13 +41,13 @@ def open_school_secret(ciphertext):
         raise AppException("Okul ödeme kaydı okunamadı; kurum sahibi kontrol etmeli", status_code=503) from exc
 
 
-def valid_callback(value):
+def valid_callback(value, provider="iyzico"):
     try:
         url = urlparse(value)
         local = get_settings().APP_ENV in {"development", "test"} and url.hostname in {"127.0.0.1", "localhost"}
         port = url.port
         return bool(url.hostname and not url.username and not url.password and not url.query and not url.fragment
-            and url.path == "/api/payments/iyzico/callback" and (port is None or port > 0)
+            and url.path == f"/api/payments/{provider}/callback" and (port is None or port > 0)
             and (url.scheme == "https" or (local and url.scheme == "http")))
     except (TypeError, ValueError):
         return False
@@ -121,6 +121,9 @@ async def resolve_gateway(db, organization_id, checkout=None):
     organization_id = UUID(str(organization_id))
     if checkout is not None and getattr(checkout, "merchant_snapshot", None):
         values = open_school_secret(checkout.merchant_snapshot)
+        if values.get("version") == 2:
+            from app.application.services.school_provider_accounts import from_snapshot
+            return from_snapshot(organization_id, checkout, values)
         account_id = getattr(checkout, "merchant_account_id", None)
         expected = str(account_id) if account_id else None
         if (values.get("version") != 1 or values.get("organization_id") != str(organization_id)
@@ -140,6 +143,9 @@ async def resolve_gateway(db, organization_id, checkout=None):
             if not row.enabled:
                 raise AppException("Bu kurumda online öğrenci ödemesi kapalı", status_code=503)
             credentials = open_school_secret(row.credentials_ciphertext)
+            if credentials.get("provider", "iyzico") != "iyzico":
+                from app.application.services.school_provider_accounts import from_account
+                return from_account(organization_id, row, credentials)
             values = {"organization_id": str(organization_id), "environment": row.environment,
                 "api_key": credentials.get("api_key"), "secret_key": credentials.get("secret_key"),
                 "callback_url": get_settings().SCHOOL_PAYMENT_CALLBACK_URL, "portal_url": get_settings().SCHOOL_PAYMENT_PORTAL_URL}
@@ -180,26 +186,39 @@ async def status(db, tenant):
     try: cipher(); encrypted = True
     except AppException: pass
     configured = False
+    provider = "iyzico"
+    credential_status = {}
     if row and row.credentials_ciphertext:
         try:
             keys = open_school_secret(row.credentials_ciphertext)
-            configured = all(isinstance(keys.get(field), str) and 1 <= len(keys[field]) <= 2048 for field in ("api_key", "secret_key"))
+            from app.application.services.payment_providers import FIELDS
+            provider = keys.get("provider", "iyzico")
+            required = FIELDS.get(provider, ())
+            credential_status = {field: isinstance(keys.get(field), str) and 1 <= len(keys[field]) <= 2048 for field in required}
+            configured = bool(required) and all(credential_status.values())
         except AppException: pass
     settings = get_settings()
+    from app.application.services.payment_providers import catalog
+    from app.application.services.school_provider_accounts import callback_url
     return {"can_manage": True, "configured": configured, "enabled": bool(row and row.enabled),
+        "provider": provider, "providers": catalog(), "credential_status": credential_status,
+        "provider_acceptance_verified": False, "bank_pos_note": "Banka sanal POS bağlantıları kurumun Craftgate hesabındaki POS tanımları üzerinden kullanılabilir; doğrudan banka API'si ayrı adaptör gerektirir.",
         "environment": row.environment if row else None, "account_id": str(row.id) if row else None,
         "revision": revision(row), "has_api_key": configured, "has_secret_key": configured,
-        "callback_configured": valid_callback(settings.SCHOOL_PAYMENT_CALLBACK_URL),
+        "callback_configured": valid_callback(callback_url(provider), provider),
         "portal_configured": valid_portal(settings.SCHOOL_PAYMENT_PORTAL_URL), "encryption_configured": encrypted,
         "production_compatible": not row or settings.APP_ENV != "production" or row.environment == "LIVE",
         "available": available, "updated_at": row.updated_at.replace(tzinfo=UTC).isoformat() if row and row.updated_at else None}
 
 
 async def update(db, tenant, body):
+    if body.provider is not None or body.credentials is not None:
+        from app.application.services.school_provider_accounts import update_account
+        return await update_account(db, tenant, body)
     if not await can_manage(db, tenant):
         raise ForbiddenException("Okul ödeme hesabını yalnız kurum sahibi yönetebilir")
     await lock_organization(db, tenant.organization_id)
-    values = body.model_dump(mode="json", exclude={"api_key", "secret_key", "request_id"})
+    values = body.model_dump(mode="json", exclude={"api_key", "secret_key", "request_id", "provider", "credentials"})
     for field in ("api_key", "secret_key"):
         value = getattr(body, field)
         values[field] = value.get_secret_value() if value is not None else None
@@ -223,6 +242,8 @@ async def update(db, tenant, body):
     credentials = {}
     if row and not fresh and row.credentials_ciphertext and (body.enabled or values["api_key"] or values["secret_key"]):
         credentials = open_school_secret(row.credentials_ciphertext)
+        if credentials.get("provider", "iyzico") != "iyzico":
+            raise ConflictException("Bu hesap farklı sağlayıcıya ait; sağlayıcıyı açıkça seçin")
     for field in ("api_key", "secret_key"):
         if values[field] is not None:
             credentials[field] = values[field]

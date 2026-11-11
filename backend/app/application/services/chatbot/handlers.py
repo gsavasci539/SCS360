@@ -1,7 +1,7 @@
 """Intent handlers for processing chatbot queries."""
 
 import logging
-from datetime import date as date_type, datetime
+from datetime import date as date_type, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID
@@ -20,7 +20,6 @@ from app.infrastructure.models.models import (
     Student,
     User as UserModel,
 )
-from app.domain.entities.canteen import CanteenOrder, CanteenProduct
 
 logger = logging.getLogger(__name__)
 
@@ -399,139 +398,47 @@ class ExpensesHandler:
 
 
 class CanteenHandler:
-    """Handler for canteen-related queries."""
+    """Present scoped recorded sales; top-ups and catalogue history stay separate."""
 
-    async def handle(
-        self,
-        intent: ResolvedIntent,
-        current_user: User,
-        db: AsyncSession,
-    ) -> HandlerResponse:
-        """Handle canteen intent."""
-        try:
-            if not current_user.organization_id:
-                return HandlerResponse(
-                    message="🥪 Kurum bilgisi bulunamadı."
-                )
+    async def handle(self, intent: ResolvedIntent, current_user: User, db: AsyncSession) -> HandlerResponse:
+        from app.application.services.recorded_canteen import get_recorded_canteen_summary
+        from app.core.dates import school_today
+        from app.core.exceptions import ForbiddenException
 
-            date_range = intent.date_range
-            if not date_range:
-                date_resolver = DateResolutionService()
-                date_range = date_resolver.resolve_period("today")
+        tenant = db.info.get("tenant_context")
+        if tenant is None:
+            raise ForbiddenException("Kantin kayıtlarını görüntüleme yetkiniz yok")
+        period = intent.date_range or DateResolutionService(school_today()).resolve_period("today")
+        recorded = await get_recorded_canteen_summary(
+            db, tenant, purpose="chatbot", student_id=intent.student_id,
+            start_date=period.start_date, end_date_exclusive=period.end_date + timedelta(days=1),
+        )
+        parent_mode = tenant.parent_portal or tenant.role_slugs == {"parent"}
+        actions = []
+        if parent_mode and tenant.has_permission("parent.view_finances"):
+            actions.append({"label": "Ödeme detayları", "action_tag": "VIEW_PAYMENTS"})
+        elif not parent_mode and tenant.has_permission("canteen.read"):
+            actions.append({"label": "Kantin detayları", "action_tag": "VIEW_CANTEEN"})
 
-            if intent.operation == "summary" and date_range:
-                # Query real canteen data from CanteenOrder table
-                
-                # Get orders for the date range
-                orders_result = await db.execute(
-                    select(CanteenOrder)
-                    .where(CanteenOrder.order_date.between(date_range.start_date, date_range.end_date))
-                    .where(CanteenOrder.status == "COMPLETED")
-                )
-                orders = orders_result.scalars().all()
+        def amount(value):
+            return f"{value} TL" if value is not None else "Tutar bilinmiyor"
 
-                if not orders:
-                    return HandlerResponse(
-                        message=f"🥪 {date_range.description} için kantin satış kaydı bulunmuyor."
-                    )
-
-                # Calculate metrics
-                total_revenue = sum(float(order.total_price) for order in orders)
-                total_orders = len(orders)
-                avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
-                
-                # Assume 36% profit margin (can be made configurable)
-                profit_margin = 0.36
-                net_profit = total_revenue * profit_margin
-
-                # Group by payment method
-                payment_methods = {}
-                for order in orders:
-                    method = order.payment_method or "OTHER"
-                    if method not in payment_methods:
-                        payment_methods[method] = 0
-                    payment_methods[method] += float(order.total_price)
-
-                # Format payment methods
-                payment_lines = []
-                for method, amount in payment_methods.items():
-                    percentage = (amount / total_revenue * 100) if total_revenue > 0 else 0
-                    payment_lines.append(f"{method}: ₺{amount:,.2f} (%{percentage:.0f})")
-
-                # Get top selling products
-                product_sales = {}
-                for order in orders:
-                    product_id = str(order.product_id)
-                    if product_id not in product_sales:
-                        product_sales[product_id] = {"quantity": 0, "revenue": 0, "name": None}
-                    product_sales[product_id]["quantity"] += order.quantity
-                    product_sales[product_id]["revenue"] += float(order.total_price)
-
-                # Get product names
-                for product_id in product_sales.keys():
-                    try:
-                        product_result = await db.execute(
-                            select(CanteenProduct).where(CanteenProduct.id == UUID(product_id))
-                        )
-                        product = product_result.scalar_one_or_none()
-                        if product:
-                            product_sales[product_id]["name"] = product.name
-                    except Exception:
-                        pass
-
-                # Sort by quantity and get top 5
-                top_products = sorted(
-                    product_sales.items(),
-                    key=lambda x: x[1]["quantity"],
-                    reverse=True
-                )[:5]
-
-                top_products_lines = []
-                for product_id, data in top_products:
-                    name = data["name"] or "Bilinmeyen Ürün"
-                    quantity = data["quantity"]
-                    revenue = data["revenue"]
-                    top_products_lines.append(f"{name} ({quantity} Adet • ₺{revenue:,.0f})")
-
-                # Build response matching specification format
-                message = (
-                    f"🥪 **Kantin & POS Satış Hasılatı ve Günlük Kazanç Raporu:**\n\n"
-                    f"💰 **Günlük Kazanç & Ciro Performansı:**\n"
-                    f"• **Bugünkü Toplam Kantin Kazancı (Ciro):** ₺{total_revenue:,.2f}\n"
-                    f"• **Toplam İşlem / Fiş Sayısı:** {total_orders} Adet Satış (Ortalama Fiş: ₺{avg_order_value:,.2f})\n"
-                    f"• **Tahmini Net Kar:** ₺{net_profit:,.2f} (Brüt Kar Marjı: %{profit_margin*100:.0f})\n\n"
-                    f"💳 **Tahsilat Türü:** {', '.join(payment_lines) if payment_lines else 'Veri yok'}\n\n"
-                    f"🏆 **Top Satanlar:** {', '.join(top_products_lines) if top_products_lines else 'Veri yok'}"
-                )
-
-                return HandlerResponse(
-                    message=message,
-                    suggested_actions=[
-                        {"label": "🥪 POS Satış Ekranı", "action_tag": "NAV_POS"},
-                        {"label": "💼 Finans & Kasa", "action_tag": "NAV_FINANCE"},
-                        {"label": "💳 Cüzdan Yükle", "action_tag": "NAV_WALLET"},
-                        {"label": "🛒 Stok Kataloğu", "action_tag": "NAV_STOCK"},
-                    ]
-                )
-            else:
-                message = (
-                    f"🥪 **Kantin Bilgileri**\n\n"
-                    f"Kantin satışları ve stok durumu için detaylı raporu görüntüleyebilirsiniz."
-                )
-
-                return HandlerResponse(
-                    message=message,
-                    suggested_actions=[
-                        {"label": "🥪 POS Satış Ekranı", "action_tag": "NAV_POS"},
-                        {"label": "🛒 Stok Kataloğu", "action_tag": "NAV_STOCK"},
-                    ]
-                )
-
-        except Exception as e:
-            logger.exception(f"Error handling canteen intent: {e}")
-            return HandlerResponse(
-                message="🥪 Kantin bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
-            )
+        catalog = recorded["catalog_orders"]
+        message = (
+            f"🥪 **Kayıtlı kantin özeti — {period.description}**\n\n"
+            f"Dönem: {recorded['period_start']} – {period.end_date.isoformat()} ({recorded['timezone']})\n"
+            f"• Kayıtlı satış: {amount(recorded['sales_amount'])} ({recorded['sale_record_count']} kayıt)\n"
+            f"• Cüzdandan harcama: {amount(recorded['wallet_debit_amount'])}\n"
+            f"• Doğrudan satış: {amount(recorded['direct_sale_amount'])}\n"
+            f"• Günlük ortalama: {amount(recorded['daily_average'])} ({recorded['observed_day_count']} gün)\n"
+            f"• Bakiye yükleme: {amount(recorded['topup_amount'])} — satış toplamına dahil değil.\n\n"
+            f"Eski katalog siparişleri: {amount(catalog['amount'])} ({catalog['record_count']} kayıt); "
+            "satış toplamına dahil değil.\n"
+            "Maliyet ve stok kaydı olmadan kâr veya stok tahmini hesaplanmaz."
+        )
+        if recorded["requires_review"]:
+            message += "\nBazı kayıtlar incelenmeli; belirsiz tutarlar toplam olarak gösterilmez."
+        return HandlerResponse(message=message, suggested_actions=actions, data=recorded)
 
 
 class StudentInfoHandler:
@@ -771,6 +678,8 @@ class HandlerDispatcher:
             tenant = db.info.get("tenant_context")
             primary, guardian = rules[intent.intent]
             parent_mode = tenant and (tenant.parent_portal or tenant.role_slugs == {"parent"})
+            if intent.intent == "CANTEEN" and parent_mode and not tenant.has_permission(guardian):
+                return HandlerResponse(message="Bu bilgiyi görüntüleme yetkiniz bulunmuyor.")
             if tenant is None or not (tenant.has_any_permission(primary) or (parent_mode and guardian and tenant.has_permission(guardian))):
                 return HandlerResponse(message="Bu bilgiyi görüntüleme yetkiniz bulunmuyor.")
         handler = self.handlers.get(intent.intent)

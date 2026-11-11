@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import json
+import secrets
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
@@ -157,19 +158,25 @@ async def initialize(db, tenant, user, body, ip):
     context = await merchants.resolve_gateway(db, debt.organization_id)
     gateway = context["gateway"]
     gateway.configured()
+    if hasattr(gateway, "validate_payer"):
+        gateway.validate_payer({**buyer, "gsmNumber": buyer["gsmNumber"] or user.phone or "", "email": user.email})
     snapshot = context["merchant_snapshot"] or merchants.snapshot_gateway(gateway, debt.organization_id, context["merchant_scope"])
     row = PaymentCheckout(id=identifier, organization_id=debt.organization_id, debt_id=debt.id,
         created_by=user.id, amount=body.amount, currency=body.currency, status="INITIALIZING",
         request_digest=request_digest, merchant_account_id=context["merchant_account_id"],
         merchant_scope=context["merchant_scope"], merchant_snapshot=snapshot,
         checkout_secret=merchants.seal_school_secret({"return_path": f"/parent/finances?checkout={identifier}"
-            if tenant.parent_portal else f"/payment?checkout={identifier}"}))
+            if tenant.parent_portal else f"/payment?checkout={identifier}", "callback_key": secrets.token_urlsafe(32)}))
     db.add(row); await db.flush()
     debt_id, description, organization_id = debt.id, debt.description, debt.organization_id
     # Reserve once and release the school's write lock before contacting the provider.
     await db.commit()
     callback = urlparse(gateway.settings.IYZICO_CALLBACK_URL)
-    callback_url = urlunparse(callback._replace(query=urlencode([*parse_qsl(callback.query), ("checkout_id", str(identifier))])))
+    callback_key = secret(row).get("callback_key")
+    query = [*parse_qsl(callback.query), ("checkout_id", str(identifier))]
+    if getattr(gateway, "provider", "iyzico") != "iyzico":
+        query.append(("callback_key", callback_key))
+    callback_url = urlunparse(callback._replace(query=urlencode(query)))
     payer = {"id": str(user.id), "name": user.first_name, "surname": user.last_name, "email": user.email,
         **buyer, "gsmNumber": buyer["gsmNumber"] or user.phone or "", "ip": ip}
     billing = {"contactName": f"{user.first_name} {user.last_name}", "city": buyer["city"], "country": buyer["country"], "address": buyer["registrationAddress"]}
@@ -202,6 +209,7 @@ async def initialize(db, tenant, user, body, ip):
     row.token_hash = token_hash(result["token"])
     row.checkout_secret = merchants.seal_school_secret({"token": result["token"], "url": result["paymentPageUrl"],
         "expires_at": (now() + timedelta(seconds=ttl)).isoformat(),
+        "callback_key": callback_key,
         "return_path": f"/parent/finances?checkout={identifier}" if tenant.parent_portal else f"/payment?checkout={identifier}"})
     row.status = "PENDING"
     await db.flush(); await db.commit()
@@ -209,6 +217,8 @@ async def initialize(db, tenant, user, body, ip):
 
 
 def proof(gateway, result, row, token):
+    if hasattr(gateway, "capture_proof"):
+        return gateway.capture_proof(result, row, token)
     if not gateway.verify(result) or not isinstance(result, dict):
         raise AppException("Ödeme sonucu doğrulanamadı", status_code=400)
     if result.get("token") != token or result.get("conversationId") != str(row.id):
@@ -267,11 +277,11 @@ async def apply_verified(db, row, actor_id=None):
     debt.paid_amount, debt.status = new_paid, DebtCalculator.calculate_status(principal, new_paid, debt.due_date)
     payment = Payment(organization_id=row.organization_id, branch_id=debt.branch_id, student_id=debt.student_id,
         debt_id=debt.id, amount=row.amount, payment_method=PaymentMethod.CREDIT_CARD, received_by=actor_id,
-        notes=f"iyzico: {row.provider_payment_id}")
+        notes=f'{(row.verified_metadata or {}).get("provider", "iyzico")}: {row.provider_payment_id}')
     db.add(payment); await db.flush()
     import base64
     receipt = Receipt(organization_id=row.organization_id, branch_id=debt.branch_id, student_id=debt.student_id,
-        payment_id=payment.id, receipt_number="IYZ-" + base64.b32encode(payment.id.bytes).decode().rstrip("="),
+        payment_id=payment.id, receipt_number=("IYZ-" if (row.verified_metadata or {}).get("provider", "iyzico") == "iyzico" else "ONL-") + base64.b32encode(payment.id.bytes).decode().rstrip("="),
         issued_by=actor_id, remaining_debt=remaining)
     db.add(receipt)
     db.add(NotificationJob(organization_id=row.organization_id, branch_id=debt.branch_id,
@@ -333,8 +343,13 @@ async def refresh(db, tenant, identifier):
     row = await authorized(db, tenant, identifier, action=True)
     if row.status not in OPEN: return view(row, tenant)
     stored = secret(row)
-    if not stored or not stored.get("token"): return view(row, tenant)
-    row = await reconcile(db, stored["token"], row.id)
+    token = stored.get("token") if stored else None
+    if not token:
+        context = await merchants.resolve_gateway(db, row.organization_id, checkout=row)
+        if getattr(context["gateway"], "provider", "iyzico") in {"paytr", "sipay"}:
+            token = row.id.hex
+    if not token: return view(row, tenant)
+    row = await reconcile(db, token, row.id)
     return view(row, tenant)
 
 

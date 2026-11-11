@@ -110,7 +110,11 @@ async def test_owner_account_crud_loads_roles_and_cannot_modify_the_platform_ide
     denied = await client.put(f'/api/users/{data["root"].id}', headers=auth, json={"password": "ForgedPlatformPassword1!"})
     assert denied.status_code in {403, 404}, denied.text
     assert (await client.delete(f'/api/users/{data["root"].id}', headers=auth)).status_code in {403, 404}
-    assert (await client.put(f'/api/users/{data["root"].id}', headers=headers(data["root"]), json={"status": "PASSIVE"})).status_code == 409
+    scoped_root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(owner.organization_id)}
+    # A school workspace cannot edit platform identities, including its operator.
+    assert (await client.put(f'/api/users/{data["root"].id}', headers=scoped_root, json={"status": "PASSIVE"})).status_code == 403
+    async with sessions() as db:
+        assert (await db.get(User, data["root"].id)).status.value == "ACTIVE"
 
 
 async def test_expired_or_closed_school_cannot_use_old_token_but_can_open_billing(platform_client):

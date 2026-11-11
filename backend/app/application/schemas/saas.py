@@ -83,6 +83,7 @@ class SubscriptionCheckoutStart(BaseModel):
     address: str = Field(min_length=5, max_length=500)
     city: str = Field(min_length=1, max_length=100)
     country: str = Field(min_length=1, max_length=100)
+    client_channel: Literal["WEB", "PWA", "IOS", "ANDROID"] = "WEB"
 
 
 class SubscriptionPaymentReview(BaseModel):

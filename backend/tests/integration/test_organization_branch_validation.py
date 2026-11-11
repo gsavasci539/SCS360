@@ -51,7 +51,9 @@ async def test_duplicate_names_codes_and_unknown_organization_have_controlled_re
     assert created.status_code == 200, created.text
     collision = await client.put(f'/api/branches/{data["branch"].id}', headers=auth, json={"code": "UNIQUE"})
     assert collision.status_code == 409, collision.text
-    unknown = await client.post("/api/branches", headers=headers(data["root"]), json={"organization_id": str(uuid4()), "name": "Orphan branch"})
+    unknown_id = str(uuid4())
+    unknown = await client.post("/api/branches", headers={**headers(data["root"]), "X-SCS360-Organization-Id": unknown_id},
+        json={"organization_id": unknown_id, "name": "Orphan branch"})
     assert unknown.status_code == 404, unknown.text
     async with sessions() as db:
         assert (await db.get(Branch, data["branch"].id)).code is None

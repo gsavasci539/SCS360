@@ -56,6 +56,21 @@ class ParentRelationType(str, enum.Enum):
     OTHER = "OTHER"
 
 
+class ParentRelationStorageEnum(Enum):
+    """Read the two legacy SQLite labels without rewriting stored family data."""
+
+    def result_processor(self, dialect, coltype):
+        process = super().result_processor(dialect, coltype)
+        if dialect.name != "sqlite":
+            return process
+
+        def canonical(value):
+            value = {"ANNE": "MOTHER", "BABA": "FATHER"}.get(value, value)
+            return process(value)
+
+        return canonical
+
+
 class AttendanceStatus(str, enum.Enum):
     PRESENT = "PRESENT"
     ABSENT = "ABSENT"
@@ -389,7 +404,7 @@ class Parent(Base, TimestampMixin, SoftDeleteMixin):
     first_name: Mapped[str] = mapped_column(String(100))
     last_name: Mapped[str] = mapped_column(String(100))
     relation_type: Mapped[ParentRelationType] = mapped_column(
-        Enum(ParentRelationType), default=ParentRelationType.GUARDIAN
+        ParentRelationStorageEnum(ParentRelationType), default=ParentRelationType.GUARDIAN
     )
     phone: Mapped[str | None] = mapped_column(String(20))
     sms_phone: Mapped[str | None] = mapped_column(String(20))
@@ -403,7 +418,6 @@ class Parent(Base, TimestampMixin, SoftDeleteMixin):
 
 class Student(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "students"
-    __table_args__ = (UniqueConstraint("organization_id", "student_number"),)
 
     id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"))
@@ -425,6 +439,13 @@ class Student(Base, TimestampMixin, SoftDeleteMixin):
 
     class_room: Mapped["ClassRoom | None"] = relationship(back_populates="students")
     parents: Mapped[list["Parent"]] = relationship(secondary="student_parents")
+
+
+Index("uq_students_org_student_number_live",
+    func.lower(func.replace(Student.__table__.c.organization_id, "-", "")), Student.__table__.c.student_number,
+    unique=True, sqlite_where=Student.__table__.c.deleted_at.is_(None)).ddl_if(dialect="sqlite")
+Index("uq_students_org_student_number_live", Student.__table__.c.organization_id, Student.__table__.c.student_number,
+    unique=True, postgresql_where=Student.__table__.c.deleted_at.is_(None)).ddl_if(dialect="postgresql")
 
 
 class StudentParent(Base):

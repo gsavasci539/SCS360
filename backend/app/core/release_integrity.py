@@ -2,8 +2,8 @@
 
 The row budget is the sum of rows in every physical table of the selected/default
 schema, counted once per table. Exceeding it fails closed before row extraction.
-Only the application's known merchant partial-unique predicate is supported;
-expression keys, custom comparison rules and unknown predicates fail closed.
+Only the application's known merchant/student partial indexes are supported;
+other expression keys, custom comparison rules and predicates fail closed.
 """
 import math
 import re
@@ -18,6 +18,26 @@ from app.core.uuid_type import CustomUUID
 
 _UUID = re.compile(r"(?:[0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\Z")
 _CHECKS = ("physical_foreign_keys", "uuid_literals", "model_columns", "canonical_keys")
+_STUDENT_INDEX = "uq_students_org_student_number_live"
+
+
+def _identifier(name):
+    return '(?:' + re.escape(name) + '|"' + re.escape(name) + '")'
+
+
+def _student_sqlite_expression(table, name, sql, parts):
+    """Accept one exact known expression, never normalize arbitrary SQL/literals."""
+    if table != "students" or name != _STUDENT_INDEX or len(parts) != 2:
+        return False
+    if parts[0][1:3] != (-2, None) or parts[1][2] != "student_number":
+        return False
+    if any(part[3] != 0 or part[4] != "BINARY" for part in parts):
+        return False
+    pattern = (r"CREATE\s+UNIQUE\s+INDEX\s+" + _identifier(_STUDENT_INDEX)
+        + r"\s+ON\s+" + _identifier("students") + r"\s*\(\s*lower\s*\(\s*replace\s*\(\s*"
+        + _identifier("organization_id") + r"\s*,\s*'-'\s*,\s*''\s*\)\s*\)\s*,\s*"
+        + _identifier("student_number") + r"\s*\)\s+WHERE\s+" + _identifier("deleted_at") + r"\s+IS\s+NULL\s*")
+    return re.fullmatch(pattern, sql or "", re.IGNORECASE) is not None
 
 
 def _issue(report, check, reason, *, table=None, columns=None, count=1):
@@ -49,13 +69,16 @@ def _key(value, uuid_column):
     return (type(value).__name__, value)
 
 
-def _merchant_predicate(table, name, predicate, dialect):
+def _known_predicate(table, name, columns, predicate, dialect):
     if predicate is None:
         return None
     normalized = re.sub(r'[\s()"]', "", str(predicate)).lower()
     expected = "is_current=1" if dialect == "sqlite" else "is_currentistrue"
     if table == "school_payment_merchants" and name == "uq_school_payment_merchant_current_org" and normalized == expected:
-        return "is_current"
+        return "is_current", " IS TRUE" if dialect == "postgresql" else " = 1"
+    if (table == "students" and name == _STUDENT_INDEX and columns == ["organization_id", "student_number"]
+        and re.fullmatch(r'\s*\(?\s*"?deleted_at"?\s+IS\s+NULL\s*\)?\s*', str(predicate), re.IGNORECASE)):
+        return "deleted_at", " IS NULL"
     raise ValueError("unsupported partial predicate")
 
 
@@ -69,12 +92,16 @@ async def _keys(connection, schema, tables, quote):
                     continue
                 parts = [part for part in (await connection.exec_driver_sql("PRAGMA index_xinfo(" + quote(index[1]) + ")")).all() if part[5]]
                 predicate = None
+                sql = None
                 if index[4]:
                     sql = (await connection.execute(text("SELECT sql FROM sqlite_master WHERE type='index' AND name=:name"), {"name": index[1]})).scalar_one()
                     words = list(re.finditer(r"\bWHERE\b", sql, re.IGNORECASE))
                     predicate = sql[words[0].end():] if len(words) == 1 else "unsupported"
-                records.append({"table": table, "name": index[1], "columns": [part[2] for part in parts],
-                    "unsupported": any(part[1] < 0 or part[2] is None or part[4] != "BINARY" for part in parts), "predicate": predicate})
+                student_expression = bool(index[4]) and _student_sqlite_expression(table, index[1], sql, parts)
+                records.append({"table": table, "name": index[1],
+                    "columns": ["organization_id", "student_number"] if student_expression else [part[2] for part in parts],
+                    "student_expression": student_expression,
+                    "unsupported": not student_expression and any(part[1] < 0 or part[2] is None or part[4] != "BINARY" for part in parts), "predicate": predicate})
         return records
     rows = (await connection.exec_driver_sql("""
         SELECT tab.relname AS table_name, idx.relname AS index_name,
@@ -187,10 +214,12 @@ async def _scan(connection, metadata, report, expected_revision, max_scan_rows):
         try:
             if index["unsupported"]:
                 raise ValueError("unsupported key")
-            partial = _merchant_predicate(table, index["name"], index["predicate"], dialect)
+            if index.get("student_expression") and "organization_id" not in uuid_key_columns.get(table, set()):
+                raise ValueError("student expression requires mapped UUID semantics")
+            partial = _known_predicate(table, index["name"], index["columns"], index["predicate"], dialect)
             query = "SELECT " + ",".join(quote(column) for column in index["columns"]) + " FROM " + table_sql(table)
             if partial:
-                query += " WHERE " + quote(partial) + (" IS TRUE" if dialect == "postgresql" else " = 1")
+                query += " WHERE " + quote(partial[0]) + partial[1]
             groups = defaultdict(int)
             for row in (await connection.exec_driver_sql(query)).all():
                 if any(value is None for value in row):

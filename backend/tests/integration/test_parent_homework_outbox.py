@@ -316,7 +316,8 @@ async def test_real_jwt_role_checks_and_session_boundaries_http(portal_db, monke
             organization_id=data["org"].id, is_super_admin=True, branches=[await db.get(Branch, data["branch"].id)])
         db.add(admin); await db.commit()
         admin_id = admin.id
-    admin_headers = {"Authorization": "Bearer " + create_access_token(admin_id)}
+    admin_headers = {"Authorization": "Bearer " + create_access_token(admin_id),
+        "X-SCS360-Organization-Id": str(data["org"].id)}
     try:
         async with AsyncClient(transport=ASGITransport(app=app, raise_app_exceptions=True), base_url="http://acceptance") as client:
             own = await client.get(f'/api/parent/child/{data["children"][0].id}/grades', headers=parent)

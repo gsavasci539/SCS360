@@ -1,4 +1,4 @@
-"""Unwired service acceptance: recorded ledger, isolated catalogue history, no writes."""
+"""Service acceptance: recorded ledger, isolated catalogue history, no writes."""
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from time import perf_counter

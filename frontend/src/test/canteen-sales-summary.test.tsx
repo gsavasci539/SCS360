@@ -50,3 +50,26 @@ it("only displays explicit stock and trend classifications supplied by the API",
   expect(screen.getByText("Düşüş")).toBeInTheDocument();
   expect(metric("Toplam Satış").getByText("123.45 TL")).toBeInTheDocument();
 });
+
+it("separates real sales, top-ups and catalogue history and displays the actual inclusive period", async () => {
+  await open({ total_sales: "35.00", daily_average: "1.17", wallet_debit_amount: "15.00", direct_sale_amount: "20.00",
+    topup_amount: "100.00", catalog_orders: { amount: "22.00", record_count: 2 }, observed_day_count: 30,
+    period_start: "2026-01-01", period_end_exclusive: "2026-01-31", as_of: "2026-01-30T21:30:00Z", timezone: "Europe/Istanbul" });
+  expect(metric("Toplam Satış").getByText("35.00 TL")).toBeInTheDocument();
+  expect(screen.getByText("Cüzdandan harcama").parentElement).toHaveTextContent("15.00 TL");
+  expect(screen.getByText("Doğrudan satış").parentElement).toHaveTextContent("20.00 TL");
+  expect(screen.getByText("Bakiye yüklemeleri").parentElement).toHaveTextContent("100.00 TL");
+  expect(screen.getByText("Eski katalog siparişleri").parentElement).toHaveTextContent("22.00 TL");
+  expect(screen.getByText(/Dönem:/)).toHaveTextContent("01.01.2026 – 30.01.2026 · 30 gözlenen gün");
+  expect(screen.getByText(/Son durum:/)).toHaveTextContent("31.01.2026 00:30:00");
+  expect(screen.getByText(/satış toplamına dahil edilmez/)).toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
+});
+
+it("shows review and unknown period information without inventing a zero", async () => {
+  await open({ total_sales: null, daily_average: null, requires_review: true, period_start: "invalid", as_of: "invalid" });
+  expect(screen.getByRole("status")).toHaveTextContent("Bazı kayıtlar incelenmeli");
+  expect(screen.getByText(/Dönem:/)).toHaveTextContent("Tarih bilinmiyor");
+  expect(screen.getByText(/Son durum:/)).toHaveTextContent("Güncelleme zamanı bilinmiyor");
+  expect(screen.queryByText("0.00 TL")).not.toBeInTheDocument();
+});

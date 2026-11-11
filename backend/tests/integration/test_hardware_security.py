@@ -5,7 +5,10 @@ from app.infrastructure.models.models import User, RfidCard
 
 
 def auth(user):
-    return {"Authorization": "Bearer " + create_access_token(user.id)}
+    values = {"Authorization": "Bearer " + create_access_token(user.id)}
+    if user.is_super_admin:
+        values["X-SCS360-Organization-Id"] = str(user.organization_id)
+    return values
 
 
 async def test_hardware_requires_authentication_and_role_permissions(materials_client):

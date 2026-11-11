@@ -118,16 +118,18 @@ async def lock_route(db, identifier):
 
 def fingerprint(body):
     values = body.model_dump(mode="json", exclude={"request_id"})
+    if values.get("expected_version") is None:
+        values.pop("expected_version", None)
     if "timestamp" in values and "timestamp" not in body.model_fields_set:
         values.pop("timestamp")
     return hashlib.sha256(json.dumps(values, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-async def cached(db, tenant, body, event):
+async def cached(db, tenant, body, event, *, entity_id=None):
     previous = (await db.execute(select(AuditLog).where(AuditLog.id == body.request_id))).scalar_one_or_none()
     if previous:
         values = previous.new_values or {}
-        if previous.user_id != tenant.user_id or values.get("event") != event or values.get("payload_hash") != fingerprint(body):
+        if previous.user_id != tenant.user_id or values.get("event") != event or values.get("payload_hash") != fingerprint(body) or (entity_id is not None and previous.entity_id != entity_id):
             raise HTTPException(409, "İstek kimliği başka bir işlemde kullanılmış")
         return values["response"]
     table = AuditLog.__table__
@@ -187,6 +189,9 @@ async def update_route(db, tenant, identifier, body):
     original_branch = await route_owner(db, selected.branch_id, None)
     if original_branch.organization_id != branch.organization_id:
         raise HTTPException(403, "Rota başka kuruma taşınamaz")
+    previous = await cached(db, tenant, body, "BUS_ROUTE_UPDATED", entity_id=selected.id)
+    if previous is not None:
+        return previous
     if branch.id != original_branch.id:
         for model in (BusStop, BusTelemetryLog, BusAttendance):
             if (await db.execute(select(model.id).where(model.route_id == selected.id).limit(1))).first():
@@ -199,17 +204,28 @@ async def update_route(db, tenant, identifier, body):
             setattr(selected, key, value)
         selected.updated_by = tenant.user_id
         selected.updated_at = datetime.now(UTC)
-        audit(db, tenant, branch, "bus_routes", selected.id, "BUS_ROUTE_UPDATED", {"fields": list(values)})
-        await commit(db)
-        await db.refresh(selected)
-    return {"id": str(selected.id), "updated_at": iso(selected.updated_at)}
+        await db.flush()
+    response = {"id": str(selected.id), "updated_at": iso(selected.updated_at)}
+    db.add(AuditLog(id=body.request_id, organization_id=branch.organization_id, branch_id=branch.id,
+        user_id=tenant.user_id, action=AuditAction.UPDATE, entity_type="bus_routes", entity_id=selected.id,
+        new_values={"event": "BUS_ROUTE_UPDATED", "fields": list(values),
+            "payload_hash": fingerprint(body), "response": response}))
+    await commit(db)
+    return response
 
 
 async def create_stop(db, tenant, body):
     selected = await lock_route(db, body.route_id)
     branch = await route_owner(db, selected.branch_id, None)
-    return await insert(db, tenant, branch, BusStop, body, "BUS_STOP_CREATED", body.model_dump(exclude={"request_id"}),
+    return await insert(db, tenant, branch, BusStop, body, "BUS_STOP_CREATED", body.model_dump(exclude={"request_id", "expected_version"}),
         lambda row: {"id": str(row.id), "stop_name": row.stop_name, "stop_order": row.stop_order, "created_at": iso(row.created_at)})
+
+
+def stop_version(row):
+    values = [str(row.id), str(row.route_id), row.stop_name, row.stop_order,
+        str(row.latitude) if row.latitude is not None else None, str(row.longitude) if row.longitude is not None else None,
+        row.estimated_arrival.isoformat() if row.estimated_arrival else None, iso(row.created_at)]
+    return hashlib.sha256(json.dumps(values, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
 
 
 async def update_stop(db, tenant, identifier, body):
@@ -220,11 +236,28 @@ async def update_stop(db, tenant, identifier, body):
         raise HTTPException(409, "Durak farklı rotaya taşınamaz")
     selected_route = await lock_route(db, selected.route_id)
     branch = await route_owner(db, selected_route.branch_id, None)
-    for key, value in body.model_dump(exclude={"request_id", "route_id"}).items():
+    selected = (await db.execute(select(BusStop).where(BusStop.id == identifier).execution_options(populate_existing=True))).scalar_one_or_none()
+    if selected is None:
+        raise HTTPException(404, "Durak bulunamadı")
+    if selected.route_id != body.route_id:
+        raise HTTPException(409, "Durak farklı rotaya taşınamaz")
+    previous = await cached(db, tenant, body, "BUS_STOP_UPDATED", entity_id=selected.id)
+    if previous is not None:
+        return previous
+    if body.expected_version is not None and body.expected_version != stop_version(selected):
+        raise HTTPException(409, "Durak başka bir işlemle değişti; güncel durağı listeden yeniden seçin")
+    values = body.model_dump(exclude={"request_id", "route_id", "expected_version"})
+    for key, value in values.items():
         setattr(selected, key, value)
-    audit(db, tenant, branch, "bus_stops", selected.id, "BUS_STOP_UPDATED", {"route_id": str(selected.route_id)})
+    await db.flush()
+    await db.refresh(selected)
+    response = {"id": str(selected.id), "version": stop_version(selected)}
+    db.add(AuditLog(id=body.request_id, organization_id=branch.organization_id, branch_id=branch.id,
+        user_id=tenant.user_id, action=AuditAction.UPDATE, entity_type="bus_stops", entity_id=selected.id,
+        new_values={"event": "BUS_STOP_UPDATED", "route_id": str(selected.route_id), "fields": list(values),
+            "payload_hash": fingerprint(body), "response": response}))
     await commit(db)
-    return {"id": str(selected.id)}
+    return response
 
 
 async def create_telemetry(db, tenant, body):
@@ -234,27 +267,43 @@ async def create_telemetry(db, tenant, body):
         lambda row: {"id": str(row.id), "recorded_at": iso(row.recorded_at)})
 
 
-async def options(db, branch_id=None, route_id=None, student_id=None, search=""):
+async def options(db, branch_id=None, route_id=None, student_id=None, search="", driver_search="", driver_id=None):
     from app.application.services.student_choices import options as student_options
     branches = (await db.execute(select(Branch).where(Branch.deleted_at.is_(None)).order_by(Branch.name, Branch.id).limit(1001))).scalars().all()
     selected = await route(db, route_id) if route_id else None
     branch_id = branch_id or (selected.branch_id if selected else None)
-    drivers = []
+    branch_choices = branches[:1000]
+    drivers, more_drivers = [], False
     if branch_id:
         branch = await route_owner(db, branch_id, None)
-        rows = {row.id: row for row in (await db.execute(select(User).where(User.status == "ACTIVE", User.deleted_at.is_(None),
-            User.organization_id == branch.organization_id).order_by(User.first_name, User.id).limit(101))).scalars()}
-        assigned_routes = (await db.execute(select(BusRoute).where(BusRoute.branch_id == branch.id))).scalars().all()
-        table = User.__table__
-        linked = (await db.execute(select(table.c.id, table.c.first_name, table.c.last_name).where(table.c.id.in_(
-            [row.driver_id for row in assigned_routes if row.driver_id]), table.c.organization_id == branch.organization_id,
-            table.c.status == "ACTIVE", table.c.deleted_at.is_(None)))).all()
+        if not any(row.id == branch.id for row in branch_choices):
+            branch_choices.append(branch)
+        base = select(User).where(User.status == "ACTIVE", User.deleted_at.is_(None), User.organization_id == branch.organization_id)
+        query = base.where((User.first_name + " " + User.last_name).ilike(f"%{driver_search}%")) if driver_search else base
+        matches = (await db.execute(query.order_by(User.first_name, User.last_name, User.id).limit(101))).scalars().all()
+        more_drivers = len(matches) > 100
+        rows = {row.id: row for row in matches[:100]}
+        pinned_id = driver_id or (selected.driver_id if selected and selected.branch_id == branch.id else None)
+        if pinned_id and pinned_id not in rows:
+            pinned = (await db.execute(base.where(User.id == pinned_id))).scalar_one_or_none()
+            if pinned is None:
+                # A current branch assignment permits its minimal name, never global user access.
+                assigned = (await db.execute(select(BusRoute.id).where(BusRoute.branch_id == branch.id,
+                    BusRoute.driver_id == pinned_id).limit(1))).scalar_one_or_none()
+                if assigned:
+                    table = User.__table__
+                    pinned = (await db.execute(select(table.c.id, table.c.first_name, table.c.last_name).where(
+                        table.c.id == pinned_id, table.c.organization_id == branch.organization_id,
+                        table.c.status == "ACTIVE", table.c.deleted_at.is_(None)))).first()
+            if pinned is not None:
+                rows[pinned.id] = pinned
+            elif driver_id:
+                raise HTTPException(403, "Sürücü erişim kapsamı dışında")
         drivers = [{"id": str(row.id), "name": f"{row.first_name} {row.last_name}"} for row in rows.values()]
-        drivers.extend({"id": str(row.id), "name": f"{row.first_name} {row.last_name}"} for row in linked if row.id not in rows)
     children = await student_options(db, student_id, search)
     stops = (await db.execute(select(BusStop).where(BusStop.route_id == selected.id).order_by(BusStop.stop_order, BusStop.id).limit(1001))).scalars().all() if selected else []
-    return {**children, "branches": [{"id": str(row.id), "name": row.name, "organization_id": str(row.organization_id)} for row in branches[:1000]],
-        "more_branches": len(branches) > 1000, "drivers": drivers, "branch_id": str(branch_id) if branch_id else None,
+    return {**children, "branches": [{"id": str(row.id), "name": row.name, "organization_id": str(row.organization_id)} for row in branch_choices],
+        "more_branches": len(branches) > 1000, "drivers": drivers, "more_drivers": more_drivers, "branch_id": str(branch_id) if branch_id else None,
         "stops": [{"id": str(row.id), "name": row.stop_name} for row in stops[:1000]], "more_stops": len(stops) > 1000}
 
 

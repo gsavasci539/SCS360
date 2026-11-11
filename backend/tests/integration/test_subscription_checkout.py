@@ -72,6 +72,33 @@ async def start(values):
     return "acceptance-token-" + body["request_id"]
 
 
+@pytest.mark.parametrize("channel", ["IOS", "ANDROID"])
+async def test_native_membership_requires_configured_store_billing(checkout_client, channel):
+    from sqlalchemy import func, select
+    client, sessions, data, invoice, body, gateway = checkout_client
+    response = await client.post(f'/api/subscription/invoices/{invoice["id"]}/checkout',
+        headers=headers(data["owner"]), json={**body, "client_channel": channel})
+    assert response.status_code == 409, response.text
+    assert gateway.calls == 0
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(SubscriptionCheckout.id))) == 0
+
+
+async def test_web_pwa_share_original_membership_nonce_and_public_capabilities_are_honest(checkout_client):
+    client, sessions, data, invoice, body, gateway = checkout_client
+    path = f'/api/subscription/invoices/{invoice["id"]}/checkout'
+    for channel in ["WEB", "PWA"]:
+        response = await client.post(path, headers=headers(data["owner"]), json={**body, "client_channel": channel})
+        assert response.status_code == 200, response.text
+    assert gateway.calls == 1
+    response = await client.get('/api/public/payment-capabilities')
+    assert response.status_code == 200
+    value = response.json()["data"]
+    assert value["membership"]["IOS"] == value["membership"]["ANDROID"] == "STORE_BILLING_NOT_CONFIGURED"
+    assert value["membership_and_institution_accounts_separate"] is True
+    assert value["institution_collection"]["direct_bank_adapter"] == "BANK_PROTOCOL_REQUIRED"
+
+
 async def test_checkout_reserves_once_encrypts_token_and_binds_retries_to_buyer(checkout_client):
     client, sessions, data, invoice, body, gateway = checkout_client
     path = f'/api/subscription/invoices/{invoice["id"]}/checkout'; auth = headers(data["owner"])

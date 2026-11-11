@@ -88,10 +88,11 @@ async def test_entry_logs_cannot_forge_a_grant_or_another_holder(hardware_client
 
 async def test_root_card_lookup_disambiguates_organization_and_rejects_corrupt_holder(hardware_client):
     client, sessions, data = hardware_client
-    response = await client.post("/api/hardware/card/balance", headers=auth(data["root"]), json={"card_number": "OWN"})
+    root_scope = {**auth(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+    response = await client.post("/api/hardware/card/balance", headers=root_scope, json={"card_number": "OWN"})
     assert response.status_code == 200, response.text
     assert response.json()["data"]["holder_id"] == str(data["children"][0].id)
-    response = await client.post("/api/hardware/card/topup", headers=auth(data["root"]),
+    response = await client.post("/api/hardware/card/topup", headers=root_scope,
         params={"card_number": "CORRUPT", "amount": "10", "payment_method": "CASH"})
     assert response.status_code == 422, response.text
     async with sessions() as db:

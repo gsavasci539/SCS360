@@ -43,7 +43,8 @@ async def test_bus_creates_retry_once_and_preserve_zero_coordinates(bus_client):
     assert replies[0].json()["data"]["id"] == replies[1].json()["data"]["id"]
     assert replies[0].json()["data"]["created_at"] == replies[1].json()["data"]["created_at"]
     assert (await client.post("/api/bus/routes", headers=auth, json={**body, "route_name": "Different"})).status_code == 409
-    assert (await client.post("/api/bus/routes", headers=headers(data["root"]), json=body)).status_code == 409
+    scoped_root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+    assert (await client.post("/api/bus/routes", headers=scoped_root, json=body)).status_code == 409
     route = replies[0].json()["data"]["id"]
     for endpoint, payload in (("stops", {"route_id": route, "stop_name": "Zero stop", "stop_order": 1, "latitude": 0, "longitude": 0}),
         ("telemetry", {"route_id": route, "latitude": 0, "longitude": 0, "speed": 0, "heading": 0, "ignition_status": False})):
@@ -66,10 +67,10 @@ async def test_bus_creates_retry_once_and_preserve_zero_coordinates(bus_client):
 
 async def test_route_ownership_cannot_move_history_and_stop_edit_keeps_route(bus_client):
     client, sessions, data = bus_client
-    root = headers(data["root"]); auth = headers(data["writer"])
+    root = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}; auth = headers(data["writer"])
     route = data["routes"][0]; stop = data["stops"][0]
     foreign = await client.put(f"/api/bus/routes/{route.id}", headers=root, json={"branch_id": str(data["other_branch"].id), "route_name": "Moved"})
-    assert foreign.status_code == 403, foreign.text
+    assert foreign.status_code in {403, 404}, foreign.text
     async with sessions() as db:
         other = Branch(name="Another owned branch", organization_id=data["org"].id)
         db.add(other); await db.commit()

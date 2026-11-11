@@ -36,7 +36,7 @@ def result(row, attempt=None, **extra):
 
 
 def fingerprint(user, invoice_id, body):
-    content = {"user": str(user.id), "invoice": str(invoice_id), "buyer": body.model_dump(mode="json", exclude={"request_id"})}
+    content = {"user": str(user.id), "invoice": str(invoice_id), "buyer": body.model_dump(mode="json", exclude={"request_id", "client_channel"})}
     return hmac.new(get_settings().JWT_SECRET_KEY.encode(), json.dumps(content, sort_keys=True).encode(), hashlib.sha256).hexdigest()
 
 
@@ -76,6 +76,8 @@ def hosted(row, attempt, user, gateway):
 
 async def initialize(db, user, invoice_id, body, ip, gateway):
     await billing.require_manager(db, user)
+    if body.client_channel in {"IOS", "ANDROID"}:
+        raise AppException("Native üyelik satın alımı için mağaza ödeme akışı henüz yapılandırılmamış", status_code=409)
     organization_id = user.organization_id
     if not gateway.available():
         raise AppException("Online üyelik ödemesi şu anda açık değil", status_code=503)

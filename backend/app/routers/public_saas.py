@@ -12,6 +12,17 @@ from app.domain.entities.saas import SubscriptionPlan
 router = APIRouter(tags=["Public SaaS"])
 
 
+@router.get("/api/public/payment-capabilities")
+async def payment_capabilities():
+    from app.application.services.payment_providers import catalog
+    return success_response({"membership": {"WEB": "HOSTED_CHECKOUT", "PWA": "HOSTED_CHECKOUT",
+        "IOS": "STORE_BILLING_NOT_CONFIGURED", "ANDROID": "STORE_BILLING_NOT_CONFIGURED"},
+        "institution_collection": {"channels": ["WEB", "PWA", "IOS", "ANDROID"],
+            "scope": "SERVICES_CONSUMED_OUTSIDE_APP", "providers": catalog(),
+            "bank_pos": "CRAFTGATE_CONNECTED_MERCHANT_POS", "direct_bank_adapter": "BANK_PROTOCOL_REQUIRED"},
+        "membership_and_institution_accounts_separate": True})
+
+
 @router.get("/api/public/plans")
 @limiter.limit("60/minute")
 async def public_plans(request: Request, db: AsyncSession = Depends(get_db, scope="function")):

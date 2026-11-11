@@ -129,7 +129,8 @@ async def test_document_freeze_includes_hidden_branch_decisions_and_root_authors
         db.add(record); await db.commit()
     assert (await client.get("/api/consents/student-consents", headers=headers(manager))).json()["data"] == []
     assert (await client.put("/api/consents/documents/" + doc["id"], headers=headers(manager), json={**payload, "content": "Must remain frozen"})).status_code == 409
-    response = await client.post("/api/consents/documents", headers=headers(root), json={**payload, "title": "Root authored", "organization_id": str(data["org"].id)})
+    root_scope = {**headers(root), "X-SCS360-Organization-Id": str(data["org"].id)}
+    response = await client.post("/api/consents/documents", headers=root_scope, json={**payload, "title": "Root authored", "organization_id": str(data["org"].id)})
     assert response.status_code == 200, response.text
     identifier = response.json()["data"]["id"]
     archived = await client.patch(f"/api/consents/documents/{identifier}/status", headers=headers(manager), json={"is_active": False})

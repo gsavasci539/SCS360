@@ -42,3 +42,21 @@ async def test_school_owner_cannot_spoof_a_platform_workspace(platform_client):
     assert denied.status_code == 403, denied.text
     invalid = await client.get("/api/students", headers={**headers(data["root"]), "X-SCS360-Organization-Id": "invalid"})
     assert invalid.status_code == 422, invalid.text
+
+
+async def test_platform_operator_must_select_school_before_any_school_reads_or_writes(platform_client):
+    client, sessions, data = platform_client
+    root = headers(data["root"])
+    child = str(data["children"][0].id)
+    requests = [("GET", "/api/students", None), ("GET", "/api/users", None),
+        ("POST", "/api/students", {"organization_id": str(data["org"].id), "branch_id": str(data["branch"].id), "first_name": "Unscoped", "last_name": "Forbidden"}),
+        ("PUT", f"/api/students/{child}", {"first_name": "Forbidden"}),
+        ("DELETE", f"/api/students/{child}", None)]
+    for method, path, payload in requests:
+        result = await client.request(method, path, headers=root, **({"json": payload} if payload else {}))
+        assert result.status_code == 403, (method, path, result.text)
+    assert (await client.get("/api/platform/summary", headers=root)).status_code == 200
+    assert (await client.get("/api/auth/me", headers=root)).status_code == 200
+    async with sessions() as db:
+        stored = await db.get(Student, data["children"][0].id)
+        assert stored.first_name == data["children"][0].first_name and stored.deleted_at is None

@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Chatbot } from "../components/Chatbot";
 import { api } from "../lib/api";
@@ -29,6 +29,26 @@ function open() {
   render(<MemoryRouter><Chatbot /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "Chatbot'u aç" }));
 }
+
+function CurrentPath() { return <output aria-label="Geçerli sayfa">{useLocation().pathname}</output>; }
+
+it.each([
+  ["parent", ["parent.view_children", "parent.view_finances"], "VIEW_PAYMENTS", "/parent/finances"],
+  ["canteen_staff", ["canteen.read"], "VIEW_CANTEEN", "/canteen"],
+])("kantin yanıtındaki yetkili detay bağlantısını açar: %s", async (role, permissions, action, path) => {
+  useAuthStore.setState({ user: { ...admin, is_super_admin: false,
+    roles: [{ id: role, name: role, slug: role }], permissions } });
+  vi.mocked(api.post).mockResolvedValue(answer("Kayıtlı kantin özeti", {
+    intent: "CANTEEN", suggested_actions: [{ label: "Kayıt detayları", action_tag: action }],
+  }) as any);
+  render(<MemoryRouter><Chatbot /><CurrentPath /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: "Chatbot'u aç" }));
+  fireEvent.change(screen.getByPlaceholderText("Bir şey yazın..."), { target: { value: "Kantin özeti" } });
+  fireEvent.click(screen.getByRole("button", { name: "Mesaj gönder" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Kayıt detayları" }));
+  expect(screen.getByLabelText("Geçerli sayfa")).toHaveTextContent(path);
+  expect(api.post).toHaveBeenCalledTimes(1);
+});
 
 describe("chatbot kullanıcı işlemleri", () => {
   it("hazır soruyu Türkçe karakterleriyle hemen gönderir ve sayfalı öğrenci listesini kullanır", async () => {
