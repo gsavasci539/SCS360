@@ -1,5 +1,7 @@
 # Kaynak doğrulama durumu — 11 Kasım 2026
 
+> Yeni native yoklama checkpoint: gerçek FastAPI + geçici SQLite + Kotlin HTTP istemcisi kabulü geçti. 102 öğrenci/101 mevcut satır sayfalı yüklendi; mevcut not/HALF_DAY/sürüm korundu; kayıp yanıta aynı PUT gövdesi tek audit ile tekrarlandı; eski sürüm409, salt-okuma403, kurum dışı404, bildirim işi0. Tam yeni Android58 test paketi şu anda çalışıyor; aşağıdaki51PASS ve APK önceki kaynağa aittir. Güncel APK henüz üretilmedi. Aylık/derse ait native yoklama API bağlantısı açık; sahte takvim gösterilmez.
+
 Bu dal geliştirme checkpoint'idir. Üretim veya tam web/native eşitliği kabulü değildir.
 
 ## Android / mobil
