@@ -1,5 +1,7 @@
 # SCS360 — Okul Yönetim Sistemi
 
+> Native yoklama güncel kabulü: gerçek FastAPI/geçiciSQLite/Kotlin HTTP senaryosu PASS; tam Android58/58PASS,0skip5m26s. Sonrasında yalnız test görsel/scroll çağrıları değişti; native render testi3pencere/2xfont ile ayrıca PASS ve görseller incelendi. Uygulama kaynağı değişmeden debug APK üretildi ve imza doğrulandı; SHA256 64f8121912246a1fc3ec82626cb20dfa24b4859389e506f81229f8a1367aa3ca. Aşağıdaki51test/APK önceki checkpointtir. Tüm native eşitleme, aylık yoklama, gerçek A26/HTTPS/ödeme kabulü tamamlanmadı.
+
 Anaokulu, kreş, etüt ve kurs merkezleri için franchise uyumlu, çoklu şube destekli yönetim platformu.
 
 ## Windows'ta yerel çalıştırma
@@ -146,5 +148,3 @@ mevcut deploy workflow'ları yalnız iskelet/placeholder durumundadır. Producti
 ## Lisans
 
 Özel yazılım — tüm hakları saklıdır.
-
-> Yeni native yoklama checkpoint: gerçek FastAPI + geçici SQLite + Kotlin HTTP istemcisi kabulü geçti. 102 öğrenci/101 mevcut satır sayfalı yüklendi; mevcut not/HALF_DAY/sürüm korundu; kayıp yanıta aynı PUT gövdesi tek audit ile tekrarlandı; eski sürüm409, salt-okuma403, kurum dışı404, bildirim işi0. Tam yeni Android58 test paketi şu anda çalışıyor; aşağıdaki51PASS ve APK önceki kaynağa aittir. Güncel APK henüz üretilmedi. Aylık/derse ait native yoklama API bağlantısı açık; sahte takvim gösterilmez.
