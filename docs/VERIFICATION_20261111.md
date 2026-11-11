@@ -4,12 +4,16 @@ Bu dal geliştirme checkpoint'idir. Üretim veya tam web/native eşitliği kabul
 
 ## Android / mobil
 
-- Önceki responsive kaynak: native40/40PASS,0skip/0fail,8dakika.139Kotlin dosyasının SHA manifesti `native-responsive-checkpoint-20261111.json`. Sekiz pencere ve üç yazı ölçeği boyunca toplam48konfigürasyon adımı, gerçek Students/Platform ekranlarında20senaryo, büyük yazıda kritik Root düğmesine erişim ve dört görsel inceleme içerir.
-- Sonraki kaynak: oturum/aktör/kurum/şube scope guard, gerçek login/me, AES-GCM token kasası ve sunucu hatasında sahte yerel başarıların kaldırılması henüz tam kabul edilmedi.145Kotlin dosyasının WIP manifesti `native-api-scope-wip-20261111.json`; önceki40PASS bu kaynağın kanıtı değildir.
-- Derleme kaynak yetersizliği nedeniyle başarısız denemeler içeriyor. Güncel farklı bellekli derlemenin sonucu bekleniyor. Yeni testler ve güncel APK henüz kabul edilmedi.
-- Expo birim testleri8/8PASS; Android/iOS Hermes ve web export geçti. Bu bir yerel iOS veya gerçek cihaz kabulü değildir.
-- Gerçek A26 bağlı değil. Diğer native sayfalar ve API/payload/DTO sözleşmeleri tek tek doğrulanacak. Eski aktör/kurum bilgisi taşımayan telefon önbelleği korunur fakat gösterilmez; kapsamlı offline cache açık iştir.
-- Gerçek sağlayıcı anahtarları/HTTPS ve mağaza ürünleri sağlanmadı. Sentetik HTTP testleri gerçek ödeme kabulü değildir.
+- Güncel Kotlin kaynak: **51/51PASS,0fail/0error/0skip,11m49s**, JDK23. `native-api-bound-scope-accepted-20261111.json`145Kotlin dosyasının SHA ve test XML sayımlarını içerir (SCS360Mobile deposunun docs klasöründedir).
+- Tüm Retrofit servis tanımları eager validate edildi; anket gövdesinin JVM wildcard hatası giderildi. Sentetik HTTP hataları yerel kayıt veya örnek izin başarısı üretmez.
+- Immutable operasyon kapsamı coroutine → Call.Factory → Request.tag → interceptor ile aktarılır. Hesap/kurum/şube/izin/API değişiminde eski yanıt ve henüz gönderilmemiş eski istek yeni aktöre taşınmaz. Aynı tokenla logout/login eski SaaS işlemini canlandırmaz. Regresyonlarda eski POST'un sunucuya hiç ulaşmadığı doğrulandı.
+- Rol politikası4 ve AES-GCM token kasası2 testi de bu tam51koşudadır. Kripto testleri gerçek JCE ile test anahtarı kullanır; AndroidKeyStore donanımı gerçek cihazda ayrıca kabul edilecek.
+- Responsive kapsam:8pencere ×3yazı ölçeğinde iki test toplam48konfigürasyon adımı; Students/Platform20gerçek ekran senaryosu ve büyük yazıda Root kritik düğmesine erişim. Dört sentetik görsel önceki görsel kabulün SHA'larıyla aynıdır. Bu bütün sayfaların cihaz kabulü değildir.
+- Önceki47koşu46PASS/1wildcardFAIL idi; JDK17 koşusu Android36 sandbox başlangıcında durdu. Bunlar başarı sayılmaz. Son51koşu bu hatayı gideren kaynaktır.
+- Resmî Gradle9.3.1 wrapper SHA256 ile pinlendi; wrapper sürüm kontrolü geçti. Tek-worker JVM ayarları testte kullanılan yapılandırmayla eşitlendi. Aynı145Kotlin dosyası değişmeden debug APK BUILD SUCCESSFUL3m16s; imza ve aapt metadata doğrulandı. Paket com.aistudio.okul360.hdtcca, min24/target36, 37296299byte, SHA256 `2844d7d8333b2509310912c127ba29a6e15f89db1a595f286d36ebe3d75526bd`. APK yalnız yerel debug artifact olarak tutulur; üretim veya cihaz kabulü değildir.
+- Expo birim testleri8/8PASS; Android/iOS Hermes ve web export geçti. Bu yerel iOS veya gerçek cihaz kabulü değildir.
+- Tam canonical API/payload/DTO işlev eşitliği henüz tamamlanmadı. Eski aktör/kurum bilgisi taşımayan disk kayıtları korunur fakat gösterilmez; kapsamlı offline cache açık.
+- Gerçek A26 bağlı değil. Gerçek sağlayıcı anahtarları/HTTPS ve mağaza ürünleri sağlanmadı. Sentetik HTTP testleri gerçek ödeme kabulü değildir.
 
 ## Backend / web
 
