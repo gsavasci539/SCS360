@@ -1,5 +1,5 @@
 {
-  "status": "Native recorded finance summary checkpoint: Android 82/82 PASS, 0 failures/errors/skips (17m48s); backend summary 9 PASS/8 conditional SKIP and related analytics 5 PASS/5 conditional SKIP. HTTP200 success:false rejection covered. Real Kotlin/FastAPI finance bridge and new APK are pending; previous APK does not contain this change. This is not full native finance, device or provider acceptance.",
+  "status": "Native recorded finance summary accepted: full Android 82/82 PASS (17m48s), real Kotlin/FastAPI temporary SQLite acceptance 1 PASS/1 PostgreSQL deselected (115.55s), same-source debug APK/signature PASS (2m48s). Debt/payment row mutations, parent flows, physical A26 and actual provider/store acceptance remain open.",
   "backend_summary_tests": {
     "passed": 9,
     "skipped": 8
@@ -15,8 +15,6 @@
     "reason": "HTTP 200 success:false incorrectly unwrapped; common interceptor fixed after this run"
   },
   "pending": [
-    "real Kotlin/FastAPI temporary DB acceptance",
-    "new APK",
     "native debt/payment row pagination and mutations",
     "parent CRUD",
     "physical A26 and actual provider/store acceptance"
@@ -3246,6 +3244,31 @@
     "skipped": 0,
     "duration": "17m48s"
   },
-  "current_apk": "not built",
-  "usage_guard": "primary window reached 100%; no new test/build started"
+  "current_apk": {
+    "sha256": "c698454ba3f7ca3a01521913d459495e67cc58310fa11c1dd94a347aad96e712",
+    "bytes": 37248409,
+    "signature_verified": true,
+    "package": "com.aistudio.okul360.hdtcca",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "installed": false,
+    "published": false
+  },
+  "usage_guard": "Prior primary100 wait ended naturally; no reset or credits used.",
+  "real_kotlin_fastapi": {
+    "passed": 1,
+    "postgresql_deselected": 1,
+    "seconds": 115.55,
+    "temporary_db": true,
+    "requests_status": [
+      200,
+      200,
+      404,
+      403
+    ],
+    "debt_rows": 102,
+    "payment_rows": 3,
+    "notification_jobs": 0,
+    "new_writes": 0
+  }
 }

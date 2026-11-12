@@ -1,5 +1,5 @@
 <!-- native-finance-20261112:start -->
-Native recorded finance summary checkpoint: Android 82/82 PASS, 0 failures/errors/skips (17m48s); backend summary 9 PASS/8 conditional SKIP and related analytics 5 PASS/5 conditional SKIP. HTTP200 success:false rejection covered. Real Kotlin/FastAPI finance bridge and new APK are pending; previous APK does not contain this change. This is not full native finance, device or provider acceptance.
+Native recorded finance summary accepted: full Android 82/82 PASS (17m48s), real Kotlin/FastAPI temporary SQLite acceptance 1 PASS/1 PostgreSQL deselected (115.55s), same-source debug APK/signature PASS (2m48s). Debt/payment row mutations, parent flows, physical A26 and actual provider/store acceptance remain open.
 <!-- native-finance-20261112:end -->
 
 # SCS360 — Okul Yönetim Sistemi
