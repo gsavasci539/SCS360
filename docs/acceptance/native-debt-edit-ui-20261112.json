@@ -1,5 +1,28 @@
 {
-  "status": "Backend full922 unique PASS/two documented DB variants skipped. Native full102 PASS before separately discovered edit-form cents truncation and early-close bug. UI correction WIP: two new UI tests pending, current full104 and matching APK not yet accepted.",
+  "targeted": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "duration": "4m37s",
+  "real_api_pytest": "1PASS/1PGdeselected105.82s",
+  "ui_targeted": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui_duration": "6m4s",
+  "api_client_unchanged_since_real_api": true,
+  "pre_edit_full": {
+    "tests": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration": "27m31s"
+  },
+  "status": "Native edit UI2/2 PASS: preserves cents and rejected/pending drafts; server ACK then Done, no early close, readonly/font2/landscape/workspace guard. Backend full922 unique PASS/two documented DB variant skips. Current full104 still running; matching debug APK pending.",
   "backend": {
     "unique": {
       "passed": 922,
@@ -31,24 +54,9 @@
     ],
     "source_unchanged": true
   },
-  "native_pre_edit": {
-    "tests": 102,
-    "failures": 0,
-    "errors": 0,
-    "skipped": 0,
-    "duration": "27m31s"
-  },
-  "ledger_api_core_sha256": "9bbcec2d588a515f9fe8b12dd6254432bd3322674b7d56990fcbed69901ba1b8",
-  "ui_source_sha256": {
-    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceDebtEditDialog.kt": "19b5404fa66c8cd06184c77f711834bba4c9c742a722fcd4806eb7abc03cef5b",
-    "mobile-android/app/src/main/java/com/example/ui/dialogs/Dialogs.kt": "08bc670910468297599191fc3a0af2a9e576c62a59b0ea8c380212d925d6b3b5",
-    "mobile-android/app/src/main/java/com/example/ui/screens/FinanceScreen.kt": "c97ae3667e02481eb682892929250c4dc524937880abe4bf91332f5f3eeeb38f",
-    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "92908ba276d16be9d32c7975dd35ef6aa5340441ebe36d9d6457021b53dcc6eb",
-    "mobile-android/app/src/test/java/com/example/FinanceDebtEditUiTest.kt": "d0b8b043f75b1c5307277576c309a77b29d484eeea7a420de73a8960cacd8686"
-  },
   "open": [
-    "edit UI target/full104/APK acceptance",
-    "expense/parent/custom-role/remaining module parity",
-    "physical A26/iOS/real HTTPS/providers/store/signing acceptance"
+    "current full104 and matching APK",
+    "expense/parent/custom-role/remaining parity",
+    "physical A26/iOS/real HTTPS/providers/store/release signing"
   ]
 }
