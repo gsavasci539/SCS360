@@ -1,3 +1,5 @@
+Native debt create real Kotlin/FastAPI temporary DB acceptance PASS: 102 real write-authorized options, committed-ACK-loss replay creates one100.01 debt, Room ledger unchanged, no payments or notification jobs. Release preflight rejects missing API and HTTP emulator endpoint; release taskgraph validates first. Full current Android regression pending. Real A26/iOS/provider/store/release acceptance remains OPEN.
+
 <!-- native-debt-create-20261112:start -->
 WIP native canonical debt create: durable actor/workspace/branch request UUID, complete write-authorized student choices, exact whitelist payload and server ACK. Legacy create pre-HTTP Room writes and fake invoice identifiers removed; both finance entry points use the canonical form. Backend12 serial/concurrent retry and branch-option cases PASS across temporary SQLite/PostgreSQL44.67s. Initial affected native7PASS; final persistence guard test, real Kotlin/FastAPI acceptance and new APK pending.
 <!-- native-debt-create-20261112:end -->
