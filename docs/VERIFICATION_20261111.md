@@ -1,3 +1,5 @@
+Native finance presentation scope: 14/14 affected scope/cash/receipt tests PASS1m53s; same-source debug APK/signature PASS2m46s. Actor/organization/workspace/branch/role/permission/logout changes reset finance dialogs, while refresh preserves drafts. Receipt stale-session content hides. Prior full93Android/906backend checkpoint is historical; current full Android not rerun. Invoice AlertDialog test idling remains an explicit UI test limitation.
+
 <!-- native-receipt-20261112:start -->
 Current automated acceptance: backend906 unique PASS/2 intentionally database-specific SKIP across isolated SQLite and PostgreSQL runs; Android93/93PASS; actual Kotlin/FastAPI receipt/payment linking, lost-ACK replay and server PDF PASS. Same-source signed debug APK ready locally. Frontend unchanged: prior344PASS remains applicable. Physical A26/IME/Android print service, real provider/store acceptance and unfinished native feature parity remain open.
 <!-- native-receipt-20261112:end -->
