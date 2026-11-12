@@ -1,10 +1,35 @@
 {
-  "status": "Native receipt checkpoint: 93 Android tests PASS/0skip (24m50s); actual Kotlin/FastAPI receipt/payment linking and server PDF PASS (303.35s); same-source debug APK/signature PASS6m34s. Backend full SQLite run518PASS/390conditionalSKIP, remaining PostgreSQL scenarios running in separate disposable database. Physical print service/device and provider acceptance remain open.",
+  "status": "Current automated acceptance: backend906 unique PASS/2 intentionally database-specific SKIP across isolated SQLite and PostgreSQL runs; Android93/93PASS; actual Kotlin/FastAPI receipt/payment linking, lost-ACK replay and server PDF PASS. Same-source signed debug APK ready locally. Frontend unchanged: prior344PASS remains applicable. Physical A26/IME/Android print service, real provider/store acceptance and unfinished native feature parity remain open.",
   "android": {
     "tests": 93,
     "failures": 0,
     "errors": 0,
     "skipped": 0
+  },
+  "backend": {
+    "unique": {
+      "passed": 906,
+      "skipped": 2
+    },
+    "total_unique": 908,
+    "remaining_skips": [
+      {
+        "classname": "tests.integration.test_recorded_attendance_analytics",
+        "name": "test_unknown_legacy_status_requires_review_and_is_not_a_fake_absence[postgresql]",
+        "status": "skipped",
+        "skip": "Only SQLite permits an unknown legacy enum label"
+      },
+      {
+        "classname": "tests.integration.test_school_payment_review",
+        "name": "test_postgresql_cross_organization_audit_nonce_race_rolls_back_entire_losing_ledger[sqlite]",
+        "status": "skipped",
+        "skip": "Independent organization row-lock race requires PostgreSQL"
+      }
+    ],
+    "runs": {
+      "full": "518pass/390skip940.72s",
+      "pg": "390pass/2skip/516deselected1663.45s"
+    }
   },
   "actual_api": {
     "real_api": true,
@@ -195,5 +220,14 @@
     "mobile-android/app/src/test/java/com/example/TenantCreateDialogTest.kt": "492d14619e6c122f028a73ed26eb8ef54ab8ef555e99a3b3b67a7e3d1492f4b1",
     "mobile-android/app/src/test/java/com/example/TenantProvisionerTest.kt": "fc77d75ce2c82d84d55a4aaf9a5f2957d8eb8ce72948624961223b767e62909d"
   },
-  "backend_postgresql": "running; no success claimed"
+  "backend_sha256": {
+    "backend\\app\\routers\\core_modules.py": "8128a8aa93fe392b6b7091e45a460cda48e64b327e0ca662e9f4bf39a6ad10f8",
+    "backend\\app\\application\\services\\cash_payment_service.py": "42b1b676649e6a2c571184cd308ea4ce43de0b531e06dc485db5f274c945ca9f"
+  },
+  "limits": [
+    "Android print service and physical device not exercised",
+    "No actual provider payment/message/deployment",
+    "Native debt/payment/expense row contracts and parent CRUD still open",
+    "Portal-local context lifecycle and custom-role native login still open"
+  ]
 }

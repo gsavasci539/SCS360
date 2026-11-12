@@ -1,5 +1,5 @@
 <!-- native-receipt-20261112:start -->
-Native receipt checkpoint: 93 Android tests PASS/0skip (24m50s); actual Kotlin/FastAPI receipt/payment linking and server PDF PASS (303.35s); same-source debug APK/signature PASS6m34s. Backend full SQLite run518PASS/390conditionalSKIP, remaining PostgreSQL scenarios running in separate disposable database. Physical print service/device and provider acceptance remain open.
+Current automated acceptance: backend906 unique PASS/2 intentionally database-specific SKIP across isolated SQLite and PostgreSQL runs; Android93/93PASS; actual Kotlin/FastAPI receipt/payment linking, lost-ACK replay and server PDF PASS. Same-source signed debug APK ready locally. Frontend unchanged: prior344PASS remains applicable. Physical A26/IME/Android print service, real provider/store acceptance and unfinished native feature parity remain open.
 <!-- native-receipt-20261112:end -->
 
 <!-- native-cash-20261112:start -->
