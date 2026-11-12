@@ -1,0 +1,18 @@
+{
+  "status": "WIP after accepted 100-test debt-create checkpoint. Canonical scoped ledger pagination, acknowledged whitelist update/cancel, no premature Room writes, no example finance defaults. Initial two tests failed due double response unwrapping; client corrected, final tests pending. New full regression and real API bridge pending. Previous debug APK6c206eb5 belongs to previous accepted source.",
+  "source_sha256": {
+    "mobile-android/app/src/main/java/com/example/data/remote/NativeDebtLedgerClient.kt": "9bbcec2d588a515f9fe8b12dd6254432bd3322674b7d56990fcbed69901ba1b8",
+    "mobile-android/app/src/main/java/com/example/data/repository/Okul360Repository.kt": "414e58a2f73baa988257a2b4b5a8c405982f16ef43d287fa39173ad79e766569",
+    "mobile-android/app/src/main/java/com/example/data/model/Models.kt": "7b252a496e9f70d6bd68456e3cb011c7110e849cb980b328930a696a85614044",
+    "mobile-android/app/src/test/java/com/example/NativeDebtLedgerTest.kt": "d94f5392e2800e5e7b98c4a49cdc5bdd65f28a9dbddd2f65e570cacaec0a4f1d",
+    "mobile-android/app/src/backendAcceptance/java/com/example/NativeDebtLedgerBackendAcceptance.kt": "2617a04c672f7e96878fee0f2948905084dfbd4dd6074dbbd6261ebf3f8a47fe",
+    "backend/tests/integration/native_debt_ledger_bridge.py": "aede4a392d6154993de7028ba80fe5e5ade78896ef9a46abf24acaff73133f87"
+  },
+  "open": [
+    "real API ledger acceptance",
+    "current full native regression",
+    "same-source debug APK",
+    "remaining expense/parent/custom-role/module parity",
+    "physical A26/iOS/provider/HTTPS/store/release acceptance"
+  ]
+}
