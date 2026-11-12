@@ -1,5 +1,5 @@
 <!-- native-finance-20261112:start -->
-WIP: recorded native finance summary and negative-envelope rejection; full Android regression and real Kotlin/FastAPI acceptance pending. Previous 74-test/APK evidence does not cover this source.
+Native recorded finance summary checkpoint: Android 82/82 PASS, 0 failures/errors/skips (17m48s); backend summary 9 PASS/8 conditional SKIP and related analytics 5 PASS/5 conditional SKIP. HTTP200 success:false rejection covered. Real Kotlin/FastAPI finance bridge and new APK are pending; previous APK does not contain this change. This is not full native finance, device or provider acceptance.
 <!-- native-finance-20261112:end -->
 
 # SCS360 — Okul Yönetim Sistemi

@@ -1,5 +1,5 @@
 {
-  "status": "WIP: recorded native finance summary and negative-envelope rejection; full Android regression and real Kotlin/FastAPI acceptance pending. Previous 74-test/APK evidence does not cover this source.",
+  "status": "Native recorded finance summary checkpoint: Android 82/82 PASS, 0 failures/errors/skips (17m48s); backend summary 9 PASS/8 conditional SKIP and related analytics 5 PASS/5 conditional SKIP. HTTP200 success:false rejection covered. Real Kotlin/FastAPI finance bridge and new APK are pending; previous APK does not contain this change. This is not full native finance, device or provider acceptance.",
   "backend_summary_tests": {
     "passed": 9,
     "skipped": 8
@@ -15,7 +15,6 @@
     "reason": "HTTP 200 success:false incorrectly unwrapped; common interceptor fixed after this run"
   },
   "pending": [
-    "current full Android regression",
     "real Kotlin/FastAPI temporary DB acceptance",
     "new APK",
     "native debt/payment row pagination and mutations",
@@ -3239,5 +3238,14 @@
       "path": "frontend/vitest.config.ts",
       "sha256": "dcafa95da608f61b1d0d611fba91f1ff81812db541f9ef8e171b12274078a542"
     }
-  ]
+  ],
+  "android_full": {
+    "tests": 82,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration": "17m48s"
+  },
+  "current_apk": "not built",
+  "usage_guard": "primary window reached 100%; no new test/build started"
 }
