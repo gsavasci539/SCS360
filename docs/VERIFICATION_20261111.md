@@ -1,5 +1,5 @@
 <!-- native-receipt-20261112:start -->
-WIP: verified native receipt list and exact server PDF; fabricated invoice-to-receipt documents removed. Full Android and real API acceptance pending; previous APK is historical.
+Native receipt checkpoint: 93 Android tests PASS/0skip (24m50s); actual Kotlin/FastAPI receipt/payment linking and server PDF PASS (303.35s); same-source debug APK/signature PASS6m34s. Backend full SQLite run518PASS/390conditionalSKIP, remaining PostgreSQL scenarios running in separate disposable database. Physical print service/device and provider acceptance remain open.
 <!-- native-receipt-20261112:end -->
 
 <!-- native-cash-20261112:start -->
