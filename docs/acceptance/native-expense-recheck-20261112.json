@@ -1,0 +1,67 @@
+{
+  "checkpoint": "native-expense-recheck-20261112",
+  "native": {
+    "unique_passed": 113,
+    "failed": 0,
+    "skipped": 0,
+    "classes": 30,
+    "runs": {
+      "target": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 2,
+        "duration": "5m 23s"
+      },
+      "regression": {
+        "tests": 106,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 28,
+        "duration": "13m 36s"
+      }
+    },
+    "partition": "7 targeted + remaining106; two targeted classes excluded from regression to avoid repeats"
+  },
+  "backend_retained": {
+    "passed": 940,
+    "database_specific_skips": 2,
+    "source_unchanged_files": 552
+  },
+  "frontend_retained": {
+    "passed": 352,
+    "files": 63,
+    "build": "TypeScript/Vite PASS",
+    "source_unchanged": true
+  },
+  "behavior": [
+    "Explicit server list recheck after uncertain deletion; close dialog and call scoped reload once without another DELETE or success acknowledgement",
+    "Success requires authoritative HTTP acknowledgement; uncertain outcome permits explicit same-scope list reload without another DELETE or optimistic local deletion",
+    "Captured actor/session/role/organization/branch presentation scope; stale responses cannot acknowledge or reload another workspace",
+    "Readonly controls; bounded lazy confirmation, long title, landscape font scale2 and48dp actions; no money movement"
+  ],
+  "acceptance_boundary": "Robolectric/Compose plus isolated loopback HTTP UI contracts. Existing Kotlin/FastAPI/tempDB expense ledger contracts retained; no new physical A26/iOS/provider acceptance.",
+  "open": [
+    "Native expense edit/reference-note UI",
+    "Native parent/custom-role/remaining module parity",
+    "Physical A26 keyboard/scroll/rotation/font acceptance and iOS/Mac",
+    "Real HTTPS/provider sandbox/store products and release signing; not sale ready"
+  ],
+  "apk": {
+    "sha256": "351de2e9a87f6981af11e754628d68377fab2e85cc531a8216964cb343a4f5ba",
+    "bytes": 37234884,
+    "signature_verified": true,
+    "variant": "debug",
+    "app_id": "com.aistudio.okul360.hdtcca",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "api": "emulator HTTP test default; not a production release"
+  },
+  "files": {
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseDeleteDialog.kt": "6f39c954aeee8b1eafb69e3ccfd5d91152c4e80e16cbdd43103d310457ea3609",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "10d07d516dc0cb399fac7339712ed0bee5856fef202bfbf63ff2e8454fa978a7",
+    "mobile-android/app/src/test/java/com/example/NativeExpenseDeleteUiTest.kt": "87d084411bd77b7ed5629bdbfa33fb83ee955a793b9fb2f9c92f057a247ccb18"
+  }
+}
