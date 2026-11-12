@@ -70,3 +70,8 @@ Two native ledger contracts PASS. Real Kotlin/FastAPI temporary SQLite acceptanc
 ## Final native ledger regression checkpoint
 
 Current native104/104 PASS, no failures/errors/skips. Same-source debug APK signature/package/SDK/cleartext verification PASS. Backend SQLite/PostgreSQL full union 922 unique PASS; only two documented database-specific skips remain. Frontend source tree unchanged: retained344 tests/62 files and TypeScript/Vite PASS. Native real API/tempDB debt create and ledger bridges passed; source hashes identify each accepted checkpoint. Whole-app parity and sale acceptance remain open: expenses/parents/custom roles/other native modules, physical A26/iOS, real providers/HTTPS/store products and release signing. Details docs/acceptance/native-debt-ledger-20261112.json. No user DB changes, real payments/messages or deployment.
+
+
+## Expense targeted and real API checkpoint
+
+Backend21 targeted cases PASS on temporary SQLite/PostgreSQL; native client2/UI3 PASS. Real Kotlin/FastAPI temporary SQLite bridge PASS: 100 seeded expenses plus one durable create, lost committed ACK recovery, complete101-row pagination, web110.02/category/calendar-date edit visible natively, web/native delete yields empty ledger, no payment/delivery/Room writes, foreign404/parent403. Current full native109/backend runs and matching APK still pending. Native expense edit UI, remaining modules and physical/provider/store/release acceptance remain open. See docs/acceptance/native-expense-20261112.json.
