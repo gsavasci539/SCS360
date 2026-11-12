@@ -1049,11 +1049,27 @@ async def create_debt(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     student = await BaseRepository(db, tenant).get_by_id(UUID(body.student_id), Student)
+    if body.request_id is not None:
+        from app.application.services.platform_service import lock_organization
+        from app.core.exceptions import ConflictException
+        await lock_organization(db, student.organization_id)
+        table = Debt.__table__
+        previous = (await db.execute(select(table).where(table.c.id == body.request_id))).mappings().one_or_none()
+        if previous is not None:
+            same = (previous["organization_id"] == student.organization_id and previous["student_id"] == student.id
+                and previous["branch_id"] == student.branch_id and previous["created_by"] == user.id
+                and previous["deleted_at"] is None and previous["debt_type"] == DebtType(body.debt_type)
+                and previous["description"] == body.description and previous["amount"] == Decimal(body.amount)
+                and previous["due_date"] == date.fromisoformat(body.due_date))
+            if not same:
+                raise ConflictException("İstek kimliği başka bir tahakkukta kullanılmış veya içerik değişmiş")
+            return success_response({"id": str(body.request_id), "replayed": True}, "Önceki tahakkuk doğrulandı")
     amount = Decimal(body.amount)
     if amount <= 0:
         raise ValidationException("Borç tutarı 0'dan büyük olmalıdır")
     due = date.fromisoformat(body.due_date)
     debt = Debt(
+        **({"id": body.request_id} if body.request_id is not None else {}),
         organization_id=student.organization_id,
         branch_id=student.branch_id,
         student_id=student.id,
@@ -1067,7 +1083,13 @@ async def create_debt(
         updated_by=user.id,
     )
     db.add(debt)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        if body.request_id is not None:
+            from app.core.exceptions import ConflictException
+            raise ConflictException("İstek kimliği başka bir tahakkukta kullanılmış") from None
+        raise
     return success_response({"id": str(debt.id)}, "Borç tanımlandı")
 
 

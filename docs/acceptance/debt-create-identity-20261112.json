@@ -1,0 +1,23 @@
+{
+  "status": "Backend debt create accepts optional request_id UUID: same actor/school/student/type/amount/due/description replays existing debt, changed/deleted/colliding request rejected409; organization lock and primary key enforce uniqueness. SQLite+PostgreSQL30 targeted regression PASS, final error-response adjustment6 PASS (overlapping tests, not36 unique). Android nonce/body integration remains OPEN. Android source unchanged; last signed debug APK600e36ac remains current.",
+  "targeted_run": {
+    "passed": 30,
+    "seconds": 87.34
+  },
+  "final_followup": {
+    "passed": 6,
+    "seconds": 20.31,
+    "overlap": true
+  },
+  "source_sha256": {
+    "backend/app/routers/core_modules.py": "744c71d48b30ef0e9aabd10f5af984dbcef0df62055746995bba863d2418a1cc",
+    "backend/app/application/schemas/common.py": "4a251790df36c55e8d8cd8b517606a82e8b16d07d122f5f693a0464ffead5fa9",
+    "backend/tests/integration/test_debt_create_identity.py": "091d345e76d1a4c1e52a0fbf87da138144304a96e344058991f29f429c1fdfcc"
+  },
+  "limits": [
+    "request_id optional for legacy compatibility; calls without UUID are not replay protected",
+    "Android client still needs canonical DTO/durable UUID and removal of premature Room writes",
+    "Concurrent create race not covered by these serial retry tests",
+    "No production deployment or Main DB operations"
+  ]
+}

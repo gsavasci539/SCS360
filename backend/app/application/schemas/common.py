@@ -323,6 +323,7 @@ class DebtFields(BaseModel):
 
 
 class DebtCreate(DebtFields):
+    request_id: UUID | None = None
     student_id: str
     debt_type: Literal["EDUCATION", "FOOD", "SERVICE", "STATIONERY", "ACTIVITY", "OTHER"]
     description: str | None = None
