@@ -59,6 +59,7 @@ async def test_empty_finance_summary_is_unknown_and_months_are_validated(finance
     assert result["collection_rate"] is None and result["risk_assessment"] == "unknown", result
     assert result["historical_monthly"] == []
     assert Decimal(str(result["outstanding_debt"])) == 0
+    assert result["branch_id"] is None
     for months in (0, -1, 25):
         invalid = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]), params={"months": months})
         assert invalid.status_code == 422, invalid.text
@@ -185,3 +186,32 @@ async def test_summary_reads_money_from_legacy_sqlite_keys_without_rewriting_the
         assert (await db.execute(text("SELECT id FROM debts WHERE id = :key"), {"key": "legacy-debt-key"})).scalar_one() == "legacy-debt-key"
         assert (await db.execute(text("SELECT id FROM payments WHERE id = :key"), {"key": "legacy-payment-key"})).scalar_one() == "legacy-payment-key"
         assert (await db.execute(text("SELECT payment_method FROM payments WHERE id = :key"), {"key": "legacy-payment-key"})).scalar_one() == "LEGACY_IMPORTED_METHOD"
+
+
+async def test_explicit_finance_branch_is_validated_and_never_ignored(finance_client):
+    client, sessions, data = finance_client
+    async with sessions() as db:
+        second = Branch(organization_id=data["org"].id, name="Synthetic second finance branch")
+        db.add(second); await db.flush()
+        student = Student(organization_id=data["org"].id, branch_id=second.id, first_name="Synthetic", last_name="Finance")
+        db.add(student); await db.flush()
+        for person, amount in ((data["children"][0], "100.01"), (student, "300.03")):
+            db.add(Debt(organization_id=data["org"].id, branch_id=person.branch_id, student_id=person.id,
+                debt_type=DebtType.EDUCATION, amount=Decimal(amount), paid_amount=0, due_date=school_today()))
+        await db.commit()
+    selected = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]),
+        params={"branch_id": str(data["branch"].id)})
+    assert selected.status_code == 200, selected.text
+    assert selected.json()["data"]["branch_id"] == str(data["branch"].id)
+    assert Decimal(selected.json()["data"]["total_debt"]) == Decimal("100.01")
+    for invalid in (str(data["other_branch"].id), "11111111-1111-1111-1111-111111111111"):
+        denied = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]), params={"branch_id": invalid})
+        assert denied.status_code in (403, 404), denied.text
+    assert (await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]),
+        params={"branch_id": "not-a-uuid"})).status_code == 422
+    async with sessions() as db:
+        staff = (await db.execute(select(User).options(selectinload(User.branches))
+            .where(User.id == data["accountant"].id))).scalar_one()
+        staff.branches = [data["branch"]]; await db.commit()
+    denied = await client.get("/api/ai/payment-forecast", headers=auth(data["accountant"]), params={"branch_id": str(second.id)})
+    assert denied.status_code in (403, 404), denied.text

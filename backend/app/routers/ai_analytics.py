@@ -44,12 +44,12 @@ async def _recorded_academic_response(days, tenant, db):
         raise AppException("Akademik kayıtlar yüklenemedi; daha sonra tekrar deneyin", status_code=503) from None
 
 
-async def _recorded_financial_response(months, tenant, db):
+async def _recorded_financial_response(months, tenant, db, branch_id=None):
     from sqlalchemy.exc import SQLAlchemyError
     from app.application.services.financial_summary import summary
     from app.core.exceptions import AppException
     try:
-        return success_response(await summary(db, tenant, months))
+        return success_response(await summary(db, tenant, months, branch_id))
     except SQLAlchemyError as exc:
         import logging
         logging.getLogger(__name__).error("Financial summary query failed (%s)", type(exc).__name__)
@@ -472,10 +472,11 @@ async def get_attendance_analysis(
 @router.get("/payment-forecast")
 async def get_payment_forecast(
     months: int = Query(6, ge=1, le=24),
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(AnalysisPermission('/payment-forecast')),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    return await _recorded_financial_response(months, tenant, db)
+    return await _recorded_financial_response(months, tenant, db, branch_id)
 
 
 @router.get("/canteen-analysis")
@@ -1069,10 +1070,11 @@ async def get_academic_performance(
 @router.get("/payment-forecast")
 async def get_payment_forecast(
     months: int = Query(6, ge=1, le=24),
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(AnalysisPermission('/payment-forecast')),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    return await _recorded_financial_response(months, tenant, db)
+    return await _recorded_financial_response(months, tenant, db, branch_id)
 
 
 @router.get("/academic-performance")

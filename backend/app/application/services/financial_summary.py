@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 
 from app.core.dates import school_datetime, school_today
 from app.core.exceptions import ForbiddenException
-from app.infrastructure.models.models import Debt, DebtStatus, Payment
+from app.infrastructure.models.models import Branch, Debt, DebtStatus, Payment
 from app.infrastructure.repositories.base import BaseRepository
 
 
@@ -123,10 +123,12 @@ def recorded_summary(debts, payments, months: int, *, today: date):
     }
 
 
-async def summary(db, tenant, months: int):
+async def summary(db, tenant, months: int, branch_id=None):
     if not tenant.organization_id:
         raise ForbiddenException("Önce kurum çalışma alanını seçin")
     repository = BaseRepository(db, tenant)
+    if branch_id is not None:
+        await repository.get_by_id(branch_id, Branch)
     # Project only monetary/date columns. Old SQLite keys and unrelated enum
     # values must not take down an aggregate or be rewritten to load an entity.
     # ORM column annotations retain the global tenant/student criteria.
@@ -136,6 +138,10 @@ async def summary(db, tenant, months: int):
     payment_query = repository._branch_filter(select(Payment.amount, Payment.payment_date).where(
         Payment.organization_id == tenant.organization_id,
         Payment.cancelled_at.is_(None), func.lower(Payment.status) == "completed"), Payment)
+    if branch_id is not None:
+        debt_query = debt_query.where(Debt.branch_id == branch_id)
+        payment_query = payment_query.where(Payment.branch_id == branch_id)
     debts = (await db.execute(debt_query)).all()
     payments = (await db.execute(payment_query)).all()
-    return recorded_summary(debts, payments, months, today=school_today())
+    return {**recorded_summary(debts, payments, months, today=school_today()),
+        "branch_id": str(branch_id) if branch_id is not None else None}

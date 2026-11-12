@@ -1,0 +1,3243 @@
+{
+  "status": "WIP: recorded native finance summary and negative-envelope rejection; full Android regression and real Kotlin/FastAPI acceptance pending. Previous 74-test/APK evidence does not cover this source.",
+  "backend_summary_tests": {
+    "passed": 9,
+    "skipped": 8
+  },
+  "backend_related_tests": {
+    "passed": 5,
+    "skipped": 5
+  },
+  "android_first_run": {
+    "tests": 15,
+    "passed": 14,
+    "failed": 1,
+    "reason": "HTTP 200 success:false incorrectly unwrapped; common interceptor fixed after this run"
+  },
+  "pending": [
+    "current full Android regression",
+    "real Kotlin/FastAPI temporary DB acceptance",
+    "new APK",
+    "native debt/payment row pagination and mutations",
+    "parent CRUD",
+    "physical A26 and actual provider/store acceptance"
+  ],
+  "files": [
+    {
+      "path": "backend/.dockerignore",
+      "sha256": "95d25326192531252f3dd7b7fd28b724ecc2bbf237101e1ef4f0602f002448de"
+    },
+    {
+      "path": "backend/.env.example",
+      "sha256": "91f53b7a43dea8d28b49dcc7e903247dd5c92a6b15f5713a3aa2ccf86c02e543"
+    },
+    {
+      "path": "backend/.env.production.example",
+      "sha256": "a7ffa358e0ae362944acb1e03ba549376da050635337841a1a45b50d57a2c2e8"
+    },
+    {
+      "path": "backend/AI_CHATBOT_IMPLEMENTATION.md",
+      "sha256": "79b1210eba68a1ddd01fcc245ddbc26df530b452dcd239e0d6ac87b6f5b48fcb"
+    },
+    {
+      "path": "backend/Dockerfile",
+      "sha256": "85da73ce9ea5a90c955ed702e121fb37a5588f7407c9003501c167a612058060"
+    },
+    {
+      "path": "backend/README.md",
+      "sha256": "949388d81b6b60b5ab0df9129bb6955cfc563d709a9af2867631204173580352"
+    },
+    {
+      "path": "backend/add_health_permissions.py",
+      "sha256": "7b0e606989ae7df604d2c1d998c76799e104f32068f63017295e3ff901c23bca"
+    },
+    {
+      "path": "backend/add_sample_chat_logs.py",
+      "sha256": "074b4ee1642e95bddf599563056c00eedfdf748ccab46d221d2e09847f9d213a"
+    },
+    {
+      "path": "backend/add_superadmin.py",
+      "sha256": "51a90a987f2ffe109bdc58ef1f6494f9c4e8493e3533c7fc30116afeb952152d"
+    },
+    {
+      "path": "backend/add_test_data.py",
+      "sha256": "c5ef662c0bdef27183cd5604a1e0677ef5475ae670910ded6763fadfae9b8187"
+    },
+    {
+      "path": "backend/alembic.ini",
+      "sha256": "0d3f82ac08525d2f2f4b650e655c0461ef864dab17c89e09daa5a8b18363a64f"
+    },
+    {
+      "path": "backend/alembic/candidates/037_live_student_numbers.py",
+      "sha256": "33d2ba9f71233e3142028a1f208882b786e515c22ef7a53c0c9a293745287466"
+    },
+    {
+      "path": "backend/alembic/env.py",
+      "sha256": "89707ddb11a30fa57163ccffd4660e8b231ab752e1f139583a1b895b5872b17b"
+    },
+    {
+      "path": "backend/alembic/versions/001_initial_schema.py",
+      "sha256": "6de1c3d21a56b6f336a00c66bbe0c74e9ee3afdd671a79b6f7f5c80ec222b55f"
+    },
+    {
+      "path": "backend/alembic/versions/002_create_application_tables.py",
+      "sha256": "7cd371871bfd98a6d8c261d360e22d1c928763dfd2cef107830bab6adc0a6d0c"
+    },
+    {
+      "path": "backend/alembic/versions/003_seed_baseline_data.py",
+      "sha256": "d87d78fdb4168b34f3e37f8e0663df7648f37b6fa618c05b8fe541be3d76c3cb"
+    },
+    {
+      "path": "backend/alembic/versions/005_add_payment_status.py",
+      "sha256": "fb1fa3d29a67423a79d276c30a13fc6e37d60a6f660653ae0b3bc49b1ddca284"
+    },
+    {
+      "path": "backend/alembic/versions/006_make_admin_super.py",
+      "sha256": "a27b8430f51818ac6f1d2584a1065738e2282a6c2840a7afae4b2103852017a3"
+    },
+    {
+      "path": "backend/alembic/versions/007_add_rfid_cards_table.py",
+      "sha256": "2d2ecedc620df617d5607025c921353fde20f774e4a8d31a1785ae6a381a1313"
+    },
+    {
+      "path": "backend/alembic/versions/008_add_card_numbers_table.py",
+      "sha256": "b91f3c5c67d108f77fb81b122d76443673eb60058d5642277ab7a1cbfe33761d"
+    },
+    {
+      "path": "backend/alembic/versions/009_add_devices_table.py",
+      "sha256": "80782e26d90cc08c6ae4c56b6e86a0664406cc406d5ad9d783120d95cddedc8f"
+    },
+    {
+      "path": "backend/alembic/versions/010_add_daily_reports_and_chat_tables.py",
+      "sha256": "22c253c134728683c064ce169c5a57ddf40a74cd00f5172703d2f7fff367f804"
+    },
+    {
+      "path": "backend/alembic/versions/011_add_grades_table.py",
+      "sha256": "25cf152cab7edd236d220f0876edf0094de2400a9c266fda4e8a85d1e0d7e233"
+    },
+    {
+      "path": "backend/alembic/versions/012_add_teacher_id_to_classes.py",
+      "sha256": "392f155ac99fc1127402ccf56c2dae0291ab84a0927bee8e36677687233168cc"
+    },
+    {
+      "path": "backend/alembic/versions/013_add_bus_tables.py",
+      "sha256": "9244db513cd6d099b2e3aea345220104bd48bec3dedc7bf2371b06b727b0f326"
+    },
+    {
+      "path": "backend/alembic/versions/014_add_canteen_tables.py",
+      "sha256": "2545cfbe3d8b073a8f1b7aeb73c10dc41d42090a4d528b749aedbdb4320bdc1a"
+    },
+    {
+      "path": "backend/alembic/versions/015_add_remaining_tables.py",
+      "sha256": "bc67d2a7900080e8b006ac1eaabbce111da841760dd3756e5bdeb0764e0ecb96"
+    },
+    {
+      "path": "backend/alembic/versions/016_add_user_id_to_parents.py",
+      "sha256": "0d29047b8bde3008debb3654f8d295ab9d46a8aa177254d16e78e9f02feb6a0b"
+    },
+    {
+      "path": "backend/alembic/versions/017_enforce_relationship_access_links.py",
+      "sha256": "504185ea35c09ea3ae8a3424ad22f8a5f51d53cb2ab1c9f51cc67e5363dfe11d"
+    },
+    {
+      "path": "backend/alembic/versions/018_add_parent_messaging_permission.py",
+      "sha256": "ac2d2815b94317dc7d891019912315dad1b37a01dddb2e2fc96538b6c328b077"
+    },
+    {
+      "path": "backend/alembic/versions/019_add_chatbot_teacher_integration.py",
+      "sha256": "f8e499681749f35a894fb117bbeb040680351acf1bd9373920a378b385df7241"
+    },
+    {
+      "path": "backend/alembic/versions/020_add_ai_chat_audit_logs.py",
+      "sha256": "0df7027edc97311be9ad7bdbeee42eae2b075582397a2d682f19e52339573317"
+    },
+    {
+      "path": "backend/alembic/versions/021_persistent_library.py",
+      "sha256": "77de6640c6cd7beb6a0640441c33104bd5867e9425b222632a88a9091a4fa49f"
+    },
+    {
+      "path": "backend/alembic/versions/022_persistent_appointments.py",
+      "sha256": "5f7fa493b797873cfc92e9e5594b45d2a18590b56bf5082b2fcc9e7dcd968adf"
+    },
+    {
+      "path": "backend/alembic/versions/023_persistent_homework.py",
+      "sha256": "9eb10ce862c90145791e77cac86c341a33ac3f060982530bb8a2b0c4980e1a8f"
+    },
+    {
+      "path": "backend/alembic/versions/024_notification_worker_leases.py",
+      "sha256": "c0df0480159c690d80eb56056af77d4d0f97e4c020402fc2094ddc9e72ef3714"
+    },
+    {
+      "path": "backend/alembic/versions/025_payment_checkouts_and_notices.py",
+      "sha256": "398c17832ad912a28a012f62fdfbad4e109b83e120b3b6b0ea5ebd4c1c896eb4"
+    },
+    {
+      "path": "backend/alembic/versions/026_persistent_operations.py",
+      "sha256": "187a67e33a29a4f4fd8a991ba10f14624ba579d305ebda9025644675f3dd7a5e"
+    },
+    {
+      "path": "backend/alembic/versions/027_production_permission_catalog.py",
+      "sha256": "8063ba36b2f9c1b4b9be6d0024e40bd14399650481cd33e7702b816a48a5d000"
+    },
+    {
+      "path": "backend/alembic/versions/028_material_submissions.py",
+      "sha256": "66dc6f10ac434b6e184e410137e5229161de9998a9dfbb49045e37cb61d0692f"
+    },
+    {
+      "path": "backend/alembic/versions/029_form_ownership_and_parent_consent.py",
+      "sha256": "450e484476f02fdd393bbb1c934c23be3ea27a04988c9174b4ad95cab232dec1"
+    },
+    {
+      "path": "backend/alembic/versions/030_survey_participation.py",
+      "sha256": "a4cbda065ef1264454d71a093a9f1a93a0399b603f33940da67134985af1b924"
+    },
+    {
+      "path": "backend/alembic/versions/031_guidance_confidential_permission.py",
+      "sha256": "fc401694d25f70673438acbfc4b1155c044ff11a2fb364f3fdad1e1120a64116"
+    },
+    {
+      "path": "backend/alembic/versions/032_medication_decisions_and_dose_date.py",
+      "sha256": "c8b98c4e4e495fbfb6a9d425ede3a0cb2096dc0f2b4d27f7d2f9df799117aba3"
+    },
+    {
+      "path": "backend/alembic/versions/033_saas_memberships.py",
+      "sha256": "fdfb8031488ea93a1673a039c4784abdd3b377d17c29642ddd9a5945cd77b48b"
+    },
+    {
+      "path": "backend/alembic/versions/034_student_address.py",
+      "sha256": "281b55753565d2c126342cd4fb16962d08588f64d009962c89503f9ac9db3bcc"
+    },
+    {
+      "path": "backend/alembic/versions/035_school_payment_merchants.py",
+      "sha256": "2d78fe83d5973f721e98d6d424e85e4bbfcfe69e9c4980bed09a6879e5d5e9d5"
+    },
+    {
+      "path": "backend/alembic/versions/036_timetable_actors.py",
+      "sha256": "f42b81f75c56afce9c9334130f5a589a89f144efaa9f260d9a50f48746b6c996"
+    },
+    {
+      "path": "backend/alembic/versions/037_live_student_numbers.py",
+      "sha256": "1e757bdbc3bc231cd02e994abb1a342c008ee17919adc57c10e9cdf90ba9b8eb"
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "backend/app/application/schemas/__init__.py",
+      "sha256": "cc41a41199f393e7ddb74e128631458e59c1988a2a7cda6c7c1911704269a342"
+    },
+    {
+      "path": "backend/app/application/schemas/announcement.py",
+      "sha256": "69bb5879dbfeebaa798cefa3e66039f28ea78b99745ca3313a9befaa5854b2fc"
+    },
+    {
+      "path": "backend/app/application/schemas/attendance.py",
+      "sha256": "10ea6c784eddafdc623ed35ab0cfc07ebc627116ad2ea85d61db02b72d828462"
+    },
+    {
+      "path": "backend/app/application/schemas/attendance_editor.py",
+      "sha256": "34f383e8654ffbc336732a08c81e4c3ccb4538122bcad1b0b2afc8f87b479885"
+    },
+    {
+      "path": "backend/app/application/schemas/auth.py",
+      "sha256": "e65eac296ee6c0255ba681e7f7cdbd4f27e57d2f5af4b24e2ab3fb948f045d9b"
+    },
+    {
+      "path": "backend/app/application/schemas/branch.py",
+      "sha256": "0945907b7185a90e8fad957cb4927fe72f5e27603bf7fc18b7a72a061530013b"
+    },
+    {
+      "path": "backend/app/application/schemas/cash_payments.py",
+      "sha256": "01c3dadf5b120bcb094a233272a31de2a8cadd58931cfca830ee90a52f7a964b"
+    },
+    {
+      "path": "backend/app/application/schemas/class_.py",
+      "sha256": "dab52cbaefd88e5841fad735dd3afd29c70abbc0e26d667201837f238d457ca3"
+    },
+    {
+      "path": "backend/app/application/schemas/common.py",
+      "sha256": "033ae08541146c8650dc4c28daf8ef1088d1b8e1419c420b50cf6b4ba1b3911c"
+    },
+    {
+      "path": "backend/app/application/schemas/debt.py",
+      "sha256": "a2fbc67a5501f07aeedfd94435654a53e81523ce0e5c03a8d5d7cbbd9a219f6f"
+    },
+    {
+      "path": "backend/app/application/schemas/notification_job.py",
+      "sha256": "15f4faa79ef359676695395cce3de39db3e53863a4b836cbffc71fbd3dc51c38"
+    },
+    {
+      "path": "backend/app/application/schemas/organization.py",
+      "sha256": "4231c815517b9a338eb5bb47d87a6d8d1dbdcd35b467527ed2fb4f614e93f2fb"
+    },
+    {
+      "path": "backend/app/application/schemas/parent.py",
+      "sha256": "06745e8dea6ebe06d34d70428e1032efd05c9e21d3ba1d45cac03f3bbf67ebbd"
+    },
+    {
+      "path": "backend/app/application/schemas/payment.py",
+      "sha256": "d7a218ae73ff985d7c49e1d586262cadfd4e53fda9dfc1ab986688e03a302187"
+    },
+    {
+      "path": "backend/app/application/schemas/permission.py",
+      "sha256": "a0e6fe637a162b722066d21d7353e4cc5382c9eb07a3fca201466b7bcee8598b"
+    },
+    {
+      "path": "backend/app/application/schemas/receipt.py",
+      "sha256": "80b41b45ea486ba4c8b8bde6db0f16bba07a2c3704e3f9ff09728875c310a2f0"
+    },
+    {
+      "path": "backend/app/application/schemas/role.py",
+      "sha256": "b57305bba045936ad4ea83e339b7a10b4563fb3702fef5b2c0cb3bb9e7a35510"
+    },
+    {
+      "path": "backend/app/application/schemas/saas.py",
+      "sha256": "20c7197183deea868a17d12367fbe7323dffeb0a969e85a0393aae97711c27ae"
+    },
+    {
+      "path": "backend/app/application/schemas/school_payment_merchant.py",
+      "sha256": "22400db832997a8ff317bdc1c3771ef291198edc9b2a713b688e11493a575ba7"
+    },
+    {
+      "path": "backend/app/application/schemas/school_payment_review.py",
+      "sha256": "d35354e6abf294dae3709ebedf4055183d40487fd8ba6bedafd5b1b07238be84"
+    },
+    {
+      "path": "backend/app/application/schemas/student.py",
+      "sha256": "7941823831df2e8408f54a350da3a38790e95c05db55c0fad29a823f0c833363"
+    },
+    {
+      "path": "backend/app/application/schemas/user.py",
+      "sha256": "fe29077c27fcdf95cbfcc65865e2875388701e43d70fcd2adaea49482bf43b8e"
+    },
+    {
+      "path": "backend/app/application/services/academic_records.py",
+      "sha256": "bf7179c8491e425a6514702f9be814a685012c72b89e9afb71de30172dbaba9a"
+    },
+    {
+      "path": "backend/app/application/services/academic_summary.py",
+      "sha256": "6f3caab3b7b9114b666c4b1ae13fbc8ce41681419c1f563bae7a30a3b181be11"
+    },
+    {
+      "path": "backend/app/application/services/ai_service.py",
+      "sha256": "18fb9b926a381d3e4901310e67d52c0d706b5f21358512773c4aac6a5a2eed74"
+    },
+    {
+      "path": "backend/app/application/services/appointment_service.py",
+      "sha256": "e70547dd8606fa9b710ce5b1c28c10fd483e38ecee8361ad8f50ebcea15c41f1"
+    },
+    {
+      "path": "backend/app/application/services/attendance_editor.py",
+      "sha256": "6477b7e0a3c64362a1e8381d46fc1b5b54a02d37d562e9087a48e4b955b8bcd4"
+    },
+    {
+      "path": "backend/app/application/services/auth_service.py",
+      "sha256": "97b8a1646e7044077e05258b49670ccc3d54692845dded8ac73b5010f296fa57"
+    },
+    {
+      "path": "backend/app/application/services/broadcast_service.py",
+      "sha256": "b24687f44911eb40e3288782579945207f5ab18a6a7599801f36fbd61550f2e2"
+    },
+    {
+      "path": "backend/app/application/services/bus_service.py",
+      "sha256": "e79781fa73292b82cb8648d3a25abb6fd28af8f965a09529b6c01f0fa8a440b2"
+    },
+    {
+      "path": "backend/app/application/services/canteen_wallet_service.py",
+      "sha256": "8e4b37e9186e291a4e5dd9d065a259af8e02075500c22658bcfee9b87889cd66"
+    },
+    {
+      "path": "backend/app/application/services/cash_payment_service.py",
+      "sha256": "3ebb46d2fb4d356d341f17643cd55e2f859aa1afff02b6a12e9834f5ca29ff15"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/__init__.py",
+      "sha256": "d0cc7d2e70a264c057a3e308729eddce0f1aafcbc788d7b6fb5a4b7a78d08079"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/context_service.py",
+      "sha256": "25242ac2b824cc1dbd18c5ec15da282df3180408dae7827585fc3537b1e487d8"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/conversation_history.py",
+      "sha256": "44a2a4c4a2d9402d2fee0b7c1ccef364e60427cc179349baa17fcf511652ff4e"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/dataset_export.py",
+      "sha256": "882f81b55507b704c2cf1ed30105dcce51764cc54f684e300556011704e71711"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/date_resolution.py",
+      "sha256": "def0efd827c39567ce503d8fc76c6a0880afbfe22388b0cc4f34a7b8aaccda55"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/handlers.py",
+      "sha256": "3a795fb37786b496d6a033293663da89da084d139fb23f267b11df93f6963e60"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/intent_schemas.py",
+      "sha256": "5e0e1d1bbf9647498265137583ac70dfc6c4b2fd8147863333de8b814de7a4c8"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/intent_service.py",
+      "sha256": "827d6b286d445225b54d073916a48e5273d905c32e28c9871c6453638b97ba2e"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/llm_provider.py",
+      "sha256": "68963f8d42f556397b684afb4603066d1e5f1fa644036ad3cd1b7e538101e7b2"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/role_config.py",
+      "sha256": "7f5c38269374924c7f556f1a9e53b3ae19ed9208a1f38bf1a50a3e59fd1496eb"
+    },
+    {
+      "path": "backend/app/application/services/chatbot/sentiment_analysis.py",
+      "sha256": "928e193267146fb4661e8e32b093689ea5250b3b2f853e07b7ac5451a158a240"
+    },
+    {
+      "path": "backend/app/application/services/club_service.py",
+      "sha256": "89f616c82bb21ca902028aa3c643a52f2cbadf8baa84534e779ab31e0bcbfb3d"
+    },
+    {
+      "path": "backend/app/application/services/consent_service.py",
+      "sha256": "3b28307dec4930697914727639cf61f847b5ae543550ad4bf8d04d2835cb23fd"
+    },
+    {
+      "path": "backend/app/application/services/exam_management.py",
+      "sha256": "d089ad0ed0a5e37891c6efc8259891b23c40bd736b9c81c2dfc61b9b990a4901"
+    },
+    {
+      "path": "backend/app/application/services/excuse_service.py",
+      "sha256": "90bf67f6255410fd6c859e08ccf0f55edf662e8ce0dde2a8a55b0e254ea1173e"
+    },
+    {
+      "path": "backend/app/application/services/finance_compat_service.py",
+      "sha256": "14b42b7581d5ef3210b73c1034b80ad3af60fc84fe5ddb1ece2f0bdd22e6d605"
+    },
+    {
+      "path": "backend/app/application/services/financial_summary.py",
+      "sha256": "ff8577738707466da486ffd8f410c3402d65a150f328bbdd62f8c6353333bb5b"
+    },
+    {
+      "path": "backend/app/application/services/guidance_service.py",
+      "sha256": "d01f4dac01d5b28f984fec5913d59def088a1309692277d4ec0bc57c4a9636e5"
+    },
+    {
+      "path": "backend/app/application/services/hardware_access_service.py",
+      "sha256": "ff6ad42e33984f75cac1ac8f36c5e21d87e3267891a3572e911f24596b39e24e"
+    },
+    {
+      "path": "backend/app/application/services/hardware_wallet_service.py",
+      "sha256": "728df6d62c823e1f7375cfc03fe9b34ad0effb217e8b5d7f9de21e35053add61"
+    },
+    {
+      "path": "backend/app/application/services/homework_service.py",
+      "sha256": "584395de58de97cd1ae45d965f4bf7c4f5db57126403354e6564771373672a3f"
+    },
+    {
+      "path": "backend/app/application/services/import_service.py",
+      "sha256": "72c9e77d6a1570dc7a861173c6db76f23c185310eff28873aa8eac786def2121"
+    },
+    {
+      "path": "backend/app/application/services/infirmary_service.py",
+      "sha256": "3ea0cdc040ecb2418081c380908640d5487aa519083f6aebd0a5ae4c97379e8e"
+    },
+    {
+      "path": "backend/app/application/services/inventory_service.py",
+      "sha256": "f5819e613b461967204f3eb83d988f02472981f8f49863e47d94a62839d06a5f"
+    },
+    {
+      "path": "backend/app/application/services/library_service.py",
+      "sha256": "7c163773f2c19285c87fcb57d09ae45894ef150d1af96b7a0dd096605b0ad990"
+    },
+    {
+      "path": "backend/app/application/services/material_file_service.py",
+      "sha256": "d82d3388caba15b679a7259c0c8c2be5aacab1a79b5f657bfdbf8c1afb486d04"
+    },
+    {
+      "path": "backend/app/application/services/online_payment_service.py",
+      "sha256": "2638f4720b5554a034fc5e03f6e1d41cc1308d35e1acecd39f85168d84a0024d"
+    },
+    {
+      "path": "backend/app/application/services/operations_service.py",
+      "sha256": "9e23349d9ccd1c5b52bf63090340a2ea91a53b5c1717834364d945babdc75c53"
+    },
+    {
+      "path": "backend/app/application/services/outbox_service.py",
+      "sha256": "95fdfafb6f6c203579bf93c1ca8fc129d9be9c8f4e411b9b155245fa072f53fd"
+    },
+    {
+      "path": "backend/app/application/services/parent_account_service.py",
+      "sha256": "458ca11e9ea8a283ff7f005ff5fcb15fb566597d05fea79cd4a6a435059983ef"
+    },
+    {
+      "path": "backend/app/application/services/parent_data_service.py",
+      "sha256": "f70327b15964432b0514f8b08bb150872793b11d29296274fb06e57142502dd3"
+    },
+    {
+      "path": "backend/app/application/services/parent_day_service.py",
+      "sha256": "1b1fb669eae8055fda6f41730f14c0896e6c8093b823859bbf95b4308bae98eb"
+    },
+    {
+      "path": "backend/app/application/services/parent_engagement.py",
+      "sha256": "fcf3e42fc9c110c36508fddad36ea174badfbbcdb817c58c0301d65603719d24"
+    },
+    {
+      "path": "backend/app/application/services/payment_providers.py",
+      "sha256": "cb483876c277b4c0548a5ada14e7fed1682cd24a46661ce769aeacc4dbd69040"
+    },
+    {
+      "path": "backend/app/application/services/payment_readiness.py",
+      "sha256": "3f257bf8ca70ae8fa832321a460bfd7552666d83447b9c18396e9a78866d87fd"
+    },
+    {
+      "path": "backend/app/application/services/payroll_service.py",
+      "sha256": "7ef5ee6554da4d38434660330903f11151e911eddf9c18520942303eeada70c4"
+    },
+    {
+      "path": "backend/app/application/services/pickup_service.py",
+      "sha256": "65aec78bb0b6c47b734eaa009c78947cbb28f8b6282a47a8859d760e81b74fe0"
+    },
+    {
+      "path": "backend/app/application/services/platform_service.py",
+      "sha256": "ac85d02d04b8f6000752e0118afdbcf3aaa924f6bf2f1c2512c831bcdf01fdfb"
+    },
+    {
+      "path": "backend/app/application/services/recorded_attendance.py",
+      "sha256": "a08e0fcca13f3ee6d5724c88ebd08aeff5d574534149f6f785b7f02eb2ac60ad"
+    },
+    {
+      "path": "backend/app/application/services/recorded_canteen.py",
+      "sha256": "a006cc8313f34c115d7deb7782ddd9cc4f25b9f8a169b635a07d5385d1647f5a"
+    },
+    {
+      "path": "backend/app/application/services/recorded_overview.py",
+      "sha256": "e5c5386bb0f16a053e5efce7b8045b32d9cb302de16de6ba8c91ba23b3eef94d"
+    },
+    {
+      "path": "backend/app/application/services/recorded_school_metrics.py",
+      "sha256": "4eeedc826fe0a3eac8628d8d728e120521225888346f47f5bda4518b8406175c"
+    },
+    {
+      "path": "backend/app/application/services/saas_gateway.py",
+      "sha256": "e4876e0c5b89ddfe3b9b148fdbfe51d156a71d32d9315afc00ea54b8864fc9b6"
+    },
+    {
+      "path": "backend/app/application/services/school_checkout_service.py",
+      "sha256": "865852aa164e375a38fdeaa81898ceceef513d9ee48236092363d17581dbefb7"
+    },
+    {
+      "path": "backend/app/application/services/school_payment_merchant.py",
+      "sha256": "8758eef23941a621b1b7872bb2042d11149319dd323b7decfd7ad837b537ae08"
+    },
+    {
+      "path": "backend/app/application/services/school_payment_review.py",
+      "sha256": "5412ea3facf9238255f6246efc9457de3d432b36bcd270eecbb85a8f4fb1771f"
+    },
+    {
+      "path": "backend/app/application/services/school_provider_accounts.py",
+      "sha256": "0d98aab319dbb0cc50ad42c9b451ca343147e439233643f4d308b2a884d3492a"
+    },
+    {
+      "path": "backend/app/application/services/security_service.py",
+      "sha256": "6ea6348e298cfa15222976e09f482751225e31e96c1d9abab2933f74c26bb705"
+    },
+    {
+      "path": "backend/app/application/services/student_choices.py",
+      "sha256": "a9c9a1c620adf8251de90b7cf49735a5cc791b57b5b2ef08858d432642e85987"
+    },
+    {
+      "path": "backend/app/application/services/student_form_choices.py",
+      "sha256": "d03603ff400550f037571daf2511d45e8359f61f8a3616ff88832b5b34d02732"
+    },
+    {
+      "path": "backend/app/application/services/student_insights.py",
+      "sha256": "1d804fba35ecad77efaee058e0ce5acbf26b7b9f915334e9fcf6ef268a962c9a"
+    },
+    {
+      "path": "backend/app/application/services/subscription_access.py",
+      "sha256": "975c43c1bc4d341d1b90682121394e4ff06cd442d36a919f2077d4899348af75"
+    },
+    {
+      "path": "backend/app/application/services/subscription_billing_service.py",
+      "sha256": "52f58492314a5589a4a6f2c5e427a366a9b99dc622f4d62c4d3bf26168aff271"
+    },
+    {
+      "path": "backend/app/application/services/subscription_checkout_service.py",
+      "sha256": "2ddb738bc96ef81b93a762af7ed53f3953028d0ab77c424aa13bb301901d4fe9"
+    },
+    {
+      "path": "backend/app/application/services/survey_service.py",
+      "sha256": "7f0f78603a706adcf3d483cb98e7ff2529fa0fe6d781dba6b04d3b4c9852319f"
+    },
+    {
+      "path": "backend/app/application/services/teacher_chat_service.py",
+      "sha256": "b288756f96a59221589aef0368bf08f490e7ec8994bdd3b2f649659ac84bf188"
+    },
+    {
+      "path": "backend/app/application/services/teacher_day_service.py",
+      "sha256": "29129a7aa190ca80c5545000b44e40fe48bf6bd95d0de7b16b0e65ca0eeb419f"
+    },
+    {
+      "path": "backend/app/application/services/transport_service.py",
+      "sha256": "1298d3e45a16f12989952b2e074fd827889387b086b7dc56224c751687d121ac"
+    },
+    {
+      "path": "backend/app/application/services/tutoring_service.py",
+      "sha256": "dedc7ce50644d95cffe14e7642588f6969bb51aa98e946391a78c5b6a2ae8055"
+    },
+    {
+      "path": "backend/app/core/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "backend/app/core/analysis_access.py",
+      "sha256": "98807a1b7a1c0be9df92904daa3478eb6942e30cf677c96a02bc4791cf72d172"
+    },
+    {
+      "path": "backend/app/core/branch_lifecycle.py",
+      "sha256": "ca981f1fa1556a7a5bcabbed2a390e01280cc3d08d42944db5370b8ca5809bef"
+    },
+    {
+      "path": "backend/app/core/class_capacity_guard.py",
+      "sha256": "d870960adf79fbc04afbdd2eabf8e7f5030766ca3bd1ec924aded41887e6bd2c"
+    },
+    {
+      "path": "backend/app/core/config.py",
+      "sha256": "7279d2ac0d46f82121012779b712424b82cf5710fcbc8176c5d0431655fccc68"
+    },
+    {
+      "path": "backend/app/core/database.py",
+      "sha256": "78b4be588b668dbdd011fda95443c51178d5e65c1d91b28975f1455ba6150466"
+    },
+    {
+      "path": "backend/app/core/dates.py",
+      "sha256": "cd2568a0a39c8f1563c7f459e46f9268a95efae8727a6637ba4861205e27eadc"
+    },
+    {
+      "path": "backend/app/core/dependencies.py",
+      "sha256": "961eff71f66abdc3cbab347dc8b54b4e8f0bfabff2ba41e69af8c6712ada67b5"
+    },
+    {
+      "path": "backend/app/core/exceptions.py",
+      "sha256": "4a0d1592f683613b0dba026c6c90dc0e56cffcdae773731ca26f0f4d8c7f1c04"
+    },
+    {
+      "path": "backend/app/core/integration_config.py",
+      "sha256": "83416eb412c2e68e15d6b814f30396c3f302d247ff117c63dd4e49065c5b9899"
+    },
+    {
+      "path": "backend/app/core/iyzico_config.py",
+      "sha256": "7b5a3e9238f3d36dcdfc10071dccb61cc5a231eb91fbfd14f407d1e952a0483f"
+    },
+    {
+      "path": "backend/app/core/logging.py",
+      "sha256": "30910fc9cc00b3c9d88493e5de173f1e918d114d652ba3e6cbd3a8c602b977ba"
+    },
+    {
+      "path": "backend/app/core/middleware.py",
+      "sha256": "48fdbde3b0745f2835d5e7950eb2cc7be8311db2581f1265e265777b8955081a"
+    },
+    {
+      "path": "backend/app/core/parent_purpose.py",
+      "sha256": "44cab1a6c518c3f3bce86d567b4a2b5154b0ab36edacdcafa4f4bbfd4103641f"
+    },
+    {
+      "path": "backend/app/core/permissions.py",
+      "sha256": "0b32a284269db0f7d9019a7e07493dd0820b2791d10661a21d42ad210929e600"
+    },
+    {
+      "path": "backend/app/core/platform_workspace.py",
+      "sha256": "dcf237708fc1fec5a26d923f10735e51215fe04a257b74d24f3dd5d9cf1b160f"
+    },
+    {
+      "path": "backend/app/core/rate_limit.py",
+      "sha256": "c547317257d6a7eaa19307246bff5123572400baccca1bf893daf5b87ef6490f"
+    },
+    {
+      "path": "backend/app/core/release_integrity.py",
+      "sha256": "d857d38bf025b5fec3876daf2db2fa9d09b9d4f7c75a277e1fe85c6397cdbd7a"
+    },
+    {
+      "path": "backend/app/core/responses.py",
+      "sha256": "145e459a413a94a571768a902b453d0cf639d2a93f73738dfee769328ab81f37"
+    },
+    {
+      "path": "backend/app/core/role_catalog.py",
+      "sha256": "7065de9f77eeb54c44728438891fd6a63b678fc16e4a882e0634602063904872"
+    },
+    {
+      "path": "backend/app/core/routing.py",
+      "sha256": "d0784f417b848ca65a0c9b41c40aaf80fd8552b9343fe316b851cd8e3ea2d593"
+    },
+    {
+      "path": "backend/app/core/security.py",
+      "sha256": "1bdf360d0260aaf18b748d7a7df2378ffc98181ee3790e95a3941994d2b51700"
+    },
+    {
+      "path": "backend/app/core/student_access.py",
+      "sha256": "605b539b9187764c9acc153d23960263a2436378ac6d368dc97099247dd6402d"
+    },
+    {
+      "path": "backend/app/core/subscription_guard.py",
+      "sha256": "5131d7de3bef5a6b5e460714c68e6740e31ac7eeef29444f45ae1fd193d0d8f4"
+    },
+    {
+      "path": "backend/app/core/teaching.py",
+      "sha256": "b7e3efd22f667a0e69d89f121874fe52910340049a14c5fa1a84b3e00d92c6f4"
+    },
+    {
+      "path": "backend/app/core/tenant.py",
+      "sha256": "5d0f78594fed419c301df16eee1e9af46c7780d8f82c05486bfa2bac5e0b755d"
+    },
+    {
+      "path": "backend/app/core/tenant_guard.py",
+      "sha256": "693439424b2e005e55ab9745a08fafe6b04f60ff6b23f603cd7f02d12509e8eb"
+    },
+    {
+      "path": "backend/app/core/uuid_type.py",
+      "sha256": "84d48a0d5ff2acf52c15e6b4f15e78a1ed2586d9440246a403f8eaff5c0db3df"
+    },
+    {
+      "path": "backend/app/domain/entities/__init__.py",
+      "sha256": "78c5dcc41aeb45ccb37c937bfa8d76ea47a08c24355acfc9cbc8b4e4a4e83eb5"
+    },
+    {
+      "path": "backend/app/domain/entities/ai_chat_audit_log.py",
+      "sha256": "2bb70a73c53e74f0784327daaf116b93175b1bc62a477b6a7ff3f6ccaeea1e7e"
+    },
+    {
+      "path": "backend/app/domain/entities/announcement.py",
+      "sha256": "9524d0dce561ac992380475d794941ea6821e1e9758ef70fd4db698900d09fc0"
+    },
+    {
+      "path": "backend/app/domain/entities/announcement_recipient.py",
+      "sha256": "f7e90148fde1fe14f82896521233a290c6e1294081149eb3d04f79e006183414"
+    },
+    {
+      "path": "backend/app/domain/entities/app_setting.py",
+      "sha256": "41ebbecab5a718e7e991b841568f26932efc2574872fe1ebab03170ba4309387"
+    },
+    {
+      "path": "backend/app/domain/entities/attendance.py",
+      "sha256": "70536097604ae2139c5975a97538821262a47afe60931b38b93495005c2c152a"
+    },
+    {
+      "path": "backend/app/domain/entities/audit_log.py",
+      "sha256": "0b03b8cea9f10129f66bd3362c7485dc178099658c50896c61d1ba95900e8873"
+    },
+    {
+      "path": "backend/app/domain/entities/branch.py",
+      "sha256": "37d53cd1df72857daeee8c3dc01038816a4c6813053f4f0a11a66d409ae68d28"
+    },
+    {
+      "path": "backend/app/domain/entities/bus.py",
+      "sha256": "dfeb5e33163a44afc0b94b4f81400983f6d38c78942fed4f79b01fb1c41704d3"
+    },
+    {
+      "path": "backend/app/domain/entities/canteen.py",
+      "sha256": "644bd36b8829feb2715365211ca9135e23f83a5692644a0beecbb9449e597c55"
+    },
+    {
+      "path": "backend/app/domain/entities/chat_conversation.py",
+      "sha256": "e6895dc34e94212fbcbfc6129e83ce8574b847848a525bd16780c0759e018e98"
+    },
+    {
+      "path": "backend/app/domain/entities/chat_message.py",
+      "sha256": "8ad29fdee607b98b45c33815acd7d3057e7647465f234f494323a6c85ee1de71"
+    },
+    {
+      "path": "backend/app/domain/entities/class_.py",
+      "sha256": "45f4f991721465eac83e22c0cd8f52d6362da586528da4a7abdf76e369391076"
+    },
+    {
+      "path": "backend/app/domain/entities/clubs.py",
+      "sha256": "c60d79fa3e3e136bb8e7a35a6d9608f02982cbf2f3368deebe3c4499c1f407d5"
+    },
+    {
+      "path": "backend/app/domain/entities/communications.py",
+      "sha256": "17bb375f261e6727f45d4bb3df1b3517e33525062cc8a95d62784172dbaa62fc"
+    },
+    {
+      "path": "backend/app/domain/entities/consents.py",
+      "sha256": "7bf89630f98eb5e0f2ca544bb1130b40113ecd6279010e84dd490f09462c4c07"
+    },
+    {
+      "path": "backend/app/domain/entities/daily_development_report.py",
+      "sha256": "c56b4c3d627319d3010ee39526fdeee5136632a03826f90061b20d4771e55e35"
+    },
+    {
+      "path": "backend/app/domain/entities/debt.py",
+      "sha256": "feda0003c37f2335648507511fa9bbe093ae293261dd039c94796b75b5c0cfaa"
+    },
+    {
+      "path": "backend/app/domain/entities/exams.py",
+      "sha256": "85a28075d502307f6d79390cd315a001854b461896717cfc61fa40d569f7fed5"
+    },
+    {
+      "path": "backend/app/domain/entities/guidance.py",
+      "sha256": "6809810a0c64bb5b09f2d9c6f84408ead0f5a62908bfb89b16e2f5358db1851a"
+    },
+    {
+      "path": "backend/app/domain/entities/health.py",
+      "sha256": "30021d2a96e2a26409fd27e803ceeba1ef2ba64f7db18e9f6e1597584cb5169a"
+    },
+    {
+      "path": "backend/app/domain/entities/hq.py",
+      "sha256": "db4b16c5df3fd53e201aee5bc4d40831ff160eed9629f346ca45fe7ef0b58e09"
+    },
+    {
+      "path": "backend/app/domain/entities/integration_setting.py",
+      "sha256": "1ab6f15e023e92bd7b9b15027227d06b3b7797c43b16d9fbd41c6bf769cce867"
+    },
+    {
+      "path": "backend/app/domain/entities/inventory.py",
+      "sha256": "488cef942ea8ea18378ee600377edbf5b4599b8f69a5062a6aff3d6003e8463a"
+    },
+    {
+      "path": "backend/app/domain/entities/materials.py",
+      "sha256": "b0cc94a16087fee1fcbc8319b5cce32ad8714286ed4912a1711441cc4cf2ab84"
+    },
+    {
+      "path": "backend/app/domain/entities/message_template.py",
+      "sha256": "c590bfdde918939628240a803e17094f170e3f2f275f168e736b866fc962447e"
+    },
+    {
+      "path": "backend/app/domain/entities/notification_job.py",
+      "sha256": "9c3c0c177f59981f60e3714b97e634c84b95b4979a42acd75ba82351d840542a"
+    },
+    {
+      "path": "backend/app/domain/entities/organization.py",
+      "sha256": "bdb6ec3a6c4dc5286b3f064ccf68e0ee7d845a108e0e3f107ebc34c53ffa1498"
+    },
+    {
+      "path": "backend/app/domain/entities/parent.py",
+      "sha256": "51a82cebebcfff3b15e6f12d8f4c3ac3dbd469b7f6fbad0e8e084ce76c60b28e"
+    },
+    {
+      "path": "backend/app/domain/entities/payment.py",
+      "sha256": "78ec7803af3105dc3aedda0ae6970c5d1ab2b2fdbc841329b4b79c1ca2d0a195"
+    },
+    {
+      "path": "backend/app/domain/entities/payroll.py",
+      "sha256": "7ee238a27f81fe8068739c394fca141bf83099f8f7514ee0f17b48bdfedbb92d"
+    },
+    {
+      "path": "backend/app/domain/entities/permission.py",
+      "sha256": "512cb13e8a0b7d10aa81c4399748f33c9fb52e0a3160100eab4e2ee2801da625"
+    },
+    {
+      "path": "backend/app/domain/entities/pickup.py",
+      "sha256": "bba0e3237c3f7238f10dcc1a9281feab7faf4b5f904572fb374a2c2c37cf1557"
+    },
+    {
+      "path": "backend/app/domain/entities/receipt.py",
+      "sha256": "8079c1063cbb2630700e2caa18ced2a7adf36ad130698aec3ded55f2e6ad4123"
+    },
+    {
+      "path": "backend/app/domain/entities/role.py",
+      "sha256": "b9e470542da05098f96d041ed1fa46149b6a80dbce787f8ce499f95b62577e11"
+    },
+    {
+      "path": "backend/app/domain/entities/role_permission.py",
+      "sha256": "98ff17d751586d73ae0266a9114b3e500d512b5530d3752ea7acdf136138513b"
+    },
+    {
+      "path": "backend/app/domain/entities/saas.py",
+      "sha256": "ba953a88eb67bc6242d77bb45219063f6ab30b51bee52f7beb035690f01a2baf"
+    },
+    {
+      "path": "backend/app/domain/entities/security.py",
+      "sha256": "e4ed3d34c669ac0e04f88d9e199a9b4210ac8975c5dc386f98508987378fab2c"
+    },
+    {
+      "path": "backend/app/domain/entities/student.py",
+      "sha256": "0ae3a5051b41c7177bfd8fb70fff6fa8a2ed20fc84759f5dabf356095b79da63"
+    },
+    {
+      "path": "backend/app/domain/entities/student_parent.py",
+      "sha256": "25f0eb0c18774fc61a9afe2b2b4026e5e72b5edc66bfda828393e4abc4be9a76"
+    },
+    {
+      "path": "backend/app/domain/entities/student_teacher.py",
+      "sha256": "58ccf08b80647a73d9b5e3aa552d2580ded6c1e3a1435d845db6d8095c2fd748"
+    },
+    {
+      "path": "backend/app/domain/entities/surveys.py",
+      "sha256": "e3a9163986059bb5d291909a35f0c78505d9fe42f1bd13a3f0bd37394bc3926f"
+    },
+    {
+      "path": "backend/app/domain/entities/timetable.py",
+      "sha256": "11114ad1f9defd066fd41fd4a18a64ff023ac757d2437ccb98989b4fc4aa4a5d"
+    },
+    {
+      "path": "backend/app/domain/entities/tutoring.py",
+      "sha256": "24dcecb7ec357602927cdacb0037cd92731d424ca7c0334cac53e5bbea51c8b3"
+    },
+    {
+      "path": "backend/app/domain/entities/user.py",
+      "sha256": "53190a8e1644f233dbae19848dcfafef168d8a8f9c84f9083b63652a046fd211"
+    },
+    {
+      "path": "backend/app/domain/entities/user_branch.py",
+      "sha256": "d558345e7af7239983bc11c20a75c79c2187a498fdfaa3cf3d3eb1406578e8c0"
+    },
+    {
+      "path": "backend/app/domain/entities/user_role.py",
+      "sha256": "f3467d91771eff2e7a6ed58ab544a2e4be4378af5bdb29fa24096a94946e43a3"
+    },
+    {
+      "path": "backend/app/domain/services/class_capacity.py",
+      "sha256": "b083ce3015d9ca8e4b4cdc2f8d716a7084917ebdcb7bc1e00d776288b906fc11"
+    },
+    {
+      "path": "backend/app/domain/services/debt_calculator.py",
+      "sha256": "d97aefba9712ec29cd54106049dea8bc9adb2250ff33e86a16e9390cf8c7e1a7"
+    },
+    {
+      "path": "backend/app/domain/value_objects/money.py",
+      "sha256": "8f39597a50b35aeee628167d81f37a76d56545b4aed775198bfc5c018e12b958"
+    },
+    {
+      "path": "backend/app/infrastructure/models/__init__.py",
+      "sha256": "9a61a2c04af487aef748d61eed3ff4da526413b208df4cb8d8e4dc60fd94484d"
+    },
+    {
+      "path": "backend/app/infrastructure/models/models.py",
+      "sha256": "16c3a4cb61ee7fb7e291c8b286a2348b98a3bb541766848c9669dd8a97ebea25"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/__init__.py",
+      "sha256": "64d6916c769c795ef7c5237b1fecff07f3e71d53f4d0fa3a16156a1e14fa6244"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/base.py",
+      "sha256": "8df6bc74aef17a08ac6af175eccda86e4c7013c9073d70f86045a76b19d851bd"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/base_provider.py",
+      "sha256": "1b0f1e2248aa9a5dc47f1707363d0b0da3db4d8997d15b77f869fb8a3f49a397"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/dispatcher.py",
+      "sha256": "948af16cb374e89f4127d06e19af0d85a18836a1be924ccaceb968851b1b0bc1"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/email_provider.py",
+      "sha256": "06289ec3caac095671e8cf9349a60830b641b6043dfcb9e9876034a45edbdbbf"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/outbox_worker.py",
+      "sha256": "8947b946726b519997d15e978b075819ee2b967e203b5286c2f8dd43368d2fed"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/sms_provider.py",
+      "sha256": "76e908f659595df309b7c045988f6f319d6434d0334369853962ed3c5d3e137a"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/template_renderer.py",
+      "sha256": "d9a44a982e2a83b0a88da587dc608660f0bc754c4ce514255d3b029a6e2ae3a3"
+    },
+    {
+      "path": "backend/app/infrastructure/notifications/whatsapp_provider.py",
+      "sha256": "6634869b828dfff8adb51c383d9d3bcc0d94232a9059a4298f614b4196392805"
+    },
+    {
+      "path": "backend/app/infrastructure/pdf/__init__.py",
+      "sha256": "64393f65e66dbd532f8b2b3319313be72e0fa06dac3dffce9a6c057de342d65c"
+    },
+    {
+      "path": "backend/app/infrastructure/pdf/assets/scs360-mark.png",
+      "sha256": "909d44ccb91bbfc9ed622088829c8cdfb4467a419f0a9557cbc64947b9f912e4"
+    },
+    {
+      "path": "backend/app/infrastructure/pdf/certificate_pdf.py",
+      "sha256": "6855eeb64ba55d3061ffab1b4113d51d8905bc38772bd6869e7f1c2d8033363b"
+    },
+    {
+      "path": "backend/app/infrastructure/pdf/pdf_service.py",
+      "sha256": "6a9068d3db1c4ed9d62260a6f1bbaf6b7f7f397a69cfe940b2aa65e645d8805d"
+    },
+    {
+      "path": "backend/app/infrastructure/pdf/receipt_pdf.py",
+      "sha256": "622825dd1d4d1c69e97cfca8e50cb1392a72f5979b36a469b9d72fe5e1f7d1e2"
+    },
+    {
+      "path": "backend/app/infrastructure/reports/__init__.py",
+      "sha256": "d51bfba9b40296535ad60efd7938a69494a939eca0212bcefa32b4b85ab8ae40"
+    },
+    {
+      "path": "backend/app/infrastructure/reports/csv_export.py",
+      "sha256": "a6fd4e4002d3f0a02d50d88499bd85b3160751530f9ac6f2b8ca1a6152147c3a"
+    },
+    {
+      "path": "backend/app/infrastructure/reports/excel_export.py",
+      "sha256": "750d822f5ea165d6ed765fd24f9fac6192a9d422032d8c2b61a78aa853ee333d"
+    },
+    {
+      "path": "backend/app/infrastructure/reports/report_service.py",
+      "sha256": "aab3220dbf0998329113c2ee03c00c52d93ea351a5132d04d75e44fa54b3b275"
+    },
+    {
+      "path": "backend/app/infrastructure/reports/tabular_export.py",
+      "sha256": "b600035e7ef61b66edb3c70d81c1238f33e5544f8ee43850e0572917106dc6b7"
+    },
+    {
+      "path": "backend/app/infrastructure/repositories/base.py",
+      "sha256": "673c37634d076333df8650f2de55d2d15e7c0246bf08cbcdca7d9bf2ebb2299f"
+    },
+    {
+      "path": "backend/app/infrastructure/storage/__init__.py",
+      "sha256": "13bebe7ba5219e80c1a2c18317006c6db1b7bb9f9955e5ed2b7989f725835403"
+    },
+    {
+      "path": "backend/app/infrastructure/storage/file_service.py",
+      "sha256": "c056e2d5655a17782e6b2c30642a95150daba00fc0a68cfca8406580217ae7ab"
+    },
+    {
+      "path": "backend/app/infrastructure/storage/local_storage.py",
+      "sha256": "6e1643836726bb65bfa9b0267eaeaa1326fd2282982e038540b56e01d5cae683"
+    },
+    {
+      "path": "backend/app/infrastructure/storage/storage_base.py",
+      "sha256": "10bc6c7401666aa1a7cffbcd6d810c42ee7cabf4c8099c223fb962ef42fe2fa6"
+    },
+    {
+      "path": "backend/app/infrastructure/storage/uploads.py",
+      "sha256": "d1270a11feb8afdfaaa0d7428e5d39ed386a0e7b338bfaadc6eabdd3a6f791fb"
+    },
+    {
+      "path": "backend/app/main.py",
+      "sha256": "cba968f5a749c14309d7516475f819c9fad89289e26283293c1bf06338d0f5d5"
+    },
+    {
+      "path": "backend/app/repositories/__init__.py",
+      "sha256": "a582a1362c910af394e08722f50da5654551c52d3e6f37958784e63278971d50"
+    },
+    {
+      "path": "backend/app/repositories/announcement_repository.py",
+      "sha256": "6287b673e35d5329ad0a5d9806acd0950bba2131f0818c674367075a515c637d"
+    },
+    {
+      "path": "backend/app/repositories/attendance_repository.py",
+      "sha256": "9a5148417823629e4aee6f1ad04788f7011521801f19d05410015dacc5e22d7f"
+    },
+    {
+      "path": "backend/app/repositories/base_repository.py",
+      "sha256": "a6b9d9c41a5fa37db3910fdd3f2eef2559e030306422f780ad869592edf9c4c0"
+    },
+    {
+      "path": "backend/app/repositories/branch_repository.py",
+      "sha256": "61b6c3ea148c4cd8f92714ee0d231b1c6e5bbe4dedcf62fe1b6d418776bd699f"
+    },
+    {
+      "path": "backend/app/repositories/card_number_repository.py",
+      "sha256": "6b07246582c7505fe7767131159a1c52d6266ba65b9e44306fd34c76c8e0245a"
+    },
+    {
+      "path": "backend/app/repositories/class_repository.py",
+      "sha256": "8c88042d98db300cb751d32d2ce72bfd49d4e8b0e4d00c267d87f853a7db4751"
+    },
+    {
+      "path": "backend/app/repositories/debt_repository.py",
+      "sha256": "7b61c7dee57a180a3b1708d34486a8671a9fa5529713813fcc2a16437a1f8e7f"
+    },
+    {
+      "path": "backend/app/repositories/device_repository.py",
+      "sha256": "1a0679740f715cb00057d7f45f4406443eaa255a6b2b618e13fe0a33a6eebf66"
+    },
+    {
+      "path": "backend/app/repositories/notification_job_repository.py",
+      "sha256": "45b6f386773efb098a81a7d81b849612ea98e0082a0cce7ca0aa91e615d5c97c"
+    },
+    {
+      "path": "backend/app/repositories/organization_repository.py",
+      "sha256": "81d608b470024082e8fc280a4cc641f3bc149011208c5431f9d6a5d229fb192b"
+    },
+    {
+      "path": "backend/app/repositories/parent_repository.py",
+      "sha256": "a508696f84419e2713e5376635825914c2d8ee59dfc2ff60aab6d932d4f3da9a"
+    },
+    {
+      "path": "backend/app/repositories/payment_repository.py",
+      "sha256": "6b7b7ed3a7412422dca4f1cbfe97f3331946ec9a3e0a28b51b57ecc7f8798c25"
+    },
+    {
+      "path": "backend/app/repositories/permission_repository.py",
+      "sha256": "1b72ebe84a4699aef473a511700076f0755a0d0b779e8e5ea764a80325ad63c9"
+    },
+    {
+      "path": "backend/app/repositories/receipt_repository.py",
+      "sha256": "30eafdc2bf1991e9d18014b3f83f1a76c15603844aa6f2a657829aa8a864480d"
+    },
+    {
+      "path": "backend/app/repositories/rfid_card_repository.py",
+      "sha256": "a9205cdc6dac66d62213deeebb4999beaf14480eb2be9215b52635b7ab85b0eb"
+    },
+    {
+      "path": "backend/app/repositories/role_repository.py",
+      "sha256": "adf829996eb11709456bb8d27f11e13e425234a29c7f2f6dde6e5b5e3911bcc7"
+    },
+    {
+      "path": "backend/app/repositories/student_repository.py",
+      "sha256": "56a0ee07f11bf9d458e92045da33a3a109eb8dd1b0bd56d1d0e021db6a2908d1"
+    },
+    {
+      "path": "backend/app/repositories/user_repository.py",
+      "sha256": "72907a2a523e19280b6f07a88bf026008f04bc947f2ba5df4280dc5f0874c6f4"
+    },
+    {
+      "path": "backend/app/routers/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "backend/app/routers/admin_crud.py",
+      "sha256": "ebca029d44bee8b47c283a0c1794a3240c81ebdbfa4257bc31bf305243bd679a"
+    },
+    {
+      "path": "backend/app/routers/ai_analytics.py",
+      "sha256": "f6d8bce68f375c759501bd95e5d9d113f4d874b7f7dd0226c090877c0f85dbeb"
+    },
+    {
+      "path": "backend/app/routers/announcements.py",
+      "sha256": "f0bdf66c98f5485aa007e3eebc0602ae16a7c87c885da98d839734350ec8a316"
+    },
+    {
+      "path": "backend/app/routers/appointments.py",
+      "sha256": "ba2911d75a9192157ce9ecf7069a37a5480aa84a801d24325a48c2e8f5a8bc6b"
+    },
+    {
+      "path": "backend/app/routers/attendance.py",
+      "sha256": "e6b45208983f13e8fa6df4e01f28292a9b24d633baad48a45118c076d79cca31"
+    },
+    {
+      "path": "backend/app/routers/auth.py",
+      "sha256": "bdbf51e8c936cd3f3f2d8b4654404343baa47017c84e4f487fab33986eeab0e1"
+    },
+    {
+      "path": "backend/app/routers/bus.py",
+      "sha256": "f5525f67ff7df13eba82c18644b5024c5f008a0d162c67e65de615967e5a7759"
+    },
+    {
+      "path": "backend/app/routers/canteen.py",
+      "sha256": "94735167c46959e3e49f6bfe222063366b50981da1d437555ab0a3d540783eec"
+    },
+    {
+      "path": "backend/app/routers/card_numbers.py",
+      "sha256": "04f78ad1c9c240249e510863be17cc270525e146ebd6bd16fb22e2b727f252f1"
+    },
+    {
+      "path": "backend/app/routers/chatbot.py",
+      "sha256": "de69dde2af1ece5a71ff50862fbf710776d4eec7e665565a2c009592ad99cff5"
+    },
+    {
+      "path": "backend/app/routers/classes.py",
+      "sha256": "3c7af6f5265478d897749f611dfd0a63ea93ebb4101168b5f422b07eef28ac4f"
+    },
+    {
+      "path": "backend/app/routers/clubs.py",
+      "sha256": "c1d6552503b98fc0cf2c2266cef5ff8a5b22820cc31ac99c9762d107a9c36bbe"
+    },
+    {
+      "path": "backend/app/routers/communications.py",
+      "sha256": "2fc35c3c2f2fc70bda8104d2bd4374718c00b6360779962a2041596984f26b00"
+    },
+    {
+      "path": "backend/app/routers/consents.py",
+      "sha256": "44cf53f90038a052523eb94ec8ac330df07da7b41aea94d9a42a1416c9d1f78e"
+    },
+    {
+      "path": "backend/app/routers/core_modules.py",
+      "sha256": "a69d1f63d4b6389f0ce3f7d9e769651c110c3b3a62e5cc81cb79705d094e480d"
+    },
+    {
+      "path": "backend/app/routers/daily_reports.py",
+      "sha256": "6e37f56a144f8a96b1803d34dc3d33a2ac33ca1e9e0ab0cc487780909a610e03"
+    },
+    {
+      "path": "backend/app/routers/dashboard.py",
+      "sha256": "353a7a8f377ac50198f9fb842100b6a3cbc850041f96c3a423002a604e203ff5"
+    },
+    {
+      "path": "backend/app/routers/dashboard_reports.py",
+      "sha256": "0c801bdc7ee45272ee068aaed90b61f5bff706bdebd8322a97822ae5eaf06876"
+    },
+    {
+      "path": "backend/app/routers/data_import.py",
+      "sha256": "14978cb9d9b87b4e2c45a405c256a7b9ff58ff868ef249216d422652cf2885b5"
+    },
+    {
+      "path": "backend/app/routers/debts.py",
+      "sha256": "996f0b386d81b4d1759d4ee93211d20b0457c7f8dc725aa6e2d6507941255b49"
+    },
+    {
+      "path": "backend/app/routers/devices.py",
+      "sha256": "14e5a1490da2c6f484b120ae14382df4f2903c46b105e72d1283750998367105"
+    },
+    {
+      "path": "backend/app/routers/exams.py",
+      "sha256": "a46c9a6dc4af43a983c12ad68764d0072cdc4789d8059d51127db2f6eec282b4"
+    },
+    {
+      "path": "backend/app/routers/expenses.py",
+      "sha256": "d7b1074973814bb6e01dc6ddccdc73d93c396251bf7ae026c053efed261e8098"
+    },
+    {
+      "path": "backend/app/routers/files.py",
+      "sha256": "1e13ccf12bbe53eb62d9ea90628c99c90786699bc59b0abb61b0fcd50cd87401"
+    },
+    {
+      "path": "backend/app/routers/files_receipts.py",
+      "sha256": "d89a15d4403b8b9ad2b83ee535b8a899e28e54b6872cef7cd3dae0e962ea02f2"
+    },
+    {
+      "path": "backend/app/routers/guidance.py",
+      "sha256": "25af40020e9d51a146d1200020c5167942882d990dd7fd59a41f87107af4b56a"
+    },
+    {
+      "path": "backend/app/routers/hardware.py",
+      "sha256": "66260e2748f7be0b60bd688e195940e38d3db76873173e1458fb2840164666c0"
+    },
+    {
+      "path": "backend/app/routers/health.py",
+      "sha256": "d9851f536731f1be0b7812d860aa1d289a184af2eff5606a35aea64c66118772"
+    },
+    {
+      "path": "backend/app/routers/homework.py",
+      "sha256": "cd138c28b5d1abf1c65f7fe03abca7b6b4e07043d44b93922d1682329849ece4"
+    },
+    {
+      "path": "backend/app/routers/hq.py",
+      "sha256": "bb6c213d97bbb2c0b4847cc20a83df572b9eb774d0db252cf2692988c82f2d11"
+    },
+    {
+      "path": "backend/app/routers/infirmary.py",
+      "sha256": "a5dcb2edea8745c08748464fc4a523a897d00bb7dbb9e8a1147aa15e23209d9c"
+    },
+    {
+      "path": "backend/app/routers/inventory.py",
+      "sha256": "8218a42b605106163f12acf4cd8b0c8b6b83a96c9af1b3f61752a10281528102"
+    },
+    {
+      "path": "backend/app/routers/library.py",
+      "sha256": "1488458d0618918772b766f119ebba193fb71f237099c1b8f740b80ceeb37c25"
+    },
+    {
+      "path": "backend/app/routers/materials.py",
+      "sha256": "61e57ccc9d78e39046321ce6e487072846f5343ef0b0b3818ade32712764e40f"
+    },
+    {
+      "path": "backend/app/routers/messages.py",
+      "sha256": "3a6585315c3ebcdf073dab77f096e884127537e1cbe5cd3525afe07826f85754"
+    },
+    {
+      "path": "backend/app/routers/operations.py",
+      "sha256": "a38ea5a36e9714911ea7f7c08337b659d559e3d762be263b934f41a17cab6fe5"
+    },
+    {
+      "path": "backend/app/routers/organizations.py",
+      "sha256": "2c79fb08c8f5c324d7d0f63924b15b8cd572500a733fe1f1c635e039e8818526"
+    },
+    {
+      "path": "backend/app/routers/outbox.py",
+      "sha256": "fd1ac9def4357808291658f5ac7576aff7452b3714bc2fbc10b3e7407c65e90c"
+    },
+    {
+      "path": "backend/app/routers/parent_notices.py",
+      "sha256": "68a543bae64f12515d946f79ec50e979f19f8e6967f0691f4a22947b57ba4a41"
+    },
+    {
+      "path": "backend/app/routers/parent_portal.py",
+      "sha256": "3007138e413d33808bf277e90cabb352c8c299f632436c5a1075ccea836f83a8"
+    },
+    {
+      "path": "backend/app/routers/parents.py",
+      "sha256": "2810ade2ef72bf613a3906e85144ca610047d814e360ce0c2d48ab2bb852e324"
+    },
+    {
+      "path": "backend/app/routers/payments.py",
+      "sha256": "574a09b372585d5c82273485b131c4d7b834b82c2e1744a16c5a603e9bb64f38"
+    },
+    {
+      "path": "backend/app/routers/payroll.py",
+      "sha256": "a4a2e9d301886c79d9ab210aa7d3624be83f6ffa264f159db201070340ac009a"
+    },
+    {
+      "path": "backend/app/routers/permissions.py",
+      "sha256": "ce570de4a51395ec57249e47dadd805a38a6c341a9b07a669d04bec602cc18d2"
+    },
+    {
+      "path": "backend/app/routers/pickup.py",
+      "sha256": "2f8c621d282aa56ea67b26b613227bfeaae7d08f32e0843448f9081bb137550d"
+    },
+    {
+      "path": "backend/app/routers/platform.py",
+      "sha256": "4c081fee56dcd428f4f5650bd14c0e06a593b09cf95e8012e1ab63012deedcc7"
+    },
+    {
+      "path": "backend/app/routers/public_saas.py",
+      "sha256": "c8f768bae766ab0e22f1b0a15db8b9df06af3fa15c117cb7fa0e3bee00926698"
+    },
+    {
+      "path": "backend/app/routers/rfid_cards.py",
+      "sha256": "ee55ce92af56e0297ea7547d1c1ceb6ec41d51131491ea23a0c46bb28a3d42ad"
+    },
+    {
+      "path": "backend/app/routers/roles.py",
+      "sha256": "e638a674d8e1238979f4c17ebf649bc494a90ccd77b971597d8cd968563e09a0"
+    },
+    {
+      "path": "backend/app/routers/school_payment_merchant.py",
+      "sha256": "08d46adf8654701917ecfb55a3adc241baf8461b497541f8e032e6615dcae161"
+    },
+    {
+      "path": "backend/app/routers/school_payment_review.py",
+      "sha256": "150415cdbd4dfcf9d5d3e3770efee32ff419fbc621bf5e3897e07564ba79a358"
+    },
+    {
+      "path": "backend/app/routers/security.py",
+      "sha256": "1895cedae0065f6977b9b48262172442ac48d3268b6da8310923dcec764cf817"
+    },
+    {
+      "path": "backend/app/routers/settings.py",
+      "sha256": "8fef42851962a4c472c94da1f1cf053959b4e7dccc2a31b90f242177b40a5c00"
+    },
+    {
+      "path": "backend/app/routers/staff_operations.py",
+      "sha256": "d1b97526d0f0866f8fd259189d83b0211b169e2c704134222393866a77e71e8d"
+    },
+    {
+      "path": "backend/app/routers/students.py",
+      "sha256": "aab1dd4ba943ee4c4d628aa9c6c7c9ecb14f586fb0c4a375077a9709d49ebfc7"
+    },
+    {
+      "path": "backend/app/routers/subscription_payments.py",
+      "sha256": "c473c49414c3db8ac2386168be9110533693a202773ea83f8fa994553b4994a7"
+    },
+    {
+      "path": "backend/app/routers/surveys.py",
+      "sha256": "65404f9f8ecab8e124c77485275e1b94e47a40db5fdab423f596e00adbd3234e"
+    },
+    {
+      "path": "backend/app/routers/teacher.py",
+      "sha256": "cc4273c2b59fb94683ced22af0ca410b2fa9f3786fe840cc53572c6cc70cb928"
+    },
+    {
+      "path": "backend/app/routers/timetable.py",
+      "sha256": "ec3a3f5138a266bfe8260aba3c09bd8027c199cf033cfd8654e2ae2dec4ca378"
+    },
+    {
+      "path": "backend/app/routers/tutoring.py",
+      "sha256": "a9ea06c7eb51225a598e9059febcc049522284a095a7a096a7affb2b095f5c2b"
+    },
+    {
+      "path": "backend/app/routers/user_roles.py",
+      "sha256": "7111a3b9db84ce7519f806601ad50415e81d75f39eafd4da81d6852bc1db92c1"
+    },
+    {
+      "path": "backend/app/routers/users.py",
+      "sha256": "cc6b0b9e057e92945599d0114f92a2a4dc6c8dfadefb697e88fde4fa27764661"
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "sha256": "3ff304064b5042a95c7a8cceba5daf04da7a6a0df64a4d34803b855e2e8ea97f"
+    },
+    {
+      "path": "backend/app/services/announcement_service.py",
+      "sha256": "b66a64a48739760220284b7aa1e97ad3e4d9a697fbaaa413f2faeaf3cf9fff00"
+    },
+    {
+      "path": "backend/app/services/attendance_service.py",
+      "sha256": "0e63535ccfb3e755e948e8059d0541c85433e8d8db5e6afc4d86bc813565f45f"
+    },
+    {
+      "path": "backend/app/services/auth_service.py",
+      "sha256": "4e5c7aa84b8d74c908256519e523f73aa26967148383e1e522d2608d65e16870"
+    },
+    {
+      "path": "backend/app/services/base_service.py",
+      "sha256": "bd891b4fb8d9363d7cc8769cd0ced2be90595cedf737b60a145345bdad990638"
+    },
+    {
+      "path": "backend/app/services/branch_service.py",
+      "sha256": "087a4ce0987ac0bee1b69b23aac6e00f091d638ba210c04439a60a6a9d54e34e"
+    },
+    {
+      "path": "backend/app/services/class_service.py",
+      "sha256": "713bc26ef928f162ec109ae65819ec0108f3fbab5dbe408c58bf9ce4cc569dce"
+    },
+    {
+      "path": "backend/app/services/debt_service.py",
+      "sha256": "51fe8ed2844a301385af72c675be737d324df3bfb34377449927942dc44af50c"
+    },
+    {
+      "path": "backend/app/services/notification_service.py",
+      "sha256": "24818c446d259db7321680658a5a6e268228c23e7874c802e084c3a9680c8a09"
+    },
+    {
+      "path": "backend/app/services/ollama_service.py",
+      "sha256": "ff236707e46ed705921e3035233d8003c541f0fadba51c01fb40c64211833b64"
+    },
+    {
+      "path": "backend/app/services/organization_service.py",
+      "sha256": "2022e24487f2924e7316bc2c1874e9aa9c618c7baedfb4bc9c57698a3d687f0f"
+    },
+    {
+      "path": "backend/app/services/parent_service.py",
+      "sha256": "e7a78ec3d4c7addc7fd871e0017c26510a2c77c7cf2dbf787e5721ac9f8e5c5a"
+    },
+    {
+      "path": "backend/app/services/payment_service.py",
+      "sha256": "4d7fa3298dadd5fca490be4ebbd05e58d807dc86c5e8df3526cf1905c47c4068"
+    },
+    {
+      "path": "backend/app/services/student_service.py",
+      "sha256": "55cf8fc16d82772ba3fa83d6939b00aafaaad15a17539b00a9f6577432421f84"
+    },
+    {
+      "path": "backend/app/services/user_service.py",
+      "sha256": "103b326720e8b6129b10dd885c7b8804f3974caea88dcc50e55880118847e013"
+    },
+    {
+      "path": "backend/assign_teacher_to_classes.py",
+      "sha256": "db3d482d712b17de84f9a40f0c6e9bd796c3008b9491bd2aff54229835715c28"
+    },
+    {
+      "path": "backend/check_class_teacher.py",
+      "sha256": "d34e78cf6b4380cbf7f2ffc289f8ffee7c90bc4a21d96816635e1297eafdc26c"
+    },
+    {
+      "path": "backend/check_db_schema.py",
+      "sha256": "2b01788690c2a99d8a316a127abfed1d49816efed45ac358d9559f2ba202a4b9"
+    },
+    {
+      "path": "backend/check_foreign_keys.py",
+      "sha256": "c71262793ea72529bf089e5087bccce58bf4eee7aa398baa7c6d9929b7c8e841"
+    },
+    {
+      "path": "backend/check_permissions.py",
+      "sha256": "fab187004c7cfe7449c20387247fe3f10ce59f54ea436e4b8b89f6674651215a"
+    },
+    {
+      "path": "backend/check_student_data.py",
+      "sha256": "4f1f417c07ac118b5c6989b8028db7e05713db52477a0edf47d395322f3b6860"
+    },
+    {
+      "path": "backend/check_user_permissions.py",
+      "sha256": "c4d648fcf5089b669bd38b853e527e85540f4d8e5896d2f9fc72c19ec77940f7"
+    },
+    {
+      "path": "backend/create_wallet_table.sql",
+      "sha256": "4272b6fa76fd33e20271f964ab7ffb5cf4c351ed5473e38d0534dd24578c34ff"
+    },
+    {
+      "path": "backend/debug_debts.py",
+      "sha256": "aeb2f9ff277d43d7b1777cc025a5442ba873855423e5d1fbc0f50957bd0546d9"
+    },
+    {
+      "path": "backend/fix_medication_student_id.py",
+      "sha256": "ac69551131a5643592de94253ee36887c90ec7105f8819c25e9de1552740d03f"
+    },
+    {
+      "path": "backend/fix_uuid_format.py",
+      "sha256": "3e606660568755d8758b1782e2bd351e83d1b25e47eff86580f2ad3feb261054"
+    },
+    {
+      "path": "backend/frontend-types/chatbot.d.ts",
+      "sha256": "7d53ea8ec15e558cc196a68c8dd79f6f205bcb36c15a5bbf67d3667382bb0045"
+    },
+    {
+      "path": "backend/pyproject.toml",
+      "sha256": "a648360f8d32f5fcb2a3b35d63cebf7bfe886e8cdbf234d888816a1d38bf5154"
+    },
+    {
+      "path": "backend/pytest.ini",
+      "sha256": "6dfb1f2d67a1a812b22a6900121b87d2a00d375fb034d37fbdcd17dc1ae04c20"
+    },
+    {
+      "path": "backend/requirements-dev.txt",
+      "sha256": "ffa53085fdfaa77b7a9b263cc0f9b6285d8f9daccec231ec70cc5d5d15856d54"
+    },
+    {
+      "path": "backend/requirements.txt",
+      "sha256": "342161ba34f6f8137c4d05cd497c1e46dbdc0b03953af6abccfb0c029904658a"
+    },
+    {
+      "path": "backend/scripts/acceptance_saas_gateway.py",
+      "sha256": "1b689e671a8e4b3ca611e12d3ef5a1c3a357e8143f403a2a147533eb7097b147"
+    },
+    {
+      "path": "backend/scripts/acceptance_school_gateway.py",
+      "sha256": "adfda96b2fbedd19dba4be1b0c6e627fd37e94b2ec6cbdbf1dc001fe9283bdc1"
+    },
+    {
+      "path": "backend/scripts/add_canteen_role.py",
+      "sha256": "569653d03c50bf07c9c9d6e9c5a7ae521f92260776c4a39e046b598672f5ff6a"
+    },
+    {
+      "path": "backend/scripts/add_parent_permissions.py",
+      "sha256": "06a1ebd8394469827f93a335bc1d8cf026e5e9eb51b0b5836cdb98aa20345f4b"
+    },
+    {
+      "path": "backend/scripts/add_sample_debts.py",
+      "sha256": "456f3ae865e0aa6d7a64ed4d412545f56bce15fdd28a16b8170888357fc2ea0e"
+    },
+    {
+      "path": "backend/scripts/assign_student_to_parent.py",
+      "sha256": "0a61f7954bf95e1d73d51b43a64bf9698bdabc83a416b0f45c659fd2a65bf435"
+    },
+    {
+      "path": "backend/scripts/audit_api_smoke.py",
+      "sha256": "0d5de2486b474cce5fd8a3d39b433e5e1f699cfbaa3f6d06cb8f5086da763c89"
+    },
+    {
+      "path": "backend/scripts/bootstrap_production.py",
+      "sha256": "aa64702c1ae449345a156c7bf7f460df1fcaa38f1e0dd2ca2c6aeb7a91e76210"
+    },
+    {
+      "path": "backend/scripts/check_db_state.py",
+      "sha256": "73a9ac6e8fbfc0d3d9115049ed6d9067b4207fc26c38a6d422332125a65f2504"
+    },
+    {
+      "path": "backend/scripts/check_link_format.py",
+      "sha256": "24239b17c4633526c227651f70a4ad6d49fae95afa74f3069bf496ab6ce39419"
+    },
+    {
+      "path": "backend/scripts/check_parent_permissions.py",
+      "sha256": "62b9a03c3434deb49de77744c3f9daa2e0278d87b259c17433f4d56458e65658"
+    },
+    {
+      "path": "backend/scripts/check_parent_role.py",
+      "sha256": "8008fef9673f612e3569acf1717db97ebd8c68221cb60fc5c04a062b098895c7"
+    },
+    {
+      "path": "backend/scripts/check_parent_student_relation.py",
+      "sha256": "6fc6fd92942e15221d5f0fb9d9f7de5d2190b8ce912d3897dafff7c26b2de5f7"
+    },
+    {
+      "path": "backend/scripts/check_parent_students.py",
+      "sha256": "ae9654193496cec29387bd5a6ad3c92fa94b65a0f557b3261cdd093bda58b13b"
+    },
+    {
+      "path": "backend/scripts/clean_parent_links.py",
+      "sha256": "e0c5a2794aa4879f894caeddfcd82fa1170aaab97c7950ed679ed84d37c7629e"
+    },
+    {
+      "path": "backend/scripts/cleanup_acceptance_database.py",
+      "sha256": "71b66fc9460d9467c597c845c896c4c4873f74cc49d7d43762252b050ed743ad"
+    },
+    {
+      "path": "backend/scripts/clear_demo_data.py",
+      "sha256": "7e8acb4c28b2fb1423ddffabc0c16d2947761a2d6dde5386685661c3a57ac2b7"
+    },
+    {
+      "path": "backend/scripts/configure_payment_sandbox.py",
+      "sha256": "f4773c9a6c24ff0e3d42ab72d11a6a42a04da7f11b213e2196fda505b977c314"
+    },
+    {
+      "path": "backend/scripts/create_parent_permissions.py",
+      "sha256": "cc970404b7783c281a8156c49f6b151d8771b8eb825dc1aee1fb9c04193f14b3"
+    },
+    {
+      "path": "backend/scripts/create_users.py",
+      "sha256": "676bcd8a0f55281dde9e38629985535a7d07b65758ef3be7f8d1479b0b320b4c"
+    },
+    {
+      "path": "backend/scripts/export_analysis_policy.py",
+      "sha256": "93b5b93c2d2adea499e7a7362e6233da974a97fbe3a2262461ee0293500f1cc3"
+    },
+    {
+      "path": "backend/scripts/export_openapi.py",
+      "sha256": "5ee8180303ab8ddf1d3a2f4a3c57af4df10293b36c41e7ecfee37add53601ed3"
+    },
+    {
+      "path": "backend/scripts/final_uuid_fix.py",
+      "sha256": "5f6b9e09dbcdc31788ed58e82ddd8fcf5fe9ba3bfa2c6f37d5973a5ed2b43be8"
+    },
+    {
+      "path": "backend/scripts/fix_parent_id_format.py",
+      "sha256": "87c239e67c28ac361a20a65d6f19422c8863bead32add1ade64bb5e3a9db0e91"
+    },
+    {
+      "path": "backend/scripts/fix_parent_link.py",
+      "sha256": "73f94b3144bda1a74154e30b63a90b622a4fe3bdef060878c232177628724cfe"
+    },
+    {
+      "path": "backend/scripts/fix_parent_sqlite.py",
+      "sha256": "d2d69a56361c6f3bab355ec28fdbbeacc3426507a3351a8356017c42365ebf62"
+    },
+    {
+      "path": "backend/scripts/fix_parent_student_relation.py",
+      "sha256": "fafb283b5796e196804501b9a1506f5c27b1a33a50861ffca343b923c5038ccf"
+    },
+    {
+      "path": "backend/scripts/fix_password_hashes.py",
+      "sha256": "63402517afec9d1d50fdef5189980baba443696e968d3a2805588010980231cf"
+    },
+    {
+      "path": "backend/scripts/fix_user_id_format.py",
+      "sha256": "def668b6b483cb416023b099d145fbddb403451ca4268360967fb7afc733efba"
+    },
+    {
+      "path": "backend/scripts/fix_uuid_format.py",
+      "sha256": "08afb62d95cedd9d9a5760ff9503b4ce6439fbbd44ab9a12af723cc69540ad56"
+    },
+    {
+      "path": "backend/scripts/link_parent_user.py",
+      "sha256": "9247dfb98f7797d6c68f10b3b5b2186c905f65b38d21e9e389a09d705150f971"
+    },
+    {
+      "path": "backend/scripts/make_admin_super.py",
+      "sha256": "24b11b76cfdd0afd1eab9a8e6d486b870eacfb44ec4f107662bc4c85b4ead6f7"
+    },
+    {
+      "path": "backend/scripts/normalize_sqlite_uuids.py",
+      "sha256": "0215f344afdd6e85386778746fb2307b1b919d580a234296fd18c4b5c9514274"
+    },
+    {
+      "path": "backend/scripts/payment_preflight.py",
+      "sha256": "d0841aad7c706408b48c5c07400bd3c8d4a21a84f27c326ab1daf5136f4af97e"
+    },
+    {
+      "path": "backend/scripts/release_preflight.py",
+      "sha256": "1a70f0f1e7acbb6c766b3173d92702b096a9e18f061d84504e783c9067d525cd"
+    },
+    {
+      "path": "backend/scripts/remove_duplicate_link.py",
+      "sha256": "646ed3360e015f39c26f9ebc282885aacba15f1a81ab2cedf9aea75ba4243802"
+    },
+    {
+      "path": "backend/scripts/run_acceptance_server.py",
+      "sha256": "c6e551c60e32c85f9027df525438545424e7d92c28a75ad9fb45d86d4c95ff63"
+    },
+    {
+      "path": "backend/scripts/seed_comprehensive_data.py",
+      "sha256": "ce6aa4a8e0458119e8b92d0eb6dcf2de158f657c04c56e4bacd813bb5fe4e6b1"
+    },
+    {
+      "path": "backend/scripts/seed_demo_data.py",
+      "sha256": "15b493ad50cf4b6b0abafad200b2b542e054618f58b2b8c05d6b0d04369072ca"
+    },
+    {
+      "path": "backend/scripts/seed_parent_ai_data.py",
+      "sha256": "aa6b26c23247dd0a54c82dc861fbae685ef590728f1dbbb9fc8b8881b54669c8"
+    },
+    {
+      "path": "backend/scripts/start_server.py",
+      "sha256": "135039b4d3914cfb698f68043ac6c7e09e15b7b2f1a3fcaf31fcf91468a49fd1"
+    },
+    {
+      "path": "backend/scripts/test_parent_api.py",
+      "sha256": "da9847af479cc0d409b159de7bfe5234e2039164321a4cbbd0073caf519de8a9"
+    },
+    {
+      "path": "backend/scripts/test_parent_query.py",
+      "sha256": "413a33336304ad7c48a9e31205bb509ce0215c073306cdafda56962ca5df3b43"
+    },
+    {
+      "path": "backend/scripts/test_password.py",
+      "sha256": "6043179eda24b86d2032009bb625d2dc24ef05197bf80bac47c0c6048f5eeb2f"
+    },
+    {
+      "path": "backend/scripts/test_user_lookup.py",
+      "sha256": "153e4aad107d5831e8ad57fc83e41aca095b20a76b4fa1b64df681d709f770e4"
+    },
+    {
+      "path": "backend/scripts/update_parent_data.py",
+      "sha256": "86de2a9a8324fbaa61849714d41c131a3d0e7526707c852fad1feab2dd893bd4"
+    },
+    {
+      "path": "backend/scripts/verify_student_address_upgrade.py",
+      "sha256": "7e230fda58a844e284109b609fa92817e0fa996311e80db63140fbff875664b1"
+    },
+    {
+      "path": "backend/seed_attendance.py",
+      "sha256": "849935a5e7d84073f68e053a3b4d4e925668092868b5d80027937afd3c4562fe"
+    },
+    {
+      "path": "backend/seed_grades.py",
+      "sha256": "378aedd6bef4752fdf55f1f25eb330575323abb2042d234b4891495e2ea826f0"
+    },
+    {
+      "path": "backend/sql/001_schema.sql",
+      "sha256": "29706fa3ecd4c0e9935537b4cb21306ab9bf830aab89437a08cbc9553450bf5f"
+    },
+    {
+      "path": "backend/sql/002_seed.sql",
+      "sha256": "66d85d228c1b595b8249406481c40bcc10c9d59c8af7358663afaac04e225748"
+    },
+    {
+      "path": "backend/test_api.py",
+      "sha256": "6cc8cfea55253bf1e3fa20d289f4cf002c5ec6bc0ccc5669c698cd808bbc762d"
+    },
+    {
+      "path": "backend/test_classes_endpoint.py",
+      "sha256": "934cd8f7bd0d4107de1ace0e2e29e5d50f6992e89d817ad142aa0b57e92b3333"
+    },
+    {
+      "path": "backend/test_frontend_auth.py",
+      "sha256": "6d8326e8f6ed14ecb8afca4910dbec44612535374f3a617c10e1d777b46bd586"
+    },
+    {
+      "path": "backend/test_import.py",
+      "sha256": "4e4445320a97f21e9b484fbb2553aade59ed5f594a97570a3258e9a59ccc28a5"
+    },
+    {
+      "path": "backend/test_include.py",
+      "sha256": "ee1607598dee5dafbeb77109d295080ca45a5883352e7925e57c0fcee06230ec"
+    },
+    {
+      "path": "backend/test_main.py",
+      "sha256": "223406505b67ddb8163eedbb1f1cc8faee35c6ec544aed54c29c2791a1b3522d"
+    },
+    {
+      "path": "backend/test_medicine_request.py",
+      "sha256": "79fc8d2312e998168fd202e7bd0e5ee6398494ada8e3de64a867d10d6da72534"
+    },
+    {
+      "path": "backend/test_router.py",
+      "sha256": "10e2fe34a805310cf2c816eb54b71b2b322ee45c55735f2f8644d821d93eaec9"
+    },
+    {
+      "path": "backend/test_with_different_users.py",
+      "sha256": "efcbe08d5784505a277bfcdd793fdcb34a1185d6b12d5f9f9635ea00cf767f4d"
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "sha256": "67fb77aec47245e52e3224d505696ae3a3e3cee9a614f7b3a482784a2dcee30e"
+    },
+    {
+      "path": "backend/tests/fixtures/student_036.sqlite.sql",
+      "sha256": "b6ca8d49847cdeabd2214dcca8d721bb18c8ce81bbf907c4ef94a0f3f4994649"
+    },
+    {
+      "path": "backend/tests/integration/native_attendance_bridge.py",
+      "sha256": "afb345c94ed706af9aa1ed6b590389cd6214ad2eae235f74e50afdbc11e1a934"
+    },
+    {
+      "path": "backend/tests/integration/native_finance_summary_bridge.py",
+      "sha256": "af739022b8779d6eb758a1edcee77367f31cc82b0d447fe8e27d43bb8188b02c"
+    },
+    {
+      "path": "backend/tests/integration/native_registry_bridge.py",
+      "sha256": "94fcc24e574fe43aacc31b7632a63246e39b6b78372544b05bafb53681b6b13a"
+    },
+    {
+      "path": "backend/tests/integration/test_academic_summary_data.py",
+      "sha256": "0d1ff66f0535da4031f3c41bcfbcee686cf6932f46f2aa36c8038df866bc1eb3"
+    },
+    {
+      "path": "backend/tests/integration/test_ai_analytics_workspace.py",
+      "sha256": "433e59d570adae2813465bb9f32175016f6615a6ba73b0b43f060d4e30ebbcfc"
+    },
+    {
+      "path": "backend/tests/integration/test_ai_audit_workspace.py",
+      "sha256": "d8f7cd9cde4130a59b603cd50e0fd62e201767f8284765c3fbce070a18c5f66a"
+    },
+    {
+      "path": "backend/tests/integration/test_ai_history_export.py",
+      "sha256": "7a40e61dd0d268b28812e8eb2ad1a4e363313cd05c9364010a853b139d8c26e1"
+    },
+    {
+      "path": "backend/tests/integration/test_analysis_feature_access.py",
+      "sha256": "7c8ec0aa127d91590b7d6ff3965e119b49006f413261bd1990b1cd76cb1ac9d7"
+    },
+    {
+      "path": "backend/tests/integration/test_attendance_editor.py",
+      "sha256": "9c4834aa0ab62c921cba8f65079f99cc4c9aa80f5b795e4ec65c28e2243c3820"
+    },
+    {
+      "path": "backend/tests/integration/test_auth_api.py",
+      "sha256": "c790212ac7d01240e63a12302a993e29f472f537ce8a6d3271e20aab25f84226"
+    },
+    {
+      "path": "backend/tests/integration/test_auth_role_scope.py",
+      "sha256": "16b0151654f5a5f826cd438afb14ab138eda183618f359be69a7f66d2da50a35"
+    },
+    {
+      "path": "backend/tests/integration/test_branch_lifecycle.py",
+      "sha256": "c75dabdcaae9ee9844d54148f64da021f51952959df90009234e4b3ee047c3ec"
+    },
+    {
+      "path": "backend/tests/integration/test_broadcast_outbox.py",
+      "sha256": "5b78972d07e419a6a343cf71148f8d18af69abdade43f04394b94baf6d97038e"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_branch_pin.py",
+      "sha256": "d84ba3da56becad386a635abb494afc18eb558ac884b00a9bd7d84022c9dda7f"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_driver_choices.py",
+      "sha256": "65ea64d92061d809c95e0b7787a075f7c27d36bffb08b4011ad8d55bb535f0e1"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_route_update_replay.py",
+      "sha256": "b4db1191731965784a692add70af0d1ee9d65efa718ae038a172077ac738c420"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_scope.py",
+      "sha256": "f44783d57f9f279113b2e4d1dbf466598aabccad074cf1a3351e3c072e5f580f"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_stop_versions.py",
+      "sha256": "92ab81626adf4c5e64147c961ca3a643755c59ae82f4e1d532e0e515bfa33205"
+    },
+    {
+      "path": "backend/tests/integration/test_bus_workflow.py",
+      "sha256": "c087fdcc0c07dac6527f3dfd525cd518ff00d77c080f7f269e6dd2a80dbd00b2"
+    },
+    {
+      "path": "backend/tests/integration/test_canteen_consumers.py",
+      "sha256": "ca0653f924ea46ea7d161f99f3a71fb95ba8f43c802ebef1f2e3215e22c7eea3"
+    },
+    {
+      "path": "backend/tests/integration/test_chatbot_finance_data.py",
+      "sha256": "2d5fd02f5b5b18200170fc735282139a286bc4df9d602daa0965a86ce92a49f5"
+    },
+    {
+      "path": "backend/tests/integration/test_class_capacity_management.py",
+      "sha256": "27757d2046d73ad3ae682ab421810cfc88fc68becadc50c676e307198e526ed1"
+    },
+    {
+      "path": "backend/tests/integration/test_class_management.py",
+      "sha256": "6cbf0a7075e78928ac94aca3193dff18046fb6cc86cc9b944637bfb84093d663"
+    },
+    {
+      "path": "backend/tests/integration/test_club_workflows.py",
+      "sha256": "eac1c98fb80bb25a44ecf4f516d78647bcf3e118f005345854e2b0f73466e891"
+    },
+    {
+      "path": "backend/tests/integration/test_consent_workflows.py",
+      "sha256": "fd569001cebd8d0935f251af59a85b99fa39fc3323a3790ecec4f11680a224a5"
+    },
+    {
+      "path": "backend/tests/integration/test_exam_grade_visibility.py",
+      "sha256": "750d0a3b8d55333ea814cecfdb9359d87f57aa6280ede2820a8611a9dcd37956"
+    },
+    {
+      "path": "backend/tests/integration/test_exam_management.py",
+      "sha256": "e00ff978ff6f67cb3efbc4be2f9ed948a86ffef9e67fd5bc8f956cdae5d488ad"
+    },
+    {
+      "path": "backend/tests/integration/test_excuse_dashboard.py",
+      "sha256": "caab958a5707670bf2b6ce121ceedaef611b7a1b99077713f357796287506673"
+    },
+    {
+      "path": "backend/tests/integration/test_finance_compatibility.py",
+      "sha256": "7fac8ed0f1dbb3fe50ea94e9dc96e56f814698c7e66e2ab8688b19a5d10e9f1e"
+    },
+    {
+      "path": "backend/tests/integration/test_financial_analytics_data.py",
+      "sha256": "b36bf1144b9df8b06f7165e520926e21a2f0243a0becb97a289ffd6bdf8aacd1"
+    },
+    {
+      "path": "backend/tests/integration/test_financial_summary_data.py",
+      "sha256": "2b1be06a4afdba809e5d804f4dfc3afd564f04bd1ec9b69f7609fcb53a8a44cc"
+    },
+    {
+      "path": "backend/tests/integration/test_form_ownership_migration.py",
+      "sha256": "9aa238feddb9c71919e0728249af7fb032e9b0453aa287b1ef058ce4252271ff"
+    },
+    {
+      "path": "backend/tests/integration/test_guidance_permission_migration.py",
+      "sha256": "81e5b7748eda205b613dc528ed5e722ca87874512555e1462c3dbfd1a9959eb5"
+    },
+    {
+      "path": "backend/tests/integration/test_guidance_privacy.py",
+      "sha256": "cbd1526277cb78a1e8baf36dde2512e9156145ef5ce81ddb01fbe1cefc232dec"
+    },
+    {
+      "path": "backend/tests/integration/test_hardware_boundaries.py",
+      "sha256": "2700da1cc869c3bc70dfdd333cf0435c6d443a7662fbe3a9d2a8754b3485257b"
+    },
+    {
+      "path": "backend/tests/integration/test_hardware_security.py",
+      "sha256": "77f35dbfba7977d47fbb313c45a4131e7f4700eeb88f9e79c0a9f791e1397d6b"
+    },
+    {
+      "path": "backend/tests/integration/test_infirmary_workflow.py",
+      "sha256": "4642c9647a9c57319740b5580d1f46bd2c237d9b79405f6bb56d05a255b697a8"
+    },
+    {
+      "path": "backend/tests/integration/test_institution_role_catalog.py",
+      "sha256": "913c6e81c43def13dac42eeaedba264206306800a06cdc2aebc3b4fe50873ec4"
+    },
+    {
+      "path": "backend/tests/integration/test_integration_config_safety.py",
+      "sha256": "c873cb25dc5d942d9df9698c216f6f064500beedf5b95e0ad4452400993c1599"
+    },
+    {
+      "path": "backend/tests/integration/test_inventory_workflows.py",
+      "sha256": "9277f544947bd226f748039451baaafdea209db01da7690824280c2c91fc513e"
+    },
+    {
+      "path": "backend/tests/integration/test_legacy_student_teacher_assignment.py",
+      "sha256": "93d50a26adabc31c828d542267b430d7607066bf873a80374969820ffaaf473b"
+    },
+    {
+      "path": "backend/tests/integration/test_library_persistence.py",
+      "sha256": "7c6b015bb696b65bf6d2ffdd77f7b6472da72129d34cf149db43957a8f902633"
+    },
+    {
+      "path": "backend/tests/integration/test_manual_payment_integrity.py",
+      "sha256": "6905a70fbe64f945457bd31c8d83d5ae6e59c3b7b7ec14d66bacbbe02cafc425"
+    },
+    {
+      "path": "backend/tests/integration/test_material_files.py",
+      "sha256": "c41a77fa045b44e5d8445005211f8ea94882c3cc45d52a096a47d84533edfcf4"
+    },
+    {
+      "path": "backend/tests/integration/test_medication_migration.py",
+      "sha256": "908932e40dff297c2eb5bb3d8ee3c4eb6ea59311bb795631eb76dfe901123190"
+    },
+    {
+      "path": "backend/tests/integration/test_mobile_error_contract.py",
+      "sha256": "ccb775cb78bf94b015172051939cf30c22d13feef593c1ddaf4ee9ed48adb27b"
+    },
+    {
+      "path": "backend/tests/integration/test_online_receipt_balance.py",
+      "sha256": "f7627c1608e021db68df910abe3832847c529dc992da191b8efe6aac624b6cdd"
+    },
+    {
+      "path": "backend/tests/integration/test_organization_branch_validation.py",
+      "sha256": "68f8e62ff9cab9bd587d476b7f323f6a87e65d20d64005e5645dcb35c7d00f1a"
+    },
+    {
+      "path": "backend/tests/integration/test_parent_account_link.py",
+      "sha256": "dbb20255ec2883dfaba777a273da9002643a8c788a587b3b85a3dd9edf75b41f"
+    },
+    {
+      "path": "backend/tests/integration/test_parent_day.py",
+      "sha256": "3228ab46153695357ba99991a3b67adc219a15f4164477a5b0b298a0f7229de7"
+    },
+    {
+      "path": "backend/tests/integration/test_parent_engagement_data.py",
+      "sha256": "52688d082def961ace19b05f0f63b7b892db7aee28cf53ea413e6f3983817951"
+    },
+    {
+      "path": "backend/tests/integration/test_parent_homework_outbox.py",
+      "sha256": "88624ec33a4736d127dd40dd09e9a26141e8a464e97ee42dd4fa07d05e38732e"
+    },
+    {
+      "path": "backend/tests/integration/test_parent_purpose_scope.py",
+      "sha256": "adb26e75ffe14179f392889174e103cdbf7280cfc346d2c0ca2dfb100ca0906f"
+    },
+    {
+      "path": "backend/tests/integration/test_payment_readiness_access.py",
+      "sha256": "47e299a54fda34c6aac46618479cee1243e7013ddf3958eac88dca6c20f35060"
+    },
+    {
+      "path": "backend/tests/integration/test_payroll_branch_scope.py",
+      "sha256": "a5305730828580e3f0abeac2f9e48d1e68631dc6fe1c7e1e3ec8df56cbce3f46"
+    },
+    {
+      "path": "backend/tests/integration/test_pickup_desk.py",
+      "sha256": "717b80d46e0b2996700f0ef7af2c541ea0a3e75fbb92d6e50ca72d43f4a15321"
+    },
+    {
+      "path": "backend/tests/integration/test_pickup_verification.py",
+      "sha256": "66c6a912d1173755e4a06febefdf9da46b88ef16786c9d8369220ccf08b83e7b"
+    },
+    {
+      "path": "backend/tests/integration/test_platform_workspace.py",
+      "sha256": "778b8ff9a0b07003ed8cbb510b97c8c9e83fa0334d23a679b4453a552ecdccfb"
+    },
+    {
+      "path": "backend/tests/integration/test_public_signup.py",
+      "sha256": "6e2db82926264fb60b7cfd04bf9ad7723dd6aa5df329ccb3529198a245209191"
+    },
+    {
+      "path": "backend/tests/integration/test_recorded_attendance_analytics.py",
+      "sha256": "73f276d23c2c6924f7f304e2b76ef7fc5487cb69d744c9acd6800679ba8ab822"
+    },
+    {
+      "path": "backend/tests/integration/test_recorded_canteen.py",
+      "sha256": "30ced2d1c750a78ffb4658af534ebc63c3e334cd8edc124750090db204000b48"
+    },
+    {
+      "path": "backend/tests/integration/test_recorded_overview_operations.py",
+      "sha256": "456c9360ced4dce658768a528bcdf04dfe16dbe49d460c037533bbf9d2d1ef33"
+    },
+    {
+      "path": "backend/tests/integration/test_recorded_school_analytics.py",
+      "sha256": "8ceb1d355e0b961b19a15f0b7e0aaac083e41daffe912f41d7c1494a0601060f"
+    },
+    {
+      "path": "backend/tests/integration/test_release_integrity.py",
+      "sha256": "d56ea34851ced2d1283224ddbe21799eea75f01a7d61a440b0fb371edd92b94d"
+    },
+    {
+      "path": "backend/tests/integration/test_release_preflight_cli.py",
+      "sha256": "f9de09eff8a82d396e0d7ac29302f44e6be21c1d79bb91b39ca8783b9894842b"
+    },
+    {
+      "path": "backend/tests/integration/test_release_student_index.py",
+      "sha256": "d37e9d4a57c19353d1208f72e31ed7522fd0b551ba20554e9dd91d6f31bfe55c"
+    },
+    {
+      "path": "backend/tests/integration/test_response_transaction_boundary.py",
+      "sha256": "955330ab6651952bfac378da9b61e346fb9ab3542176db8d0f9759e4fce29835"
+    },
+    {
+      "path": "backend/tests/integration/test_saas_migration.py",
+      "sha256": "fc41cb79c6f40f2c49539a3fec05044c37c94e6b1edfd4c2169a60808bf0f9b1"
+    },
+    {
+      "path": "backend/tests/integration/test_saas_platform.py",
+      "sha256": "c44249bfb566136ca5b661fc7d2be7ec9c14be4f8486cf5b88e23449cab8c1ea"
+    },
+    {
+      "path": "backend/tests/integration/test_school_checkout_current_permissions.py",
+      "sha256": "50eb9e8c2d4048cb48a10272bcf27818ea39f28c9d4a80de2db4429afe46f5e9"
+    },
+    {
+      "path": "backend/tests/integration/test_school_checkout_durability.py",
+      "sha256": "32d631a8a7c6403dddbb7e78f30654a6fc0ae61af2bd57240b8e350eb22b7b05"
+    },
+    {
+      "path": "backend/tests/integration/test_school_checkout_reference_scope.py",
+      "sha256": "f184eb3ec59f952bd58b5487b8d26b22ef3103173df3521809ec8f2c18f6d534"
+    },
+    {
+      "path": "backend/tests/integration/test_school_merchant_configuration_hardening.py",
+      "sha256": "47d5e8fa5ef06b4ba3e14eddb7defb35fa8f720ea5222f67b65006d5bf80bfcd"
+    },
+    {
+      "path": "backend/tests/integration/test_school_multi_provider.py",
+      "sha256": "9c1be2876ad8cfbb13b697bd82e9fa97e05430dd02290fa73c07763ed43cb9c1"
+    },
+    {
+      "path": "backend/tests/integration/test_school_payment_merchant_boundaries.py",
+      "sha256": "d214c1c7cd5db7fd005e5783ca5dbcb5cf045b58053d49590a8cd516877105bf"
+    },
+    {
+      "path": "backend/tests/integration/test_school_payment_merchant_migration.py",
+      "sha256": "fd40b5b89919f95a5eff6e9538a2eff46851c48000a9e3e30f065a3f166dce63"
+    },
+    {
+      "path": "backend/tests/integration/test_school_payment_merchants.py",
+      "sha256": "5e4205d06fa88c1142601c94ae68ed7b9e1f26aa215adb48779ec5596a5e19e6"
+    },
+    {
+      "path": "backend/tests/integration/test_school_payment_review.py",
+      "sha256": "36305a6ebf1ea777822994e74539608ed3d25a2175a868f26f205b81b84f55ce"
+    },
+    {
+      "path": "backend/tests/integration/test_security_gate_workflow.py",
+      "sha256": "154cf70269e43c16763c211a8338f97a4bf6dadaa96b1ae9e947aa4f827ea67e"
+    },
+    {
+      "path": "backend/tests/integration/test_session_and_appointment.py",
+      "sha256": "21f14e5715b3c004b9a45d4a4fa3359b54fde0002692f0f6d2b8fb9264ed440d"
+    },
+    {
+      "path": "backend/tests/integration/test_settings_canonical_models.py",
+      "sha256": "e76b4b7e326ee557d53826b9eacecd4db6e3930ab3b45efe5d27417efa6deee7"
+    },
+    {
+      "path": "backend/tests/integration/test_student_address.py",
+      "sha256": "c4374f1dcad55f27fbce88ff06dc325343eced3ff862eaa93a0319f05c997c4b"
+    },
+    {
+      "path": "backend/tests/integration/test_student_checkout_environment.py",
+      "sha256": "879ef55fb21f667bcbb92ca8ddde58a74265a0a4bb8d183b33c1ac1a9410a598"
+    },
+    {
+      "path": "backend/tests/integration/test_student_checkout_initial_proof.py",
+      "sha256": "0b8b870c1aeef9a928eb081f54ea8bfa2a1b74dc421fcd2fbb762adf15568bff"
+    },
+    {
+      "path": "backend/tests/integration/test_student_checkout_scope.py",
+      "sha256": "1bf311b7ad9d84faea2a0ee595c2ada8c3af4c5d805da6b126e079a699ebc4ed"
+    },
+    {
+      "path": "backend/tests/integration/test_student_form_choices.py",
+      "sha256": "67326d30118a7d6de32a433197c6d30b9e9eccbf37528f5a01d3acedd674875c"
+    },
+    {
+      "path": "backend/tests/integration/test_student_number_alembic_cli.py",
+      "sha256": "003e300ba56d99aec0330088f6ed8860f8e556428c5ad2694c98f4aef1a96177"
+    },
+    {
+      "path": "backend/tests/integration/test_student_number_migration.py",
+      "sha256": "035dd14b34325ee6aec44e0dfa01a3d3460dcac35235b61113fb9df729d69da1"
+    },
+    {
+      "path": "backend/tests/integration/test_student_number_policy_api.py",
+      "sha256": "1b6eb9b054ba456727cd2e11e549f3ce66b0f2d75778cfefe165c44c6bf1f106"
+    },
+    {
+      "path": "backend/tests/integration/test_student_parent_write_validation.py",
+      "sha256": "5b43765865e226a90233267781df31a422ae68255194186a26368ecea20f3b9d"
+    },
+    {
+      "path": "backend/tests/integration/test_students_api.py",
+      "sha256": "91ddc2a8c18018cf127a20df5d92c62316034ef005ac8d8e66991233f98bad22"
+    },
+    {
+      "path": "backend/tests/integration/test_subscription_billing.py",
+      "sha256": "5b439669f11fa4ee6d3db88c0684c5727a83b55be7b7bb0c8fb61da71a4bca8b"
+    },
+    {
+      "path": "backend/tests/integration/test_subscription_checkout.py",
+      "sha256": "062fc11e62059d2168534db4eec229b2043c164a174aebe89c1e063fee4681a4"
+    },
+    {
+      "path": "backend/tests/integration/test_survey_consent_scope.py",
+      "sha256": "57df7428f305529f9b7db2cdb26adbff53348208670127402b40124068db7247"
+    },
+    {
+      "path": "backend/tests/integration/test_survey_participation_migration.py",
+      "sha256": "7017a7f9b258f5417086d961bac3c41ecf005505758155f9d51558cbba4f063e"
+    },
+    {
+      "path": "backend/tests/integration/test_survey_workflows.py",
+      "sha256": "b6c8ff9c132087e48936652cee4cddef67a533e0ce993dd17e376c8960b048cd"
+    },
+    {
+      "path": "backend/tests/integration/test_teacher_day.py",
+      "sha256": "7933300840d67b2136460b14e488c2136ad2e472677fdac194b73f9607a386ed"
+    },
+    {
+      "path": "backend/tests/integration/test_timetable_actor_migration.py",
+      "sha256": "608a6df75ba3eb044ed3af9dceab0bc46307eee935ca8c9ba2abaedf0fec00ca"
+    },
+    {
+      "path": "backend/tests/integration/test_tutoring_workflow.py",
+      "sha256": "aa20fe4f2325f80a0be4bd5b335dc6637a9e88e4abd1d7d59a3fec99000268e5"
+    },
+    {
+      "path": "backend/tests/integration/test_user_access_management.py",
+      "sha256": "5e9fb4d83d94828ea43e3992ca2ff83392fe196bac24d4f0e913f4d46a2f9e53"
+    },
+    {
+      "path": "backend/tests/unit/test_analysis_permissions.py",
+      "sha256": "7e971c16c65263045d02d67a1378a623790eefc387107b0b5d15c1fa2a4b68c3"
+    },
+    {
+      "path": "backend/tests/unit/test_analytics_data_integrity.py",
+      "sha256": "5ed4c946e9d4c0379aa63babb3c39122255b85740cc5f6aa4f35beffd41f5890"
+    },
+    {
+      "path": "backend/tests/unit/test_api_contract.py",
+      "sha256": "aeca9fb58faddbcaddced267c749dc32add27750533244700bdc1f116c4971cc"
+    },
+    {
+      "path": "backend/tests/unit/test_auth.py",
+      "sha256": "ef5c7f0ed8589767a95ff520b4eb779654c43fa6eba47e890cfe0093a31fe2d5"
+    },
+    {
+      "path": "backend/tests/unit/test_branch_isolation.py",
+      "sha256": "40c41acaf07ce6fbcb2cacd763f6b19f1d75e55b170bcd4bc30ba1ddfe4d5b4c"
+    },
+    {
+      "path": "backend/tests/unit/test_business_dates.py",
+      "sha256": "8a6d46d3b9f3f52843b725960c7e02ed6be92d8e0ffbac6b0c61fe178acea2df"
+    },
+    {
+      "path": "backend/tests/unit/test_chatbot_intent_fallback.py",
+      "sha256": "5977bbfc0b5192bdfc204140ab2368cb37bf29888fa3507abd3908051eda26aa"
+    },
+    {
+      "path": "backend/tests/unit/test_conversation_history_failures.py",
+      "sha256": "f3aa46d8c58e8bc022efdb68262add1ae395e3354810ff3215ffb7d06fd927ac"
+    },
+    {
+      "path": "backend/tests/unit/test_debt_business_calendar.py",
+      "sha256": "1ed5131246d55ecf284e28d337109dfcea23943838fc56dcbc63b121f38601de"
+    },
+    {
+      "path": "backend/tests/unit/test_debt_calculator.py",
+      "sha256": "75d957f2d116f15c4a41f7235b23a85b11bb5f09a564e2aee03d3c5bbbc05f01"
+    },
+    {
+      "path": "backend/tests/unit/test_financial_summary.py",
+      "sha256": "b994d75890101eca39cb80edea0d46107455da46e1000216a2ff85757c629198"
+    },
+    {
+      "path": "backend/tests/unit/test_notification_provider_contract.py",
+      "sha256": "f182a1041b81666473da13fc71dc2e20c790ab6b1953f1bc05c5e70dea54752a"
+    },
+    {
+      "path": "backend/tests/unit/test_parent_relation_storage.py",
+      "sha256": "e7ddb221133c2455b7faf6fe60ebf7729b7baea3a69c212cc0c04cb13657fdae"
+    },
+    {
+      "path": "backend/tests/unit/test_payment_provider_protocols.py",
+      "sha256": "44a5ba283e07c8e11eec1401b7ebb2be460b549f6dca5075682ac2ac2e37f1e1"
+    },
+    {
+      "path": "backend/tests/unit/test_payment_readiness.py",
+      "sha256": "5f3f8eea0095fdea432c356e4010cf857cb5532c3b2d4fd0080135f0c70087df"
+    },
+    {
+      "path": "backend/tests/unit/test_payment_sandbox_setup.py",
+      "sha256": "e149c8200db4eaa7d3125641f07256fa5dfe9a2a5faa43a11943bfc24de11b00"
+    },
+    {
+      "path": "backend/tests/unit/test_permission_contract.py",
+      "sha256": "1a0b0f6fbf4c03427c114ebfa1bce5fea5fed3d3310883a7ce8e1e161959d922"
+    },
+    {
+      "path": "backend/tests/unit/test_report_export.py",
+      "sha256": "f2e1e5b015d0cb68866d6f15d71134aaa6bf84c20ad39c8d7cc6ae5a09d699bd"
+    },
+    {
+      "path": "backend/tests/unit/test_response_errors.py",
+      "sha256": "dfbb2b1b037b87ba062f652f3894f06afa54614375962f6dfbadc79bcb9f7fc0"
+    },
+    {
+      "path": "backend/tests/unit/test_security_hardening.py",
+      "sha256": "626e908765eff36a0ffb3d16f129128e5780576fe81a6b040b9d9b0111aa46c1"
+    },
+    {
+      "path": "backend/tests/unit/test_subscription_access.py",
+      "sha256": "3bce5f40c1bb2a75a4c3acc1b1d66773c3f01f0d4a9e494c2f54dda30aeedbaa"
+    },
+    {
+      "path": "backend/tests/unit/test_uuid_compatibility.py",
+      "sha256": "c122ed2c19c0003710621ebf51cf8d23430a20a144664c2ced6cc19c8bf1dc4d"
+    },
+    {
+      "path": "frontend/.dockerignore",
+      "sha256": "a43a05ae26ff5cc4913b2f994c117b1be69e5717280c2130adfab52bac86070a"
+    },
+    {
+      "path": "frontend/.env.example",
+      "sha256": "2c68020967545fc1ef3adad62fd76bf744731bbc3e8af49a6e167d3aabf38406"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "sha256": "0770f63f96550fef0038c0b601d5f2848da7ecdfc275f237a919e046f48dc982"
+    },
+    {
+      "path": "frontend/README.md",
+      "sha256": "b315391643853c152e3d304b02bc83db796363ca7a7567401122889cf9eae3d4"
+    },
+    {
+      "path": "frontend/e2e/academic-records.spec.ts",
+      "sha256": "1c74256e56806f57ff5961b000e40ad8c735d4457bd99798aa0f8fde1d0632e7"
+    },
+    {
+      "path": "frontend/e2e/acceptance.spec.ts",
+      "sha256": "c9cba3799d2b326752d2846579e4027f700177889d04433fcfe403fc90d3ea9b"
+    },
+    {
+      "path": "frontend/e2e/cash-payments.spec.ts",
+      "sha256": "df448c15312146490bf012ba96fbf42636262745e7010282aa7246f4b843f760"
+    },
+    {
+      "path": "frontend/e2e/class-finance.spec.ts",
+      "sha256": "37efb35cdb335d0a475b8997b18ef13e51471d635c7fde98b526de06c27aa190"
+    },
+    {
+      "path": "frontend/e2e/fixtures.ts",
+      "sha256": "eaa84e1a9ce7bd265d64b606a3117a3c056f2dc2293ffe4994550904ced0d0ff"
+    },
+    {
+      "path": "frontend/e2e/global-teardown.ts",
+      "sha256": "a87459ab1b29a2675d0d6f78b7a6b49424ba7f0babb1be381babf5b3ccb411b7"
+    },
+    {
+      "path": "frontend/e2e/organization-controls.spec.ts",
+      "sha256": "706deadec0e05668beaa184259dcef356267e4899afb7ee38804298811d75e1d"
+    },
+    {
+      "path": "frontend/e2e/parent-account.spec.ts",
+      "sha256": "28a5e9e3fabf43177a2a3052fca06364f61b4c740046431d0bed2899ea9b55ed"
+    },
+    {
+      "path": "frontend/e2e/parent-purpose.spec.ts",
+      "sha256": "3faaba42bc4f2c61067d19b9816fe2fb1a54569dbac9444acf153a549d84c4f9"
+    },
+    {
+      "path": "frontend/e2e/public-site.spec.ts",
+      "sha256": "d964a3515849266c2e9e96d49e159bdda37afbca53e8afaa8f061ddd9967382b"
+    },
+    {
+      "path": "frontend/e2e/saas.spec.ts",
+      "sha256": "0b99a6a7e638f8eea29e8f4533da58d0b7a351d0ae3ab54a2e85b5a8324821b8"
+    },
+    {
+      "path": "frontend/e2e/school-payment-review.spec.ts",
+      "sha256": "ed6a7be1e01670095124a0ff9c2708e71916e3f36a64dc6d222a329b864d0b36"
+    },
+    {
+      "path": "frontend/e2e/student-registration.spec.ts",
+      "sha256": "328663860bfcd3b3df754256394078d3bf340674d52a1e7ccb2d29c16c8f626b"
+    },
+    {
+      "path": "frontend/e2e/subscription-checkout.spec.ts",
+      "sha256": "7b663556775d3f9197986d4fb17e2f6c6d7c18653ee70e5a83bb68d96e096c89"
+    },
+    {
+      "path": "frontend/e2e/transport-management.spec.ts",
+      "sha256": "5fbc5529f40efc709c59543f7324c979a64323c338ef207d8e8bd99365c7cf25"
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "sha256": "2c7ab25af76659ba05d349ddfddc4f4bbfcb4aac328316fd3f703d451e43c9d4"
+    },
+    {
+      "path": "frontend/index.html",
+      "sha256": "690c16d7df989d43a9af4f78ea44bc5a6adfe8379eb60d009cb42b20780c56b8"
+    },
+    {
+      "path": "frontend/nginx.conf",
+      "sha256": "5e46a147e3eaf68e2573d4a15c9bb315f17168d0d76faa73932905cd0dcf8a90"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha256": "5e1981b24a070d242e8ba253a2468b0ad2ca51723d653a0c18efbe7e241e1b2a"
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "2fec6e7a0de21d610a8d314b4f43ec7301403cc70f3642bcb53981b1bc03001f"
+    },
+    {
+      "path": "frontend/playwright.config.ts",
+      "sha256": "d503d0d0dcc8588029c0a99de28c6216e236324fe9bbf4e3e88ebd22986a6cce"
+    },
+    {
+      "path": "frontend/public/images/scs360-education-campus-v1.png",
+      "sha256": "f2c1178dfb5d37cee1ef7af7dd645c84b18b90335e9b16fa89d65c593320b7da"
+    },
+    {
+      "path": "frontend/public/images/scs360-education-campus-v1.webp",
+      "sha256": "0eb8eca2e50235a70fe8c4bf5fc6b6b8a5d410dab2966e002782a39c421c8f9d"
+    },
+    {
+      "path": "frontend/public/licenses/dm-sans.txt",
+      "sha256": "6fbd040a29c2037a765dfb9f2561e9965b5c95c6dcb5dce516089d63d5f17af7"
+    },
+    {
+      "path": "frontend/public/licenses/manrope.txt",
+      "sha256": "d826ab6583b12c26807d8716a545bdbbb672df04f48608a364ba9efdbe501c30"
+    },
+    {
+      "path": "frontend/public/scs360-apple-touch-icon.png",
+      "sha256": "59031c12418bf4b4355cde11e8d22a61d9b9eec4492db90a07e75f13b5a256df"
+    },
+    {
+      "path": "frontend/public/scs360-icon-32.png",
+      "sha256": "bfa493e0a359d3dc2c426774224298ed6b97b18b1dd18235a1fddae610826b23"
+    },
+    {
+      "path": "frontend/public/scs360-logo-dark.svg",
+      "sha256": "9404d5100b1f211625c5fa5823c2e6df241aa6988dd9620d9f6f0cf0fe76c22c"
+    },
+    {
+      "path": "frontend/public/scs360-logo.svg",
+      "sha256": "f68a781bad35b6e2a1d6b95e9f9d6fc592e8846ddcad0422c91501cd4b08f1b2"
+    },
+    {
+      "path": "frontend/public/scs360-mark.svg",
+      "sha256": "e6d8db8835b3146715ab2335828cc09b36e633d4f190be06501f0d3d36bc4292"
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "sha256": "49a552e4a886f4cf64cd2e036e7a62cac74a2549a6b74730de808cec087a28e2"
+    },
+    {
+      "path": "frontend/src/components/AppShell.tsx",
+      "sha256": "6a7a2b3a9b493e437d43c3d63df75c2660c454daab296a559aab1de654718bd2"
+    },
+    {
+      "path": "frontend/src/components/Brand.tsx",
+      "sha256": "e505b82eb9d8a5061147cd7bbba8c478df429ea04b3dae46f828a3100a01e642"
+    },
+    {
+      "path": "frontend/src/components/Chatbot.tsx",
+      "sha256": "b19884bcff44383a0cd48817d10857b2d5ac8c17e749c1d68a042940eb37cdf1"
+    },
+    {
+      "path": "frontend/src/components/DataTable.tsx",
+      "sha256": "25724a04ad6c22d2f04a009d4437d51840be49cc9c2ce29fe9a6f1d42ce2cd59"
+    },
+    {
+      "path": "frontend/src/components/ErrorBoundary.tsx",
+      "sha256": "b59e51fc4515d8ecb7911251eb4ce5fb07ba5ce7ca80f07f9dda76d664c33e09"
+    },
+    {
+      "path": "frontend/src/components/ExcelImport.tsx",
+      "sha256": "e06dd1608efebccadb483451ab7cf78e3ef0d7603a925d262780353e3071751c"
+    },
+    {
+      "path": "frontend/src/components/GenericReceipt.tsx",
+      "sha256": "b30e1ad589cb15bfcb1a9945c4f29c69b85be497d6e6fa4577da62674b7603e2"
+    },
+    {
+      "path": "frontend/src/components/Toast.tsx",
+      "sha256": "80a3e070980924e3fa899ed1be403ce2b9dbf0772d224f2188302f23569381fb"
+    },
+    {
+      "path": "frontend/src/components/ui.tsx",
+      "sha256": "c9219a3a183e86e6b8d9d7d5972d29c27dfcf10c0213dde9deac08828108cfc6"
+    },
+    {
+      "path": "frontend/src/config/analysisPermissions.json",
+      "sha256": "6f97f91c2f36d1aad3a7a4920449c7d730b96a0e67e245f721bac45c5f19f129"
+    },
+    {
+      "path": "frontend/src/config/navigation.tsx",
+      "sha256": "7f5dc856af2ff7f865505df741b1f27eacbfd9fe3743b5f06f082a1de6a6c105"
+    },
+    {
+      "path": "frontend/src/config/resources.ts",
+      "sha256": "1254fa4a85b0a43fba993dbdbf099e02a6675195d86371cf6e3b9f8d0ce34c90"
+    },
+    {
+      "path": "frontend/src/features/academic/DailyReportsPage.tsx",
+      "sha256": "198bf4a7dcc00ceacd192a7cb2bc0ca82cd0c34a6e164d3486ae5e5323872de9"
+    },
+    {
+      "path": "frontend/src/features/academic/ExamEditor.tsx",
+      "sha256": "b434c77a8159ed28088350e4479c9a23a22f80bce190235dadbd6d4ffbe4c6ee"
+    },
+    {
+      "path": "frontend/src/features/academic/ExamGrades.tsx",
+      "sha256": "368b86a705b0f540febef6ed5f12fada8397a20c9f5c7694dd0e88717f3b13d5"
+    },
+    {
+      "path": "frontend/src/features/academic/ExamsPage.tsx",
+      "sha256": "618b07a4bc5692b4cc6f2eaf85ae00f586367c8d702288af25b4bd8928950bbf"
+    },
+    {
+      "path": "frontend/src/features/academic/HomeworkPage.tsx",
+      "sha256": "b07c8e776a199d944f9f04f75939d03e7a768c707d9466537082c1d0a066e31c"
+    },
+    {
+      "path": "frontend/src/features/academic/HomeworkSubmissions.tsx",
+      "sha256": "3473d971ea9e7ee2a533d6bff213da76120f60d475aed95c054973a54e56cc3c"
+    },
+    {
+      "path": "frontend/src/features/academic/MaterialsPage.tsx",
+      "sha256": "b4a1969aafe93ee9ec89caa8c6e8af41293affa7902a9ca0d377eb3764d5e853"
+    },
+    {
+      "path": "frontend/src/features/academic/StudentReportCards.tsx",
+      "sha256": "81e0dc768fbdfa07899287dd146842e05e0fecad66235ae0cb01b378da1aa2d8"
+    },
+    {
+      "path": "frontend/src/features/academic/TimetablePage.tsx",
+      "sha256": "9b6b28857769e9674886003cfaf0c275cdc4ae144815b8c61cf0d28bdcc0973c"
+    },
+    {
+      "path": "frontend/src/features/ai/AIAnalyticsPage.tsx",
+      "sha256": "91fb02502de6eb38bfc7fafc47d2110e3f9efca3a0d06ad2199c4d55e81e34a8"
+    },
+    {
+      "path": "frontend/src/features/ai/ChatbotManagementPage.tsx",
+      "sha256": "7bbe4bd8eee68c348cc23286232223ebe7df2bf007f734bef90595359b7f89b8"
+    },
+    {
+      "path": "frontend/src/features/ai/RecordedFinancialPanel.tsx",
+      "sha256": "78d39d9a9e61f9718aa578b516e626c5b35b2525b020f818605aeb6d54f96cfc"
+    },
+    {
+      "path": "frontend/src/features/ai/RecordedOverviewPanels.tsx",
+      "sha256": "50c6d9546d8e77186ebc7e93b1a768f177ee365c7f43c9d31c97198eabcaf4d4"
+    },
+    {
+      "path": "frontend/src/features/ai/RecordedParentPanel.tsx",
+      "sha256": "6484cf2c65b7fce698c9efd2ea6ac116f22e57492d74836e51e16f64492508c4"
+    },
+    {
+      "path": "frontend/src/features/attendance/AttendancePage.tsx",
+      "sha256": "8f256f722894fc76da12e25fd1ea950aef9cf107a5754593850a633e2df34107"
+    },
+    {
+      "path": "frontend/src/features/attendance/BulkAttendancePage.tsx",
+      "sha256": "d32245c9c59210f26b0154b1bb0565c585a83125790a92079222aba75176a169"
+    },
+    {
+      "path": "frontend/src/features/attendance/MonthlyAttendanceReport.tsx",
+      "sha256": "3540baa5e7b3b4582d2788f26aa0d4d9f70773de4155658942c4a37369af7682"
+    },
+    {
+      "path": "frontend/src/features/attendance/RecordedAttendancePanel.tsx",
+      "sha256": "e3df75e824e50d086c2cfa7c59dd31d287631f712be0d888096468899ea9ee19"
+    },
+    {
+      "path": "frontend/src/features/attendance/StudentAttendancePage.tsx",
+      "sha256": "87b8d208df3202e1f69068fe1cfa2e7327c28be5b45c54a4e283e1e5d56ee946"
+    },
+    {
+      "path": "frontend/src/features/auth/AuthPages.tsx",
+      "sha256": "faf63f5d90c231ada948206fd366d358729f22096e8404a5cf4d2372df2c1571"
+    },
+    {
+      "path": "frontend/src/features/branches/BranchesPage.tsx",
+      "sha256": "68f965ef98ce95d7234f4cf61f7be655096e0df9d6ecaa3632e73e4f086cec2b"
+    },
+    {
+      "path": "frontend/src/features/classes/AssignStudentsPage.tsx",
+      "sha256": "5fadff6a9bb7706185879c230de7fad73d5d1b3ea1cea9bccba7d3316b21b9e3"
+    },
+    {
+      "path": "frontend/src/features/classes/ClassDetailPage.tsx",
+      "sha256": "d07291b232912f2f5f91ea6d7b534071de69790124c9efb2db6db63b2eea580f"
+    },
+    {
+      "path": "frontend/src/features/classes/ClassOccupancyPage.tsx",
+      "sha256": "500eed3a476f312e08e2b6b003df197b45e705039318fa77631cfbfd315fe052"
+    },
+    {
+      "path": "frontend/src/features/clubs/ClubWorkspace.tsx",
+      "sha256": "f356568efbc6d7fe5b388d6dfa8e6d1ad1837cd030e5762e7d12605c7c10e437"
+    },
+    {
+      "path": "frontend/src/features/clubs/ClubsPage.tsx",
+      "sha256": "6e187e87e3f8b584a0c2d126f92d095d0a04c95f6baa2639e67c8b94682009bc"
+    },
+    {
+      "path": "frontend/src/features/communications/AnnouncementDetailPage.tsx",
+      "sha256": "7d321a618dc9c3f93cd91cbe9ef4455139fd2c08d46fea746a1f270696dcd1f1"
+    },
+    {
+      "path": "frontend/src/features/communications/AppointmentsPage.tsx",
+      "sha256": "70d71385486be5a9aa00b864340ec11d33946e11a41b9becfa85b46a5dfad789"
+    },
+    {
+      "path": "frontend/src/features/communications/CommunicationPages.tsx",
+      "sha256": "14c245b1b8d71390e4786fbba64629c7308e83c01e670d1a82e1b62e5990be5e"
+    },
+    {
+      "path": "frontend/src/features/communications/ExcuseRequests.tsx",
+      "sha256": "6bb25a300b0918aee195930e700d5eed5e76122bcd5c346ac2fa0b2f3e0e8d6e"
+    },
+    {
+      "path": "frontend/src/features/communications/NotificationsPage.tsx",
+      "sha256": "562db764bef1b90b8f2c9166419216cdc07f532ab3ef56f16a7de5251dfd36c4"
+    },
+    {
+      "path": "frontend/src/features/communications/OutboxDetailPage.tsx",
+      "sha256": "fa956578a773b8c2476daac84396b9c562bfe110fecade38a07a5c4538c9ae1f"
+    },
+    {
+      "path": "frontend/src/features/communications/OutboxPage.tsx",
+      "sha256": "3872e7850a192b3b9b1092738f3747206aea594b016058f48552ad155651a3c0"
+    },
+    {
+      "path": "frontend/src/features/communications/ParentNoticesPage.tsx",
+      "sha256": "c16ed89131fc99f125d19b73af8baa39567f089b30adead194a30fcbb208a445"
+    },
+    {
+      "path": "frontend/src/features/communications/TemplateFormPage.tsx",
+      "sha256": "a6961aa5ec969e97f76db77f44701d4f5e276cfd3617eddf13bdf18e482fd4f4"
+    },
+    {
+      "path": "frontend/src/features/consents/ConsentsPage.tsx",
+      "sha256": "5869c90efd8c5a8142ec6edc6d8aadc2e208a296f4f55392766ec43f3e84ac22"
+    },
+    {
+      "path": "frontend/src/features/dashboard/DashboardPage.tsx",
+      "sha256": "c6e2f2a9bee743334c3be8298c1ef06eaec2183d66e6984f9579dc096366c862"
+    },
+    {
+      "path": "frontend/src/features/errors/ErrorPages.tsx",
+      "sha256": "3171bab65e24c214079ae955361ce3ee9719b1242225b276b20cf6474bbf8ea3"
+    },
+    {
+      "path": "frontend/src/features/finance/CashCollectionPage.tsx",
+      "sha256": "d33c2e28e3962272209307f8a07495278bf1310d7988836ab7af1fb8dda059a5"
+    },
+    {
+      "path": "frontend/src/features/finance/ExpensesPage.tsx",
+      "sha256": "b9729698eb5912c456bc41fe957a99ce38992b53dcd53a9d84330102bab77a4d"
+    },
+    {
+      "path": "frontend/src/features/finance/FinancePages.tsx",
+      "sha256": "bf65617f8ecd4a87163cb8eadbf68ba93880d1ea91e1f216cd92362f537bd48d"
+    },
+    {
+      "path": "frontend/src/features/finance/PaymentForecastCard.tsx",
+      "sha256": "1cdeed64e2ad04228c5788f42c4225d66b21466969ce184137566f6140018e5d"
+    },
+    {
+      "path": "frontend/src/features/finance/PaymentListPage.tsx",
+      "sha256": "4a90ea4c7bc42b08685ab1c99c2a04aaf3e8ff7f2e9941192aa0a878564bf73e"
+    },
+    {
+      "path": "frontend/src/features/finance/PaymentReceipt.tsx",
+      "sha256": "bd27c323f9be98b49df0808e8b9adb1f17cbce5a358a4a4344ce026951309e74"
+    },
+    {
+      "path": "frontend/src/features/finance/ReceiptPrintPage.tsx",
+      "sha256": "f3e496024d8f41aa99e334fdbe8e0f4473a20d932a689bc180bf62ee6193e15e"
+    },
+    {
+      "path": "frontend/src/features/finance/StudentPaymentsPage.tsx",
+      "sha256": "415951325830030db4edd3e309be501c0e87de464beb9e2fd46dc30c130df256"
+    },
+    {
+      "path": "frontend/src/features/finance/cashAttempt.ts",
+      "sha256": "a1e1b612fed23825dc85d455ab4d387af35f2a3f7b6a97df3e411f4c70f1519e"
+    },
+    {
+      "path": "frontend/src/features/guidance/GuidancePage.tsx",
+      "sha256": "9200001a29fa87c4b8822b6c75c0414210793f812b0523052204a82b6f2231b9"
+    },
+    {
+      "path": "frontend/src/features/health/HealthPage.tsx",
+      "sha256": "9ea4907bffde4cdedb053d500899fcc247469bd692d1f09cd36bebd3ce36af0e"
+    },
+    {
+      "path": "frontend/src/features/infirmary/InfirmaryPage.tsx",
+      "sha256": "3135982a5b887351f77ea9bdc691ca7acbe38284c90fd0c8d51fade1be65ab40"
+    },
+    {
+      "path": "frontend/src/features/inventory/InventoryPage.tsx",
+      "sha256": "27e5dd129cbc08b33c0d2e6b1d9ce04d1c8b4f5685250895033510802db6c4dd"
+    },
+    {
+      "path": "frontend/src/features/inventory/InventoryWorkspace.tsx",
+      "sha256": "cbb49cb97d5f283cf544edf08502a56fb715494a3bfee186f55917f5c6feeceb"
+    },
+    {
+      "path": "frontend/src/features/marketing/AboutPage.tsx",
+      "sha256": "c73a020e2c8a530d3ba21ba2d69fc5a87380963004c6b0dc7d06d6485e33e42f"
+    },
+    {
+      "path": "frontend/src/features/marketing/CampusVisual.tsx",
+      "sha256": "9ce1ffeca909904d4eb93537b031655c84b7f961105eebeb407effd8b16789ec"
+    },
+    {
+      "path": "frontend/src/features/marketing/MarketingPage.tsx",
+      "sha256": "5a0c6877ccaeb6d84ab5a16174e63ef15def4920bcd97ac5f07103177ed01466"
+    },
+    {
+      "path": "frontend/src/features/marketing/MarketingSite.tsx",
+      "sha256": "3cdc276488e3d4ecb782266fc744460a82458980cb1339b0063153d3d6f63062"
+    },
+    {
+      "path": "frontend/src/features/marketing/ProductTour.tsx",
+      "sha256": "8eb7d050a78b7b00f0e84eb2f85a301ab2b24f9aacc4397fd5347e51d48f4e48"
+    },
+    {
+      "path": "frontend/src/features/marketing/SignupPage.tsx",
+      "sha256": "c8085d30a0ccec9e25d18527bff56e8bdb9ffdf76add299d5e2d0c48761cbba6"
+    },
+    {
+      "path": "frontend/src/features/marketing/marketing.css",
+      "sha256": "50ca71044ef5ea794414b3bc4b5a1eaca86d71041b5be529fd415dea33eb12f4"
+    },
+    {
+      "path": "frontend/src/features/operations/CanteenPage.tsx",
+      "sha256": "14f237d96d3169ef7242a1666673fca10bebf670bf6100c67a9d33250b5efb98"
+    },
+    {
+      "path": "frontend/src/features/operations/CanteenReceipt.tsx",
+      "sha256": "7765ac7d4a0309a9e115470b39f41fe1f9518d9c9185f52aa0cc74f84db29bd1"
+    },
+    {
+      "path": "frontend/src/features/operations/CanteenSalesPage.tsx",
+      "sha256": "1f170d4c79e9be85af33dff5b61faf80b01e61692ef12b137a83b95f45332fe6"
+    },
+    {
+      "path": "frontend/src/features/operations/CardBalancePage.tsx",
+      "sha256": "1d4b4c028533db50e04436bdf192ccb6febbb6e2aba9457f4bd284c8a4c0da2c"
+    },
+    {
+      "path": "frontend/src/features/operations/OperationPages.tsx",
+      "sha256": "5b8e68560598c13aa23d90042e4b78a5c1fb624dc2fd3a46d4573e52e96d896f"
+    },
+    {
+      "path": "frontend/src/features/organizations/OrganizationDetailPage.tsx",
+      "sha256": "16982f7c984f7e88e3b3221869d811ad9261b023cd2fb14cdb083d8a8b94b218"
+    },
+    {
+      "path": "frontend/src/features/organizations/OrganizationsPage.tsx",
+      "sha256": "dfccff9e25368edf58272e3430e176f4293ded4dc3210f64bc45889d646f3513"
+    },
+    {
+      "path": "frontend/src/features/parent/ChatInterface.tsx",
+      "sha256": "b1f476e0eb28ac59caed9c1c4110cdbd206904b5f823ef5d0f9042812e21ead9"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentAccountAccess.tsx",
+      "sha256": "63b495865c174698ef1075596503c26607590cd73454ea98cda7d4e89d2f5467"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentCertificates.tsx",
+      "sha256": "f12c26142834bc342a5a7ea6afda882a17df1febbee6977be6c2b29b11d79095"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentConsents.tsx",
+      "sha256": "e2bf0196c26ecb48eabab812d81dbdc99497f7d980eb4e9329ac22726ea9fcdb"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentDayTimeline.tsx",
+      "sha256": "9348599349b66618462724586e7f8cb00fbad75ad4192a2fafe7c04b3f033b8d"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentPortalPage.tsx",
+      "sha256": "6b2dc96afed09f1c433745a433a1034a457d68776ba4feddecd13aaee755274f"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentReportCards.tsx",
+      "sha256": "6a620faee9c4951d5f12665d3f2965a880e6f0589f22a021245131741150f67d"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentSchoolCheckout.tsx",
+      "sha256": "32313b6c65d6d239de5d8c9d43d517dfd6efc41cd8aad7c66e418ca59a5e2db2"
+    },
+    {
+      "path": "frontend/src/features/parent/ParentSurveys.tsx",
+      "sha256": "a326d0fcbcd372a717cc5a03a8f764c6592412354598771adf969d8da30c1451"
+    },
+    {
+      "path": "frontend/src/features/payment/PaymentPage.tsx",
+      "sha256": "226fbf994fdcbb4d7e88562d000f5859866cf58c46a51de5afe1eb498f0fe336"
+    },
+    {
+      "path": "frontend/src/features/payment/SchoolCheckoutForm.tsx",
+      "sha256": "90d6edba2ead7d62d69f4ba6cf0f5c1d1728ea67993b9653e235c690bf774915"
+    },
+    {
+      "path": "frontend/src/features/payment/SchoolCheckoutStatus.tsx",
+      "sha256": "f3945a7a890b6795683efd884881d8da358e17c9041871316cdd13065f4fb989"
+    },
+    {
+      "path": "frontend/src/features/payment/SchoolPaymentPage.tsx",
+      "sha256": "2368fc3977c9137998f2a574038b0c23a96f92bdcf79a9768e29f6e1386eced4"
+    },
+    {
+      "path": "frontend/src/features/payment/SchoolPaymentReviewPage.tsx",
+      "sha256": "c4c783af207ae26cc62059cbf7e5bbee415941f5c9511a33a620814158545fd8"
+    },
+    {
+      "path": "frontend/src/features/payment/SchoolPaymentSettings.tsx",
+      "sha256": "1a3a652b86c55c5183a0379b09cefe726077e71db5126fdad47c72b959139963"
+    },
+    {
+      "path": "frontend/src/features/payment/StudentCheckoutStatus.tsx",
+      "sha256": "83458dd115dc429e0894fc55afb1edb0ad587014fbabc8712c648aaa21b8711e"
+    },
+    {
+      "path": "frontend/src/features/payment/schoolCheckoutAttempt.ts",
+      "sha256": "eae82348a94b12c151484d7799bd2602ac30a723b6876be642a90e6cd0d4275c"
+    },
+    {
+      "path": "frontend/src/features/payroll/PayrollPage.tsx",
+      "sha256": "8deed479e8612d168173559d578a5f6dd58d37d1d8091cf566cf22ad57e81e2a"
+    },
+    {
+      "path": "frontend/src/features/reports/AttendanceReport.tsx",
+      "sha256": "d544796010551fe67c7cf7eb659d3da92198ea3d70a3761611080e411f07aa84"
+    },
+    {
+      "path": "frontend/src/features/reports/BranchPerformanceReport.tsx",
+      "sha256": "8473b14a04be34287908686796a9f2b741f58ecf0bc530e0d26f27c5d5c274a9"
+    },
+    {
+      "path": "frontend/src/features/reports/ClassOccupancyReport.tsx",
+      "sha256": "d2ed7403df171b627726c11c5f89aba90e1373ea36d6bd1962cb3b57735f714a"
+    },
+    {
+      "path": "frontend/src/features/reports/DebtReport.tsx",
+      "sha256": "d913c794289f22dca3a11eb9a680ac03721335b6f4153d5b784bf3a712dfd45e"
+    },
+    {
+      "path": "frontend/src/features/reports/MonthlyPaymentsReport.tsx",
+      "sha256": "0d411a8c2bda0bb8aaab3e3279b68287870b5964f32b5192a42e2a1efe1f396b"
+    },
+    {
+      "path": "frontend/src/features/reports/OverdueDebtsReport.tsx",
+      "sha256": "726d27aa15e642dafb37760b9dff71bcb14bf4689a9cb4351beb3f25df90b096"
+    },
+    {
+      "path": "frontend/src/features/reports/ReportsPage.tsx",
+      "sha256": "9e6949b8ca5eab1bf9842989c24e33f4094276f1d0234a95486822688fd6a506"
+    },
+    {
+      "path": "frontend/src/features/resources/DetailPage.tsx",
+      "sha256": "2aeed768b3052cea47bf66a1beaa03a39f3796d0dbdca953b4a1284dab8ba358"
+    },
+    {
+      "path": "frontend/src/features/resources/LibraryPage.tsx",
+      "sha256": "c0ca73ef7c4d01959e1ce912aee46aab4a293d9e560fabe4455a92e6e88d1249"
+    },
+    {
+      "path": "frontend/src/features/resources/ResourceChoice.tsx",
+      "sha256": "d2e219579074ed2dd001d45feb7dfe2701b8409f80b1564d3c09f82e77d10d8e"
+    },
+    {
+      "path": "frontend/src/features/resources/ResourcePages.tsx",
+      "sha256": "5ab1a5f80d0c42bbd109390c393ad82ff79048bccaa8dd988a602f5a5bce10dd"
+    },
+    {
+      "path": "frontend/src/features/roles/RolePermissionsPage.tsx",
+      "sha256": "32c488d6324e07201b278434360fa44dc7c16413c2277d6e4131a8138eea6bbf"
+    },
+    {
+      "path": "frontend/src/features/roles/RolesPage.tsx",
+      "sha256": "c32c4d40c8e6164584da900d93a222b74a8e99325f6298ff676ce64f203c0739"
+    },
+    {
+      "path": "frontend/src/features/saas/PaymentReadinessPanel.tsx",
+      "sha256": "d6cbd629957f1a523b8e32952c69c8a9604845b02cb4a097db989e394efa09e9"
+    },
+    {
+      "path": "frontend/src/features/saas/PaymentReview.tsx",
+      "sha256": "ea578caed17ab61b5cfe32b951711ad7c660658951c4f157d4701c98f4fff32f"
+    },
+    {
+      "path": "frontend/src/features/saas/PlatformPage.tsx",
+      "sha256": "443004e57b3a7acaf279cf5c05b77d539b7a508d50c0351e68509cf18b74af74"
+    },
+    {
+      "path": "frontend/src/features/saas/SubscriptionCheckout.tsx",
+      "sha256": "15398640453079892221bb95741fcbea5495f3c9145873b22da94f5864d35198"
+    },
+    {
+      "path": "frontend/src/features/saas/SubscriptionPage.tsx",
+      "sha256": "25950006d985eaae4924eb827ee55e83c9bd403a0b068e58c0e3d633e952f6ad"
+    },
+    {
+      "path": "frontend/src/features/security/DismissalPage.tsx",
+      "sha256": "1f238967f7579799f2c689bc5e89d3005785af3061b360fdf4f8fd91e2627e7b"
+    },
+    {
+      "path": "frontend/src/features/security/SecurityPage.tsx",
+      "sha256": "7c84710c36dfb69449baf84b31c29729844dbeb3c961985c976f0301db23621f"
+    },
+    {
+      "path": "frontend/src/features/settings/SettingsPage.tsx",
+      "sha256": "8e81a8138d86c715c13176448a435cc1ee1a346134abbd949c26daa02f04cc7f"
+    },
+    {
+      "path": "frontend/src/features/staff/StaffDetailPage.tsx",
+      "sha256": "9fa2e2d8af6657746d80405c12018881ef9c216dc41eec0e038818118c9eaccf"
+    },
+    {
+      "path": "frontend/src/features/staff/StaffPage.tsx",
+      "sha256": "514ac6ff0eec7c1447e0df59ba0e8b85659e0fe662dc4a92a88eeddf12767db9"
+    },
+    {
+      "path": "frontend/src/features/students/StudentDetailPage.tsx",
+      "sha256": "fa8dad3743757d09433ad2eec4ebfe816a4296ef78efb5a010a92c0064466b81"
+    },
+    {
+      "path": "frontend/src/features/students/StudentFilesPage.tsx",
+      "sha256": "446c41abfd2b2a35510822bb6894a7429ae37582b5bdd1b8f0309a6cac249551"
+    },
+    {
+      "path": "frontend/src/features/students/StudentParentsPage.tsx",
+      "sha256": "2d6bd798ef0c6cd983d710130d90b2a07ee5c292b651bb37fc2b4cced5abc87c"
+    },
+    {
+      "path": "frontend/src/features/students/StudentsPage.tsx",
+      "sha256": "ddb79b2dcaa3a2eb09157564f993a3c856c102fb14c27f5744b20e1455304124"
+    },
+    {
+      "path": "frontend/src/features/surveys/SurveysPage.tsx",
+      "sha256": "9471c01a8bc7b3b2da336eacb14002056e0791b6ec1c73cc70dbc5f424286813"
+    },
+    {
+      "path": "frontend/src/features/system/DevicesPage.tsx",
+      "sha256": "9118a290371a934ab15e21d76a8d6069fecb166bc63ee3c9bf54dac9d31d0874"
+    },
+    {
+      "path": "frontend/src/features/system/RfidCardsPage.tsx",
+      "sha256": "1232734549e980544b5b5a0434056565224caafcabbfb3d428e5b63ceed1507f"
+    },
+    {
+      "path": "frontend/src/features/teacher/TeacherPortalPage.tsx",
+      "sha256": "fe54a25362872e4a2017185415377b5bddf6dce45997ee985f10ef1a74ad3736"
+    },
+    {
+      "path": "frontend/src/features/transport/BusPage.tsx",
+      "sha256": "3de999c2025a5b1b582686adb4385b93e1eb112bf36b7894911dbf24ed230872"
+    },
+    {
+      "path": "frontend/src/features/transport/BusRouteManager.tsx",
+      "sha256": "f67065ad66f0e70f2a74e9e0a97879aa45b69966e325fa9c6e158b11dc91d0c2"
+    },
+    {
+      "path": "frontend/src/features/tutoring/TutoringPage.tsx",
+      "sha256": "9756b6a55438e17185d035d0eaeed2abf1bbd57f25d876c9ee27c573b1d3563c"
+    },
+    {
+      "path": "frontend/src/features/users/UserCreatePage.tsx",
+      "sha256": "bf85779a1c574ce831f70cf20f569ed6739bf61f4e3e2a2911b72825f71b283b"
+    },
+    {
+      "path": "frontend/src/features/users/UserDetailPage.tsx",
+      "sha256": "722b9bc4dc69cca26b8a40113e5352ffd666f0e97c2df165e01e876a119f1615"
+    },
+    {
+      "path": "frontend/src/features/users/UsersPage.tsx",
+      "sha256": "93cc4c6f841305aaaf10f593d50ef2762e564444768dbfcba05455f57f2e549a"
+    },
+    {
+      "path": "frontend/src/index.css",
+      "sha256": "6f13c9b6a679f4700eb65a340c5acd7fea6e690939d55a8d259725f17c8eb1fd"
+    },
+    {
+      "path": "frontend/src/lib/analysis.ts",
+      "sha256": "4a85a0154b142fecd9f55bea86ad84c996e37222077f09167bcfba6f958265f7"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "sha256": "c9129093277f6da6e0f563d46ebb0c722ecbd8ee742bdd892e500e7489f4141c"
+    },
+    {
+      "path": "frontend/src/lib/data.ts",
+      "sha256": "d05886a9d611ffa236882315588bf1332b28c4894b709d6b79819845fb359751"
+    },
+    {
+      "path": "frontend/src/lib/diagnostics.ts",
+      "sha256": "f8b864bf794f400d9bc3b8c1419db3e955bbfae8b096fd20dfc768bb03bc6618"
+    },
+    {
+      "path": "frontend/src/lib/download.ts",
+      "sha256": "9da23a4026cfd5e5b16003821f146728f9be03cd89c6aebf74075fec9d64b35b"
+    },
+    {
+      "path": "frontend/src/lib/export.ts",
+      "sha256": "abd3a5642adea57e50a2a34058e28af3451a17da70c98f0c05430a63c2aa5271"
+    },
+    {
+      "path": "frontend/src/lib/format.ts",
+      "sha256": "3e1ede5c43263719f9387fc6752b8d831a0981901c75294480970dec859b57f8"
+    },
+    {
+      "path": "frontend/src/lib/home.ts",
+      "sha256": "ee93346e59ab55a4d712eae8cc440005c1f430cc42aa5bcea1962d582c891d3e"
+    },
+    {
+      "path": "frontend/src/lib/hostedPayment.ts",
+      "sha256": "ef0afd0cfab099a32101d6e8c740f4e2557537d4cbb76319484cbebd7757cfba"
+    },
+    {
+      "path": "frontend/src/lib/print.ts",
+      "sha256": "9ad71e261eb1d4e73ed3920ce16485dbdd62d49048c9cb47bfc538276c5e8e0b"
+    },
+    {
+      "path": "frontend/src/lib/requestId.ts",
+      "sha256": "bf3aa4540faac9f66e3dd53f0b22b8afd86d072d4f18be7a32eddb1e1e5367b1"
+    },
+    {
+      "path": "frontend/src/lib/subscription.ts",
+      "sha256": "c0bba891be69511c28f66662ea6374187d3df83fe726aba5b6fc829bdaeaf90e"
+    },
+    {
+      "path": "frontend/src/lib/workspaceUser.ts",
+      "sha256": "5272aa83673ee602a86d716f9d6b8a4c9f50a87cd70473eab0a8d3bed40d59ea"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "b4a67c66f6ec94041832b521df9407c43ab8c5f70c66575d6061e293c83715a4"
+    },
+    {
+      "path": "frontend/src/routes/Guards.tsx",
+      "sha256": "4fe61530bd3423beea9bfca59f3a936fadba4f9571c94570d66086640453eb13"
+    },
+    {
+      "path": "frontend/src/routes/PlatformModeGuard.tsx",
+      "sha256": "224e9f78cb7602e36a79f0f4f19a4d0544fa9e1cd9fa515f121a8db540251d74"
+    },
+    {
+      "path": "frontend/src/routes/SubscriptionGuard.tsx",
+      "sha256": "42f5ce0fb9ad185e66a2e8bed7d2ed9de31578b3edaf76d6891600c09f7d3983"
+    },
+    {
+      "path": "frontend/src/stores/auth.ts",
+      "sha256": "d5e5eeee71e07c56935d9a44344d987a934eb8d466fd74c06a8d1b200a558ee7"
+    },
+    {
+      "path": "frontend/src/stores/platformWorkspace.ts",
+      "sha256": "6aa5016544bdf5c84b678f8bca43a47209ffd3687c8c7a82e4fc0986a6d4eeeb"
+    },
+    {
+      "path": "frontend/src/styles/fonts.css",
+      "sha256": "0c57397eca6358c9bf6b3f0b19a525ee5fe83e59628105f168bddc317ec87037"
+    },
+    {
+      "path": "frontend/src/styles/global.css",
+      "sha256": "13431d31cd14bc7f002dde0ae55fbb1dd296536ab5367001ca4484621bef8065"
+    },
+    {
+      "path": "frontend/src/test/academic-summary.test.tsx",
+      "sha256": "93d625c60ee22adb847df501bb30ac86120e817b91d2bd365ebecc0ae27898d5"
+    },
+    {
+      "path": "frontend/src/test/ai-analytics.test.tsx",
+      "sha256": "a8c7832a965278a4977ccbc54b95ccbf133ea58ee9bb5d1fb37663e35c7bc968"
+    },
+    {
+      "path": "frontend/src/test/analysis-access.test.ts",
+      "sha256": "50278adbafe94a689310336685e79ae6bea70218bd7673c6edef800771813fb8"
+    },
+    {
+      "path": "frontend/src/test/api-refresh.test.ts",
+      "sha256": "3b3b5c1621b9ddbd98e73c153182633bf6663e6730611594e2e9af6561c55bf0"
+    },
+    {
+      "path": "frontend/src/test/app-shell.test.tsx",
+      "sha256": "01c4a745b018db4595586efec74799d0297e7ba8be7573e3fe7eced457b6817a"
+    },
+    {
+      "path": "frontend/src/test/app.test.tsx",
+      "sha256": "2d8b807eb83d27f4788083f2e6a531f718a8952a7e5c2ea029de61932ce16883"
+    },
+    {
+      "path": "frontend/src/test/attendance-analytics.test.tsx",
+      "sha256": "457c255ed68c0b84ecdbc1dd8e88b31c53432c6c0e22aff991d317cbb325099a"
+    },
+    {
+      "path": "frontend/src/test/attendance-editor.test.tsx",
+      "sha256": "5c73ea8c8cc8aa3828e4a31c09acac68d390b0e0b1c99253519af07d18f31661"
+    },
+    {
+      "path": "frontend/src/test/auth-store.test.ts",
+      "sha256": "d89776af86a14276950507dfdaa05165e008e11efaca3a5aec886985841ed94b"
+    },
+    {
+      "path": "frontend/src/test/bus-management.test.tsx",
+      "sha256": "290bcea3daf4f6c2b05446b81bbfafc8b64a550aa7635dba3fd77ca749be99ff"
+    },
+    {
+      "path": "frontend/src/test/canteen-sales-summary.test.tsx",
+      "sha256": "7594dd4e6f2376c0389dc3fab09c9005c850512ad2fc3582d7f63551effac4ec"
+    },
+    {
+      "path": "frontend/src/test/capacity-table.test.tsx",
+      "sha256": "4306b309415ac2f4cf6e82b639088e49084e76ae60f2a044da97bfe26fb428a1"
+    },
+    {
+      "path": "frontend/src/test/cash-payments.test.tsx",
+      "sha256": "269bd1bafbe4dacf61cd0cf6881d59a4e0312bcec16e77eab909edf886d8f25b"
+    },
+    {
+      "path": "frontend/src/test/chatbot.test.tsx",
+      "sha256": "e523303f13726c63fb36ca63e23fb5767e49aa3f5e5cd97626240c684f46e6fc"
+    },
+    {
+      "path": "frontend/src/test/club-workspace.test.tsx",
+      "sha256": "48eec50fd59f548f4628ae9cbb2ba309ecebfd12d7ac9321c938197084c27a84"
+    },
+    {
+      "path": "frontend/src/test/consents.test.tsx",
+      "sha256": "89b51c3ed1c4bf059466ad3cdc285b84bb46413b023be3c7931183e6fcb34b58"
+    },
+    {
+      "path": "frontend/src/test/data-print.test.ts",
+      "sha256": "a58e95e2cffd7e06e853f1f9a65f9b685d65fd20cd34749b287d91fb4e54149b"
+    },
+    {
+      "path": "frontend/src/test/diagnostics.test.ts",
+      "sha256": "984e85ed1bad7df30aabc15dcb32b6de0e4d19311bb018be9c1378e886c65b06"
+    },
+    {
+      "path": "frontend/src/test/dismissal.test.tsx",
+      "sha256": "8804861744b1e78d2c41267165469f79f4dc845514a949397fda47d38aa9a6cf"
+    },
+    {
+      "path": "frontend/src/test/exam-management.test.tsx",
+      "sha256": "b2e2e8a4f0a32b93a61288e3d4f29b7769726078d5a48ff1cb28a22443558b71"
+    },
+    {
+      "path": "frontend/src/test/financial-analytics.test.tsx",
+      "sha256": "22dff42b5f411a372aec7d899d29e335c05608ac063bd15f6fbc9bc682610fa7"
+    },
+    {
+      "path": "frontend/src/test/financial-summary.test.tsx",
+      "sha256": "64aea056f0c28b0fef1ae51a8c237f2243ad5f7615111edba29c5491ecc2907e"
+    },
+    {
+      "path": "frontend/src/test/guidance.test.tsx",
+      "sha256": "2c90d862d742c7fe3e8854b0ba3a3358942cff09cbc42a9d0d6e765e798df342"
+    },
+    {
+      "path": "frontend/src/test/health.test.tsx",
+      "sha256": "15a92e14cf12221b8c0cc58cdd9172bb0476cd0fb6c82c56a20a4aaf25ff7d4e"
+    },
+    {
+      "path": "frontend/src/test/home.test.ts",
+      "sha256": "c7c09388b646d75abfea3c92a736e8f623f6225f646d246ac85817a81df04710"
+    },
+    {
+      "path": "frontend/src/test/homework-submissions.test.tsx",
+      "sha256": "80edeb85a3daf858869099fa782845daaf7210d6936892fee7e0b02ef3b74f74"
+    },
+    {
+      "path": "frontend/src/test/inventory.test.tsx",
+      "sha256": "02da23a929a82cafbb16f0b48dc1f70014f98c50ecd26467824626b05386c6c7"
+    },
+    {
+      "path": "frontend/src/test/marketing.test.tsx",
+      "sha256": "a288fce0f2cb154259922766529b848b9bd75376b1db7421ea4ea6e926a9f077"
+    },
+    {
+      "path": "frontend/src/test/materials.test.tsx",
+      "sha256": "bee70b671b974fc656c7a90557d83905d26a24316494c6b30a5d328196acbf51"
+    },
+    {
+      "path": "frontend/src/test/navigation-contract.test.tsx",
+      "sha256": "ee1489d82faf51a569966a9cbf688ee57f746dff0c1a7e05484fd3d9af1cd3e9"
+    },
+    {
+      "path": "frontend/src/test/organization-controls.test.tsx",
+      "sha256": "122df497c44b41b4f1102c1198b68b51d28ab9e036ed6a48115943d494ff01a2"
+    },
+    {
+      "path": "frontend/src/test/overview-operations.test.tsx",
+      "sha256": "8f6729ac3c9fab0e7500ca1a4259e82f7da421fdfc92686c77f437aa051b7e5b"
+    },
+    {
+      "path": "frontend/src/test/parent-account-access.test.tsx",
+      "sha256": "48ea82be5bbbe9f95893447563bbe77e8ac6b5188eca330a09c5c9b55e67013d"
+    },
+    {
+      "path": "frontend/src/test/parent-dashboard-permissions.test.tsx",
+      "sha256": "6b6e5ed549ce1eed7c76a011dbf316d7f895d7e44e7d8fc686e8a752ce7e9fea"
+    },
+    {
+      "path": "frontend/src/test/parent-engagement.test.tsx",
+      "sha256": "af5f68fbef70abb77067fed7695bb59f13f6a2ce962499d2b7632a29ffede84e"
+    },
+    {
+      "path": "frontend/src/test/parent-notices-permissions.test.tsx",
+      "sha256": "0e4a955046e35b6564ea068aeddb4ba48046ad9748183a5602646418ea8231c9"
+    },
+    {
+      "path": "frontend/src/test/parent-timeline.test.tsx",
+      "sha256": "255fdf290436ab811af7a197440d95f87eb5203c21929292b8847ca2bc0a65a2"
+    },
+    {
+      "path": "frontend/src/test/payment-readiness.test.tsx",
+      "sha256": "7b6582f2e84d38545291dd6f8d37193e7f823f5e73156f6cb0905840e37494ca"
+    },
+    {
+      "path": "frontend/src/test/payroll.test.tsx",
+      "sha256": "966cdf1037beed45e0bd27de0dadc21407681431a014cede32a06aa295288dcf"
+    },
+    {
+      "path": "frontend/src/test/platform-mode.test.tsx",
+      "sha256": "f0bfec8cc1da5fc0de403ab2e17bf0fce82b554a8b19edf683eac5d1234a1d87"
+    },
+    {
+      "path": "frontend/src/test/receipt-print.test.tsx",
+      "sha256": "4e5000268ee42ddb49897bec3511571d12d31243348397cbd88f2ff0ebadef85"
+    },
+    {
+      "path": "frontend/src/test/resource-choice.test.tsx",
+      "sha256": "51b3f905686c887b68104faa76b80ecd1b59966298239eb24c29d41c7f5e5ca8"
+    },
+    {
+      "path": "frontend/src/test/resource-form-options.test.tsx",
+      "sha256": "67f74f1bb2bf590edd1051fc6ca67f482c7a90ca875c60acccec9096068adc0a"
+    },
+    {
+      "path": "frontend/src/test/resource-list-race.test.tsx",
+      "sha256": "9d0356e8df7a30e1c0ff8e1a421211bfb7cd8f093c2b3cfd25f7a9ba2e14adca"
+    },
+    {
+      "path": "frontend/src/test/saas-pages.test.tsx",
+      "sha256": "e6f74c8731177d77ad8f91fcdb886770e24da55020f9e7ff494d7e494619e7be"
+    },
+    {
+      "path": "frontend/src/test/school-checkout-attempt.test.ts",
+      "sha256": "f0c0768d810d09f70d21eeb85809612bb566178b9a1bd510766337eb6964c7d4"
+    },
+    {
+      "path": "frontend/src/test/school-checkout-form.test.tsx",
+      "sha256": "381d2bc303ed01c7ed2c18cef24932ddaf1a8e56a4582525978d5fb0a68e420d"
+    },
+    {
+      "path": "frontend/src/test/school-checkout-return.test.tsx",
+      "sha256": "acd8145631e8661deddd96456bf8f867929237d9c8dfdc5a8a86d984cfae4d2d"
+    },
+    {
+      "path": "frontend/src/test/school-checkout-status.test.tsx",
+      "sha256": "a9ae8dee29ad82e009ab8abef0cc2dc5565d6705bdb3575a3232f63171eddd51"
+    },
+    {
+      "path": "frontend/src/test/school-payment-review.test.tsx",
+      "sha256": "2eb68188a8376fb83fd6a5c304c4b139eb5e287c582403d379961d334fa31664"
+    },
+    {
+      "path": "frontend/src/test/school-payment-settings.test.tsx",
+      "sha256": "fdbd83cbdfc4c920c8423dd6fb1bc8ce91774fa39a64c10035ed993c10f0261b"
+    },
+    {
+      "path": "frontend/src/test/security.test.tsx",
+      "sha256": "ce21559ac05143a42b43da67057a78d27bfb468a8ac5f8a48eaad21ac4286111"
+    },
+    {
+      "path": "frontend/src/test/settings-integration-safety.test.tsx",
+      "sha256": "4b402cddcf718e23878c5d6fd823763a8557810c1e02ff220593a52e07628f71"
+    },
+    {
+      "path": "frontend/src/test/setup.ts",
+      "sha256": "9b328c4843431fa76d8de00008fc159e95f99a840211085ff3b8f25e53d14409"
+    },
+    {
+      "path": "frontend/src/test/student-checkout-status.test.tsx",
+      "sha256": "138ca803a67fe182fda0910df12cd08a63db04fa72d60c9bd045d31d643ba35a"
+    },
+    {
+      "path": "frontend/src/test/student-payment-page.test.tsx",
+      "sha256": "71975df277fc16ef56fb6f7ad7bd1df126634c01fa98cbe06f12f3d57e552a24"
+    },
+    {
+      "path": "frontend/src/test/subscription-checkout.test.tsx",
+      "sha256": "d8f989992a098b67edfffe8739e3f40fafcf575933de0f9b38a6eea974bff0f4"
+    },
+    {
+      "path": "frontend/src/test/subscription-guard.test.tsx",
+      "sha256": "c702b1b6bee79b447d78b55e756abedfda9a4a13f7960753bd92bad8470c8cc9"
+    },
+    {
+      "path": "frontend/src/test/surveys.test.tsx",
+      "sha256": "84208c55317fe98b3d450778c488952aa4d219ffb7004529cbec0b7ba5937865"
+    },
+    {
+      "path": "frontend/src/test/teacher-portal.test.tsx",
+      "sha256": "4d51a2c5a47e051c8046c863ce5289fc88a6fc53dd12ad3b17c3aa768bca9c11"
+    },
+    {
+      "path": "frontend/src/test/transport.test.tsx",
+      "sha256": "973af2825f409d5e905ae105094e8bc0fa4cff3655b7d0edfbef8dbea16aca36"
+    },
+    {
+      "path": "frontend/src/test/tutoring.test.tsx",
+      "sha256": "ed16dea0e32b87950c033721c28ed3f36064b5574f817fed0847a410d252ae3b"
+    },
+    {
+      "path": "frontend/src/test/user-access.test.tsx",
+      "sha256": "3c19cc9d88a29fc0e3eaf4aa9aa16b0909e0233aa7e21222d04855d8077f6b61"
+    },
+    {
+      "path": "frontend/src/types/api.ts",
+      "sha256": "dcc5e81ccf8dc2ee065532ad17743e91c63fa1d139b260a087e078a32fea697d"
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "path": "frontend/tsconfig.app.json",
+      "sha256": "19d307d200f10e8d26247dc0dc34c76dc3c6c2838e1a8b30b8b3c2895a3a9c3d"
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "sha256": "770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+    },
+    {
+      "path": "frontend/tsconfig.node.json",
+      "sha256": "2fba2f25e1859f193b54edef5d2d2cd08cae2a37fab64c08699f6f8672bea2cc"
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "sha256": "7bbc4b7db6bbc1427d8972dbd451a9cbf6c906495aa30f0382feb384e31a07fa"
+    },
+    {
+      "path": "frontend/vitest.config.ts",
+      "sha256": "dcafa95da608f61b1d0d611fba91f1ff81812db541f9ef8e171b12274078a542"
+    }
+  ]
+}
