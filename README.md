@@ -1,3 +1,7 @@
+<!-- native-cash-20261112:start -->
+WIP: native cash/transfer ledger editor with durable request UUID and server ACK, replacing premature Room/student balance changes. Targeted and real temporary FastAPI acceptance pending; prior 82-test/APK evidence does not cover this new source.
+<!-- native-cash-20261112:end -->
+
 <!-- native-finance-20261112:start -->
 Native recorded finance summary accepted: full Android 82/82 PASS (17m48s), real Kotlin/FastAPI temporary SQLite acceptance 1 PASS/1 PostgreSQL deselected (115.55s), same-source debug APK/signature PASS (2m48s). Debt/payment row mutations, parent flows, physical A26 and actual provider/store acceptance remain open.
 <!-- native-finance-20261112:end -->
