@@ -1,0 +1,28 @@
+{
+  "status": "WIP expense parity. Backend21 targeted PASS across temporary SQLite/PostgreSQL; native client2 PASS. UI3 final retry, real API bridge/current full regression and matching APK pending. Old104/922 baseline does not accept this new expense source.",
+  "backend_targeted": {
+    "passed": 21,
+    "seconds": 74.47
+  },
+  "native_client": {
+    "tests": 2,
+    "failures": 0
+  },
+  "source_sha256": {
+    "backend/app/application/services/expense_service.py": "ccbdf3d66f36bb32a01737c445875c3b6876425ce29e0c93ff39304275242ca6",
+    "backend/app/application/services/operations_service.py": "cc33f1a56cde258b1528540a1701201cbcd36caa1ed8e8f54fbdaad75948fadc",
+    "backend/app/routers/operations.py": "bea64e3b8f1ba849249c691d5044f36f8878866cb8335f0d9862590d74c1f1d0",
+    "backend/app/routers/expenses.py": "c6626921a3441561cdf4358240eee28164c9a3df12a481cff5fd5c143dab665d",
+    "backend/app/application/schemas/common.py": "b395a1360c4fc98fb676d20dc1e2a63d0af7241228eafae9782139152896d69a",
+    "backend/tests/integration/test_expense_parity.py": "2d67e51bc1ccc6a33ca5b29983e81eeddd2f868bf91bc64f70b4129f2f579c59",
+    "mobile-android/app/src/main/java/com/example/data/remote/NativeExpenseClient.kt": "a2231f0dd5f6c4b8ce1254a65ca9b690c273029f075def5a0c65fe8f90fadba0",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseCreateDialog.kt": "72df37ff5030b6aefc7c2aa51d540eb3d8b72da68b4fba4ca1ff1ec1321eba05"
+  },
+  "open": [
+    "final UI3 acceptance",
+    "real Kotlin/FastAPI expense bridge",
+    "current full regression/APK",
+    "parent/custom-role/remaining parity",
+    "physical A26/iOS/provider/HTTPS/store/release"
+  ]
+}

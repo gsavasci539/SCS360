@@ -378,12 +378,25 @@ class BranchAssignRequest(BaseModel):
 
 
 class ExpenseCreate(BaseModel):
-    branch_id: str
-    category: str
-    title: str
-    amount: str
+    request_id: UUID | None = None
+    branch_id: UUID | None = None
+    category: str = Field(min_length=1, max_length=100)
+    title: str = Field(min_length=1, max_length=500)
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2, allow_inf_nan=False)
     date: str
     receipt_url: str | None = None
+
+    @field_validator("date")
+    @classmethod
+    def valid_expense_day(cls, value):
+        return date.fromisoformat(value).isoformat()
+
+    @field_validator("title", "category")
+    @classmethod
+    def nonblank_expense_text(cls, value):
+        if not value.strip():
+            raise ValueError("Gider açıklaması ve kategorisi boş olamaz")
+        return value.strip()
 
 
 class AppointmentCreate(BaseModel):

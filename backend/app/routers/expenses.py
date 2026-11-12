@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
 from datetime import UTC, datetime
-from pydantic import BaseModel, Field, field_validator
+from decimal import Decimal
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
@@ -20,11 +21,26 @@ router = APIRouter(prefix="/api/finance/expenses", tags=["Finance Expenses"])
 
 
 class ExpenseCreate(BaseModel):
-    description: str
-    category: str
-    amount: float = Field(gt=0)
+    request_id: UUID | None = None
+    branch_id: UUID | None = None
+    description: str = Field(min_length=1, max_length=500)
+    category: str = Field(min_length=1, max_length=100)
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2, allow_inf_nan=False)
     expense_date: Optional[datetime] = None
     notes: Optional[str] = None
+
+    @field_validator("description", "category")
+    @classmethod
+    def nonblank_text(cls, value):
+        if not value.strip():
+            raise ValueError("Açıklama ve kategori boş olamaz")
+        return value.strip()
+
+    @model_validator(mode="after")
+    def stable_retry_date(self):
+        if self.request_id is not None and self.expense_date is None:
+            raise ValueError("İşlem kimliği kullanıldığında gider tarihi gereklidir")
+        return self
 
     @field_validator("expense_date", mode="before")
     @classmethod
@@ -33,26 +49,24 @@ class ExpenseCreate(BaseModel):
 
 
 class ExpenseUpdate(BaseModel):
-    description: Optional[str] = None
-    category: Optional[str] = None
-    amount: Optional[float] = Field(default=None, gt=0)
+    description: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    category: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    amount: Optional[Decimal] = Field(default=None, gt=0, max_digits=12, decimal_places=2, allow_inf_nan=False)
     expense_date: Optional[datetime] = None
     status: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("description", "category", "amount", "expense_date", "status")
+    @classmethod
+    def nonnull_update(cls, value):
+        if value is None or isinstance(value, str) and not value.strip():
+            raise ValueError("Gider alanı boş olamaz")
+        return value.strip() if isinstance(value, str) else value
+
 
 def expense_to_dict(expense: Expense) -> dict:
-    return {
-        "id": str(expense.id),
-        "description": expense.description,
-        "category": expense.category,
-        "amount": float(expense.amount),
-        "expense_date": expense.expense_date.isoformat() if expense.expense_date else None,
-        "status": expense.status,
-        "notes": expense.notes,
-        "organization_id": str(expense.organization_id),
-        "created_at": expense.created_at.isoformat() if expense.created_at else None,
-    }
+    from app.application.services.expense_service import row
+    return row(expense)
 
 
 @router.post("")
@@ -63,18 +77,11 @@ async def create_expense(
     tenant: TenantContext = Depends(PermissionChecker("finance.write")),
     current_user: User = Depends(get_current_user)
 ):
-    repo = BaseRepository(db, TenantContext(user_id=current_user.id, organization_id=current_user.organization_id, is_super_admin=False))
-    expense_data = expense.model_dump()
-    expense_data["organization_id"] = current_user.organization_id
-    expense_data["created_by"] = current_user.id
-    expense_data["updated_by"] = current_user.id
-    if not expense_data.get("expense_date"):
-        expense_data["expense_date"] = datetime.now(UTC)
-    
-    db_expense = Expense(**expense_data)
-    db.add(db_expense)
-    await db.flush()
-    return success_response(expense_to_dict(db_expense), "Gider oluşturuldu")
+    from app.application.services import expense_service
+    result = await expense_service.create(db, tenant, branch_id=expense.branch_id, title=expense.description,
+        category=expense.category, amount=expense.amount, when=expense.expense_date or datetime.now(UTC),
+        notes=expense.notes, request_id=expense.request_id)
+    return success_response(result, "Gider oluşturuldu")
 
 
 @router.get("")
@@ -86,23 +93,15 @@ async def list_expenses(
     skip: int = Query(0, ge=0),
     search: Optional[str] = None,
     category: Optional[str] = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
     current_user: User = Depends(get_current_user)
 ):
-    from sqlalchemy import select
-    
-    repo = BaseRepository(db, TenantContext(user_id=current_user.id, organization_id=current_user.organization_id, is_super_admin=False))
-    query = select(Expense).where(Expense.organization_id == current_user.organization_id)
-    
-    if search:
-        query = query.where(Expense.description.ilike(f"%{search}%"))
-    if category:
-        query = query.where(Expense.category == category)
-    
-    query = query.order_by(Expense.expense_date.desc())
+    from app.application.services import expense_service
+    repo = BaseRepository(db, tenant)
+    query = await expense_service.query(db, tenant, branch_id, category, search)
     items, total = await repo.paginate(query, page, page_size)
-    
     return success_response(paginate([expense_to_dict(e) for e in items], total, page, page_size))
 
 
@@ -114,11 +113,9 @@ async def get_expense(
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
     current_user: User = Depends(get_current_user)
 ):
-    repo = BaseRepository(db, TenantContext(user_id=current_user.id, organization_id=current_user.organization_id, is_super_admin=False))
+    repo = BaseRepository(db, tenant)
     expense = await repo.get_by_id(expense_id, Expense)
     
-    if not expense or expense.organization_id != current_user.organization_id:
-        return success_response(None, "Gider bulunamadı", success=False)
     
     return success_response(expense_to_dict(expense))
 
@@ -132,11 +129,9 @@ async def update_expense(
     tenant: TenantContext = Depends(PermissionChecker("finance.write")),
     current_user: User = Depends(get_current_user)
 ):
-    repo = BaseRepository(db, TenantContext(user_id=current_user.id, organization_id=current_user.organization_id, is_super_admin=False))
+    repo = BaseRepository(db, tenant)
     db_expense = await repo.get_by_id(expense_id, Expense)
     
-    if not db_expense or db_expense.organization_id != current_user.organization_id:
-        return success_response(None, "Gider bulunamadı", success=False)
     
     for key, value in expense.model_dump(exclude_unset=True).items():
         setattr(db_expense, key, value)
@@ -154,11 +149,9 @@ async def delete_expense(
     tenant: TenantContext = Depends(PermissionChecker("finance.write")),
     current_user: User = Depends(get_current_user)
 ):
-    repo = BaseRepository(db, TenantContext(user_id=current_user.id, organization_id=current_user.organization_id, is_super_admin=False))
+    repo = BaseRepository(db, tenant)
     db_expense = await repo.get_by_id(expense_id, Expense)
     
-    if not db_expense or db_expense.organization_id != current_user.organization_id:
-        return success_response(None, "Gider bulunamadı", success=False)
     
     await repo.soft_delete(db_expense)
     return success_response(message="Gider silindi")

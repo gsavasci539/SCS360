@@ -106,14 +106,37 @@ async def live_parent_notices(db: AsyncSession, tenant: TenantContext) -> list[d
 
 # ==================== 1. GİDERLER (EXPENSES) ====================
 
+@router.get("/api/expenses/branch-options")
+async def expense_branch_options(
+    page: int = Query(1, ge=1), page_size: int = Query(100, ge=1, le=100),
+    branch_id: uuid.UUID | None = None,
+    tenant: TenantContext = Depends(PermissionChecker("finance.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    from app.infrastructure.models.models import Branch
+    from app.infrastructure.repositories.base import BaseRepository
+    from app.core.responses import paginate
+    repo = BaseRepository(db, tenant)
+    query = repo._branch_filter(repo._org_filter(select(Branch), Branch), Branch).where(Branch.deleted_at.is_(None))
+    if branch_id is not None:
+        await repo.get_by_id(branch_id, Branch)
+        query = query.where(Branch.id == branch_id)
+    rows, total = await repo.paginate(query.order_by(Branch.name, Branch.id), page, page_size)
+    return success_response({**paginate([{"id": str(row.id), "name": row.name} for row in rows], total, page, page_size),
+        "allows_organization_wide": branch_id is None})
+
+
 @router.get("/api/expenses")
 async def list_expenses(
     category: str | None = None,
+    branch_id: uuid.UUID | None = None,
+    page: int | None = Query(None, ge=1),
+    page_size: int = Query(100, ge=1, le=100),
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
     from app.application.services import operations_service
-    return success_response(await operations_service.expenses(db, tenant, category))
+    return success_response(await operations_service.expenses(db, tenant, category, branch_id, page, page_size))
 
 
 @router.post("/api/expenses")

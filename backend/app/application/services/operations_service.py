@@ -118,32 +118,22 @@ async def teacher_schedule(db, tenant, teacher_id):
     return result
 
 
-async def expenses(db, tenant, category=None):
-    query = scoped(db, tenant, Expense).where(Expense.deleted_at.is_(None))
-    if category:
-        query = query.where(Expense.category == category)
-    rows = (await db.execute(query.order_by(Expense.expense_date.desc()))).scalars()
-    return [{"id": str(row.id), "title": row.description, "description": row.description, "category": row.category,
-        "amount": str(row.amount), "date": row.expense_date.date().isoformat(), "status": row.status,
-        "branch_id": str(row.branch_id) if row.branch_id else None} for row in rows]
+async def expenses(db, tenant, category=None, branch_id=None, page=None, page_size=100):
+    from app.application.services import expense_service
+    from app.core.responses import paginate
+    query = await expense_service.query(db, tenant, branch_id, category)
+    if page is not None:
+        rows, total = await BaseRepository(db, tenant).paginate(query, page, page_size)
+        return paginate([expense_service.row(row) for row in rows], total, page, page_size)
+    return [expense_service.row(row) for row in (await db.execute(query)).scalars()]
 
 
 async def create_expense(db, tenant, body):
-    branch = await BaseRepository(db, tenant).get_by_id(identifier(body.branch_id), Branch) if body.branch_id else None
-    org = branch.organization_id if branch else tenant.organization_id
-    if not org:
-        raise ValidationException("Gider için kurum veya şube seçin")
-    try:
-        amount, when = Decimal(body.amount), date.fromisoformat(body.date)
-        if amount <= 0:
-            raise ValueError()
-    except (ValueError, ArithmeticError) as exc:
-        raise ValidationException("Gider tutarı veya tarihi geçersiz") from exc
-    record = Expense(organization_id=org, branch_id=branch.id if branch else None, description=body.title,
-        amount=amount, category=body.category, expense_date=datetime.combine(when, time.min, tzinfo=UTC),
-        notes=body.receipt_url, created_by=tenant.user_id)
-    db.add(record); await db.flush()
-    return {"id": str(record.id), "title": record.description, "amount": str(record.amount), "date": when.isoformat()}
+    from app.application.services import expense_service
+    from app.core.dates import school_day_bounds
+    return await expense_service.create(db, tenant, branch_id=body.branch_id, title=body.title, category=body.category,
+        amount=body.amount, when=school_day_bounds(date.fromisoformat(body.date))[0],
+        notes=body.receipt_url, request_id=body.request_id)
 
 
 async def finance_analytics(db, tenant):
