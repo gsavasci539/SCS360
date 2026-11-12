@@ -75,3 +75,8 @@ Current native104/104 PASS, no failures/errors/skips. Same-source debug APK sign
 ## Expense targeted and real API checkpoint
 
 Backend21 targeted cases PASS on temporary SQLite/PostgreSQL; native client2/UI3 PASS. Real Kotlin/FastAPI temporary SQLite bridge PASS: 100 seeded expenses plus one durable create, lost committed ACK recovery, complete101-row pagination, web110.02/category/calendar-date edit visible natively, web/native delete yields empty ledger, no payment/delivery/Room writes, foreign404/parent403. Current full native109/backend runs and matching APK still pending. Native expense edit UI, remaining modules and physical/provider/store/release acceptance remain open. See docs/acceptance/native-expense-20261112.json.
+
+
+## Expense create/list/delete regression checkpoint
+
+Native109/109 PASS, no failures/errors/skips. Same-source debug APK verified. Current backend full SQLite/PostgreSQL union 940 unique PASS with only two documented DB-specific skips. Expense API targeted21 and native client2/UI3/real API bridge accepted: numeric/string cents, scoped complete pagination, lost committed ACK creates one expense, web edits/category/date visible natively, native and web deletes yield authoritative empty ledger, zero payments/delivery jobs/Room writes. Hardcoded native expense rows and local fallback removed. Unchanged frontend344/build and Expo8/web export retained. This does not accept native expense edit UI, remaining parent/custom-role/module parity, physical A26/iOS, real provider/HTTPS/store products or production signing. See docs/acceptance/native-expense-20261112.json.
