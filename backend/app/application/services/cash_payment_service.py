@@ -193,12 +193,14 @@ async def payment_data(db, items):
     names = {row.id: " ".join(value for value in (row.first_name, row.last_name) if value) for row in students}
     online = set((await db.execute(select(PaymentCheckout.payment_id).where(
         PaymentCheckout.payment_id.in_(identifiers)))).scalars())
+    receipts = {r.payment_id: r for r in (await db.execute(select(Receipt).where(Receipt.payment_id.in_(identifiers)))).scalars()}
     output = []
     for row in items:
         amount = Decimal(str(row.amount)) if row.amount is not None else None
         valid = amount is not None and amount.is_finite()
         cancelled = row.cancelled_at is not None or str(row.status or "").lower() == "cancelled"
-        output.append({"id": str(row.id), "student_id": str(row.student_id), "student_name": names.get(row.student_id) or None,
+        output.append({"id": str(row.id), "student_id": str(row.student_id), "debt_id": str(row.debt_id),
+            "receipt_id": str(receipts[row.id].id) if row.id in receipts else None, "student_name": names.get(row.student_id) or None,
             "amount": format(amount, ".2f") if valid else None, "payment_method": row.payment_method.value,
             "payment_date": row.payment_date.isoformat() if row.payment_date else None,
             "cancelled": cancelled, "status": "CANCELLED" if cancelled else str(row.status or "UNKNOWN").upper(),

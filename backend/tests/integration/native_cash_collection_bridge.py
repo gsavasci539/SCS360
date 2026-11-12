@@ -47,7 +47,7 @@ async def test_native_cash_collection_real_api(finance_client):  # noqa: F811
             if self.command == "POST" and len([row for row in events if row["method"] == "POST"]) == 1:
                 self.close_connection = True
                 return  # The DB committed; only the client ACK is deliberately lost.
-            self.send_response(response.status_code); self.send_header("Content-Type", "application/json")
+            self.send_response(response.status_code); self.send_header("Content-Type", response.headers.get("content-type", "application/json"))
             self.send_header("Content-Length", str(len(response.content))); self.send_header("Connection", "close")
             self.end_headers(); self.wfile.write(response.content)
         do_GET = forward
@@ -90,7 +90,7 @@ async def test_native_cash_collection_real_api(finance_client):  # noqa: F811
         Path(os.environ["NATIVE_ACCEPTANCE_REPORT"]).write_text(json.dumps({"real_api": True,
             "temporary_database": "sqlite", "requests": events, "payment_rows": 2, "receipt_rows": 2,
             "payment_audits": 2, "notification_jobs": 2, "actual_deliveries": 0,
-            "paid_amount": "40.01", "remaining": "60.00", "lost_ack_replayed_once": True}, indent=2), encoding="utf-8")
+            "paid_amount": "40.01", "remaining": "60.00", "lost_ack_replayed_once": True, "native_receipts": 2, "server_pdf_verified": True}, indent=2), encoding="utf-8")
 
     finally:
         await asyncio.to_thread(server.shutdown); server.server_close(); thread.join(timeout=5)

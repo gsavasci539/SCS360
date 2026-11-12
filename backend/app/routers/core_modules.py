@@ -1162,6 +1162,7 @@ async def list_payments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     student_id: UUID | None = None,
+    debt_id: UUID | None = None,
     search: str | None = Query(None, max_length=200),
     status: str = Query("ACTIVE", pattern="^(ACTIVE|CANCELLED|ALL)$"),
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
@@ -1176,6 +1177,9 @@ async def list_payments(
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, Payment)
     query = repo._branch_filter(query, Payment)
+    if debt_id:
+        await repo.get_by_id(debt_id, Debt)
+        query = query.where(Payment.debt_id == debt_id)
     if student_id:
         query = query.where(Payment.student_id == student_id)
     if search:

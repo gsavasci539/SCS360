@@ -1,3 +1,7 @@
+<!-- native-receipt-20261112:start -->
+WIP: verified native receipt list and exact server PDF; fabricated invoice-to-receipt documents removed. Full Android and real API acceptance pending; previous APK is historical.
+<!-- native-receipt-20261112:end -->
+
 <!-- native-cash-20261112:start -->
 Native cash/transfer ledger checkpoint: Android full90/90 PASS (16m49s); real Kotlin/FastAPI temporary SQLite lost-ACK replay and partial payments1 PASS/1PGdeselected (107.57s); backend integrity12 PASS/12PGdeselected. Same-source debug APK/signature PASS2m43s. Physical A26, actual provider/store acceptance, other finance rows/documents and portal-local context lifecycle remain open.
 <!-- native-cash-20261112:end -->
