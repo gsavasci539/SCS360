@@ -65,3 +65,8 @@ SaaS üyelik hesabı ve kurum tahsilat hesapları ayrıdır. İyzico/PayTR/Craft
 ## Native ledger targeted and real API checkpoint
 
 Two native ledger contracts PASS. Real Kotlin/FastAPI temporary SQLite acceptance PASS: 102 rows fully paged, canonical edit, paid-debt edit/cancel422, acknowledged softdelete, 101 remaining rows, unchanged Room and zero new payment/delivery records. Current full native and backend SQLite/PostgreSQL runs pending; previous full100/debug APK belong to the debt-create baseline. See docs/acceptance/native-debt-ledger-20261112.json. Remaining native modules and physical/provider/store/release acceptance remain open.
+
+
+## Final native ledger regression checkpoint
+
+Current native104/104 PASS, no failures/errors/skips. Same-source debug APK signature/package/SDK/cleartext verification PASS. Backend SQLite/PostgreSQL full union 922 unique PASS; only two documented database-specific skips remain. Frontend source tree unchanged: retained344 tests/62 files and TypeScript/Vite PASS. Native real API/tempDB debt create and ledger bridges passed; source hashes identify each accepted checkpoint. Whole-app parity and sale acceptance remain open: expenses/parents/custom roles/other native modules, physical A26/iOS, real providers/HTTPS/store products and release signing. Details docs/acceptance/native-debt-ledger-20261112.json. No user DB changes, real payments/messages or deployment.

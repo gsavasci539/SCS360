@@ -40,8 +40,9 @@
     "mobile-android/app/src/main/java/com/example/ui/dialogs/AddExpenseDialog.kt": "62438628791b85f17ca69d84b4e4e32b7a545e2d94ceb7e44518b92c054067a3",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/AnnouncementDetailDialog.kt": "50498dc511d71f49df514c637f42a403045713236998eaf026dae8a1484831e0",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/ChangePasswordDialog.kt": "87e22dbd914a5b395f40bcb563f368a351b2444b1dd93e8b05760b08c63bab01",
-    "mobile-android/app/src/main/java/com/example/ui/dialogs/Dialogs.kt": "4ca8960f2ec3f33200b29a4aa62018b2ef609234f18c06209785193fe7b62fdc",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/Dialogs.kt": "08bc670910468297599191fc3a0af2a9e576c62a59b0ea8c380212d925d6b3b5",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/FeedbackBottomSheet.kt": "20d2c86baabc50c8f5366ede6f16d600e10bf14ea7dae45675c1b6c4fffd1475",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceDebtEditDialog.kt": "19b5404fa66c8cd06184c77f711834bba4c9c742a722fcd4806eb7abc03cef5b",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceInvoiceDraftDialog.kt": "d51c2ed6457c74a9646f3afa9836e975de62a5e9c293f26b28c8616d56f64477",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/NativeCashCollectionDialog.kt": "38c5c606f99571e248ae981ae74e04cc0f55342064a40a2eff4ed0eb34f35d5b",
     "mobile-android/app/src/main/java/com/example/ui/dialogs/ReceiptDialog.kt": "ed795d5e2a9e08ad559317b70a1aeb8b0326fdea789712470464d1dc7d6b87ab",
@@ -73,8 +74,8 @@
     "mobile-android/app/src/main/java/com/example/ui/screens/DirectMessagingScreen.kt": "7e6684d78b6d5c8ff17fd2f8890ee7b33a7df99b646ae4500e847390df18ef5c",
     "mobile-android/app/src/main/java/com/example/ui/screens/DismissalScreen.kt": "1c2f3a3a0ee0d2843592deb0f1bf43affa44557b2cca287a0acaa39acc13455a",
     "mobile-android/app/src/main/java/com/example/ui/screens/ExamsScreen.kt": "96422d8b3c500eb60c08d2d40c99e1f7232bc3b6e8f0c269a51e06e879dcbb42",
-    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "bb0df9bdc31e5450293de4303b5df3132e69c9c0377a73444b08a681d20ff6af",
-    "mobile-android/app/src/main/java/com/example/ui/screens/FinanceScreen.kt": "6c4370c6cc88b6abc349ea43e5a1ea700f4a7c5d2facabde3971e4b220257673",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "92908ba276d16be9d32c7975dd35ef6aa5340441ebe36d9d6457021b53dcc6eb",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinanceScreen.kt": "c97ae3667e02481eb682892929250c4dc524937880abe4bf91332f5f3eeeb38f",
     "mobile-android/app/src/main/java/com/example/ui/screens/GuidanceScreen.kt": "2646adcc46416c0c286065c6e08b4b0afefab4be65cb3a3b7f46b9565d1340e0",
     "mobile-android/app/src/main/java/com/example/ui/screens/HomeworkGradingScreen.kt": "24f5cc97c357c8e3736364428e8ecec5a71c154e9a204c3a78664b7d7fb2dc81",
     "mobile-android/app/src/main/java/com/example/ui/screens/InfirmaryScreen.kt": "3a463f74967b0dd3c76d8a2bd4906339f96ee79c782f2550c0648607d4093c04",
@@ -147,6 +148,7 @@
     "mobile-android/app/src/main/java/com/example/data/payment/iyzico/IyzicoPaymentService.kt": "0c7a02f789c11fb8f7f94feefc2c14938d11871595fa08649abab4204bc631c3",
     "mobile-android/app/src/test/java/com/example/ExampleRobolectricTest.kt": "44b89431b52d1a3589b59a215e5e970c73aaabe865f39364d9f1eebcdb948ab1",
     "mobile-android/app/src/test/java/com/example/ExampleUnitTest.kt": "e17ce26895e5cb4884f4a5e3a12a10395334784bbd81f8d8a0b26a91037adec4",
+    "mobile-android/app/src/test/java/com/example/FinanceDebtEditUiTest.kt": "d0b8b043f75b1c5307277576c309a77b29d484eeea7a420de73a8960cacd8686",
     "mobile-android/app/src/test/java/com/example/FinanceScopeUiTest.kt": "25358334e303ad075e86332498f25dda6169494a8f49137be81a157d632add57",
     "mobile-android/app/src/test/java/com/example/GreetingScreenshotTest.kt": "058ecd3e0685cd3bf8b8ce82212732ea082da43349fe200cc8655e5c41f2d147",
     "mobile-android/app/src/test/java/com/example/InvoiceDraftUiTest.kt": "c060c1902631466762891a64107d9836ae6c13092731a9404d2671b1afe99f7f",
@@ -186,8 +188,90 @@
     "errors": 0,
     "skipped": 0
   },
-  "duration": "4m37s",
   "real_api_pytest": "1PASS/1PGdeselected105.82s",
+  "ui_targeted": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui_duration": "6m4s",
+  "api_client_unchanged_since_real_api": true,
+  "pre_edit_full": {
+    "tests": 102,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration": "27m31s"
+  },
+  "targeted_client_duration": "4m37s",
+  "full_android": {
+    "tests": 104,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "full_android_suites": 27,
+  "full_android_duration": "12m 53s",
+  "backend": {
+    "unique": {
+      "passed": 922,
+      "skipped": 2
+    },
+    "runs": {
+      "sqlite": {
+        "passed": 526,
+        "skipped": 398
+      },
+      "postgresql": {
+        "passed": 398,
+        "skipped": 2
+      }
+    },
+    "remaining_skips": [
+      {
+        "classname": "tests.integration.test_recorded_attendance_analytics",
+        "name": "test_unknown_legacy_status_requires_review_and_is_not_a_fake_absence[postgresql]",
+        "status": "skipped",
+        "reason": "Only SQLite permits an unknown legacy enum label"
+      },
+      {
+        "classname": "tests.integration.test_school_payment_review",
+        "name": "test_postgresql_cross_organization_audit_nonce_race_rolls_back_entire_losing_ledger[sqlite]",
+        "status": "skipped",
+        "reason": "Independent organization row-lock race requires PostgreSQL"
+      }
+    ]
+  },
+  "frontend": {
+    "source_unchanged": true,
+    "frontend_git_tree": "09b428a7293452c4f2ee43fec293efc9ee4756c9",
+    "baseline_commit": "cfb521659daa17e8ba1cc5dfc96df5230e9cc986",
+    "files_checked": 260,
+    "unit_tests": 344,
+    "test_files": 62,
+    "test_log": "output/frontend-active-full-serial-20261111.log",
+    "build": "TypeScript+Vite PASS; output/frontend-active-build-verified-20261111.log",
+    "note": "Retained accepted unchanged frontend baseline; not re-run. Physical A26/iOS/provider/store acceptance remains open."
+  },
+  "expo": {
+    "runtime_source_unchanged": true,
+    "baseline_commit": "dd6d039",
+    "source_files_checked": 44,
+    "unit_tests": 8,
+    "test_log": "output/mobile-unit-verified-20261111.log",
+    "web_export": "PASS; output/mobile-export-verified-20261111.log",
+    "note": "Retained unchanged Expo runtime baseline; web export is not iOS/native-device or store acceptance."
+  },
+  "status": "Canonical debt ledger internal acceptance PASS; whole-app parity and sale acceptance remain OPEN",
+  "open": [
+    "Expense/parent/custom-role/remaining native module parity",
+    "Physical A26 keyboard/scroll/font acceptance",
+    "iOS/Mac acceptance",
+    "Real HTTPS/provider sandbox acceptance",
+    "Store subscription products",
+    "Production signing/version/release acceptance"
+  ],
   "real_api": {
     "real_api": true,
     "temporary_database": "sqlite",
@@ -199,12 +283,14 @@
     "notification_jobs": 0,
     "room_ledger_unchanged": true
   },
-  "status": "Targeted native2/2 and real Kotlin/FastAPI SQLite bridge PASS. Current full Android and backend SQLite/PostgreSQL regression running; no current full acceptance or matching APK yet.",
-  "open": [
-    "current full Android/backend results",
-    "same-source APK",
-    "expense/parent/custom-role/remaining native parity",
-    "physical A26/iOS",
-    "real HTTPS/provider/store/signing release"
-  ]
+  "apk": {
+    "sha256": "086404309caee39499ea308b91df988f7cfea0c1c8895e0ed6c39b3019ff437c",
+    "bytes": 37228515,
+    "signature_verified": true,
+    "variant": "debug",
+    "app_id": "com.aistudio.okul360.hdtcca",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "api": "emulator HTTP; not physical A26 or release acceptance"
+  }
 }
