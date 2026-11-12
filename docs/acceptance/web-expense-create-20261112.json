@@ -1,0 +1,43 @@
+{
+  "checkpoint": "web-expense-create-20261112",
+  "scope": "Web expense create form only; native/backend sources unchanged",
+  "frontend": {
+    "passed": 352,
+    "files": 63,
+    "skipped": 0,
+    "failed": 0,
+    "duration_ms": 242510.0,
+    "build": "TypeScript + Vite PASS",
+    "targeted": 8
+  },
+  "backend_retained": {
+    "passed": 940,
+    "database_specific_skips": 2,
+    "unchanged_source_files": 552
+  },
+  "native_retained": {
+    "passed": 109,
+    "source_unchanged": true,
+    "apk_changed": false
+  },
+  "behavior": [
+    "Persist exact UUID and whitelisted expense body before POST in scoped sessionStorage; same-tab reload/reopen recovery",
+    "Explicit paged real branch/organization scope; fixed Istanbul calendar date and decimal cents",
+    "Verify actor, organization, branch, UUID, description, category, amount, date and notes before success",
+    "Keep pending on missing or mismatched ACK; explicit Tamam after acknowledged result; preserve other editor requests",
+    "Abort stale scope/session/permission responses; no POST on unavailable/corrupt storage or incomplete branch options"
+  ],
+  "validation_boundary": "React/Vitest UI tests with isolated mocked transport. Existing actual FastAPI/tempDB and Kotlin bridge contracts retained; no new browser-to-live-server/device/provider acceptance inferred.",
+  "limitations": [
+    "Recovery storage is per browser tab; clearing browser storage is not a transaction recovery mechanism",
+    "Native expense edit/note and finance-portal delete UI remain open",
+    "Remaining native parent/custom-role/module parity and physical A26/iOS acceptance remain open",
+    "Real HTTPS/provider sandbox/store products/release signing remain open; not sale ready"
+  ],
+  "files": {
+    "frontend/src/features/finance/ExpensesPage.tsx": "081cdd7175d413d9e1fb91041b710894c82a81ccc7034fd893a4dbf22b0b7bba",
+    "frontend/src/features/finance/ExpenseCreateModal.tsx": "5876ca95e7ec93a29e625bf06f9d7530eb4f51fe50e1c7dd8c0eaaa570bbea70",
+    "frontend/src/features/finance/expenseAttempt.ts": "c61c7056fc2cdaab6d789354479ef1cd98db696adec37b3650c76faf383e4d6c",
+    "frontend/src/test/expense-create.test.tsx": "25818cd3f1a7c776be194165b9bd7d6cddaadfce1c439cb1bfd8ec866fdb16d0"
+  }
+}

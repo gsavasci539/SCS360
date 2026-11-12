@@ -2,16 +2,24 @@ import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
-import { ErrorState, Field, LoadingState, Modal, PageHeader } from "../../components/ui";
+import { ErrorState, LoadingState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
-import { useForm } from "react-hook-form";
+import { ExpenseCreateModal } from "./ExpenseCreateModal";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
+import { expenseScope } from "./expenseAttempt";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
 
 export function ExpensesPage() {
+  const user = useAuthStore((s) => s.user), session = useAuthStore((s) => s.sessionVersion);
+  const workspace = usePlatformWorkspace((s) => s.workspace);
+  return <ScopedExpensesPage key={JSON.stringify([expenseScope(user, workspace)?.key, session, user?.permissions])} />;
+}
+
+function ScopedExpensesPage() {
   const [data, setData] = useState<Paginated<DataRecord>>({ items: [], total: 0, page: 1, page_size: 20, total_pages: 1 });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,6 +30,7 @@ export function ExpensesPage() {
 
   async function load(page = data.page) {
     setLoading(true);
+    setError("");
     try {
       const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/finance/expenses", {
         params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
@@ -91,59 +100,8 @@ export function ExpensesPage() {
         />
       )}
 
-      <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => load()} />
+      {createOpen && <ExpenseCreateModal onClose={() => setCreateOpen(false)} onSuccess={() => load()} />}
     </>
   );
 }
 
-function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
-  const { showToast } = useToast();
-
-  async function submit(values: any) {
-    try {
-      await api.post("/finance/expenses", values);
-      showToast("Gider oluşturuldu", "Yeni gider başarıyla eklendi.");
-      onClose();
-      onSuccess();
-    } catch (e) {
-      showToast("Oluşturulamadı", apiMessage(e), "error");
-    }
-  }
-
-  return (
-    <Modal open={open} title="Yeni gider" description="Gider bilgilerini girin." onClose={onClose} actions={
-      <>
-        <button className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
-        <button className="btn btn-primary" disabled={isSubmitting} onClick={handleSubmit(submit)}>
-          <Plus size={16} />Oluştur
-        </button>
-      </>
-    }>
-      <form className="form-grid">
-        <Field label="Açıklama" required error={errors.description?.message as string}>
-          <input {...register("description", { required: "Açıklama zorunludur." })} />
-        </Field>
-        <Field label="Kategori" required error={errors.category?.message as string}>
-          <select {...register("category", { required: "Kategori zorunludur." })}>
-            <option value="">Seçiniz</option>
-            <option value="SALARY">Maaş</option>
-            <option value="UTILITIES">Faturalar</option>
-            <option value="MAINTENANCE">Bakım</option>
-            <option value="SUPPLIES">Malzeme</option>
-            <option value="OTHER">Diğer</option>
-          </select>
-        </Field>
-        <Field label="Tutar" required error={errors.amount?.message as string}>
-          <input type="number" step="0.01" {...register("amount", { required: "Tutar zorunludur." })} />
-        </Field>
-        <Field label="Tarih" error={errors.expense_date?.message as string}>
-          <input type="date" {...register("expense_date")} />
-        </Field>
-        <Field label="Notlar" full error={errors.notes?.message as string}>
-          <textarea {...register("notes")} />
-        </Field>
-      </form>
-    </Modal>
-  );
-}
