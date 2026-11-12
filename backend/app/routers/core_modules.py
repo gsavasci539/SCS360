@@ -986,6 +986,7 @@ async def monthly_attendance_report(
 @router.get("/api/debts/student-options")
 async def debt_student_options(
     page: int = Query(1, ge=1), page_size: int = Query(100, ge=1, le=100),
+    branch_id: UUID | None = None,
     search: str | None = Query(None, max_length=150), selected_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("finance.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
@@ -994,6 +995,9 @@ async def debt_student_options(
     query = select(Student).where(Student.deleted_at.is_(None))
     repo = BaseRepository(db, tenant)
     query = repo._branch_filter(repo._org_filter(query, Student), Student)
+    if branch_id is not None:
+        await repo.get_by_id(branch_id, Branch)
+        query = query.where(Student.branch_id == branch_id)
     selected = (await db.execute(query.where(Student.id == selected_id))).scalar_one_or_none() if selected_id else None
     if search:
         query = query.where(or_((Student.first_name + " " + Student.last_name).ilike(f"%{search}%"), Student.student_number.ilike(f"%{search}%")))

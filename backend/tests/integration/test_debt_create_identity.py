@@ -54,3 +54,35 @@ async def test_foreign_student_and_readonly_actor_cannot_claim_create_identity(f
     assert (await client.post("/api/debts", headers=auth(data["user"]), json=payload)).status_code == 403
     async with sessions() as db:
         assert (await db.execute(select(func.count()).select_from(Debt))).scalar_one() == 0
+
+
+async def test_student_choices_validate_explicit_branch(finance_client):  # noqa: F811
+    client, _, data = finance_client
+    reply = await client.get("/api/debts/student-options", headers=auth(data["accountant"]), params={"branch_id": str(data["branch"].id), "page_size": 100})
+    assert reply.status_code == 200, reply.text
+    assert {row["id"] for row in reply.json()["data"]["items"]} == {str(c.id) for c in data["children"]}
+    assert all(set(row) == {"id", "name"} for row in reply.json()["data"]["items"])
+    denied = await client.get("/api/debts/student-options", headers=auth(data["accountant"]), params={"branch_id": str(data["other_branch"].id)})
+    assert denied.status_code == 404, denied.text
+
+
+async def test_simultaneous_same_identity_creates_one_debt(finance_client):  # noqa: F811
+    import asyncio
+    client, sessions, data = finance_client
+    payload = body(data)
+    replies = await asyncio.gather(*(client.post("/api/debts", headers=auth(data["accountant"]), json=payload) for _ in range(2)))
+    assert [r.status_code for r in replies] == [200, 200], [r.text for r in replies]
+    assert {r.json()["data"]["id"] for r in replies} == {payload["request_id"]}
+    async with sessions() as db:
+        assert (await db.execute(select(func.count()).select_from(Debt))).scalar_one() == 1
+
+
+async def test_simultaneous_changed_body_conflicts_instead_of_second_debt(finance_client):  # noqa: F811
+    import asyncio
+    client, sessions, data = finance_client
+    payload = body(data)
+    replies = await asyncio.gather(*(client.post("/api/debts", headers=auth(data["accountant"]), json=item)
+        for item in (payload, {**payload, "amount": "100.02"})))
+    assert sorted(r.status_code for r in replies) == [200, 409], [r.text for r in replies]
+    async with sessions() as db:
+        assert (await db.execute(select(func.count()).select_from(Debt))).scalar_one() == 1

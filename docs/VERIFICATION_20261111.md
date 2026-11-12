@@ -1,3 +1,7 @@
+<!-- native-debt-create-20261112:start -->
+WIP native canonical debt create: durable actor/workspace/branch request UUID, complete write-authorized student choices, exact whitelist payload and server ACK. Legacy create pre-HTTP Room writes and fake invoice identifiers removed; both finance entry points use the canonical form. Backend12 serial/concurrent retry and branch-option cases PASS across temporary SQLite/PostgreSQL44.67s. Initial affected native7PASS; final persistence guard test, real Kotlin/FastAPI acceptance and new APK pending.
+<!-- native-debt-create-20261112:end -->
+
 Backend debt create accepts optional request_id UUID: same actor/school/student/type/amount/due/description replays existing debt, changed/deleted/colliding request rejected409; organization lock and primary key enforce uniqueness. SQLite+PostgreSQL30 targeted regression PASS, final error-response adjustment6 PASS (overlapping tests, not36 unique). Android nonce/body integration remains OPEN. Android source unchanged; last signed debug APK600e36ac remains current.
 
 Native invoice draft UI: six targeted UI/scope tests PASS5m41s, same-source debug APK/signature PASS2m17s. Bounded native scrollable form, blank amount/date/student defaults, 48dp actions and read-only controls; actual portal dialog closes on workspace switch. Previous AlertDialog idling scenario now passes with replacement form. Backend submission DTO, create idempotency, write-authorized student options and full feature acceptance remain OPEN.
