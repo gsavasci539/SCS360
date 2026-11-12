@@ -1,5 +1,7 @@
 # SCS360 — Okul Yönetim Sistemi
 
+> Native registry WIP (12 Kasım): öğrenci/sınıf canonical wire sözleşmesi ve native formlar güncellendi. Önceki58test/APK bu kaynağı kapsamaz. Son hedefli koşu ve güncel gerçek geçici backend kabulü henüz tamamlanmadı; ilk14/15 koşunun diyalog font/senkronizasyon testleri yeniden ele alınıyor. Bu dal geliştirme checkpointidir; tam native eşitlik veya cihaz kabulü değildir.
+
 > Native yoklama güncel kabulü: gerçek FastAPI/geçiciSQLite/Kotlin HTTP senaryosu PASS; tam Android58/58PASS,0skip5m26s. Sonrasında yalnız test görsel/scroll çağrıları değişti; native render testi3pencere/2xfont ile ayrıca PASS ve görseller incelendi. Uygulama kaynağı değişmeden debug APK üretildi ve imza doğrulandı; SHA256 64f8121912246a1fc3ec82626cb20dfa24b4859389e506f81229f8a1367aa3ca. Aşağıdaki51test/APK önceki checkpointtir. Tüm native eşitleme, aylık yoklama, gerçek A26/HTTPS/ödeme kabulü tamamlanmadı.
 
 Anaokulu, kreş, etüt ve kurs merkezleri için franchise uyumlu, çoklu şube destekli yönetim platformu.
