@@ -67,7 +67,7 @@ async def test_native_cash_collection_real_api(finance_client):  # noqa: F811
     env.update({"NATIVE_TEST_API_URL": f"http://127.0.0.1:{server.server_port}/api/",
         "NATIVE_TEST_FINANCE_TOKEN": create_access_token(data["accountant"].id, {"exp": expires}),
         "NATIVE_TEST_PARENT_TOKEN": create_access_token(data["user"].id, {"exp": expires}),
-        "NATIVE_TEST_FINANCE_ACTOR": str(data["accountant"].id), "NATIVE_TEST_PARENT_ACTOR": str(data["user"].id),
+        "NATIVE_TEST_OTHER_BRANCH": str(data["other_branch"].id), "NATIVE_TEST_FINANCE_ACTOR": str(data["accountant"].id), "NATIVE_TEST_PARENT_ACTOR": str(data["user"].id),
         "NATIVE_TEST_DEBT": str(debt.id), "NATIVE_TEST_FOREIGN_DEBT": str(foreign.id)})
     log = Path(os.environ["NATIVE_ACCEPTANCE_LOG"])
     try:

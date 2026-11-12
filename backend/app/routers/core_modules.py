@@ -1082,6 +1082,8 @@ async def get_debt(
     return success_response(
         {
             "id": str(debt.id),
+            "organization_id": str(debt.organization_id),
+            "branch_id": str(debt.branch_id) if debt.branch_id else None,
             "student_id": str(debt.student_id),
             "debt_type": debt.debt_type.value,
             "description": debt.description,

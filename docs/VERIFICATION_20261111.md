@@ -1,5 +1,5 @@
 <!-- native-cash-20261112:start -->
-WIP: native cash/transfer ledger editor with durable request UUID and server ACK, replacing premature Room/student balance changes. Targeted and real temporary FastAPI acceptance pending; prior 82-test/APK evidence does not cover this new source.
+WIP: durable native cash collection, selected branch/workspace validation and read-only UI. Backend ledger integrity 12 PASS/12 PostgreSQL deselected. First UI harness failures and test API compile error corrected; current full native and real FastAPI acceptance pending.
 <!-- native-cash-20261112:end -->
 
 <!-- native-finance-20261112:start -->
