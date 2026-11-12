@@ -1,5 +1,5 @@
 {
-  "status": "Backend debt create accepts optional request_id UUID: same actor/school/student/type/amount/due/description replays existing debt, changed/deleted/colliding request rejected409; organization lock and primary key enforce uniqueness. SQLite+PostgreSQL30 targeted regression PASS, final error-response adjustment6 PASS (overlapping tests, not36 unique). Android nonce/body integration remains OPEN. Android source unchanged; last signed debug APK600e36ac remains current.",
+  "status": "Historical identity checkpoint; superseded by docs/acceptance/native-debt-create-20261112.json. Native integration and race tests now accepted; whole-app sale acceptance remains open.",
   "targeted_run": {
     "passed": 30,
     "seconds": 87.34

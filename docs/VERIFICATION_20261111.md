@@ -55,3 +55,8 @@ Son native aşamasından önce değişmeyen web/API kaynağı için:
 - Gerçek yerel veritabanı yalnız okunarak17/17 kontrol geçti; veri hücreleri değişmedi. Gerçek veri veya veritabanı bu kaynak checkpoint'ine eklenmedi.
 
 SaaS üyelik hesabı ve kurum tahsilat hesapları ayrıdır. İyzico/PayTR/Craftgate/Sipay adapterleri ve Craftgate'e bağlı banka POS yolu vardır; her bankanın doğrudan protokolü uygulanmış değildir. Üretim dağıtımı veya gerçek ödeme/mesaj yapılmadı.
+
+
+## 12 November: canonical native debt creation
+
+100/100 native regression tests passed (25 suites, no failures/errors/skips, 18m53s). Same-source debug APK signature and metadata verified. Real Kotlin/FastAPI temporary SQLite bridge passed: 102 authorized student choices, lost committed ACK retry produces one debt, no Room prewrite/payments/notification jobs. Debt create identity races passed on SQLite/PostgreSQL; selected branch ledger list/detail contract and pagination passed four cases. Release preflight rejects missing/HTTP API input and runs before release build. This is debug/internal acceptance; native finance mutations and other module parity, physical A26/iOS, real provider/HTTPS/store products and production signing remain open. See docs/acceptance/native-debt-create-20261112.json. No real payments/messages/deployment.

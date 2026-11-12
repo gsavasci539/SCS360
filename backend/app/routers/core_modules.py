@@ -1007,41 +1007,66 @@ async def debt_student_options(
     return success_response({**paginate([choice(row) for row in rows], total, page, page_size), "selected": choice(selected) if selected else None})
 
 
+async def debt_rows(db: AsyncSession, debts: list[Debt]) -> list[dict]:
+    """Canonical ledger rows with only finance-authorized student labels."""
+    ids = {debt.student_id for debt in debts if debt is not None}
+    labels = {}
+    if ids:
+        rows = (await db.execute(select(Student.id, Student.organization_id, Student.branch_id,
+            Student.first_name, Student.last_name, ClassRoom.name.label("class_name"))
+            .outerjoin(ClassRoom, (ClassRoom.id == Student.class_id)
+                & (ClassRoom.organization_id == Student.organization_id)
+                & (ClassRoom.branch_id == Student.branch_id) & ClassRoom.deleted_at.is_(None))
+            .where(Student.id.in_(ids), Student.deleted_at.is_(None)))).mappings().all()
+        labels = {row["id"]: row for row in rows}
+    result = []
+    for debt in debts:
+        if debt is None:
+            continue
+        label = labels.get(debt.student_id)
+        if label and (label["organization_id"] != debt.organization_id or label["branch_id"] != debt.branch_id):
+            label = None
+        result.append({
+            "id": str(debt.id), "organization_id": str(debt.organization_id),
+            "branch_id": str(debt.branch_id) if debt.branch_id else None,
+            "student_id": str(debt.student_id),
+            "student_name": f'{label["first_name"]} {label["last_name"]}'.strip() if label else None,
+            "class_name": label["class_name"] if label else None,
+            "debt_type": debt.debt_type.value, "description": debt.description,
+            "amount": str(debt.amount), "paid_amount": str(debt.paid_amount),
+            "remaining_amount": str(debt.amount - debt.paid_amount), "status": debt.status.value,
+            "due_date": debt.due_date.isoformat(),
+            "created_at": debt.created_at.isoformat() if debt.created_at else None,
+        })
+    return result
+
+
 @router.get("/api/debts")
 async def list_debts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     student_id: UUID | None = None,
+    branch_id: UUID | None = None,
     status: str | None = None,
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     query = select(Debt).where(Debt.deleted_at.is_(None))
     repo = BaseRepository(db, tenant)
+    if branch_id:
+        await repo.get_by_id(branch_id, Branch)
+        query = query.where(Debt.branch_id == branch_id)
     query = repo._org_filter(query, Debt)
     query = repo._branch_filter(query, Debt)
     if student_id:
         query = query.where(Debt.student_id == student_id)
     if status:
         query = query.where(Debt.status == status)
-    items, total = await repo.paginate(query.order_by(Debt.due_date.desc()), page, page_size)
+    items, total = await repo.paginate(query.order_by(Debt.due_date.desc(), Debt.id), page, page_size)
     # Legacy SQLite demo imports may contain malformed UUID primary keys.
     # SQLAlchemy represents those unreadable rows as ``None``; skip them so a
     # single bad historical record cannot take down the whole debt screen.
-    valid_items = [debt for debt in items if debt is not None]
-    data = [
-        {
-            "id": str(d.id),
-            "student_id": str(d.student_id),
-            "debt_type": d.debt_type.value,
-            "amount": str(d.amount),
-            "paid_amount": str(d.paid_amount),
-            "remaining_amount": str(d.amount - d.paid_amount),
-            "status": d.status.value,
-            "due_date": d.due_date.isoformat(),
-        }
-        for d in valid_items
-    ]
+    data = await debt_rows(db, items)
     return success_response(paginate(data, total, page, page_size))
 
 
@@ -1105,21 +1130,7 @@ async def get_debt(
 ):
     repo = BaseRepository(db, tenant)
     debt = await repo.get_by_id(debt_id, Debt)
-    return success_response(
-        {
-            "id": str(debt.id),
-            "organization_id": str(debt.organization_id),
-            "branch_id": str(debt.branch_id) if debt.branch_id else None,
-            "student_id": str(debt.student_id),
-            "debt_type": debt.debt_type.value,
-            "description": debt.description,
-            "amount": str(debt.amount),
-            "paid_amount": str(debt.paid_amount),
-            "remaining_amount": str(debt.amount - debt.paid_amount),
-            "status": debt.status.value,
-            "due_date": debt.due_date.isoformat(),
-        }
-    )
+    return success_response((await debt_rows(db, [debt]))[0])
 
 
 @router.put("/api/debts/{debt_id}")
