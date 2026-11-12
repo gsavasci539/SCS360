@@ -1,5 +1,5 @@
 <!-- native-cash-20261112:start -->
-WIP: durable native cash collection, selected branch/workspace validation and read-only UI. Backend ledger integrity 12 PASS/12 PostgreSQL deselected. First UI harness failures and test API compile error corrected; current full native and real FastAPI acceptance pending.
+Native cash/transfer ledger checkpoint: Android full90/90 PASS (16m49s); real Kotlin/FastAPI temporary SQLite lost-ACK replay and partial payments1 PASS/1PGdeselected (107.57s); backend integrity12 PASS/12PGdeselected. Same-source debug APK/signature PASS2m43s. Physical A26, actual provider/store acceptance, other finance rows/documents and portal-local context lifecycle remain open.
 <!-- native-cash-20261112:end -->
 
 <!-- native-finance-20261112:start -->
