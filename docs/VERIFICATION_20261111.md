@@ -60,3 +60,8 @@ SaaS üyelik hesabı ve kurum tahsilat hesapları ayrıdır. İyzico/PayTR/Craft
 ## 12 November: canonical native debt creation
 
 100/100 native regression tests passed (25 suites, no failures/errors/skips, 18m53s). Same-source debug APK signature and metadata verified. Real Kotlin/FastAPI temporary SQLite bridge passed: 102 authorized student choices, lost committed ACK retry produces one debt, no Room prewrite/payments/notification jobs. Debt create identity races passed on SQLite/PostgreSQL; selected branch ledger list/detail contract and pagination passed four cases. Release preflight rejects missing/HTTP API input and runs before release build. This is debug/internal acceptance; native finance mutations and other module parity, physical A26/iOS, real provider/HTTPS/store products and production signing remain open. See docs/acceptance/native-debt-create-20261112.json. No real payments/messages/deployment.
+
+
+## Native ledger targeted and real API checkpoint
+
+Two native ledger contracts PASS. Real Kotlin/FastAPI temporary SQLite acceptance PASS: 102 rows fully paged, canonical edit, paid-debt edit/cancel422, acknowledged softdelete, 101 remaining rows, unchanged Room and zero new payment/delivery records. Current full native and backend SQLite/PostgreSQL runs pending; previous full100/debug APK belong to the debt-create baseline. See docs/acceptance/native-debt-ledger-20261112.json. Remaining native modules and physical/provider/store/release acceptance remain open.
