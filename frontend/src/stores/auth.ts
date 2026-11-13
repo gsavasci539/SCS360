@@ -53,6 +53,9 @@ export function hasPermission(user: AuthUser | null | undefined, permission?: st
   if (permission === "super_admin") {
     return Boolean(user?.is_super_admin);
   }
+  // Owners can use every page inside their own institution. The API still
+  // enforces tenant scope, and this never grants platform/SaaS administration.
+  if (user?.organization_id && user.roles.some((role) => role.slug === "owner")) return true;
   const equivalentPermission = permissionAliases[permission];
   const operator = (user as (AuthUser & { [WORKSPACE_OPERATOR]?: boolean }) | null | undefined)?.[WORKSPACE_OPERATOR];
   return Boolean(

@@ -97,7 +97,9 @@ async def get_tenant_context(
                         "canteen.read", "canteen.write", "security.read", "security.write"]
         permissions.update(all_permissions)
 
-    branch_ids = [b.id for b in user.branches]
+    # Organization owners are not restricted to the branches assigned to their
+    # account; all queries remain constrained by organization_id.
+    branch_ids = [] if "owner" in role_slugs and user.organization_id is not None else [b.id for b in user.branches]
 
     class_ids: list[UUID] = []
     if "teacher" in role_slugs:
@@ -106,7 +108,7 @@ async def get_tenant_context(
         )
         class_ids = list(result.scalars().all())
 
-    return TenantContext(
+    tenant = TenantContext(
         user_id=user.id,
         organization_id=user.organization_id,
         branch_ids=branch_ids,
@@ -115,6 +117,11 @@ async def get_tenant_context(
         role_slugs=role_slugs,
         is_super_admin=user.is_super_admin,
     )
+    # Tenant guards and repository queries share this per-request context.
+    # Replace the bootstrap identity context so owner-wide branch access is
+    # applied consistently in both explicit filters and SQLAlchemy guards.
+    db.info["tenant_context"] = tenant
+    return tenant
 
 
 async def get_optional_user(

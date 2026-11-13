@@ -133,7 +133,7 @@ export const navigation: NavigationSection[] = [
     label: "Analiz",
     items: [
       { label: "Raporlar", path: "/reports", icon: ChartNoAxesCombined, permission: "report.read" },
-      { label: "AI Analitiği", path: "/ai/analytics", icon: Brain, permission: "super_admin" },
+      { label: "AI Analitiği", path: "/ai/analytics", icon: Brain, permission: "dashboard.read" },
       { label: "Chatbot Yönetimi", path: "/ai/chatbot", icon: MessageSquare, permission: "super_admin" },
     ],
   },

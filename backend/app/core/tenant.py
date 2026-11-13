@@ -49,10 +49,18 @@ class TenantContext:
     platform_admin: bool = False
     parent_portal: bool = False
 
+    @property
+    def is_organization_owner(self) -> bool:
+        """An active owner role is institution-wide, never a platform role."""
+        return bool(self.organization_id is not None and not self.is_super_admin and not self.platform_admin
+                    and "owner" in self.role_slugs)
+
     def has_permission(self, permission: str) -> bool:
         if permission == "super_admin":
             return self.is_super_admin
         if self.is_super_admin or self.platform_admin:
+            return True
+        if self.is_organization_owner:
             return True
         if permission in self.permissions or PERMISSION_ALIASES.get(permission) in self.permissions:
             return True
@@ -65,7 +73,7 @@ class TenantContext:
         return any(self.has_permission(permission) for permission in permissions)
 
     def can_access_branch(self, branch_id: UUID | None) -> bool:
-        if self.is_super_admin:
+        if self.is_super_admin or self.is_organization_owner:
             return True
         if branch_id is None:
             return True

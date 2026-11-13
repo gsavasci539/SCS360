@@ -42,7 +42,7 @@ class BaseRepository:
 
     def _branch_filter(self, query, model=None):
         model = model or self.model
-        if self.tenant.is_super_admin or not self.tenant.branch_ids:
+        if self.tenant.is_super_admin or self.tenant.is_organization_owner or not self.tenant.branch_ids:
             return query
         if getattr(model, "__tablename__", None) == "branches":
             return query.where(model.id.in_(self.tenant.branch_ids))

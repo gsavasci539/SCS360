@@ -81,6 +81,16 @@ describe("oturum saklama", () => {
     expect(useAuthStore.getState().can("announcement.read")).toBe(true);
   });
 
+  it("kurum sahibine kurum sayfalarını açar, SaaS yönetimini açmaz", () => {
+    useAuthStore.getState().setSession({
+      ...payload,
+      user: { ...payload.user, roles: [{ id: "owner-role", name: "Kurum Sahibi", slug: "owner" }], permissions: [] },
+    });
+    expect(useAuthStore.getState().can("health.read_confidential")).toBe(true);
+    expect(useAuthStore.getState().can("dashboard.read")).toBe(true);
+    expect(useAuthStore.getState().can("super_admin")).toBe(false);
+  });
+
   it("bozuk kalıcı kullanıcı yapısı uygulamayı çökertmek yerine girişe döner", async () => {
     for (const broken of [{ ...payload.user, roles: null }, { ...payload.user, permissions: "students.read" }, { ...payload.user, branch_ids: null }]) {
       localStorage.setItem("scs360-session", JSON.stringify({ accessToken: "old", refreshToken: "old-refresh", user: broken }));

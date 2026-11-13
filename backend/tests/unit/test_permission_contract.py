@@ -36,6 +36,20 @@ def test_equivalent_permission_names_work_in_both_directions():
         assert not tenant.has_permission("student.write")
 
 
+def test_organization_owner_has_institution_wide_access_without_platform_or_cross_tenant_access():
+    org_id, branch_id, other_branch_id, other_org_id = (uuid4() for _ in range(4))
+    owner = TenantContext(user_id=uuid4(), organization_id=org_id, branch_ids=[branch_id], role_slugs={"owner"})
+    assert owner.has_permission("health.read_confidential")
+    assert owner.can_access_branch(other_branch_id)
+    assert not owner.has_permission("super_admin")
+    assert not owner.has_any_permission(["super_admin"])
+    assert not owner.can_access_organization(other_org_id)
+
+    staff = TenantContext(user_id=uuid4(), organization_id=org_id, branch_ids=[branch_id], role_slugs={"staff"})
+    assert not staff.has_permission("health.read_confidential")
+    assert not staff.can_access_branch(other_branch_id)
+
+
 @pytest.mark.asyncio
 async def test_openapi_keeps_the_runtime_handler_for_duplicate_routes():
     from fastapi import APIRouter
