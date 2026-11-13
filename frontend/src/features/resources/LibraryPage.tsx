@@ -95,7 +95,7 @@ export function LibraryPage() {
               </div>
               <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Mevcut</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{data.items.reduce((sum, item) => sum + (Number(item.available_count) || 0), 0)}</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{data.items.reduce((sum, item) => sum + (Number(item.available_copies) || 0), 0)}</div>
               </div>
               <div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Kategori</div>
@@ -130,7 +130,7 @@ export function LibraryPage() {
             { key: "isbn", label: "ISBN" },
             { key: "category", label: "Kategori" },
             { key: "status", label: "Durum", type: "status" },
-            { key: "available_count", label: "Mevcut" }
+            { key: "available_copies", label: "Mevcut" }
           ]}
           search={search}
           onSearch={setSearch}
