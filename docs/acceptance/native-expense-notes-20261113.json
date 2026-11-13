@@ -1,0 +1,96 @@
+{
+  "checkpoint": "native-expense-notes-20261113",
+  "native": {
+    "unique_passed": 122,
+    "failed": 0,
+    "skipped": 0,
+    "classes": 32,
+    "runs": {
+      "target": {
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 4,
+        "duration": "4m 38s"
+      },
+      "regression": {
+        "tests": 108,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 28,
+        "duration": "13m 38s"
+      }
+    },
+    "partition": "14 targeted + remaining108; four targeted classes excluded from regression to avoid repeats"
+  },
+  "backend_retained": {
+    "passed": 940,
+    "database_specific_skips": 2,
+    "source_unchanged_files": 552
+  },
+  "frontend_retained": {
+    "passed": 352,
+    "files": 63,
+    "build": "TypeScript/Vite PASS",
+    "source_unchanged": true
+  },
+  "behavior": [
+    "Native create text notes use the existing receipt_url wire alias into backend notes; missing notes omit the field and preserve legacy six-field request bodies and UUIDs",
+    "Note acknowledgement is verified; note drafts survive failure and reopening without a different request ID; unknown note replies are not success",
+    "Captured actor/session/role/organization/branch presentation scope; stale responses cannot acknowledge or reload another workspace",
+    "Readonly controls and bounded landscape font2/48dp actions; cash ACK uses one composition snapshot and fresh confirmation scroll state after the original cash_done failure"
+  ],
+  "acceptance_boundary": "Fourteen isolated HTTP UI/client contracts plus one actual Kotlin/FastAPI/tempSQLite bridge; injected authenticated fixture, not native login/physical device/provider acceptance. Standard backend runtime suite remains unchanged.",
+  "open": [
+    "Remaining expense concurrency policy and native parent/custom-role/other module parity",
+    "Native parent/custom-role/remaining module parity",
+    "Physical A26 keyboard/scroll/rotation/font acceptance and iOS/Mac",
+    "Real HTTPS/provider sandbox/store products and release signing; not sale ready"
+  ],
+  "apk": {
+    "sha256": "612b3bd23b3ccb926f706efe42fe9ac4fb9f30fd47f802696dd50717e416769a",
+    "bytes": 37239082,
+    "signature_verified": true,
+    "variant": "debug",
+    "app_id": "com.aistudio.okul360.hdtcca",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "api": "emulator HTTP test default; not a production release"
+  },
+  "files": {
+    "mobile-android/app/src/backendAcceptance/java/com/example/NativeExpenseNotesBackendAcceptance.kt": "02cf27ced7d37dfe306c813d09df09cf85ac22ac2cca2703f782ddd75a8acd3c",
+    "mobile-android/app/src/main/java/com/example/data/model/Models.kt": "bf93169ceb62c6c8a47b7420b7b252a2e7e2b59ea6e7fa357e18e6dda459a02b",
+    "mobile-android/app/src/main/java/com/example/data/remote/NativeExpenseClient.kt": "995015f19c15f56d27c95f567d66a97b0cf9c4e347c917bd9364b2114367931e",
+    "mobile-android/app/src/main/java/com/example/ui/components/ExpenseStatusLabel.kt": "afc8a3b28d70b21dec0289c803dbb0776077b5e9099385eb3736762af6900469",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseCreateDialog.kt": "7509724d4548ebf6e3bcf977835832176f217c430c79b0c78262b88405febd21",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseDeleteDialog.kt": "f3ee3bf0ddf2271806c588f08467b022705e385bafbcf0a30a35f2fd720e98ed",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseEditDialog.kt": "697e063c951ee8762cac3f448aebea35bef91774f1d03940da9ac81111e807db",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/NativeCashCollectionDialog.kt": "368cf78f9d12249418b35278d6b1813fbfc68fad6c1f31f06095ed532e32b693",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "5287256328df27b2a6796defd564fd80a9ce31c735fc4401ac718beeb44b4597",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinanceScreen.kt": "0e1c71b30d5b6c06424d0020aa7e422f9ed5b1ec2b10bd0caaad5469ab0db8ad",
+    "mobile-android/app/src/test/java/com/example/NativeExpenseClientTest.kt": "ce92c0875793b5f29725352b27f962008b463023dfc4728eedab4b7f81f42fe2",
+    "mobile-android/app/src/test/java/com/example/NativeExpenseUiTest.kt": "4588859376f3bd7ec947984818cceb4cabbfc401ea6d9f757c4eba5dae0dea29"
+  },
+  "real_api": {
+    "real_api": true,
+    "temporary_database": "sqlite",
+    "seeded_expenses": 100,
+    "created_expenses": 1,
+    "lost_committed_ack_recovered_once": true,
+    "ledger_rows_after_create": 101,
+    "visible_after_deletes": 0,
+    "updated_amount": "120.03",
+    "creation_notes_visible_to_web": true,
+    "readonly_status_from_server": true,
+    "native_delta_visible_to_web": true,
+    "native_edit_lost_ack_replay": true,
+    "web_edit_visible_natively": true,
+    "canonical_native_and_web_delete": true,
+    "payment_rows": 0,
+    "notification_jobs": 0,
+    "room_ledger_unchanged": true
+  },
+  "backend_bridge_sha256": "633ea4fc6b395ba1157d0f84a7b37275f731a5849f9023d878db7e25e924779a"
+}
