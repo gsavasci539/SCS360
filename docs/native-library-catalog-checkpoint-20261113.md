@@ -17,3 +17,4 @@ This is a focused module checkpoint, not whole-app acceptance. No physical A26, 
 
 ## Published source
 Pending verification of isolated source-only pushes on `codex/source-sync-20261111`.
+SCS360Mobile native code: `3ea8cdb0768c5249e44d847e8682226b3eff80e7`; SCS360 bridge test/checkpoint record: `03aa0bf2792e4872a6a15f5c537f6896ede512d0` (both remote-verified on `codex/source-sync-20261111`).
