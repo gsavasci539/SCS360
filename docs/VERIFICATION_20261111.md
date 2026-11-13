@@ -1,8 +1,10 @@
 Native debt create real Kotlin/FastAPI temporary DB acceptance PASS: 102 real write-authorized options, committed-ACK-loss replay creates one100.01 debt, Room ledger unchanged, no payments or notification jobs. Release preflight rejects missing API and HTTP emulator endpoint; release taskgraph validates first. Full current Android regression pending. Real A26/iOS/provider/store/release acceptance remains OPEN.
+# Verification checkpoint — attendance editor
 
 <!-- native-debt-create-20261112:start -->
 WIP native canonical debt create: durable actor/workspace/branch request UUID, complete write-authorized student choices, exact whitelist payload and server ACK. Legacy create pre-HTTP Room writes and fake invoice identifiers removed; both finance entry points use the canonical form. Backend12 serial/concurrent retry and branch-option cases PASS across temporary SQLite/PostgreSQL44.67s. Initial affected native7PASS; final persistence guard test, real Kotlin/FastAPI acceptance and new APK pending.
 <!-- native-debt-create-20261112:end -->
+2026-11-13: Targeted acceptance only. Temporary-SQLite backend integration tests: 6 passed, 6 PostgreSQL variants skipped. Web attendance editor tests: 7 passed. TypeScript and Vite build passed. Ruff F821/F823 passed. Existing records, notes and row versions load by class/date; unrecorded students are not implicitly marked present or sent in the batch. This does not certify the complete test suite, all native modules, physical A26, iOS, payment providers or production readiness.
 
 Backend debt create accepts optional request_id UUID: same actor/school/student/type/amount/due/description replays existing debt, changed/deleted/colliding request rejected409; organization lock and primary key enforce uniqueness. SQLite+PostgreSQL30 targeted regression PASS, final error-response adjustment6 PASS (overlapping tests, not36 unique). Android nonce/body integration remains OPEN. Android source unchanged; last signed debug APK600e36ac remains current.
 
@@ -148,3 +150,4 @@ Five real API/tempSQLite tests passed; five PostgreSQL variants deselected. Book
 ## 2026-11-13 attendance editor
 
 Targeted only: temporary SQLite backend 6 passed, 6 PostgreSQL variants skipped; web UI 7 passed; TypeScript/Vite build passed. Unrecorded students are not implicitly marked present. Does not certify the full suite or physical device acceptance. See `docs/native-attendance-editor-checkpoint-20261113.md`.
+Details: `docs/native-attendance-editor-checkpoint-20261113.md`.

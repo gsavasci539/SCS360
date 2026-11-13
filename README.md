@@ -178,3 +178,4 @@ mevcut deploy workflow'ları yalnız iskelet/placeholder durumundadır. Producti
 
 
 Yoklama kayıt yükleme/düzenleme hedefli doğrulaması: docs/native-attendance-editor-checkpoint-20261113.md.
+Yoklama formunun gerçek kayıt yükleme/düzenleme ve API sözleşmesi için hedefli doğrulama: docs/native-attendance-editor-checkpoint-20261113.md. Bu modül checkpoint’i tüm sistem testlerinin tamamlandığı anlamına gelmez.

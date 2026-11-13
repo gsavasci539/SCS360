@@ -327,8 +327,26 @@ SCS360Mobile native kaynak SHA `3ea8cdb0768c5249e44d847e8682226b3eff80e7`, SCS36
 `/api/library/books` artık tenant-scoped paginated response verir ve iki istemcinin de kullandığı sorgu parametrelerini destekler. Arama webde sunucuya gider; Android sayfaları tüketir. Doğrulama: backend SQLite **7/7**, native UI **8/8**, gerçek Android API bridge (geçici SQLite) **1/1**, web UI **3/3**, frontend build başarılı; hedefli ESLint ve F821/F823 temiz. PG varyantı ve fiziksel cihaz bu checkpoint’te çalıştırılmadı.
 Mobil liste istemcisi/testi `1b9447251a4e6a062d1f079a22659639285de796`, API ve geçici SQLite regresyonu `d34368bbda886be27412d5ab98ce2bf9cea216ee` SHA’larıyla `codex/source-sync-20261111` dalında doğrulandı.
 
+
 ### Web yoklama formu — 13 Kasım
 
 Mevcut kayıt yükleme/düzenleme: backend 6/6 SQLite, 6 PostgreSQL varyantı skip; web UI 7/7; build başarılı. Yeni kayıt seçilmeden varsayılan “Geldi” yazılmaz. Ayrıntı `docs/native-attendance-editor-checkpoint-20261113.md`; tam mobil/A26 kabulü değildir.
+Sınıf/tarih değişince mevcut yoklama sunucudan yeniden yüklenir; eski durum/not/version korunur. Yeni satırlar açıkça durum seçilene kadar UNRECORDED kalır ve yazılmaz. Hedefli backend SQLite 6/6 geçti (6 PostgreSQL varyantı skip), web UI 7/7 ve frontend build geçti. Ayrıntı: docs/native-attendance-editor-checkpoint-20261113.md. Tam native/web kabulü veya A26 fiziksel testi değildir.
 
 Remote checkpoint: SCS360 codex/source-sync-20261111 653bcff455f63fc863dd028213e6e19408851fbb (normal push verified).
+
+### 13 Kasım — kütüphane hatırlatma UI WIP
+
+Gerçek notification job oluşturmayan reminder API çağrısı web kütüphane ekranından ve teslim edildi metninden çıkarıldı. Target `library-reminder-availability.test.tsx` **1/1 PASS** (sandbox TEMP rename EPERM'inden sonra workspace temp klasörüyle). Backend endpointi doğrudan çağrıldığında yanıltıcı başarı cevabı vermeyi sürdürüyor; bu API düzeltmesi veya satış kabulü değildir. Sıradaki iş backend endpointini geçici DB ile izole edip, outbox/provider yokken başarı bildirmeyecek şekilde düzeltmek.
+
+## 13 Kasım — kütüphane reminder API düzeltildi
+
+Önceki UI WIP kaydındaki backend sahte başarı açığı kapandı: POST reminder artık library.write ister, tüm kimliklerde açık gönderilmedi mesajıyla 503 verir; bildirim gönderimi henüz uygulanmadığı için teslim iddiası yok. Geçici SQLite FastAPI hedefi 3 PASS/3 PostgreSQL varyantı deselected: writer503, reader/student.write403, anonim401; NotificationJob/Payment0. İlk sandbox koşusu sonuç vermedi, kesildi; tanılı izole DB koşusu6.58s geçti. Ayrıntı docs/library-reminder-api-checkpoint-20261113.md. Tüm modüller/tam test paketi/cihaz kabulü tamam denmez. Sonraki iç iş native personel izin/nöbet DTO/yetki ve server readback eşitliği.
+Yayın: SCS360 codex/source-sync-20261111 remote SHA 38eda44bac1f167a9a3aace6748e8d457d11c68e; normal push/ls-remote doğrulandı. Mobile kaynağı bu checkpointte değişmedi. Root index SHA 451980ef4e031c79a2ee6992ed06eac424c8ef3e aynı; unrelated WIP korunur.
+
+
+## 13 Kasım — native personel izin API checkpoint
+
+İki native gezinme yolu korunarak gerçek izin/nöbet GET, izin POST, review PUT ve kalıcı liste readback bağlandı. Yerel izin kimliği/onay ve sahte bildirim/uydurma değerlendirme gerekçeleri kaldırıldı. Form boş tarihlerle açılır, gün sayısı tarihlerden hesaplanır; onay/readback gelmeden kapanmaz. Yatay/büyük yazıda AlertDialog non-idle hatası bounded native Dialog ile düzeltildi. Final benzersiz native hedefler5client+1UI=6PASS; ayrı geçici SQLite API1PASS/1PGdeselected. Önceki4 ve başarısızUI koşuları final sayıya eklenmedi. Ayrıntı docs/native-staff-checkpoint-20261113.md. Sıradaki iç iş gerçek kullanıcı/şube seçenekleriyle native nöbet oluşturma, açık review yorum girişi ve personel rol/kapsam varyantları; sonra kalan operasyon modülleri. Tam parite/cihaz/iOS/sağlayıcı/mağaza/release kabulü verilmedi.
+
+Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f21f8934ce211faa542337ed205f8f4d982e8fd9; SCS360 dacdc2a638d7d0eb4a25580152927fee91c89391. Root index451980ef4e031c79a2ee6992ed06eac424c8ef3e korundu. Gerçek mesaj/ödeme/iade/deploy yok. Bu checkpointte APK üretilmedi; önceki APK yeni personel değişikliklerini içermez.

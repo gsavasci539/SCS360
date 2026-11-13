@@ -9,9 +9,9 @@ from app.core.security import create_access_token
 from app.infrastructure.models.models import LibraryBook, NotificationJob, Payment, Permission, Role, Student, User, UserRole
 
 
-async def headers(sessions, org, write=True):
+async def headers(sessions, org, write=True, student_write=False):
     async with sessions() as db:
-        codes=['library.read']+(['library.write'] if write else [])
+        codes=['library.read']+(['library.write'] if write else [])+(['student.write'] if student_write else [])
         existing={p.code:p for p in (await db.execute(select(Permission))).scalars()}
         role=Role(name='Catalog acceptance',slug='catalog_'+uuid4().hex,organization_id=org,
             permissions=[existing.get(c) or Permission(code=c,name=c,module='library') for c in codes])

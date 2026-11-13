@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { LibraryPage } from "../features/resources/LibraryPage";
@@ -31,4 +31,18 @@ it("preserves a real zero without using the obsolete field or issuing writes", a
   expect(within(screen.getByText("Mevcut", { selector: "div" }).parentElement!).getByText("0")).toBeInTheDocument();
   expect(api.post).not.toHaveBeenCalled();
   expect(api.delete).not.toHaveBeenCalled();
+});
+
+it("uses the paginated API envelope and resets to page one for server search", async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { success: true, data: {
+    items: [{ id: "recorded-book", title: "Secret catalog title", author: "Recorded author", category: "Category", total_copies: 10, available_copies: 7 }],
+    total: 21, page: 1, page_size: 20, total_pages: 2,
+  } } });
+  vi.mocked(getAnalysis).mockResolvedValue({ data: { success: true, data: { recommendations: [] } } } as never);
+  render(<MemoryRouter><ToastProvider><LibraryPage /></ToastProvider></MemoryRouter>);
+  await screen.findByText("Secret catalog title");
+  fireEvent.change(screen.getByRole("textbox", { name: "Listede ara" }), { target: { value: "secret" } });
+  await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/library/books", expect.objectContaining({
+    params: expect.objectContaining({ page: 1, page_size: 20, limit: 20, skip: 0, search: "secret" }),
+  })));
 });

@@ -965,6 +965,33 @@ Yayın doğrulandı: SCS360Mobile `codex/source-sync-20261111` SHA `1b9447251a4e
 ## 13 Kasım — mevcut yoklamayı yükle/düzenle
 
 Web yoklama ekranı sınıf+tarih için kayıtlı durum/not/sürümü /api/attendance GET üzerinden yükler. Yeni satırlar UNRECORDED kalır; sadece açıkça seçilen durumlar version kontrollü batch PUT isteğine girer. SQLite backend 6/6 geçti, 6 PostgreSQL varyantı skip; web UI 7/7; TypeScript/Vite build ve Ruff F821/F823 geçti. Fiziksel cihaz, tam uygulama veya sağlayıcı kabulü değildir. Ayrıntı: docs/native-attendance-editor-checkpoint-20261113.md.
+Web yoklama ekranı artık sınıf+tarih için kayıtlı durum, not ve sürümü GET `/api/attendance` üzerinden yüklüyor. Önceden kaydı olmayan öğrenciler otomatik “Geldi” yapılmaz; yalnız açıkça işaretlenen satırlar version kontrollü PUT batch’e girer. Gerçek oluşturma/düzenleme sayıları sunucu ACK’sinden gösterilir. API route ayrı modüle alındı; tenant ve şube kapsamı korunur.
+
+Kanıt: geçici SQLite backend **6 passed/6 PostgreSQL varyantı skipped**; web UI **7/7**; frontend TypeScript+Vite build başarılı; yeni Python kaynaklarında Ruff F821/F823 temiz. Kanıt ayrıntısı `docs/native-attendance-editor-checkpoint-20261113.md`. Native günlük istemci bu turda değişmedi; önceki kabul geçerlidir. Bu tüm yoklama raporlarının, mobil modüllerin, tam test paketinin veya gerçek A26 cihazının kabulü değildir.
+
+Sıradaki iş: native/web kalan modül mutasyonlarının işlem bazında karşılaştırması ve son kaynak değişikliklerinde tam test paketi. A26 fiziksel kabulü ve gerçek sağlayıcı testi ayrı.
+
+## 13 Kasım — kütüphane hatırlatma UI WIP
+
+Frontend `OperationPages.LibraryPage` gerçek bildirim işi oluşturmayan `/library/loans/{id}/remind` çağrısını yapıp SMS/push teslim edildiğini söylüyordu. Kütüphane hatırlatma düğmesi ve ilgili teslim iddiası kaldırıldı; kataloğun mevcut detay/düzenle/sil ve ödünç/iade native akışları değişmedi. Hedef UI testi `library-reminder-availability.test.tsx`: **1/1 PASS**; Windows geçici dizinindeki rename EPERM nedeniyle ilk Vitest açılışı sonuç üretmedi, `.codex-build/vitest-temp` altında tekrar başarıyla çalıştı. Gerçek mesaj/iş/ödeme üretilmedi.
+
+**Sınır:** backend'deki eski `/api/library/loans/{loan_id}/remind` endpointi hâlâ yanıltıcı başarı cevabı verir; bu WIP yalnız webdeki çağrı/CTA'yı kaldırır, API bug'ını çözmüş sayılmaz. Sonraki iç iş: endpoint için izole, hedefli geçici SQLite testiyle güvenli davranış belirle; gerçek outbox/provider kurulana dek gönderildi iddiası verme. Testli kapsam sadece web UI'dır; mobil hatırlatma, diğer modüller ve tüm satış kabulü tamamlanmış değildir.
+
+WIP code push: SCS360 `codex/source-sync-20261111` SHA `49e800e2d154c3b3a9304055785d436c95b4bd7d`; devam kaydı follow-up push SHA `2ed91edca65f0340c8b47a84ed6e239d969d2877` (normal push, remote doğrulandı). Yalnız web UI, testi ve dar WIP kaydı; backend endpoint değişmedi.
+
+## 13 Kasım — kütüphane reminder API düzeltildi
+
+Önceki UI WIP kaydındaki backend sahte başarı açığı kapandı: POST reminder artık library.write ister, tüm kimliklerde açık gönderilmedi mesajıyla 503 verir; bildirim gönderimi henüz uygulanmadığı için teslim iddiası yok. Geçici SQLite FastAPI hedefi 3 PASS/3 PostgreSQL varyantı deselected: writer503, reader/student.write403, anonim401; NotificationJob/Payment0. İlk sandbox koşusu sonuç vermedi, kesildi; tanılı izole DB koşusu6.58s geçti. Ayrıntı docs/library-reminder-api-checkpoint-20261113.md. Tüm modüller/tam test paketi/cihaz kabulü tamam denmez. Sonraki iç iş native personel izin/nöbet DTO/yetki ve server readback eşitliği.
+Yayın: SCS360 codex/source-sync-20261111 remote SHA 38eda44bac1f167a9a3aace6748e8d457d11c68e; normal push/ls-remote doğrulandı. Mobile kaynağı bu checkpointte değişmedi. Root index SHA 451980ef4e031c79a2ee6992ed06eac424c8ef3e aynı; unrelated WIP korunur.
 
 
 Yoklama formu web/API kaynak checkpoint SHA: SCS360 codex/source-sync-20261111 653bcff455f63fc863dd028213e6e19408851fbb (normal push, git ls-remote ile doğrulandı).
+## 13 Kasım — native personel izin API checkpoint
+
+İki native gezinme yolu korunarak gerçek izin/nöbet GET, izin POST, review PUT ve kalıcı liste readback bağlandı. Yerel izin kimliği/onay ve sahte bildirim/uydurma değerlendirme gerekçeleri kaldırıldı. Form boş tarihlerle açılır, gün sayısı tarihlerden hesaplanır; onay/readback gelmeden kapanmaz. Yatay/büyük yazıda AlertDialog non-idle hatası bounded native Dialog ile düzeltildi. Final benzersiz native hedefler5client+1UI=6PASS; ayrı geçici SQLite API1PASS/1PGdeselected. Önceki4 ve başarısızUI koşuları final sayıya eklenmedi. Ayrıntı docs/native-staff-checkpoint-20261113.md. Sıradaki iç iş gerçek kullanıcı/şube seçenekleriyle native nöbet oluşturma, açık review yorum girişi ve personel rol/kapsam varyantları; sonra kalan operasyon modülleri. Tam parite/cihaz/iOS/sağlayıcı/mağaza/release kabulü verilmedi.
+
+Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f21f8934ce211faa542337ed205f8f4d982e8fd9; SCS360 dacdc2a638d7d0eb4a25580152927fee91c89391. Root index451980ef4e031c79a2ee6992ed06eac424c8ef3e korundu. Gerçek mesaj/ödeme/iade/deploy yok. Bu checkpointte APK üretilmedi; önceki APK yeni personel değişikliklerini içermez.
+
+## 13 Kasım — kullanıcının tüm kaynakları push talebi
+
+Mobil, backend/frontend ve ortak kaynak/yapılandırma/belgeler güvenli manifestlerle izole yayın checkoutlarına eşitlendi. Kalan üç kaynak değişikliği dahil WIP olarak gönderiliyor; yeni test veya üretim kabulü iddiası yok. Uzak README/devam/doğrulama notları korunur. Veritabanı, kullanıcı/hesap verileri, seed kayıtları, gerçek env/sırlar, imzalama, upload, geçici/çıktı/cache/APK/log dosyaları kapsam dışında. Mobile f21f8934ce211faa542337ed205f8f4d982e8fd9 zaten uzakta. Son normal push SHA sonucu yerel output/all-source-push-20261113.json kaydına yazılacak.

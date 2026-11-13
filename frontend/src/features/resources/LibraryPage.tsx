@@ -24,11 +24,11 @@ export function LibraryPage() {
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
 
-  async function load(page = data.page) {
+  async function load(page = data.page, query = search) {
     setLoading(true);
     try {
       const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/library/books", {
-        params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
+        params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20, search: query || undefined }
       });
       setData(normalize(r.data.data));
     } catch (e) {
@@ -38,7 +38,10 @@ export function LibraryPage() {
     }
   }
 
-  useEffect(() => { load(1); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(1, search); }, search ? 250 : 0);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     getAnalysis("/ai/library-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
