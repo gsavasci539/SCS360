@@ -108,3 +108,7 @@ Current native120 unique PASS, no failures/skips:7 targeted plus remaining113 in
 ## Native create notes and readonly status WIP
 
 Targeted7 contracts and actual Kotlin/FastAPI/tempSQLite notes bridge PASS. Old pending six-field requests keep the exact body/UUID; creation notes reach web notes through the existing receipt_url text alias, status is readonly server data. Wrong note ACK is not success. Create/edit lost ACK recovery leaves101 ledger rows and0 new payment/jobs/Room writes. Remaining115 native regressions running; prior120/APK are for the previous source. See docs/acceptance/native-expense-notes-wip-20261113.json.
+
+## Cash ACK scroll correction WIP
+
+Original115 regression had114 PASS/1FAIL: cash_done could not be found while ACK semantics retained the old form scroll range. Production cash UI now binds content/semantics to one composition snapshot and resets confirmation scroll with stable keys. Original assertions unchanged; final10 targets PASS. Remaining112 native regression running, prior failed run archived. Actual notes API client/model/bridge source unchanged; its temporary DB acceptance retained. No full/APK/device acceptance claimed yet.
