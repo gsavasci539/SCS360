@@ -330,3 +330,5 @@ Mobil liste istemcisi/testi `1b9447251a4e6a062d1f079a22659639285de796`, API ve g
 ### Web yoklama formu — 13 Kasım
 
 Mevcut kayıt yükleme/düzenleme: backend 6/6 SQLite, 6 PostgreSQL varyantı skip; web UI 7/7; build başarılı. Yeni kayıt seçilmeden varsayılan “Geldi” yazılmaz. Ayrıntı `docs/native-attendance-editor-checkpoint-20261113.md`; tam mobil/A26 kabulü değildir.
+
+Remote checkpoint: SCS360 codex/source-sync-20261111 653bcff455f63fc863dd028213e6e19408851fbb (normal push verified).

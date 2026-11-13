@@ -965,3 +965,6 @@ Yayın doğrulandı: SCS360Mobile `codex/source-sync-20261111` SHA `1b9447251a4e
 ## 13 Kasım — mevcut yoklamayı yükle/düzenle
 
 Web yoklama ekranı sınıf+tarih için kayıtlı durum/not/sürümü /api/attendance GET üzerinden yükler. Yeni satırlar UNRECORDED kalır; sadece açıkça seçilen durumlar version kontrollü batch PUT isteğine girer. SQLite backend 6/6 geçti, 6 PostgreSQL varyantı skip; web UI 7/7; TypeScript/Vite build ve Ruff F821/F823 geçti. Fiziksel cihaz, tam uygulama veya sağlayıcı kabulü değildir. Ayrıntı: docs/native-attendance-editor-checkpoint-20261113.md.
+
+
+Yoklama formu web/API kaynak checkpoint SHA: SCS360 codex/source-sync-20261111 653bcff455f63fc863dd028213e6e19408851fbb (normal push, git ls-remote ile doğrulandı).
