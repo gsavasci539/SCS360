@@ -325,3 +325,4 @@ SCS360Mobile native kaynak SHA `3ea8cdb0768c5249e44d847e8682226b3eff80e7`, SCS36
 ### Kütüphane web/native liste sayfalaması — 13 Kasım
 
 `/api/library/books` artık tenant-scoped paginated response verir ve iki istemcinin de kullandığı sorgu parametrelerini destekler. Arama webde sunucuya gider; Android sayfaları tüketir. Doğrulama: backend SQLite **7/7**, native UI **8/8**, gerçek Android API bridge (geçici SQLite) **1/1**, web UI **3/3**, frontend build başarılı; hedefli ESLint ve F821/F823 temiz. PG varyantı ve fiziksel cihaz bu checkpoint’te çalıştırılmadı.
+Mobil liste istemcisi/testi `1b9447251a4e6a062d1f079a22659639285de796`, API ve geçici SQLite regresyonu `d34368bbda886be27412d5ab98ce2bf9cea216ee` SHA’larıyla `codex/source-sync-20261111` dalında doğrulandı.

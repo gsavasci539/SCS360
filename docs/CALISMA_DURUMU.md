@@ -958,3 +958,5 @@ Kütüphane liste endpoint’i `library_service` üzerinden sayfa ve arama param
 Kanıt: geçici SQLite backend katalog regresyonu **7 passed** (PG varyantları bu koşuda seçilmedi); gerçek native client + geçici SQLite köprüsü **1 passed**, diğer kuruma ait kitap fixture’da varken seçili kurumun katalog listesi boş geldi, ardından kendi katalog CRUD/ödünç/iade akışları geçti. Native library UI **8 passed**, web library testleri **3 passed**, frontend build başarılı. Hedefli ESLint ve Ruff F821/F823 temiz. Geniş Ruff taraması seçilen legacy Python dosyalarında 112 stil/import biçimlendirme bulgusu verdi; bu checkpoint’te toplu biçimlendirme yapılmadı.
 
 Bu yalnız kütüphane modülünün liste/API/UI sözleşmesini doğrular; tüm mobil modüller, PG varyantları veya fiziksel A26 kabulü değildir. Sonraki iş: kalan operasyon modüllerinin native CRUD/veli/özel rol/yenileme akışlarını tek tek web API kontratlarıyla taramak.
+
+Yayın doğrulandı: SCS360Mobile `codex/source-sync-20261111` SHA `1b9447251a4e6a062d1f079a22659639285de796`; SCS360 API/test/kabul SHA `d34368bbda886be27412d5ab98ce2bf9cea216ee`. Kaynak-only checkpoint; uzak yeni commit ezilmedi.

@@ -14,4 +14,4 @@
 This checkpoint covers the library list contract only. Next: continue parity review of remaining native operational modules, guardian actions, custom roles, and post-payment refresh.
 
 ## Publication
-Pending isolated source-only pushes on `codex/source-sync-20261111`.
+SCS360Mobile `codex/source-sync-20261111`: `1b9447251a4e6a062d1f079a22659639285de796`; SCS360 API/test checkpoint: `d34368bbda886be27412d5ab98ce2bf9cea216ee` (both remote-verified).
