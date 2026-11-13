@@ -330,21 +330,12 @@ export function LibraryPage() {
     }
   }
 
-  async function handleRemind(loanId: string) {
-    try {
-      await api.post(`/library/loans/${loanId}/remind`, {});
-      showToast("Hatırlatma Gönderildi", "Veliye SMS ve push bildirimi iletildi.");
-    } catch (e: any) {
-      showToast("Hata", e.message, "error");
-    }
-  }
-
   return (
     <div>
       <PageHeader
         eyebrow="Kaynak & Envanter"
         title="Kütüphane & Kitap Zimmet Takibi"
-        description="Barkodlu kitap kataloğu, öğrenciye ödünç verme, gecikme hatırlatmaları ve iade."
+        description="Barkodlu kitap kataloğu, öğrenciye ödünç verme ve iade."
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
@@ -388,7 +379,6 @@ export function LibraryPage() {
                 {l.status === "BORROWED" && (
                   <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                     <button className="btn btn-secondary btn-sm" onClick={() => handleReturn(l.id)}>İade Al</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => handleRemind(l.id)}>Veliye Hatırlat</button>
                   </div>
                 )}
               </div>
