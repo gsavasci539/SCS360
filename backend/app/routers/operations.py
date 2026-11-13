@@ -379,10 +379,17 @@ async def return_library_book(
 @router.post("/api/library/loans/{loan_id}/remind")
 async def remind_library_loan(
     loan_id: str,
-    tenant: TenantContext = Depends(PermissionChecker("student.write")),
+    tenant: TenantContext = Depends(PermissionChecker("library.write")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
-    return success_response(message="Veli ve öğrenciye iade hatırlatma bildirimi gönderildi")
+    from app.core.exceptions import AppException
+
+    # No delivery/outbox implementation exists for this operation yet.
+    # Fail closed for every loan ID without disclosing record existence.
+    raise AppException(
+        "Kütüphane hatırlatma gönderimi henüz kullanıma açık değil. Bildirim gönderilmedi.",
+        status_code=503,
+    )
 
 
 # ==================== 7. PERSONEL İK & NÖBET ÇİZELGESİ ====================
