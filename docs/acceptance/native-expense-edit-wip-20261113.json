@@ -1,0 +1,19 @@
+{
+  "status": "WIP:6 targeted native tests and actual Kotlin/FastAPI/tempSQLite bridge PASS; remaining113 regression running; APK pending",
+  "native_targeted": 6,
+  "real_api": {
+    "passed": 1,
+    "deselected_postgresql": 1,
+    "amount": "120.03",
+    "notes_roundtrip": true,
+    "committed_ack_retry": true,
+    "new_payment_rows": 0,
+    "new_notification_jobs": 0,
+    "room_unchanged": true
+  },
+  "native_scope": "Expense fresh detail/delta edit and notes; general finance deletion uses scoped authoritative confirmation",
+  "source_files": {
+    "backend/tests/integration/native_expense_edit_bridge.py": "e8a84bedb26fdb478d2028ce421824f5fbc56be239ff14c2fc62c9e255f8ddb8"
+  },
+  "physical_provider_store_acceptance": "OPEN"
+}

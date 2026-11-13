@@ -92,3 +92,7 @@ Current native112 unique PASS, no failures/skips:6 targeted plus remaining106 in
 ## Native uncertain expense delete recheck checkpoint
 
 Current native113 unique PASS, no failures/skips:7 targeted plus remaining106 in disjoint runs at identical source hashes. The Finance role portal now offers an explicit list recheck after uncertain deletion without another DELETE or a false acknowledgement; failed/stale replies cannot produce success or reload another workspace. Readonly, long text and landscape font2/48dp contracts passed. Same-source debug APK signature/package/SDK verification passed. Backend940 PASS/two DB-specific skips and frontend352/63 +TypeScript/Vite retained at unchanged source hashes. Existing actual Kotlin/FastAPI/tempDB expense API acceptance retained; these UI tests do not prove physical A26/iOS/provider acceptance. Native expense edit/reference notes, other module parity, real providers/HTTPS/store/release acceptance stay open. See docs/acceptance/native-expense-recheck-20261112.json. No real payments/messages, user DB changes or deployment.
+
+## Native expense edit targeted and real API WIP
+
+Six targeted native contracts and actual Kotlin/FastAPI/tempSQLite edit bridge PASS; remaining113 native regressions running. See docs/acceptance/native-expense-edit-wip-20261113.json. Prior APK and physical/provider/store acceptance unchanged.
