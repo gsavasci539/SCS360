@@ -950,3 +950,11 @@ Android Kotlin native katalogda kitap ayrıntısı, düzenleme ve silme gerçek 
 Bu hedefli checkpoint bütün mobil modüllerin/web eşitliğinin veya A26 fiziksel cihaz kabulünün tamamlandığını göstermez. Sonraki somut iş: kütüphane ekranında sayfalama/filtre ve kayıp yanıt kurtarma uçlarını web sözleşmesiyle karşılaştırmak; sonra kalan operasyon modüllerine geçmek. Sağlayıcı, mağaza, iOS ve gerçek cihaz kabulü ayrı kalır.
 
 Yayın SHA doğrulaması: SCS360Mobile `3ea8cdb0768c5249e44d847e8682226b3eff80e7`; SCS360 backend/test ve kabul kaydı `03aa0bf2792e4872a6a15f5c537f6896ede512d0`; ikisi de `codex/source-sync-20261111` uzak dalında doğrulandı. Gerçek API test taşıyıcısına DELETE aktarımı eklendi.
+
+## 13 Kasım — native/web kütüphane liste sözleşmesi
+
+Kütüphane liste endpoint’i `library_service` üzerinden sayfa ve arama parametrelerini işler: `page/page_size/skip` ile `limit/offset` uyumlu; yanıt `items/total/page/page_size/total_pages`. Kurum kapsamı repository filtresinde açık. Web araması sunucuya gönderilir ve sayfa 1’e döner; native istemci sayfalı yanıtı okuyup toplam kayıtları tamamlayana kadar sayfaları getirir.
+
+Kanıt: geçici SQLite backend katalog regresyonu **7 passed** (PG varyantları bu koşuda seçilmedi); gerçek native client + geçici SQLite köprüsü **1 passed**, diğer kuruma ait kitap fixture’da varken seçili kurumun katalog listesi boş geldi, ardından kendi katalog CRUD/ödünç/iade akışları geçti. Native library UI **8 passed**, web library testleri **3 passed**, frontend build başarılı. Hedefli ESLint ve Ruff F821/F823 temiz. Geniş Ruff taraması seçilen legacy Python dosyalarında 112 stil/import biçimlendirme bulgusu verdi; bu checkpoint’te toplu biçimlendirme yapılmadı.
+
+Bu yalnız kütüphane modülünün liste/API/UI sözleşmesini doğrular; tüm mobil modüller, PG varyantları veya fiziksel A26 kabulü değildir. Sonraki iş: kalan operasyon modüllerinin native CRUD/veli/özel rol/yenileme akışlarını tek tek web API kontratlarıyla taramak.

@@ -22,7 +22,8 @@ async def test_native_library_real_api(materials_client):  # noqa: F811
         branch = await db.get(Branch,data['branch'].id)
         writer = User(email='native-library@example.com',password_hash=hash_password('Synthetic-pass-2026!'),first_name='Library',last_name='Operator',organization_id=data['org'].id,roles=[writer_role],branches=[branch])
         reader = User(email='native-library-reader@example.com',password_hash=hash_password('Synthetic-pass-2026!'),first_name='Library',last_name='Reader',organization_id=data['org'].id,roles=[reader_role],branches=[branch])
-        db.add_all([writer,reader]);await db.commit()
+        foreign_book = LibraryBook(organization_id=data['stranger'].organization_id,title='Foreign catalog secret',author='Foreign',category='Private',total_copies=1,available_copies=1)
+        db.add_all([writer,reader,foreign_book]);await db.commit()
     loop=asyncio.get_running_loop();events=[]
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*_):pass

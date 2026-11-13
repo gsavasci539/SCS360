@@ -321,3 +321,7 @@ Next: continue parent/custom-role and remaining module API/DTO parity; track phy
 Kitap ayrıntı/düzenleme/silme akışı mevcut API ve gerçek rol yetkileriyle doğrulandı. UI hedefi 7/7; geçici SQLite üzerinden gerçek native API köprüsü 1/1. Eski katalog sürümünde 409, ödünç geçmişli silmede 409, salt-okur edit/delete 403; katalog/stok değişikliği kalıcı. Bu sonuç yalnız bu modül hedefini kapsar; A26 fiziksel kabulü ve diğer modüller tamamlanmış sayılmaz. Kayıt/push SHA bilgisi `docs/CALISMA_DURUMU.md` içinde yayın doğrulamasından sonra tamamlanacak.
 
 SCS360Mobile native kaynak SHA `3ea8cdb0768c5249e44d847e8682226b3eff80e7`, SCS360 test/docs SHA `03aa0bf2792e4872a6a15f5c537f6896ede512d0`; iki uzak dal da `codex/source-sync-20261111` üzerinde doğrulandı.
+
+### Kütüphane web/native liste sayfalaması — 13 Kasım
+
+`/api/library/books` artık tenant-scoped paginated response verir ve iki istemcinin de kullandığı sorgu parametrelerini destekler. Arama webde sunucuya gider; Android sayfaları tüketir. Doğrulama: backend SQLite **7/7**, native UI **8/8**, gerçek Android API bridge (geçici SQLite) **1/1**, web UI **3/3**, frontend build başarılı; hedefli ESLint ve F821/F823 temiz. PG varyantı ve fiziksel cihaz bu checkpoint’te çalıştırılmadı.

@@ -323,11 +323,17 @@ async def list_canteen_transactions(
 async def list_library_books(
     search: str | None = None,
     category: str | None = None,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    page: int | None = Query(None, ge=1),
+    page_size: int | None = Query(None, ge=1, le=1000),
+    skip: int | None = Query(None, ge=0),
     tenant: TenantContext = Depends(PermissionChecker("library.read")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
     from app.application.services import library_service
-    return success_response(await library_service.books(db, tenant, search, category))
+    return success_response(await library_service.books(db, tenant, search, category,
+        limit=limit, offset=offset, page=page, page_size=page_size, skip=skip))
 
 
 @router.post("/api/library/books")

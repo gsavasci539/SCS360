@@ -55,7 +55,10 @@ async def edit(db, tenant, book_id, body):
         raise ConflictException('Mevcut kopya sayısı ödünç kayıtlarından hesaplanır')
     if not values:
         return detail_dict(book)
-    version = (await db.execute(select(cast(LibraryBook.updated_at, String)).where(LibraryBook.id == book.id))).scalar_one()
+    version, loaded_at = (await db.execute(select(cast(LibraryBook.updated_at, String), LibraryBook.updated_at)
+        .where(LibraryBook.id == book.id))).one()
+    if utc(loaded_at) != utc(book.updated_at):
+        raise ConflictException('Kitap eşzamanlı değişti; güncel kaydı yeniden açın')
     values.update(available_copies=available, updated_at=datetime.now(UTC))
     changed = await db.execute(update(LibraryBook).where(LibraryBook.id == book.id,
         cast(LibraryBook.updated_at, String) == version, LibraryBook.available_copies == book.available_copies,
@@ -76,14 +79,30 @@ async def delete(db, tenant, book_id):
     return {'id': key, 'message': 'Kitap silindi'}
 
 
-async def books(db, tenant, search=None, category=None):
+async def books(db, tenant, search=None, category=None, *, limit=100, offset=0, page=None, page_size=None, skip=None):
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(select(LibraryBook), LibraryBook)
+    filters = []
     if search:
-        query = query.where(LibraryBook.title.ilike(f"%{search}%") | LibraryBook.author.ilike(f"%{search}%"))
+        filters.append(LibraryBook.title.ilike(f"%{search}%") | LibraryBook.author.ilike(f"%{search}%") | LibraryBook.isbn.ilike(f"%{search}%"))
     if category:
-        query = query.where(LibraryBook.category == category)
-    return [book_dict(book) for book in (await db.execute(query.order_by(LibraryBook.title))).scalars()]
+        filters.append(LibraryBook.category == category)
+    if filters:
+        query = query.where(*filters)
+    resolved_limit = page_size or limit
+    resolved_offset = skip if skip is not None else ((page - 1) * resolved_limit if page is not None else offset)
+    count_query = repo._org_filter(select(func.count(LibraryBook.id)), LibraryBook)
+    if filters:
+        count_query = count_query.where(*filters)
+    total = (await db.execute(count_query)).scalar_one()
+    rows = (await db.execute(query.order_by(LibraryBook.title, LibraryBook.author).limit(resolved_limit).offset(resolved_offset))).scalars().all()
+    return {
+        "items": [detail_dict(book) for book in rows],
+        "total": total,
+        "page": page or (resolved_offset // resolved_limit) + 1,
+        "page_size": resolved_limit,
+        "total_pages": (total + resolved_limit - 1) // resolved_limit,
+    }
 
 
 async def create_book(db, tenant, body):

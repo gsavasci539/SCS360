@@ -1,11 +1,12 @@
 """Book edits must not manufacture copies or erase loan history."""
 from uuid import uuid4
+from datetime import UTC, datetime, timedelta
 import pytest
-from sqlalchemy import select, func
+from sqlalchemy import event, select, func
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
-from app.infrastructure.models.models import NotificationJob, Payment, Permission, Role, Student, User, UserRole
+from app.infrastructure.models.models import LibraryBook, NotificationJob, Payment, Permission, Role, Student, User, UserRole
 
 
 async def headers(sessions, org, write=True):
@@ -69,6 +70,31 @@ async def test_readonly_and_foreign_scopes_cannot_edit_or_delete(materials_clien
     assert (await client.get(f'/api/library/books/{key}',headers=auth)).status_code==404
 
 
+async def test_catalog_list_is_tenant_scoped_and_web_pagination_is_honored(materials_client):
+    client,sessions,data=materials_client;auth=await headers(sessions,data['org'].id)
+    keys=[await book(client,auth) for _ in range(3)]
+    async with sessions() as db:
+        foreign=LibraryBook(organization_id=data['stranger'].organization_id,title='Foreign catalog secret',author='Foreign',
+            category='Private',total_copies=1,available_copies=1)
+        db.add(foreign);await db.commit()
+    first=await client.get('/api/library/books?limit=2&offset=1',headers=auth)
+    assert first.status_code==200,first.text
+    page=first.json()['data']
+    if isinstance(page,list):
+        assert all(row['id'] in keys for row in page), 'catalog leaked another organization book before pagination checks'
+    assert isinstance(page,dict) and page['total']==3 and page['page']==1 and page['page_size']==2
+    assert len(page['items'])==2 and all(row['id'] in keys for row in page['items'])
+    second=await client.get('/api/library/books?page=2&page_size=2&skip=2',headers=auth)
+    assert second.status_code==200,second.text
+    web=second.json()['data']
+    assert web['total']==3 and web['page']==2 and web['page_size']==2 and len(web['items'])==1
+    assert all(row['id'] in keys for row in web['items'])
+    foreign_auth=await headers(sessions,data['stranger'].organization_id)
+    all_books=await client.get('/api/library/books?limit=1000',headers=foreign_auth)
+    assert all_books.status_code==200
+    assert all(row['title']=='Foreign catalog secret' for row in all_books.json()['data']['items'])
+
+
 async def test_null_required_fields_are_rejected_without_mutation(materials_client):
     client,sessions,data=materials_client;auth=await headers(sessions,data['org'].id);key=await book(client,auth)
     for field in ('title','author','total_copies','available_copies'):
@@ -91,3 +117,20 @@ async def test_teacher_inventory_guards_include_loans_outside_their_student_scop
     assert response.status_code==200,response.text
     assert response.json()['data']['available_copies']==1
     assert (await client.delete(f'/api/library/books/{key}',headers=teacher)).status_code==409
+
+
+async def test_edit_rejects_version_change_between_load_and_atomic_write(materials_client):
+    from uuid import UUID
+    client,sessions,data=materials_client;auth=await headers(sessions,data['org'].id);key=await book(client,auth)
+    engine=sessions.kw['bind'].sync_engine;fired=False
+    def interleave(connection,cursor,statement,parameters,context,many):
+        nonlocal fired
+        if not fired and statement.lstrip().upper().startswith('SELECT') and 'CAST(library_books.updated_at' in statement:
+            fired=True
+            connection.execute(LibraryBook.__table__.update().where(LibraryBook.__table__.c.id==UUID(key)).values(
+                title='Concurrent edit',updated_at=datetime.now(UTC)+timedelta(seconds=1)))
+    event.listen(engine,'before_cursor_execute',interleave)
+    try:
+        response=await client.put(f'/api/library/books/{key}',headers=auth,json={'title':'Lost update'})
+        assert fired and response.status_code==409,response.text
+    finally:event.remove(engine,'before_cursor_execute',interleave)

@@ -66,62 +66,18 @@ class BookBorrowCreate(BaseModel):
 async def get_books(
     search: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
-    author: Optional[str] = Query(None),
-    isbn: Optional[str] = Query(None),
-    is_available: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    page: Optional[int] = Query(None, ge=1),
+    page_size: Optional[int] = Query(None, ge=1, le=1000),
+    skip: Optional[int] = Query(None, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
-    """Get books with filtering and search"""
-    from app.infrastructure.models.models import Book
-    
-    query = select(Book)
-    
-    conditions = []
-    if search:
-        conditions.append(
-            (Book.title.ilike(f"%{search}%")) | 
-            (Book.author.ilike(f"%{search}%")) |
-            (Book.isbn.ilike(f"%{search}%"))
-        )
-    if category:
-        conditions.append(Book.category == category)
-    if author:
-        conditions.append(Book.author.ilike(f"%{author}%"))
-    if isbn:
-        conditions.append(Book.isbn == isbn)
-    if is_available is not None:
-        conditions.append(Book.available_copies > 0 if is_available else Book.available_copies == 0)
-    
-    if conditions:
-        query = query.where(and_(*conditions))
-    
-    query = query.order_by(Book.title, Book.author).limit(limit).offset(offset)
-    
-    result = await db.execute(query)
-    books = result.scalars().all()
-    
-    books_data = []
-    for book in books:
-        books_data.append({
-            "id": str(book.id),
-            "title": book.title,
-            "author": book.author,
-            "isbn": book.isbn,
-            "category": book.category,
-            "publisher": book.publisher,
-            "publication_year": book.publication_year,
-            "total_copies": book.total_copies,
-            "available_copies": book.available_copies,
-            "description": book.description,
-            "location": book.location,
-            "created_at": book.created_at.isoformat(),
-            "updated_at": book.updated_at.isoformat()
-        })
-    
-    return success_response(books_data)
+    """Tenant-scoped, paginated catalogue used by both web and native clients."""
+    from app.application.services import library_service
+    return success_response(await library_service.books(db, tenant, search, category,
+        limit=limit, offset=offset, page=page, page_size=page_size, skip=skip))
 
 
 @router.post("/books")
