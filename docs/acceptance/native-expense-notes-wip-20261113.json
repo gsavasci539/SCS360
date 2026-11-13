@@ -1,0 +1,24 @@
+{
+  "status": "WIP:7 targeted native contracts and actual Kotlin/FastAPI/tempSQLite notes bridge PASS; remaining115 regression running; new APK pending",
+  "targeted": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "5m31s"
+  },
+  "real_api": {
+    "passed": 1,
+    "deselected_postgresql": 1,
+    "duration_seconds": 110.55,
+    "create_notes_and_readonly_status_visible_to_web": true,
+    "create_and_edit_lost_ack_recovered": true,
+    "payment_rows": 0,
+    "notification_jobs": 0,
+    "room_unchanged": true
+  },
+  "compatibility": "Missing notes omit receipt_url, preserving exact old six-field pending bodies/UUIDs; receipt_url is a text-note wire alias, not an upload",
+  "source_files": {
+    "backend/tests/integration/native_expense_notes_bridge.py": "633ea4fc6b395ba1157d0f84a7b37275f731a5849f9023d878db7e25e924779a"
+  },
+  "physical_provider_store_acceptance": "OPEN"
+}
