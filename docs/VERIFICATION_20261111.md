@@ -144,3 +144,7 @@ Work in progress, not full acceptance. Native parent management now has canonica
 ## Book catalogue API stock/history guards
 
 Five real API/tempSQLite tests passed; five PostgreSQL variants deselected. Book edits preserve active-loan inventory, reject stale snapshots and invalid copy overrides. Active or returned loan history blocks deletion,including history outside a teacher student scope. Readonly/foreign/null guards and unused-book deletion passed. SQLite timestamp CAS formatting failure corrected; original assertions retained. No full backend-suite rerun or new Android build claimed. Native CRUD UI and real reminder queue are still pending. See docs/acceptance/library-catalog-guards-20261113.json.
+
+## 2026-11-13 attendance editor
+
+Targeted only: temporary SQLite backend 6 passed, 6 PostgreSQL variants skipped; web UI 7 passed; TypeScript/Vite build passed. Unrecorded students are not implicitly marked present. Does not certify the full suite or physical device acceptance. See `docs/native-attendance-editor-checkpoint-20261113.md`.

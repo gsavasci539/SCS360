@@ -1,0 +1,11 @@
+{
+  "checkpoint": "attendance-editor-web-20261113",
+  "classification": "targeted-acceptance",
+  "backend": {"suite": "tests/integration/test_attendance_editor.py", "passed": 6, "skipped": 6, "skipReason": "PostgreSQL-only fixture variants; SQLite temporary test database used"},
+  "frontend": {"suite": "src/test/attendance-editor.test.tsx", "passed": 7},
+  "build": {"command": "tsc -b && vite build", "result": "passed"},
+  "static": {"ruff": "F821/F823 passed"},
+  "scope": ["historical attendance load", "notes and optimistic version edit", "unknown outcome identical retry", "no implicit present status", "tenant and branch scoping"],
+  "notAccepted": ["full application suite", "all native/web modules", "physical A26 device", "payment providers", "iOS", "production"],
+  "realPaymentsMessagesOrDeploy": false
+}

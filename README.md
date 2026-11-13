@@ -175,3 +175,6 @@ mevcut deploy workflow'ları yalnız iskelet/placeholder durumundadır. Producti
 ## Lisans
 
 Özel yazılım — tüm hakları saklıdır.
+
+
+Yoklama kayıt yükleme/düzenleme hedefli doğrulaması: docs/native-attendance-editor-checkpoint-20261113.md.

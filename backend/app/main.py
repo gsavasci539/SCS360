@@ -22,6 +22,7 @@ from app.core.rate_limit import limiter
 from app.core.routing import RouterRegistry
 from app.routers import (
     admin_crud,
+    attendance_editor_routes,
     appointments,
     auth,
     bus,
@@ -132,6 +133,7 @@ router_registry.include(school_payment_review.router)
 router_registry.include(users.router)
 router_registry.include(staff_operations.router)
 router_registry.include(admin_crud.router)
+router_registry.include(attendance_editor_routes.router)
 router_registry.include(core_modules.router)
 router_registry.include(dashboard.router)
 router_registry.include(dashboard_reports.router)

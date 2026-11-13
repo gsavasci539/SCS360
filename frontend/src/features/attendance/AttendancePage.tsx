@@ -84,7 +84,8 @@ export function AttendancePage() {
       ]);
       if (controller.signal.aborted) return;
       const pupils = new Map(roster.map((row) => [row.id, row]));
-      const loaded: Record<string, EditRow> = Object.fromEntries(roster.map((row) => [row.id, { status: "PRESENT", notes: null, version: null }]));
+      // A missing history row is an unrecorded student, never an implicit "present" mark.
+      const loaded: Record<string, EditRow> = Object.fromEntries(roster.map((row) => [row.id, { status: "UNRECORDED", notes: null, version: null }]));
       for (const row of history) {
         const studentId = String(row.student_id);
         if (typeof row.version !== "string" || !/^[0-9a-f]{64}$/.test(row.version) || !statuses.some((item) => item.value === row.status)) {
@@ -134,7 +135,8 @@ export function AttendancePage() {
     if (!canWrite || saving || loading || snapshotKey !== scopeKey || !students.length) return;
     const body = pendingSave.current ?? {
       request_id: crypto.randomUUID(), class_id: classId, attendance_date: date,
-      records: students.map((student) => ({ student_id: student.id, status: records[student.id].status,
+      records: students.filter((student) => statuses.some((item) => item.value === records[student.id]?.status))
+        .map((student) => ({ student_id: student.id, status: records[student.id].status,
         notes: records[student.id].notes, expected_version: records[student.id].version })),
     };
     pendingSave.current = body;
@@ -166,7 +168,7 @@ export function AttendancePage() {
     <>
       <PageHeader eyebrow="Günlük akış" title="Yoklama" description="Sınıfı ve tarihi seçin, öğrenci durumlarını tek ekrandan kaydedin.">
         {canWrite && (
-          <button className="btn btn-primary" onClick={save} disabled={!students.length || saving || loading || snapshotKey !== scopeKey}>
+          <button className="btn btn-primary" onClick={save} disabled={!students.some((student) => statuses.some((item) => item.value === records[student.id]?.status)) || saving || loading || snapshotKey !== scopeKey}>
             <Save size={16} />
             {saving ? "Kaydediliyor…" : retryPending ? "Kaydı tekrar dene" : "Yoklamayı kaydet"}
           </button>
@@ -251,7 +253,7 @@ export function AttendancePage() {
                         style={{ width: "100%" }}
                         placeholder="İsteğe bağlı not"
                         aria-label={`${String(student.first_name)} ${String(student.last_name)} için yoklama notu`}
-                        disabled={fieldsLocked}
+                        disabled={fieldsLocked || records[student.id]?.status === "UNRECORDED"}
                         value={records[student.id]?.notes || ""}
                         onChange={(event) =>
                           setRecords((current) => ({ ...current, [student.id]: { ...current[student.id], notes: event.target.value } }))

@@ -43,6 +43,22 @@ it("mevcut durum/not/sürümü yükler ve gerçek güncelleme sayısıyla kayded
   await waitFor(() => expect(state.toast).toHaveBeenCalledWith("Yoklama kaydedildi", "0 yeni, 1 güncellenen, 0 değişmeyen kayıt."));
 });
 
+it("mevcut kaydı olmayan öğrenciyi geldi varsaymaz ve yalnız seçilen durumları gönderir", async () => {
+  const second = { id: "student-2", first_name: "Mehmet", last_name: "Örnek" };
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/classes"
+    ? [{ id: "class", name: "Sınıf A" }] : path === "/students" ? [pupil, second] : [] } }));
+  render(<AttendancePage />);
+  await screen.findByLabelText("Ayşe Örnek için yoklama notu");
+  expect(screen.getAllByRole("button", { name: "Geldi" }).every((button) => button.getAttribute("aria-pressed") === "false")).toBe(true);
+  expect(screen.getByRole("button", { name: "Yoklamayı kaydet" })).toBeDisabled();
+  expect(screen.getByLabelText("Mehmet Örnek için yoklama notu")).toBeDisabled();
+  fireEvent.click(screen.getAllByRole("button", { name: "Gelmedi" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Yoklamayı kaydet" }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/attendance/bulk", expect.objectContaining({
+    records: [{ student_id: "student", status: "ABSENT", notes: null, expected_version: null }],
+  })));
+});
+
 it("tarih değişirken kaydı engeller ve geç gelen eski yanıtı forma taşımaz", async () => {
   let release: (value: unknown) => void = () => {};
   vi.mocked(api.get).mockImplementation(async (path, config) => {
