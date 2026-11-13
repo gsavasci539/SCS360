@@ -1,6 +1,6 @@
 {
-  "status": "WIP:6 targeted native tests and actual Kotlin/FastAPI/tempSQLite bridge PASS; remaining113 regression running; APK pending",
-  "native_targeted": 6,
+  "status": "WIP:final7 native contracts PASS, actual API client unchanged/bridge retained; remaining113 regression running; APK pending",
+  "native_targeted": 7,
   "real_api": {
     "passed": 1,
     "deselected_postgresql": 1,
@@ -15,5 +15,6 @@
   "source_files": {
     "backend/tests/integration/native_expense_edit_bridge.py": "e8a84bedb26fdb478d2028ce421824f5fbc56be239ff14c2fc62c9e255f8ddb8"
   },
-  "physical_provider_store_acceptance": "OPEN"
+  "physical_provider_store_acceptance": "OPEN",
+  "reread_refreshes_parent_without_second_put_or_false_success": true
 }
