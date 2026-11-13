@@ -1,10 +1,10 @@
 {
-  "status": "WIP:final10 targets PASS including unchanged cash confirmation test after production scroll fix; remaining112 regression running; APK pending",
+  "status": "WIP:final14 financial targets PASS; remaining108 regression running; no new APK acceptance",
   "targeted": {
-    "passed": 10,
+    "passed": 14,
     "failed": 0,
     "skipped": 0,
-    "duration": "4m33s"
+    "duration": "4m38s"
   },
   "real_api": {
     "passed": 1,
@@ -27,5 +27,11 @@
     "skipped": 0,
     "reason": "Cash ACK semantics showed old scroll range and could not find cash_done; archived, not acceptance"
   },
-  "cash_ui_fix": "One composition ACK snapshot, stable confirmation item keys and fresh confirmation scroll state; original test assertions retained"
+  "cash_ui_fix": "One composition ACK snapshot, stable confirmation item keys and fresh confirmation scroll state; original test assertions retained",
+  "second_regression": {
+    "passed": 111,
+    "failed": 1,
+    "reason": "Expense delete ACK outside visible viewport after old scroll offset retained; archived"
+  },
+  "confirmation_fix": "Cash and expense delete content use composition snapshots and fresh confirmation scroll state with stable keys; original tests unchanged"
 }

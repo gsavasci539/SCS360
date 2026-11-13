@@ -112,3 +112,7 @@ Targeted7 contracts and actual Kotlin/FastAPI/tempSQLite notes bridge PASS. Old 
 ## Cash ACK scroll correction WIP
 
 Original115 regression had114 PASS/1FAIL: cash_done could not be found while ACK semantics retained the old form scroll range. Production cash UI now binds content/semantics to one composition snapshot and resets confirmation scroll with stable keys. Original assertions unchanged; final10 targets PASS. Remaining112 native regression running, prior failed run archived. Actual notes API client/model/bridge source unchanged; its temporary DB acceptance retained. No full/APK/device acceptance claimed yet.
+
+## Shared confirmation visibility correction WIP
+
+Second112 regression exposed an expense-delete ACK outside the viewport after the old form offset persisted (111PASS/1FAIL). Expense delete now uses the same composition snapshot/fresh confirmation scroll binding as cash. Final14 targets PASS with original assertions unchanged; remaining108 native regressions running. Both failed attempts archived and excluded from final acceptance. Actual notes API client/model/bridge unchanged; temporary DB acceptance retained.
