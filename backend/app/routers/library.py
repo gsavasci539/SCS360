@@ -41,6 +41,7 @@ class BookCreate(BaseModel):
 
 
 class BookUpdate(BaseModel):
+    expected_updated_at: Optional[datetime] = None
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     author: Optional[str] = Field(None, min_length=1, max_length=255)
     isbn: Optional[str] = Field(None, max_length=20)
@@ -166,32 +167,8 @@ async def get_book(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.read"))
 ):
-    """Get book details"""
-    from app.infrastructure.models.models import Book
-    
-    result = await db.execute(
-        select(Book).where(Book.id == book_id)
-    )
-    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
-    
-    if not book:
-        raise HTTPException(status_code=404, detail="Kitap bulunamadı")
-    
-    return success_response({
-        "id": str(book.id),
-        "title": book.title,
-        "author": book.author,
-        "isbn": book.isbn,
-        "category": book.category,
-        "publisher": book.publisher,
-        "publication_year": book.publication_year,
-        "total_copies": book.total_copies,
-        "available_copies": book.available_copies,
-        "description": book.description,
-        "location": book.location,
-        "created_at": book.created_at.isoformat(),
-        "updated_at": book.updated_at.isoformat()
-    })
+    from app.application.services import library_service
+    return success_response(await library_service.detail(db, tenant, book_id))
 
 
 @router.put("/books/{book_id}")
@@ -201,27 +178,8 @@ async def update_book(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.write"))
 ):
-    """Update book details"""
-    from app.infrastructure.models.models import Book
-    
-    result = await db.execute(
-        select(Book).where(Book.id == book_id)
-    )
-    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
-    
-    if not book:
-        raise HTTPException(status_code=404, detail="Kitap bulunamadı")
-    
-    for field, value in book_data.model_dump(exclude_unset=True).items():
-        setattr(book, field, value)
-    
-    book.updated_at = datetime.utcnow()
-    await db.commit()
-    
-    return success_response({
-        "id": str(book.id),
-        "updated_at": book.updated_at.isoformat()
-    }, "Kitap güncellendi")
+    from app.application.services import library_service
+    return success_response(await library_service.edit(db, tenant, book_id, book_data), "Kitap güncellendi")
 
 
 @router.delete("/books/{book_id}")
@@ -230,24 +188,8 @@ async def delete_book(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("library.write"))
 ):
-    """Delete a book"""
-    from app.infrastructure.models.models import Book
-    
-    result = await db.execute(
-        select(Book).where(Book.id == book_id)
-    )
-    book = await BaseRepository(db, tenant).get_by_id(book_id, Book)
-    
-    if not book:
-        raise HTTPException(status_code=404, detail="Kitap bulunamadı")
-    
-    from app.infrastructure.models.models import BookLoan
-    if (await db.execute(select(BookLoan.id).where(BookLoan.book_id == book.id).limit(1))).first():
-        raise HTTPException(status_code=409, detail="Ödünç geçmişi olan kitap silinemez")
-    await db.delete(book)
-    await db.commit()
-    
-    return success_response({"message": "Kitap silindi"})
+    from app.application.services import library_service
+    return success_response(await library_service.delete(db, tenant, book_id), "Kitap silindi")
 
 
 # ==================== Borrowing Endpoints ====================

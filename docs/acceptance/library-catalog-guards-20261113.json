@@ -1,0 +1,22 @@
+{
+  "status": "Targeted backend catalogue guards accepted; native CRUD UI and reminders remain pending",
+  "targeted_api_passed": 5,
+  "postgresql_variants_deselected": 5,
+  "full_backend_suite_rerun": false,
+  "source": {
+    "backend/app/application/services/library_service.py": "db826167ddb9115bd148dadfb72807c27d0cc0b17905a2b02ee34ba533e8987e",
+    "backend/app/routers/library.py": "bc7f460623566ec48d8b4c611f86f4dab8f157436a02f5cf8cc52e81064e0d2a",
+    "backend/tests/integration/test_library_catalog_guards.py": "4b04d2ddb6c3bbb5951888a420856f3c54557ca39fcaebdb37e5257681180401"
+  },
+  "checks": [
+    "Loan-backed copy quantities,active/history deletion protection,stale edit conflict",
+    "Readonly403,foreign404,required-null422,unused-book delete and subsequent404",
+    "Class-scoped teacher edits use whole-book inventory without exposing other students; hidden loan history still blocks deletion"
+  ],
+  "historical_failure": "First run3PASS/1FAIL exposed SQLite timestamp formatting in CAS; fixed by comparing stored timestamp text and stock in atomic update; assertions preserved",
+  "boundaries": [
+    "Only fresh temporary SQLite; no Main DB/index modifications",
+    "No real messages/payments/refunds/deployment",
+    "Native book detail/edit/delete integration,real reminder queue and remaining modules are not complete"
+  ]
+}

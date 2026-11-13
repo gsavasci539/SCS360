@@ -1,9 +1,9 @@
 """Persistent library operations shared by the web operational endpoints."""
 from app.core.dates import school_today
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import String, cast, func, select, update
 
 from app.core.exceptions import ConflictException, ValidationException
 from app.core.student_access import require_student_access
@@ -16,6 +16,64 @@ def book_dict(book):
     return {key: getattr(book, key) for key in (
         "title", "author", "category", "isbn", "barcode", "total_copies", "available_copies"
     )} | {"id": str(book.id)}
+
+
+def detail_dict(book):
+    return book_dict(book) | {
+        'organization_id': str(book.organization_id),
+        **{key: getattr(book, key) for key in ('publisher', 'publication_year', 'description', 'location')},
+        'created_at': book.created_at.isoformat(), 'updated_at': book.updated_at.isoformat(),
+    }
+
+
+async def detail(db, tenant, book_id):
+    return detail_dict(await BaseRepository(db, tenant).get_by_id(identifier(book_id), LibraryBook))
+
+
+async def edit(db, tenant, book_id, body):
+    book = await BaseRepository(db, tenant).get_by_id(identifier(book_id), LibraryBook, for_update=True)
+    values = body.model_dump(exclude_unset=True)
+    expected = values.pop('expected_updated_at', None)
+    def utc(value):
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    if expected is not None and utc(expected) != utc(book.updated_at):
+        raise ConflictException('Kitap kaydı değişti; güncel kaydı yeniden açın')
+    for key in ('title', 'author', 'total_copies', 'available_copies'):
+        if key in values and values[key] is None:
+            raise ValidationException('Kitap adı, yazar ve kopya alanları boş olamaz')
+    # Inventory belongs to this already-authorized book, across all student scopes.
+    loans = LibraryLoan.__table__
+    active = (await db.execute(select(func.count()).select_from(loans).where(
+        loans.c.book_id == book.id, loans.c.return_date.is_(None)))).scalar_one()
+    if book.total_copies - book.available_copies != active:
+        raise ConflictException('Kopya ve ödünç kayıtları uyuşmuyor; stok incelenmeli')
+    total = values.get('total_copies', book.total_copies)
+    if total < active:
+        raise ConflictException('Toplam kopya sayısı ödünçteki kopyalardan az olamaz')
+    available = total - active
+    if 'available_copies' in values and values['available_copies'] != available:
+        raise ConflictException('Mevcut kopya sayısı ödünç kayıtlarından hesaplanır')
+    if not values:
+        return detail_dict(book)
+    version = (await db.execute(select(cast(LibraryBook.updated_at, String)).where(LibraryBook.id == book.id))).scalar_one()
+    values.update(available_copies=available, updated_at=datetime.now(UTC))
+    changed = await db.execute(update(LibraryBook).where(LibraryBook.id == book.id,
+        cast(LibraryBook.updated_at, String) == version, LibraryBook.available_copies == book.available_copies,
+        LibraryBook.total_copies == book.total_copies).values(**values).execution_options(synchronize_session=False))
+    if changed.rowcount != 1:
+        raise ConflictException('Kitap eşzamanlı değişti; güncel kaydı yeniden açın')
+    await db.flush(); await db.refresh(book)
+    return detail_dict(book)
+
+
+async def delete(db, tenant, book_id):
+    book = await BaseRepository(db, tenant).get_by_id(identifier(book_id), LibraryBook, for_update=True)
+    loans = LibraryLoan.__table__
+    if (await db.execute(select(loans.c.id).where(loans.c.book_id == book.id).limit(1))).first():
+        raise ConflictException('Ödünç geçmişi olan kitap silinemez')
+    key = str(book.id)
+    await db.delete(book); await db.flush()
+    return {'id': key, 'message': 'Kitap silindi'}
 
 
 async def books(db, tenant, search=None, category=None):
