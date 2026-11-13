@@ -36,6 +36,7 @@ async def test_native_library_real_api(materials_client):  # noqa: F811
         do_GET=forward
         do_POST=forward
         do_PUT=forward
+        do_DELETE=forward
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=Thread(target=server.serve_forever,daemon=True);thread.start()
     root=Path(__file__).resolve().parents[3]
     env=os.environ.copy();env.update({'NATIVE_TEST_API_URL':f'http://127.0.0.1:{server.server_port}/api/','NATIVE_TEST_STUDENT':str(data['children'][0].id),'NATIVE_TEST_FOREIGN_STUDENT':str(data['stranger'].id)})
@@ -48,11 +49,12 @@ async def test_native_library_real_api(materials_client):  # noqa: F811
         assert any(e['method']=='POST' and e['path']=='/api/library/loans/borrow' and e['status'] in (403,404) for e in events)
         assert any(e['method']=='PUT' and e['path'].endswith('/return') and e['status']==409 for e in events)
         async with sessions() as db:
-            book=(await db.execute(select(LibraryBook).where(LibraryBook.title=='Native recorded catalog'))).scalar_one()
-            assert book.total_copies==book.available_copies==2 and book.barcode=='NATIVE-ACCEPTANCE'
+            book=(await db.execute(select(LibraryBook).where(LibraryBook.title=='Native edited catalog'))).scalar_one()
+            assert book.total_copies==book.available_copies==2 and book.barcode=='NATIVE-ACCEPTANCE' and book.publisher=='Acceptance Press' and book.location=='A-2'
             loans=(await db.execute(select(LibraryLoan).where(LibraryLoan.book_id==book.id))).scalars().all()
             assert len(loans)==1 and loans[0].student_id==data['children'][0].id and loans[0].return_date is not None
+            assert (await db.execute(select(LibraryBook.id).where(LibraryBook.title=='Native removable catalog'))).first() is None
             for model in (Payment,NotificationJob):assert (await db.execute(select(func.count()).select_from(model))).scalar_one()==0
-        Path(env['NATIVE_ACCEPTANCE_REPORT']).write_text(json.dumps({'real_api':True,'temporary_database':'sqlite','actual_native_login':True,'canonical_catalog_create_list':True,'real_student_options':True,'borrow_and_put_return_persisted':True,'stock_restored':2,'loan_rows':1,'foreign_student_rejected':True,'reader_write_forbidden':True,'duplicate_return_conflict':True,'payment_rows':0,'notification_jobs':0,'real_message_delivery':0,'requests':events},indent=2),encoding='utf-8')
+        Path(env['NATIVE_ACCEPTANCE_REPORT']).write_text(json.dumps({'real_api':True,'temporary_database':'sqlite','actual_native_login':True,'canonical_catalog_create_list':True,'detail_and_edit_persisted':True,'stale_edit_conflict':True,'delete_without_history_persisted':True,'delete_with_loan_history_conflict':True,'real_student_options':True,'borrow_and_put_return_persisted':True,'stock_restored':2,'loan_rows':1,'foreign_student_rejected':True,'reader_write_forbidden':True,'duplicate_return_conflict':True,'payment_rows':0,'notification_jobs':0,'real_message_delivery':0,'requests':events},indent=2),encoding='utf-8')
     finally:
         await asyncio.to_thread(server.shutdown);server.server_close();thread.join(timeout=5)
