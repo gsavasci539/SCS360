@@ -1,0 +1,91 @@
+{
+  "checkpoint": "native-expense-edit-20261113",
+  "native": {
+    "unique_passed": 120,
+    "failed": 0,
+    "skipped": 0,
+    "classes": 32,
+    "runs": {
+      "target": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 2,
+        "duration": "5m 18s"
+      },
+      "regression": {
+        "tests": 113,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "classes": 30,
+        "duration": "13m 57s"
+      }
+    },
+    "partition": "7 targeted + remaining113; two targeted classes excluded from regression to avoid repeats"
+  },
+  "backend_retained": {
+    "passed": 940,
+    "database_specific_skips": 2,
+    "source_unchanged_files": 552
+  },
+  "frontend_retained": {
+    "passed": 352,
+    "files": 63,
+    "build": "TypeScript/Vite PASS",
+    "source_unchanged": true
+  },
+  "behavior": [
+    "Fresh canonical detail GET and whitelisted delta PUT for title/category/cents/date/nullable notes; unchanged timestamp and fields preserved",
+    "Missing/mismatched edit ACK preserves immutable pending patch; same-ID PUT retry or explicit authoritative reread that closes the editor and refreshes the parent without a second PUT or false ACK; 422 permits draft correction",
+    "Captured actor/session/role/organization/branch presentation scope; stale responses cannot acknowledge or reload another workspace",
+    "Readonly controls; bounded lazy editor, landscape font scale2 and48dp actions; no money movement"
+  ],
+  "acceptance_boundary": "Seven isolated HTTP UI/client contracts plus one actual Kotlin/FastAPI/tempSQLite bridge; injected authenticated fixture, not native login/physical device/provider acceptance. Standard backend runtime suite remains unchanged.",
+  "open": [
+    "Native create notes/status parity and same-field concurrent edit revision policy",
+    "Native parent/custom-role/remaining module parity",
+    "Physical A26 keyboard/scroll/rotation/font acceptance and iOS/Mac",
+    "Real HTTPS/provider sandbox/store products and release signing; not sale ready"
+  ],
+  "apk": {
+    "sha256": "3f2feef7eedf70e03a42da86e8d64b74febebb71d84bcd9cc62d2120cee2fbd0",
+    "bytes": 37238109,
+    "signature_verified": true,
+    "variant": "debug",
+    "app_id": "com.aistudio.okul360.hdtcca",
+    "min_sdk": 24,
+    "target_sdk": 36,
+    "api": "emulator HTTP test default; not a production release"
+  },
+  "files": {
+    "mobile-android/app/src/main/java/com/example/data/model/Models.kt": "b6195a7af95b5b00da91b3a0ee16e917907d0292c619bf1e66edad9961a19e08",
+    "mobile-android/app/src/main/java/com/example/data/remote/NativeExpenseClient.kt": "f32fe82779ef9a08650b277847f641b397caaef67e73c4461778791bb52b8bd4",
+    "mobile-android/app/src/main/java/com/example/data/remote/NativeExpenseEditSession.kt": "97ef00f0529378f5be60aea83943994123b46b0376bcb81d3a5fe15617666dc9",
+    "mobile-android/app/src/main/java/com/example/ui/dialogs/FinanceExpenseEditDialog.kt": "7e09df4dd184b04c7dadec14f0104129eb0639f867ea905475feb4aa612586e2",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinancePortalScreen.kt": "e4bce6406c9b81fbc39dfaca3026221e5b5307e5351dd358ffe2fa5a971b992b",
+    "mobile-android/app/src/main/java/com/example/ui/screens/FinanceScreen.kt": "b3df31cb9396ff8d050c39e9c1cfa45b5645e07c92092c4792392c4c0e3acf33",
+    "mobile-android/app/src/test/java/com/example/NativeExpenseEditClientTest.kt": "228ae4132459ee51721d3f091e3ebab59c614b1d58c5c7fc2897cd52d0ef5f9b",
+    "mobile-android/app/src/test/java/com/example/NativeExpenseEditUiTest.kt": "aac074ffddec8a20048997e6d41b374c5189592950cf1909c745dbf7219ab3ac",
+    "mobile-android/app/src/backendAcceptance/java/com/example/NativeExpenseEditBackendAcceptance.kt": "4b1cf34a575383dd63f5dcbda8e1ba13ffa0a55802d20382a6d655c7719072c2"
+  },
+  "real_api": {
+    "real_api": true,
+    "temporary_database": "sqlite",
+    "seeded_expenses": 100,
+    "created_expenses": 1,
+    "lost_committed_ack_recovered_once": true,
+    "ledger_rows_after_create": 101,
+    "visible_after_deletes": 0,
+    "updated_amount": "120.03",
+    "native_delta_visible_to_web": true,
+    "native_edit_lost_ack_replay": true,
+    "web_edit_visible_natively": true,
+    "canonical_native_and_web_delete": true,
+    "payment_rows": 0,
+    "notification_jobs": 0,
+    "room_ledger_unchanged": true
+  },
+  "backend_bridge_sha256": "e8a84bedb26fdb478d2028ce421824f5fbc56be239ff14c2fc62c9e255f8ddb8"
+}
