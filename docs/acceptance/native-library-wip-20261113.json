@@ -233,10 +233,10 @@
     "mobile-android/app/src/backendAcceptance/java/com/example/NativeLibraryBackendAcceptance.kt": "a8c9d04f23fb2cebcfd8f35986b643e8b0fe7f2d58fc2b901aa8ba941a81eb8d"
   },
   "open_issues": [
-    "Canonical catalog/loans and legacy book detail/edit/delete currently use different tables; unify preserving legacy data",
     "Web stock display reads available_count instead of available_copies",
     "Reminder endpoint has no durable job and claims sent; native does not offer that false-delivery action",
     "Library detail/edit/delete native UI,staff and remaining operational modules still open"
   ],
-  "no_production_deployment": true
+  "no_production_deployment": true,
+  "correction": "Book=LibraryBook and BookLoan=LibraryLoan are aliases of the same persistent models. The earlier WIP different-store inference was incorrect; no table split or migration is required."
 }
