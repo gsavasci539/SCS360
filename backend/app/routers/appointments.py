@@ -63,6 +63,23 @@ async def list_appointments(
     return success_response(paginate(rows[(page - 1) * page_size:page * page_size], len(rows), page, page_size))
 
 
+@router.get("/my-appointments")
+async def get_my_appointments(
+    status: Optional[str] = Query(None),
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
+):
+    from app.application.services import appointment_service
+    records = await appointment_service.records(db, tenant, status=status, mine=True)
+    if start_date:
+        records = [row for row in records if row["appointment_date"] >= start_date.isoformat()]
+    if end_date:
+        records = [row for row in records if row["appointment_date"] <= end_date.isoformat()]
+    return success_response(records)
+
+
 @router.get("/{appointment_id}")
 async def get_appointment(
     appointment_id: str,
@@ -115,23 +132,6 @@ async def create_appointment(
 
 
 # ==================== Teacher Endpoints ====================
-
-@router.get("/my-appointments")
-async def get_my_appointments(
-    status: Optional[str] = Query(None),
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-    db: AsyncSession = Depends(get_db, scope="function"),
-    tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
-):
-    from app.application.services import appointment_service
-    records = await appointment_service.records(db, tenant, status=status, mine=True)
-    if start_date:
-        records = [row for row in records if row["appointment_date"] >= start_date.isoformat()]
-    if end_date:
-        records = [row for row in records if row["appointment_date"] <= end_date.isoformat()]
-    return success_response(records)
-
 
 @router.get("/teacher-slots/{teacher_id}")
 async def get_teacher_available_slots(
