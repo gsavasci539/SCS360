@@ -128,23 +128,22 @@ async def get_conversation_messages(
     """Get messages between current user and a specific partner"""
     from app.infrastructure.models.models import ChatMessage as ChatMessageModel
     
-    query = select(ChatMessageModel).where(
-        or_(
-            and_(
-                ChatMessageModel.sender_id == current_user.id,
-                ChatMessageModel.recipient_id == partner_id
-            ),
-            and_(
-                ChatMessageModel.sender_id == partner_id,
-                ChatMessageModel.recipient_id == current_user.id
-            )
-        )
+    participants = or_(
+        and_(ChatMessageModel.sender_id == current_user.id, ChatMessageModel.recipient_id == partner_id),
+        and_(ChatMessageModel.sender_id == partner_id, ChatMessageModel.recipient_id == current_user.id),
     )
+    query = select(ChatMessageModel).where(participants)
     
     if before_id:
-        query = query.where(ChatMessageModel.id < before_id)
+        before = await db.scalar(select(ChatMessageModel).where(participants, ChatMessageModel.id == before_id))
+        if before is None:
+            raise HTTPException(status_code=404, detail="Mesaj bulunamadı")
+        query = query.where(or_(
+            ChatMessageModel.sent_at < before.sent_at,
+            and_(ChatMessageModel.sent_at == before.sent_at, ChatMessageModel.id < before.id),
+        ))
     
-    query = query.order_by(desc(ChatMessageModel.sent_at)).limit(limit)
+    query = query.order_by(ChatMessageModel.sent_at.desc(), ChatMessageModel.id.desc()).limit(limit)
     
     result = await db.execute(query)
     messages = result.scalars().all()
