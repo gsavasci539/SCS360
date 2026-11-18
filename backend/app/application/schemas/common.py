@@ -535,6 +535,7 @@ class StaffLeaveRequestCreate(BaseModel):
     end_date: str
     days_count: int
     reason: str
+    request_id: UUID | None = None
 
 
 class StaffLeaveReviewRequest(BaseModel):

@@ -9,6 +9,7 @@ import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { useForm } from "react-hook-form";
 import { DutyRosterSection } from "./DutyRosterSection";
+import { StaffLeaveSection } from "./StaffLeaveSection";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
@@ -139,6 +140,7 @@ export function StaffPage() {
       )}
 
       <DutyRosterSection />
+      <StaffLeaveSection />
       <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => load()} />
     </>
   );

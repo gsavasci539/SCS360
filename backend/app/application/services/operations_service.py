@@ -26,8 +26,11 @@ def scoped(db, tenant, model):
 
 async def records(db, tenant, kind, status=None, day=None, branch_id=None):
     query = scoped(db, tenant, OperationalRecord).where(OperationalRecord.kind == kind)
-    if kind == "STAFF_LEAVE" and not tenant.has_permission("users.write"):
-        query = query.where(OperationalRecord.staff_id == tenant.user_id)
+    if kind == "STAFF_LEAVE":
+        if not tenant.has_permission("users.write"):
+            query = query.where(OperationalRecord.staff_id == tenant.user_id)
+        elif limits_leave_staff(tenant):
+            query = query.where(OperationalRecord.staff_id.in_(leave_staff_query(tenant)))
     if status:
         query = query.where(OperationalRecord.status == status)
     if branch_id is not None:
@@ -104,16 +107,30 @@ async def leave(db, tenant, body):
     user = await BaseRepository(db, tenant).get_by_id(identifier(body.staff_id), User)
     if user.id != tenant.user_id and not tenant.has_permission("users.write"):
         raise ForbiddenException("Yalnızca kendi izin talebinizi oluşturabilirsiniz")
+    if user.id != tenant.user_id:
+        await require_leave_staff_scope(db, tenant, user.id)
     try:
         start, end = date.fromisoformat(body.start_date), date.fromisoformat(body.end_date)
         if end < start:
             raise ValueError()
     except ValueError as exc:
         raise ValidationException("İzin tarih aralığı geçersiz") from exc
-    values = body.model_dump()
-    values.update(staff_name=f"{user.first_name} {user.last_name}", days_count=(end-start).days+1, admin_comment=None)
+    values = body.model_dump(exclude={"request_id", "staff_name", "days_count"})
+    values.update(staff_id=str(user.id), days_count=(end - start).days + 1)
+    if body.request_id is not None:
+        existing = (await db.execute(scoped(db, tenant, OperationalRecord).where(
+            OperationalRecord.id == body.request_id,
+        ))).scalar_one_or_none()
+        if existing is not None:
+            if (existing.kind != "STAFF_LEAVE" or existing.created_by != tenant.user_id
+                    or any(existing.data.get(key) != value for key, value in values.items())):
+                raise ConflictException("İzin talebi kimliği başka bir kayıtla çakışıyor")
+            return dict(existing.data, id=str(existing.id), status=existing.status)
+    values.update(staff_name=f"{user.first_name} {user.last_name}", admin_comment=None)
     record = OperationalRecord(organization_id=user.organization_id, staff_id=user.id, created_by=tenant.user_id,
         kind="STAFF_LEAVE", status="PENDING", data=values)
+    if body.request_id is not None:
+        record.id = body.request_id
     db.add(record); await db.flush()
     return dict(record.data, id=str(record.id), status=record.status)
 
@@ -122,11 +139,32 @@ async def review_leave(db, tenant, record_id, body):
     record = await BaseRepository(db, tenant).get_by_id(identifier(record_id), OperationalRecord)
     if record.kind != "STAFF_LEAVE":
         raise NotFoundException()
+    await require_leave_staff_scope(db, tenant, record.staff_id)
     if body.status not in {"APPROVED", "REJECTED"}:
         raise ValidationException("Geçersiz izin değerlendirmesi")
     record.status = body.status
     record.data = dict(record.data, admin_comment=body.admin_comment)
     return dict(record.data, id=str(record.id), status=record.status)
+
+
+def limits_leave_staff(tenant):
+    return bool(tenant.branch_ids and not tenant.is_super_admin and not tenant.is_organization_owner)
+
+
+def leave_staff_query(tenant):
+    valid_branch = Branch.deleted_at.is_(None) & (Branch.organization_id == tenant.organization_id)
+    return select(User.id).where(
+        User.organization_id == tenant.organization_id,
+        User.deleted_at.is_(None),
+        ~User.branches.any(valid_branch) | User.branches.any(valid_branch & Branch.id.in_(tenant.branch_ids)),
+    )
+
+
+async def require_leave_staff_scope(db, tenant, staff_id):
+    if limits_leave_staff(tenant):
+        staff = await db.scalar(leave_staff_query(tenant).where(User.id == staff_id))
+        if staff is None:
+            raise NotFoundException("İzin talebi bulunamadı")
 
 
 async def class_schedule(db, tenant, class_id, data=None):
