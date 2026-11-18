@@ -6,9 +6,9 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 
-from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
+from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.student_access import uses_relationship_scope
-from app.infrastructure.models.models import Branch, ClassRoom, Debt, DebtStatus, Expense, OperationalRecord, Payment, User
+from app.infrastructure.models.models import Branch, ClassRoom, Debt, DebtStatus, Expense, OperationalRecord, Payment, Role, User, UserStatus
 from app.infrastructure.repositories.base import BaseRepository
 
 
@@ -24,32 +24,78 @@ def scoped(db, tenant, model):
     return repo._branch_filter(repo._org_filter(select(model), model), model)
 
 
-async def records(db, tenant, kind, status=None, day=None):
+async def records(db, tenant, kind, status=None, day=None, branch_id=None):
     query = scoped(db, tenant, OperationalRecord).where(OperationalRecord.kind == kind)
     if kind == "STAFF_LEAVE" and not tenant.has_permission("users.write"):
         query = query.where(OperationalRecord.staff_id == tenant.user_id)
     if status:
         query = query.where(OperationalRecord.status == status)
+    if branch_id is not None:
+        await BaseRepository(db, tenant).require_related(branch_id, Branch)
+        query = query.where(OperationalRecord.branch_id == branch_id)
     rows = (await db.execute(query.order_by(OperationalRecord.created_at.desc()))).scalars()
     data = [dict(row.data, id=str(row.id), status=row.status) for row in rows]
     return [row for row in data if not day or row.get("day_of_week") == day]
 
 
+def duty_teacher_query(branch):
+    valid_branch = Branch.deleted_at.is_(None) & (Branch.organization_id == branch.organization_id)
+    return select(User).where(
+        User.organization_id == branch.organization_id,
+        User.deleted_at.is_(None),
+        User.is_super_admin.is_(False),
+        User.status == UserStatus.ACTIVE,
+        User.roles.any((Role.slug == "teacher") & Role.deleted_at.is_(None)
+            & ((Role.organization_id == branch.organization_id) | Role.organization_id.is_(None))),
+        ~User.branches.any(valid_branch) | User.branches.any(valid_branch & (Branch.id == branch.id)),
+    )
+
+
+async def duty_options(db, tenant, branch_id, page, page_size):
+    from app.core.responses import paginate
+
+    repo = BaseRepository(db, tenant)
+    if branch_id is None:
+        query = scoped(db, tenant, Branch).where(Branch.deleted_at.is_(None)).order_by(Branch.name, Branch.id)
+        rows, total = await repo.paginate(query, page, page_size)
+        items = [{"id": str(row.id), "name": row.name} for row in rows]
+    else:
+        branch = await repo.require_related(branch_id, Branch)
+        query = duty_teacher_query(branch).order_by(User.first_name, User.last_name, User.id)
+        rows, total = await repo.paginate(query, page, page_size)
+        items = [{"id": str(row.id), "name": f"{row.first_name} {row.last_name}".strip()} for row in rows]
+    return paginate(items, total, page, page_size)
+
+
 async def duty(db, tenant, body):
     repo = BaseRepository(db, tenant)
-    branch = await repo.get_by_id(identifier(body.branch_id), Branch)
-    teacher = await repo.get_by_id(identifier(body.teacher_id), User)
-    if teacher.organization_id != branch.organization_id:
-        raise ForbiddenException("Öğretmen bu kuruma ait değil")
+    branch = await repo.require_related(identifier(body.branch_id), Branch)
+    teacher_id = identifier(body.teacher_id)
     try:
-        if time.fromisoformat(body.start_time) >= time.fromisoformat(body.end_time):
+        start, end = time.fromisoformat(body.start_time), time.fromisoformat(body.end_time)
+        if start.tzinfo or end.tzinfo or start >= end:
             raise ValueError()
     except ValueError as exc:
         raise ValidationException("Nöbet başlangıç ve bitiş saatleri geçersiz") from exc
-    values = body.model_dump()
-    values["teacher_name"] = f"{teacher.first_name} {teacher.last_name}"
+    values = body.model_dump(exclude={"request_id", "teacher_name"})
+    values.update(branch_id=str(branch.id), teacher_id=str(teacher_id))
+    if body.request_id is not None:
+        existing = (await db.execute(scoped(db, tenant, OperationalRecord).where(
+            OperationalRecord.id == body.request_id,
+        ))).scalar_one_or_none()
+        if existing is not None:
+            if (existing.kind != "DUTY_ROSTER" or existing.created_by != tenant.user_id
+                    or any(existing.data.get(key) != value for key, value in values.items())):
+                raise ConflictException("Nöbet istek kimliği başka bir kayıtla çakışıyor")
+            return dict(existing.data, id=str(existing.id), status=existing.status)
+    teacher = (await db.execute(duty_teacher_query(branch).where(User.id == teacher_id))).scalar_one_or_none()
+    if teacher is None:
+        raise ValidationException("Seçilen öğretmen bu şubede nöbet için uygun değil")
+    values["teacher_name"] = f"{teacher.first_name} {teacher.last_name}".strip()
     record = OperationalRecord(organization_id=branch.organization_id, branch_id=branch.id,
         staff_id=teacher.id, created_by=tenant.user_id, kind="DUTY_ROSTER", data=values)
+    if body.request_id is not None:
+        record.id = body.request_id
     db.add(record); await db.flush()
     return dict(record.data, id=str(record.id), status=record.status)
 

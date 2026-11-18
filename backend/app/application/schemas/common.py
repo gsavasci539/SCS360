@@ -524,6 +524,7 @@ class DutyRosterCreate(BaseModel):
     duty_location: str
     start_time: str = "08:00"
     end_time: str = "17:00"
+    request_id: UUID | None = None
 
 
 class StaffLeaveRequestCreate(BaseModel):

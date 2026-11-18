@@ -397,11 +397,24 @@ async def remind_library_loan(
 @router.get("/api/staff/duty-rosters")
 async def list_duty_rosters(
     day_of_week: str | None = None,
+    branch_id: uuid.UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("user.read")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
     from app.application.services import operations_service
-    return success_response(await operations_service.records(db, tenant, "DUTY_ROSTER", day=day_of_week))
+    return success_response(await operations_service.records(db, tenant, "DUTY_ROSTER", day=day_of_week, branch_id=branch_id))
+
+
+@router.get("/api/staff/duty-rosters/options")
+async def list_duty_options(
+    branch_id: uuid.UUID | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=100),
+    tenant: TenantContext = Depends(PermissionChecker("user.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    from app.application.services import operations_service
+    return success_response(await operations_service.duty_options(db, tenant, branch_id, page, page_size))
 
 
 @router.post("/api/staff/duty-rosters")
