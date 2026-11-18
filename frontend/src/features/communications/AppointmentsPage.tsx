@@ -3,16 +3,24 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
-import { ErrorState, Field, LoadingState, Modal, PageHeader } from "../../components/ui";
+import { ErrorState, LoadingState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
-import { useForm } from "react-hook-form";
+import { AppointmentCreateModal } from "./AppointmentCreateModal";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
 
 export function AppointmentsPage() {
+  const user = useAuthStore((s) => s.user);
+  const session = useAuthStore((s) => s.sessionVersion);
+  const workspace = usePlatformWorkspace((s) => s.workspace?.id);
+  return <ScopedAppointmentsPage key={JSON.stringify([session, user?.id, workspace, user?.organization_id, user?.branch_ids, user?.permissions])} />;
+}
+
+function ScopedAppointmentsPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Paginated<DataRecord>>({ items: [], total: 0, page: 1, page_size: 20, total_pages: 1 });
   const [detail, setDetail] = useState<DataRecord | null>(null);
@@ -22,6 +30,7 @@ export function AppointmentsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
+  const parent = useAuthStore((s) => s.user?.roles.some((role) => role.slug === "parent") ?? false);
 
   async function load(page = data.page) {
     setLoading(true);
@@ -196,65 +205,7 @@ export function AppointmentsPage() {
         />
       )}
 
-      <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => load()} />
+      {createOpen && can("appointments.write") && <AppointmentCreateModal parent={parent} onClose={() => setCreateOpen(false)} onSuccess={() => void load()} />}
     </>
-  );
-}
-
-function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
-  const { showToast } = useToast();
-
-  async function submit(values: any) {
-    try {
-      // The API treats an offset-free appointment time as the school's local time.
-      const slot_datetime = values.appointment_date && values.appointment_time 
-        ? `${values.appointment_date}T${values.appointment_time}`
-        : null;
-      
-      const payload = {
-        teacher_id: values.teacher_id,
-        student_id: values.student_id,
-        slot_datetime: slot_datetime,
-        parent_note: values.notes,
-        duration_minutes: 30
-      };
-      
-      await api.post("/appointments", payload);
-      showToast("Randevu oluşturuldu", "Yeni randevu başarıyla eklendi.");
-      onClose();
-      onSuccess();
-    } catch (e) {
-      showToast("Oluşturulamadı", apiMessage(e), "error");
-    }
-  }
-
-  return (
-    <Modal open={open} title="Yeni randevu" description="Randevu bilgilerini girin." onClose={onClose} actions={
-      <>
-        <button className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
-        <button className="btn btn-primary" disabled={isSubmitting} onClick={handleSubmit(submit)}>
-          <Plus size={16} />Oluştur
-        </button>
-      </>
-    }>
-      <form className="form-grid">
-        <Field label="Öğrenci" required error={errors.student_id?.message as string}>
-          <input {...register("student_id", { required: "Öğrenci seçimi zorunludur." })} />
-        </Field>
-        <Field label="Öğretmen" required error={errors.teacher_id?.message as string}>
-          <input {...register("teacher_id", { required: "Öğretmen seçimi zorunludur." })} />
-        </Field>
-        <Field label="Tarih" required error={errors.appointment_date?.message as string}>
-          <input type="date" {...register("appointment_date", { required: "Tarih zorunludur." })} />
-        </Field>
-        <Field label="Saat" required error={errors.appointment_time?.message as string}>
-          <input type="time" {...register("appointment_time", { required: "Saat zorunludur." })} />
-        </Field>
-        <Field label="Notlar" full error={errors.notes?.message as string}>
-          <textarea {...register("notes")} />
-        </Field>
-      </form>
-    </Modal>
   );
 }

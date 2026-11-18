@@ -169,11 +169,12 @@ async def delete_expense(
 @router.get("/api/appointments")
 async def list_appointments(
     status: str | None = None,
+    branch_id: uuid.UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("appointments.read")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
     from app.application.services import appointment_service
-    return success_response(await appointment_service.records(db, tenant, status))
+    return success_response(await appointment_service.records(db, tenant, status, branch_id=branch_id))
 
 
 @router.post("/api/appointments")

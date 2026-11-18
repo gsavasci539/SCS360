@@ -401,6 +401,7 @@ class ExpenseCreate(BaseModel):
 
 class AppointmentCreate(BaseModel):
     teacher_id: str
+    request_id: UUID | None = None
     slot_datetime: datetime | None = None
     duration_minutes: int = Field(default=30, ge=15, le=120)
     parent_note: str | None = None

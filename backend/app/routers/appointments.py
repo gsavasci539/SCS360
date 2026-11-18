@@ -27,6 +27,7 @@ router = APIRouter(prefix="/api/appointments", tags=["Appointments"])
 
 class AppointmentCreate(BaseModel):
     teacher_id: UUID
+    request_id: UUID | None = None
     student_id: UUID
     slot_datetime: datetime
     parent_note: Optional[str] = None
@@ -55,12 +56,26 @@ async def list_appointments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[str] = Query(None),
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.read"))
 ):
     from app.application.services import appointment_service
-    rows = await appointment_service.records(db, tenant, status)
+    rows = await appointment_service.records(db, tenant, status, branch_id=branch_id)
     return success_response(paginate(rows[(page - 1) * page_size:page * page_size], len(rows), page, page_size))
+
+
+@router.get("/options")
+async def appointment_options(
+    student_id: UUID | None = None,
+    branch_id: UUID | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=100),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    from app.application.services import appointment_service
+    return success_response(await appointment_service.options(db, tenant, student_id, branch_id, page, page_size))
 
 
 @router.get("/my-appointments")
