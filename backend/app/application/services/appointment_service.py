@@ -164,6 +164,8 @@ async def update_status(db, tenant, appointment_id, body):
 
 async def delete(db, tenant, appointment_id):
     appointment = await get(db, tenant, appointment_id)
+    if uses_relationship_scope(tenant) and "parent" in tenant.role_slugs:
+        raise ForbiddenException("Veli randevuyu yalnızca iptal edebilir")
     appointment.deleted_at = datetime.now(UTC)
 
 

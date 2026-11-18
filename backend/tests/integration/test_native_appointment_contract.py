@@ -46,8 +46,55 @@ async def test_parent_appointment_options_creation_replay_and_cancellation(mater
     rows = rows["items"] if isinstance(rows, dict) else rows
     assert len(rows) == 1 and rows[0]["id"] == key and rows[0]["appointment_time"] == "14:00"
     assert (await client.patch(f"{route}/{key}/status", headers=auth, json={"status": "APPROVED"})).status_code == 403
+    assert (await client.delete(f"{route}/{key}", headers=auth)).status_code == 403
     cancelled = await client.patch(f"{route}/{key}/status", headers=auth, json={"status": "CANCELLED"})
     assert cancelled.status_code == 200 and cancelled.json()["data"]["status"] == "CANCELLED"
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(Appointment)) == 1
         assert await db.scalar(select(func.count()).select_from(NotificationJob)) == 0
+
+
+async def test_teacher_manages_only_own_slots_and_deletes_own_appointment(materials_client):
+    client, sessions, fixture = materials_client
+    parent, teacher, child = fixture["user"], fixture["teacher"], fixture["children"][0]
+    async with sessions() as db:
+        roles = (await db.scalars(select(Role).where(
+            Role.organization_id == fixture["org"].id, Role.slug.in_(("parent", "teacher")),
+        ))).all()
+        permissions = [Permission(code=code, name=code, module="appointments")
+                       for code in ("appointments.read", "appointments.write")]
+        for role in roles:
+            await db.refresh(role, ["permissions"])
+            role.permissions.extend(permissions)
+        await db.commit()
+    teacher_auth = {"Authorization": "Bearer " + create_access_token(teacher.id)}
+    parent_auth = {"Authorization": "Bearer " + create_access_token(parent.id)}
+    route = "/api/appointments"
+    date_filter = {"date": "2027-01-04"}
+    payload = {**date_filter, "teacher_id": str(teacher.id), "start_time": "14:00", "end_time": "14:30"}
+    assert (await client.get(route + "/slots", headers=parent_auth, params=date_filter)).status_code == 403
+    assert (await client.post(route + "/slots", headers=parent_auth, json=payload)).status_code == 403
+    assert (await client.get(route + "/slots", headers=teacher_auth,
+        params={**date_filter, "teacher_id": str(parent.id)})).status_code == 403
+    created = await client.post(route + "/slots", headers=teacher_auth, json=payload)
+    assert created.status_code == 200, created.text
+    slot = created.json()["data"]
+    replay = await client.post(route + "/slots", headers=teacher_auth, json=payload)
+    assert replay.json()["data"] == slot
+    assert (await client.post(route + "/slots", headers=teacher_auth,
+        json={**payload, "start_time": "14:15"})).status_code == 409
+    listed = await client.get(route + "/slots", headers=teacher_auth, params=date_filter)
+    assert listed.json()["data"] == [slot]
+    slot_url = f"{route}/slots/{slot['id']}"
+    assert (await client.delete(slot_url, headers=parent_auth)).status_code == 403
+    key = str(uuid4())
+    booked = await client.post(route + "/request", headers=parent_auth, json={
+        "teacher_id": str(teacher.id), "student_id": str(child.id),
+        "slot_datetime": "2027-01-04T14:00", "duration_minutes": 30, "request_id": key,
+    })
+    assert booked.status_code == 200, booked.text
+    assert (await client.get(route + "/slots", headers=teacher_auth, params=date_filter)).json()["data"] == [slot]
+    assert (await client.delete(f"{route}/{key}", headers=teacher_auth)).status_code == 200
+    assert (await client.get(f"{route}/{key}", headers=teacher_auth)).status_code == 404
+    assert (await client.delete(slot_url, headers=teacher_auth)).status_code == 200
+    assert (await client.get(route + "/slots", headers=teacher_auth, params=date_filter)).json()["data"] == []

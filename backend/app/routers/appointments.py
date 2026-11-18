@@ -19,6 +19,8 @@ from app.core.permissions import PermissionChecker
 from app.core.responses import success_response, paginate
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
+from app.infrastructure.models.models import TimeSlot, User as UserModel
+from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/appointments", tags=["Appointments"])
 
@@ -46,6 +48,34 @@ class TimeSlotCreate(BaseModel):
     end_time: time
     is_available: bool = Field(default=True)
 
+
+def slot_record(slot: TimeSlot) -> dict:
+    return {
+        "id": str(slot.id), "teacher_id": str(slot.teacher_id), "date": slot.date.isoformat(),
+        "start_time": slot.start_time.strftime("%H:%M"), "end_time": slot.end_time.strftime("%H:%M"),
+        "is_available": slot.is_available,
+    }
+
+
+def require_slot_manager(tenant: TenantContext, teacher_id: UUID) -> None:
+    if not tenant.is_super_admin and ("teacher" not in tenant.role_slugs or teacher_id != tenant.user_id):
+        raise HTTPException(status_code=403, detail="Öğretmen yalnızca kendi saatlerini yönetebilir")
+
+
+@router.get("/slots")
+async def list_time_slots(
+    day: date = Query(alias="date"),
+    teacher_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("appointments.write")),
+):
+    owner = teacher_id or tenant.user_id
+    require_slot_manager(tenant, owner)
+    await BaseRepository(db, tenant).get_by_id(owner, UserModel)
+    slots = (await db.scalars(select(TimeSlot).where(
+        TimeSlot.teacher_id == owner, TimeSlot.date == day,
+    ).order_by(TimeSlot.start_time, TimeSlot.id))).all()
+    return success_response([slot_record(slot) for slot in slots])
 
 
 
@@ -260,18 +290,21 @@ async def create_time_slot(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
-    """Create available time slot for appointments"""
-    from app.infrastructure.models.models import TimeSlot
-    
-    # Verify teacher is creating slot for themselves
-    if not tenant.is_super_admin and slot_data.teacher_id != tenant.user_id:
-        raise HTTPException(status_code=403, detail="Sadece kendi saatlerinizi oluşturabilirsiniz")
-    
-    from app.infrastructure.repositories.base import BaseRepository
-    from app.infrastructure.models.models import User as UserModel
-    await BaseRepository(db, tenant).get_by_id(slot_data.teacher_id, UserModel)
+    require_slot_manager(tenant, slot_data.teacher_id)
     if slot_data.end_time <= slot_data.start_time:
         raise HTTPException(status_code=422, detail="Bitiş saati başlangıçtan sonra olmalı")
+    await BaseRepository(db, tenant).get_by_id(slot_data.teacher_id, UserModel, for_update=True)
+    existing = (await db.scalars(select(TimeSlot).where(
+        TimeSlot.teacher_id == slot_data.teacher_id, TimeSlot.date == slot_data.date,
+        TimeSlot.start_time < slot_data.end_time, TimeSlot.end_time > slot_data.start_time,
+    ))).all()
+    for slot in existing:
+        if (slot.start_time, slot.end_time, slot.is_available) == (
+            slot_data.start_time, slot_data.end_time, slot_data.is_available,
+        ):
+            return success_response(slot_record(slot))
+    if existing:
+        raise HTTPException(status_code=409, detail="Bu saat aralığı mevcut bir aralıkla çakışıyor")
     new_slot = TimeSlot(
         teacher_id=slot_data.teacher_id,
         date=slot_data.date,
@@ -284,14 +317,7 @@ async def create_time_slot(
     await db.commit()
     await db.refresh(new_slot)
     
-    return success_response({
-        "id": str(new_slot.id),
-        "teacher_id": str(new_slot.teacher_id),
-        "date": new_slot.date.isoformat(),
-        "start_time": new_slot.start_time.strftime("%H:%M"),
-        "end_time": new_slot.end_time.strftime("%H:%M"),
-        "is_available": new_slot.is_available
-    }, "Saat dilimi oluşturuldu")
+    return success_response(slot_record(new_slot), "Saat dilimi oluşturuldu")
 
 
 @router.delete("/slots/{slot_id}")
@@ -301,8 +327,6 @@ async def delete_time_slot(
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
     """Delete a time slot"""
-    from app.infrastructure.models.models import TimeSlot
-    
     result = await db.execute(
         select(TimeSlot).where(TimeSlot.id == slot_id)
     )
@@ -311,12 +335,8 @@ async def delete_time_slot(
     if not slot:
         raise HTTPException(status_code=404, detail="Saat dilimi bulunamadı")
     
-    # Verify teacher owns this slot
-    from app.infrastructure.repositories.base import BaseRepository
-    from app.infrastructure.models.models import User as UserModel
     await BaseRepository(db, tenant).get_by_id(slot.teacher_id, UserModel)
-    if not tenant.is_super_admin and slot.teacher_id != tenant.user_id:
-        raise HTTPException(status_code=403, detail="Bu saat dilimini silme yetkiniz yok")
+    require_slot_manager(tenant, slot.teacher_id)
     
     await db.delete(slot)
     await db.commit()

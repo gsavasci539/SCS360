@@ -8,6 +8,7 @@ import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { AppointmentCreateModal } from "./AppointmentCreateModal";
+import { AppointmentSlotsModal } from "./AppointmentSlotsModal";
 import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
@@ -28,9 +29,15 @@ function ScopedAppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [slotsOpen, setSlotsOpen] = useState(false);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
-  const parent = useAuthStore((s) => s.user?.roles.some((role) => role.slug === "parent") ?? false);
+  const user = useAuthStore((s) => s.user);
+  const roles = user?.roles.map((role) => role.slug) ?? [];
+  const parent = roles.includes("parent");
+  const parentOnly = parent && !user?.is_super_admin && !roles.some((role) =>
+    ["owner", "admin", "administrator", "school_admin", "manager", "principal", "org_admin", "branch_manager"].includes(role));
+  const canWrite = can("appointments.write");
 
   async function load(page = data.page) {
     setLoading(true);
@@ -132,31 +139,34 @@ function ScopedAppointmentsPage() {
 
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#666", display: "block", marginBottom: 4 }}>Durum</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button 
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {canWrite && !parentOnly && <>
+                <button
                   className={`btn ${String(detail.status).toUpperCase() === "PENDING" ? "btn-primary" : "btn-secondary"}`}
                   onClick={() => handleUpdateStatus("PENDING")}
                 >
                   Beklemede
                 </button>
-                <button 
+                <button
                   className={`btn ${String(detail.status).toUpperCase() === "CONFIRMED" ? "btn-primary" : "btn-secondary"}`}
                   onClick={() => handleUpdateStatus("CONFIRMED")}
                 >
                   Onaylandı
                 </button>
-                <button 
+                <button
                   className={`btn ${String(detail.status).toUpperCase() === "COMPLETED" ? "btn-primary" : "btn-secondary"}`}
                   onClick={() => handleUpdateStatus("COMPLETED")}
                 >
                   Tamamlandı
                 </button>
-                <button 
+                </>}
+                {canWrite && <button
                   className={`btn ${String(detail.status).toUpperCase() === "CANCELLED" ? "btn-primary" : "btn-secondary"}`}
                   onClick={() => handleUpdateStatus("CANCELLED")}
                 >
                   İptal
-                </button>
+                </button>}
+                {!canWrite && <span>{String(detail.status ?? "—")}</span>}
               </div>
             </div>
           </div>
@@ -172,7 +182,10 @@ function ScopedAppointmentsPage() {
         title="Randevu & PTC"
         description="Veli-öğretmen görüşme randevularını yönetin."
       >
-        {can("appointments.write") && (
+        {canWrite && roles.includes("teacher") && (
+          <button className="btn btn-secondary" onClick={() => setSlotsOpen(true)}>Uygunluk saatlerim</button>
+        )}
+        {canWrite && (
           <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
             <Plus size={16} />Yeni randevu
           </button>
@@ -201,11 +214,14 @@ function ScopedAppointmentsPage() {
           onPage={load}
           detailBase="/appointments"
           canEdit={can("appointments.write")}
-          onDelete={can("appointments.write") ? handleDelete : undefined}
+          onDelete={canWrite && !parentOnly ? handleDelete : undefined}
         />
       )}
 
-      {createOpen && can("appointments.write") && <AppointmentCreateModal parent={parent} onClose={() => setCreateOpen(false)} onSuccess={() => void load()} />}
+      {createOpen && canWrite && <AppointmentCreateModal parent={parent} onClose={() => setCreateOpen(false)} onSuccess={() => void load()} />}
+      {slotsOpen && canWrite && user && roles.includes("teacher") && (
+        <AppointmentSlotsModal teacherId={user.id} onClose={() => setSlotsOpen(false)} />
+      )}
     </>
   );
 }
