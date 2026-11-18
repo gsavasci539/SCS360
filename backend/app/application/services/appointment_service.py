@@ -153,12 +153,14 @@ async def create(db, tenant, body):
 
 async def update_status(db, tenant, appointment_id, body):
     appointment = await get(db, tenant, appointment_id)
-    if uses_relationship_scope(tenant) and "parent" in tenant.role_slugs and body.status != "CANCELLED":
+    parent = uses_relationship_scope(tenant) and "parent" in tenant.role_slugs
+    if parent and body.status != "CANCELLED":
         raise ForbiddenException("Veli yalnızca kendi randevusunu iptal edebilir")
     if body.status not in {"PENDING", "CONFIRMED", "APPROVED", "REJECTED", "CANCELLED", "COMPLETED"}:
         raise ValidationException("Geçersiz randevu durumu")
     appointment.status = body.status
-    appointment.teacher_note = body.feedback_notes
+    if not parent and "feedback_notes" in body.model_fields_set:
+        appointment.teacher_note = body.feedback_notes
     return {"id": str(appointment.id), "status": appointment.status}
 
 

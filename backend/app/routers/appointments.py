@@ -13,6 +13,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.schemas.common import AppointmentStatusUpdate
+
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
 from app.core.permissions import PermissionChecker
@@ -39,6 +41,12 @@ class AppointmentCreate(BaseModel):
 class AppointmentUpdate(BaseModel):
     status: str = Field(..., description="APPROVED, REJECTED, CANCELLED, COMPLETED")
     teacher_note: Optional[str] = None
+
+    def to_status_update(self) -> AppointmentStatusUpdate:
+        update = {"status": self.status.upper()}
+        if "teacher_note" in self.model_fields_set:
+            update["feedback_notes"] = self.teacher_note
+        return AppointmentStatusUpdate.model_validate(update)
 
 
 class TimeSlotCreate(BaseModel):
@@ -148,9 +156,8 @@ async def update_appointment(
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
     from app.application.services import appointment_service
-    from app.application.schemas.common import AppointmentStatusUpdate
     return success_response(await appointment_service.update_status(db, tenant, appointment_id,
-        AppointmentStatusUpdate(status=update_data.status.upper(), feedback_notes=update_data.teacher_note)))
+        update_data.to_status_update()))
 
 
 @router.delete("/{appointment_id}")
@@ -261,9 +268,8 @@ async def update_appointment_status(
     tenant: TenantContext = Depends(PermissionChecker("appointments.write"))
 ):
     from app.application.services import appointment_service
-    from app.application.schemas.common import AppointmentStatusUpdate
     return success_response(await appointment_service.update_status(db, tenant, appointment_id,
-        AppointmentStatusUpdate(status=update_data.status.upper(), feedback_notes=update_data.teacher_note)))
+        update_data.to_status_update()))
 
 
 # ==================== Parent Endpoints ====================

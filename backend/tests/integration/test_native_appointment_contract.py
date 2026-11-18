@@ -94,6 +94,24 @@ async def test_teacher_manages_only_own_slots_and_deletes_own_appointment(materi
     })
     assert booked.status_code == 200, booked.text
     assert (await client.get(route + "/slots", headers=teacher_auth, params=date_filter)).json()["data"] == [slot]
+    detail_url = f"{route}/{key}"
+    status_url = detail_url + "/status"
+    note = "Görüşme notu\nİkinci satır"
+    assert (await client.patch(status_url, headers=teacher_auth, json={
+        "status": "APPROVED", "feedback_notes": note,
+    })).status_code == 200
+    assert (await client.put(detail_url, headers=teacher_auth, json={"status": "confirmed"})).status_code == 200
+    assert (await client.get(detail_url, headers=teacher_auth)).json()["data"]["feedback_notes"] == note
+    assert (await client.patch(status_url, headers=parent_auth, json={
+        "status": "CANCELLED", "feedback_notes": "Veli metni",
+    })).status_code == 200
+    assert (await client.get(detail_url, headers=teacher_auth)).json()["data"]["feedback_notes"] == note
+    assert (await client.patch(status_url, headers=teacher_auth, json={"status": "COMPLETED"})).status_code == 200
+    assert (await client.get(detail_url, headers=teacher_auth)).json()["data"]["feedback_notes"] == note
+    assert (await client.put(status_url, headers=teacher_auth, json={
+        "status": "completed", "teacher_note": None,
+    })).status_code == 200
+    assert (await client.get(detail_url, headers=teacher_auth)).json()["data"]["feedback_notes"] is None
     assert (await client.delete(f"{route}/{key}", headers=teacher_auth)).status_code == 200
     assert (await client.get(f"{route}/{key}", headers=teacher_auth)).status_code == 404
     assert (await client.delete(slot_url, headers=teacher_auth)).status_code == 200
