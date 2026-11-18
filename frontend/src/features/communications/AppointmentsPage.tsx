@@ -207,9 +207,9 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
 
   async function submit(values: any) {
     try {
-      // Combine date and time into slot_datetime
+      // The API treats an offset-free appointment time as the school's local time.
       const slot_datetime = values.appointment_date && values.appointment_time 
-        ? new Date(`${values.appointment_date}T${values.appointment_time}`).toISOString()
+        ? `${values.appointment_date}T${values.appointment_time}`
         : null;
       
       const payload = {
