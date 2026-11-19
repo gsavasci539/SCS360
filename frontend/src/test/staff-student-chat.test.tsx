@@ -13,6 +13,7 @@ vi.mock("../lib/api", () => ({
   apiMessage: (error: Error) => error.message,
 }));
 vi.mock("../lib/download", () => ({ downloadFile: vi.fn() }));
+vi.mock("../lib/fileIntegrity", () => ({ fileSha256: vi.fn(async () => "a".repeat(64)) }));
 
 const user: AuthUser = {
   id: "staff", first_name: "Test", last_name: "Personel", email: "staff@test.invalid",
@@ -62,7 +63,9 @@ it("pages through real contacts and keeps student, guardian and branch on send, 
   fireEvent.click(await screen.findByRole("button", { name: "ders.pdf" }));
   expect(api.post).toHaveBeenCalledWith(`${endpoint}/send-file`, expect.any(FormData), config);
   expect(api.get).toHaveBeenCalledWith(`${endpoint}/sent/${receiptId}`, config);
-  expect(downloadFile).toHaveBeenCalledWith(`${endpoint}/attachments/${receiptId}`, "ders.pdf", config);
+  expect(downloadFile).toHaveBeenCalledWith(`${endpoint}/attachments/${receiptId}`, "ders.pdf", expect.objectContaining({
+    params: { parent_id: "guardian-two", branch_id: "north" }, expectedSha256: "a".repeat(64),
+  }));
   fireEvent.click(screen.getByRole("button", { name: "Sohbeti kapat" }));
   expect(await screen.findByRole("button", { name: /İkinci Veli/ })).toBeVisible();
 });

@@ -48,6 +48,14 @@ test("teacher uses the scoped directory and private attachments on small screens
   expect(file.suggestedFilename()).toBe(name);
   expect(await readFile(await file.path())).toEqual(bytes);
 
+  await page.route(/\/api\/teacher\/chat\/[^/]+\/attachments\/[^?]+/, (route) =>
+    route.fulfill({ contentType: "application/octet-stream", body: "%PDF-1.4\nCorrupt test bytes" }));
+  const unexpectedDownloads: string[] = [];
+  page.on("download", (item) => unexpectedDownloads.push(item.suggestedFilename()));
+  await stored.click();
+  await expect(pane.getByRole("alert")).toContainText("İndirilen dosya, kayıttaki SHA-256 özetiyle eşleşmiyor.");
+  expect(unexpectedDownloads).toEqual([]);
+
   await page.setViewportSize({ width: 640, height: 360 });
   await page.addStyleTag({ content: "html { font-size: 200%; }" });
   expect(await pane.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);

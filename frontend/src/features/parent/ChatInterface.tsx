@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { api, apiMessage, unwrap } from "../../lib/api";
 import { downloadFile } from "../../lib/download";
+import { fileSha256 } from "../../lib/fileIntegrity";
 import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
 import { usePlatformWorkspace } from "../../stores/platformWorkspace";
@@ -35,6 +36,7 @@ interface PendingMessage {
   id: string;
   content: string;
   file: File | null;
+  sha256?: string;
 }
 
 export function ChatInterface({ studentId, teacherId, parentId, branchId, canSend = true, apiBase = "/parent", ...props }: ChatInterfaceProps) {
@@ -119,8 +121,7 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
     const receipt = unwrap(await api.get<ApiResponse<ChatMessage>>(`${endpoint}/sent/${draft.id}`, { params, signal }));
     const name = draft.file?.name.replace(/\\/g, "/").split("/").at(-1)?.trim() ?? null;
     if (receipt.id !== draft.id || !receipt.is_current_user || receipt.content !== draft.content ||
-        (receipt.attachment_name ?? null) !== name ||
-        (draft.file && !/^[a-f0-9]{64}$/.test(receipt.attachment_sha256 ?? ""))) {
+        (receipt.attachment_name ?? null) !== name || (receipt.attachment_sha256 ?? null) !== (draft.sha256 ?? null)) {
       throw new Error("Sunucudaki mesaj bilgileri gönderimle eşleşmiyor.");
     }
     return receipt;
@@ -131,24 +132,30 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
     if (!canSend || !signal || signal.aborted || sending.current) return;
     sending.current = true;
     setBusy(true);
-    setPending(draft);
     setMissingReceipt(false);
     setActionError("");
+    let preparing = true;
     let posting = send;
     try {
+      const prepared = draft.file && !draft.sha256
+        ? { ...draft, sha256: await fileSha256(draft.file, signal) }
+        : draft;
+      if (signal.aborted) return;
+      preparing = false;
+      setPending(prepared);
       if (send) {
-        if (draft.file) {
+        if (prepared.file) {
           const form = new FormData();
-          form.set("file", draft.file);
-          form.set("message", draft.content);
-          form.set("request_id", draft.id);
+          form.set("file", prepared.file);
+          form.set("message", prepared.content);
+          form.set("request_id", prepared.id);
           await api.post(`${endpoint}/send-file`, form, { params, signal });
         } else {
-          await api.post(endpoint, { message: draft.content, request_id: draft.id }, { params, signal });
+          await api.post(endpoint, { message: prepared.content, request_id: prepared.id }, { params, signal });
         }
       }
       posting = false;
-      const receipt = await verify(draft, signal);
+      const receipt = await verify(prepared, signal);
       await historyRequest.current;
       if (signal.aborted) return;
       followMessages.current = true;
@@ -160,7 +167,7 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
     } catch (error) {
       if (!signal.aborted) {
         const status = (error as { response?: { status?: number } } | null)?.response?.status;
-        if (posting && (status === 413 || status === 422)) setPending(null);
+        if (preparing || (posting && (status === 413 || status === 422))) setPending(null);
         else if (!posting && status === 404) setMissingReceipt(true);
         setActionError(apiMessage(error));
       }
@@ -180,8 +187,11 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
   async function download(row: ChatMessage) {
     if (!row.attachment_name || !row.attachment_sha256) return;
     const signal = session.current?.signal;
+    setActionError("");
     try {
-      await downloadFile(`${endpoint}/attachments/${encodeURIComponent(row.id)}`, row.attachment_name, { params, signal });
+      await downloadFile(`${endpoint}/attachments/${encodeURIComponent(row.id)}`, row.attachment_name, {
+        params, signal, expectedSha256: row.attachment_sha256,
+      });
     } catch (error) {
       if (!signal?.aborted) setActionError(apiMessage(error));
     }
@@ -217,9 +227,9 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
         ))}
       </div>
       {actionError && <p className="student-chat-status" role="alert">{actionError}</p>}
-      {canSend ? <form onSubmit={sendMessage} className="student-chat-form">
+      {canSend ? <form onSubmit={sendMessage} className="student-chat-form" aria-busy={busy}>
         <textarea aria-label="Sohbet mesajı" rows={2} maxLength={10000} value={message}
-          disabled={!!pending} placeholder="Mesajınızı yazın…" onChange={(event) => setMessage(event.target.value)}
+          disabled={busy || !!pending} placeholder="Mesajınızı yazın…" onChange={(event) => setMessage(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
@@ -228,7 +238,7 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
           }} />
         {file && <div className="student-chat-file">{file.name}</div>}
         <input ref={fileInput} type="file" aria-label="Sohbet dosyası" accept=".pdf,.png,.jpg,.jpeg" hidden
-          disabled={!!pending} onChange={(event) => {
+          disabled={busy || !!pending} onChange={(event) => {
             setFile(event.target.files?.[0] ?? null);
             setActionError("");
           }} />
@@ -242,14 +252,14 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
             </>
           ) : (
             <>
-              <button type="button" className="btn btn-secondary" onClick={() => fileInput.current?.click()}>
+              <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => fileInput.current?.click()}>
                 <Paperclip size={18} aria-hidden="true" /> Dosya ekle
               </button>
-              {file && <button type="button" className="btn btn-secondary" onClick={() => {
+              {file && <button type="button" className="btn btn-secondary" disabled={busy} onClick={() => {
                 setFile(null);
                 if (fileInput.current) fileInput.current.value = "";
               }}>Eki kaldır</button>}
-              <button type="submit" className="btn btn-primary" disabled={!message.trim() && !file}>
+              <button type="submit" className="btn btn-primary" disabled={busy || (!message.trim() && !file)}>
                 <Send size={18} aria-hidden="true" /> Gönder
               </button>
             </>
