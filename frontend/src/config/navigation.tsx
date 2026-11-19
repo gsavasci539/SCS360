@@ -63,7 +63,7 @@ export const navigation: NavigationSection[] = [
       { label: "Yoklama", path: "/attendance", icon: CalendarCheck2, permission: "attendance.read" },
       { label: "Ödev & Notlandırma", path: "/homework", icon: BookMarked, permission: "homework.read" },
       { label: "Kütüphane & Zimmet", path: "/library", icon: Library, permission: "library.read" },
-      { label: "Günlük Karne", path: "/daily-reports", icon: FileSpreadsheet, permission: "daily_reports.read" },
+      { label: "Günlük Karne", path: "/daily-reports", icon: FileSpreadsheet, permission: "daily_reports.read", alternativePermissions: ["academic.read", "daily_reports.write", "academic.write"] },
       { label: "Etüt ve Birebir Ders", path: "/tutoring", icon: BookOpenCheck, permission: "tutoring.read" },
       { label: "Rehberlik", path: "/guidance", icon: Users, permission: "guidance.read" },
       { label: "Kulüp ve Etkinlikler", path: "/clubs", icon: CalendarDays, permission: "clubs.read" },

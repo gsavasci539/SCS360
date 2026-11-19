@@ -10,6 +10,28 @@ import { join } from "node:path";
 
 describe("menü ve sayfa yetkisi sözleşmesi", () => {
   const routes = createRoutesFromChildren(App().props.children);
+  it.each([
+    ["daily_reports.write", true, false], ["academic.write", true, false],
+    ["daily_reports.read", true, true], ["academic.read", true, true], ["students.read", false, false],
+  ] as const)("günlük karne menüsü ve ayrıntı yetkisini %s için ayırır", (permission, canOpen, canRead) => {
+    const user: AuthUser = {
+      id: "report-user", email: "report@example.test", first_name: "Test", last_name: "User",
+      is_super_admin: false, organization_id: "org", roles: [], permissions: [permission], branch_ids: [],
+    };
+    const item = navigation.flatMap((section) => section.items).find(({ path }) => path === "/daily-reports");
+    if (!item) throw new Error("Günlük karne menü bağlantısı eksik");
+    const grantsAccess = ({ permission, alternativePermissions = [] }: { permission?: string; alternativePermissions?: string[] }) =>
+      [permission, ...alternativePermissions].some((code) => hasPermission(user, code));
+    const routeAllows = (path: string) => {
+      const gates = (matchRoutes(routes, path) ?? []).map(({ route }) => route.element)
+        .filter((element) => isValidElement<{ permission?: string; alternativePermissions?: string[] }>(element) && element.props.permission);
+      expect(gates).toHaveLength(1);
+      return gates.every((gate) => isValidElement<{ permission?: string; alternativePermissions?: string[] }>(gate) && grantsAccess(gate.props));
+    };
+    expect(grantsAccess(item)).toBe(canOpen);
+    expect(routeAllows(item.path)).toBe(canOpen);
+    expect(routeAllows(`${item.path}/report`)).toBe(canRead);
+  });
   it("aynı sayfa menüde tek bağlantı olarak tanımlıdır", () => {
     const paths = navigation.flatMap((section) => section.items.map((item) => item.path));
     expect(paths.filter((path, index) => paths.indexOf(path) !== index)).toEqual([]);

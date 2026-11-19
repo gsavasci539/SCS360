@@ -6,8 +6,8 @@ import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
 import { ErrorState, Field, LoadingState, Modal, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
-import { useAuthStore } from "../../stores/auth";
-import { usePlatformWorkspace } from "../../stores/platformWorkspace";
+import { hasPermission, useAuthStore } from "../../stores/auth";
+import { useWorkspaceUser } from "../../lib/workspaceUser";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { useForm } from "react-hook-form";
 import { ResourceChoice } from "../resources/ResourceChoice";
@@ -27,6 +27,18 @@ function storedOption(value: unknown, options: string[]) {
 }
 
 export function DailyReportsPage() {
+  const user = useWorkspaceUser();
+  const session = useAuthStore((state) => state.sessionVersion);
+  const canAnalyze = hasPermission(user, "daily_reports.read");
+  const canRead = canAnalyze || hasPermission(user, "academic.read");
+  const canWrite = hasPermission(user, "daily_reports.write") || hasPermission(user, "academic.write");
+  return <DailyReportsContent
+    key={JSON.stringify([session, user?.id, user?.organization_id, user?.branch_ids, canRead, canWrite, canAnalyze])}
+    canRead={canRead} canWrite={canWrite} canAnalyze={canAnalyze}
+  />;
+}
+
+function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boolean; canWrite: boolean; canAnalyze: boolean }) {
   const [data, setData] = useState<Paginated<DataRecord>>({ items: [], total: 0, page: 1, page_size: 20, total_pages: 1 });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,13 +46,9 @@ export function DailyReportsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [dailyReportsAI, setDailyReportsAI] = useState<any>(null);
   const { showToast } = useToast();
-  const can = useAuthStore((s) => s.can);
-  const user = useAuthStore((s) => s.user);
-  const session = useAuthStore((s) => s.sessionVersion);
-  const workspaceId = usePlatformWorkspace((s) => s.workspace?.id);
-  const canWrite = can("daily_reports.write") || can("academic.write");
 
   async function load(page = data.page) {
+    if (!canRead) return;
     setLoading(true);
     setError("");
     try {
@@ -48,7 +56,7 @@ export function DailyReportsPage() {
         api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
           params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
         }),
-        getAnalysis("/ai/ai-daily-reports-analysis").catch(() => null)
+        canAnalyze ? getAnalysis("/ai/ai-daily-reports-analysis").catch(() => null) : null
       ]);
       if (r.status === "rejected") throw r.reason;
       setData(normalize(r.value.data.data));
@@ -151,7 +159,9 @@ export function DailyReportsPage() {
         </div>
       )}
 
-      {loading ? (
+      {!canRead ? (
+        <div className="card card-pad">Kayıtlı karneleri görüntüleme yetkiniz yok.</div>
+      ) : loading ? (
         <div className="card"><LoadingState /></div>
       ) : error ? (
         <div className="card"><ErrorState message={error} retry={() => load()} /></div>
@@ -179,7 +189,6 @@ export function DailyReportsPage() {
       )}
 
       {createOpen && canWrite && <CreateModal
-        key={JSON.stringify([session, user?.id, user?.organization_id, user?.branch_ids, workspaceId])}
         onClose={() => setCreateOpen(false)} onSuccess={() => load()} />}
     </>
   );
@@ -261,8 +270,8 @@ export function DailyReportsDetailPage() {
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const { showToast } = useToast();
-  const can = useAuthStore((state) => state.can);
-  const canWrite = can("daily_reports.write") || can("academic.write");
+  const user = useWorkspaceUser();
+  const canWrite = hasPermission(user, "daily_reports.write") || hasPermission(user, "academic.write");
 
   async function load() {
     setLoading(true);
