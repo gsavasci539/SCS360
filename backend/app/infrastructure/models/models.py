@@ -808,6 +808,8 @@ class ChatMessage(Base, TimestampMixin):
     class_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("classes.id", ondelete="CASCADE"))
     content: Mapped[str] = mapped_column(Text, nullable=False)
     attachment_url: Mapped[str | None] = mapped_column(String(500))
+    attachment_name: Mapped[str | None] = mapped_column(String(255))
+    attachment_sha256: Mapped[str | None] = mapped_column(String(64))
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

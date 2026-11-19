@@ -14,6 +14,8 @@ class ChatMessage(BaseModel):
     class_id: Optional[UUID] = None
     content: str
     attachment_url: Optional[str] = None
+    attachment_name: Optional[str] = None
+    attachment_sha256: Optional[str] = None
     is_read: bool = False
     sent_at: datetime
 

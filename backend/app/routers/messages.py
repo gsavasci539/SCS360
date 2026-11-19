@@ -1,5 +1,6 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Query, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, case, or_, func
 from sqlalchemy.exc import IntegrityError
@@ -9,10 +10,8 @@ from uuid import UUID
 from datetime import UTC, datetime
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response, paginate
-from app.domain.entities.user import User
 from app.domain.entities.chat_message import ChatMessage, ChatMessageCreate
 from app.core.tenant import TenantContext
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
@@ -20,11 +19,15 @@ from app.core.student_access import require_student_access
 from app.application.services.message_contacts import message_branches, recipient_query, require_recipient
 from app.application.services.message_history import message_partner, message_visibility
 from app.infrastructure.models.models import ChatMessage as ChatMessageModel, User as UserModel, Role, UserRole
+from app.infrastructure.storage.message_attachments import (
+    MessageUpload, attachment_path, message_upload, save_message_attachment,
+)
 
 router = APIRouter(prefix="/api/messages", tags=["Messages"])
 
 
 def message_to_dict(message: ChatMessage) -> dict:
+    has_attachment = bool(message.attachment_name and message.attachment_sha256)
     return {
         "id": str(message.id),
         "conversation_id": str(message.conversation_id) if message.conversation_id else None,
@@ -33,7 +36,9 @@ def message_to_dict(message: ChatMessage) -> dict:
         "recipient_id": str(message.recipient_id),
         "class_id": str(message.class_id) if message.class_id else None,
         "content": message.content,
-        "attachment_url": message.attachment_url,
+        "attachment_url": f"/api/messages/{message.id}/attachment" if has_attachment else None,
+        "attachment_name": message.attachment_name if has_attachment else None,
+        "attachment_sha256": message.attachment_sha256 if has_attachment else None,
         "is_read": message.is_read,
         "sent_at": message.sent_at.isoformat() if message.sent_at else None
     }
@@ -155,17 +160,38 @@ async def get_conversation_messages(
 async def send_message(
     message: ChatMessageCreate,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.send"))
 ):
-    """Send a message to another user"""
+    if message.attachment_url is not None:
+        raise ValidationException("Dosyayı mesaj eki yükleme adresine yükleyin")
+    return await persist_message(db, tenant, message)
+
+
+@router.post("/send-file")
+async def send_message_file(
+    request_id: UUID = Form(...),
+    recipient_id: UUID = Form(...),
+    content: str = Form(""),
+    branch_id: UUID | None = Form(None),
+    conversation_id: UUID | None = Form(None),
+    class_id: UUID | None = Form(None),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
+):
+    body = ChatMessageCreate(request_id=request_id, recipient_id=recipient_id, branch_id=branch_id,
+                            conversation_id=conversation_id, class_id=class_id, content=content)
+    return await persist_message(db, tenant, body, await message_upload(file))
+
+
+async def persist_message(db, tenant, message: ChatMessageCreate, upload: MessageUpload | None = None):
     from app.infrastructure.models.models import ChatConversation, ClassRoom, Student
     from app.infrastructure.repositories.base import BaseRepository
     repo = BaseRepository(db, tenant)
-    sender_id = current_user.id
+    sender_id = tenant.user_id
     branches = await message_branches(db, tenant, message.branch_id)
     branch_id = message.branch_id
-    if not message.content.strip() or len(message.content) > 10000:
+    if len(message.content) > 10000 or (upload is None and not message.content.strip()):
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
     if message.class_id:
         classroom = await repo.get_by_id(message.class_id, ClassRoom)
@@ -185,11 +211,14 @@ async def send_message(
     if branch_id is None and len(branches) == 1:
         branch_id = branches[0]
     await require_recipient(db, tenant, message.recipient_id, branch_id)
+    name = upload.name if upload else None
+    digest = upload.digest if upload else None
 
     def replay(row):
-        if (row.sender_id, row.recipient_id, row.content, row.class_id, row.conversation_id, row.attachment_url) != (
+        if (row.sender_id, row.recipient_id, row.content, row.class_id, row.conversation_id,
+                row.attachment_name, row.attachment_sha256) != (
             sender_id, message.recipient_id, message.content, message.class_id,
-            message.conversation_id, message.attachment_url,
+            message.conversation_id, name, digest,
         ):
             raise ConflictException("İşlem kimliği farklı bir mesaj için kullanılmış")
         if row.organization_id not in {None, tenant.organization_id} or row.branch_id != branch_id:
@@ -215,7 +244,8 @@ async def send_message(
         recipient_id=message.recipient_id,
         class_id=message.class_id,
         content=message.content,
-        attachment_url=message.attachment_url,
+        attachment_name=name,
+        attachment_sha256=digest,
         is_read=False,
         sent_at=datetime.now(UTC)
     )
@@ -231,8 +261,10 @@ async def send_message(
             if prior:
                 return replay(prior._mapping)
         raise
+    if upload is not None:
+        await save_message_attachment(new_message.id, upload)
     if conversation:
-        conversation.last_message = message.content
+        conversation.last_message = message.content or name
         conversation.last_message_at = new_message.sent_at
         if sender_id == conversation.teacher_id:
             conversation.parent_unread_count = (conversation.parent_unread_count or 0) + 1
@@ -242,6 +274,24 @@ async def send_message(
     await db.refresh(new_message)
     
     return success_response(message_to_dict(ChatMessage.model_validate(new_message)), "Mesaj kaydedildi")
+
+
+@router.get("/{message_id}/attachment")
+async def download_message_attachment(
+    message_id: UUID,
+    branch_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("messaging.read")),
+):
+    visible = await message_visibility(db, tenant, branch_id)
+    message = await db.scalar(select(ChatMessageModel).where(visible, ChatMessageModel.id == message_id))
+    if message is None or not message.attachment_name or not message.attachment_sha256:
+        raise NotFoundException("Mesaj eki bulunamadı")
+    path = attachment_path(message.id, message.attachment_sha256)
+    if path is None or not path.is_file():
+        raise NotFoundException("Mesaj eki bulunamadı")
+    return FileResponse(path, filename=message.attachment_name, media_type="application/octet-stream",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
 
 
 @router.put("/{message_id}/read")
