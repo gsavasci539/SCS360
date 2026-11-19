@@ -1,8 +1,7 @@
 """Teacher replies use the same student/parent conversation as the parent portal."""
-from datetime import UTC, datetime
-
 from sqlalchemy import select
 
+from app.application.services import student_chat_messages
 from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
 from app.core.student_access import require_teacher_for_student, uses_relationship_scope
 from app.infrastructure.models.models import ChatConversation, ChatMessage, Parent, Student, StudentParent, User
@@ -31,6 +30,8 @@ async def participants(db, tenant, student_id, parent_id=None):
 
 async def thread(db, tenant, student_id, parent_id=None, *, create=False):
     student, parent = await participants(db, tenant, student_id, parent_id)
+    if create:
+        await student_chat_messages.lock_student(db, student)
     conversation = (await db.execute(select(ChatConversation).where(
         ChatConversation.student_id == student.id, ChatConversation.parent_id == parent.id,
         ChatConversation.teacher_id == tenant.user_id, ChatConversation.is_active.is_(True))
@@ -53,23 +54,15 @@ async def history(db, tenant, student_id, parent_id=None):
     for message, _ in rows:
         if message.recipient_id == tenant.user_id:
             message.is_read = True
-    return [{"id": str(message.id), "sender_id": str(message.sender_id),
-        "receiver_id": str(message.recipient_id), "content": message.content, "is_read": message.is_read,
-        "sent_at": message.sent_at.isoformat(), "sender_name": f"{sender.first_name} {sender.last_name}",
-        "is_current_user": message.sender_id == tenant.user_id} for message, sender in rows]
+    return [{**student_chat_messages.message_data(message, tenant.user_id),
+        "sender_name": f"{sender.first_name} {sender.last_name}"} for message, sender in rows]
 
 
-async def send(db, tenant, student_id, content, parent_id=None):
+async def send(db, tenant, student_id, content, parent_id=None, request_id=None, upload=None):
     content = content.strip()
-    if not content or len(content) > 10000:
+    if (not content and upload is None) or len(content) > 10000:
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
-    student, parent, conversation = await thread(db, tenant, student_id, parent_id, create=True)
-    message = ChatMessage(organization_id=student.organization_id, branch_id=student.branch_id,
-        conversation_id=conversation.id, sender_id=tenant.user_id,
-        sender_role="TEACHER" if "teacher" in tenant.role_slugs else "STAFF",
-        recipient_id=parent.id, class_id=student.class_id, content=content, is_read=False)
-    db.add(message)
-    conversation.last_message, conversation.last_message_at = content, datetime.now(UTC)
-    conversation.parent_unread_count = (conversation.parent_unread_count or 0) + 1
-    await db.flush()
-    return {"id": str(message.id), "content": content, "sent_at": message.sent_at.isoformat()}
+    student, _, conversation = await thread(db, tenant, student_id, parent_id, create=True)
+    sender_role = "TEACHER" if "teacher" in tenant.role_slugs else "STAFF"
+    return await student_chat_messages.record(db, student, conversation, tenant.user_id, sender_role,
+        content, request_id, upload)

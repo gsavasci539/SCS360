@@ -31,7 +31,10 @@ from app.infrastructure.models.models import (
 )
 from app.infrastructure.repositories.base import BaseRepository
 
+from app.routers.staff_chat_attachments import router as staff_chat_attachments
+
 router = APIRouter(tags=["Parents & Access Control"])
+router.include_router(staff_chat_attachments, prefix="/api/admin")
 
 
 def permission_dict(permission: Permission) -> dict:
@@ -169,6 +172,7 @@ async def assign_role_permissions_put(
 
 class ChatMessageCreate(BaseModel):
     message: str
+    request_id: UUID | None = None
 
 
 @router.get("/api/admin/students")
@@ -230,4 +234,5 @@ async def send_admin_chat_message(
     tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
 ):
     from app.application.services import teacher_chat_service
-    return success_response(await teacher_chat_service.send(db, tenant, student_id, message_data.message, parent_id))
+    return success_response(await teacher_chat_service.send(db, tenant, student_id, message_data.message, parent_id,
+        message_data.request_id))

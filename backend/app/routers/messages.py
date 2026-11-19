@@ -1,6 +1,5 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, Query, HTTPException, UploadFile
-from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, case, or_, func
 from sqlalchemy.exc import IntegrityError
@@ -20,7 +19,7 @@ from app.application.services.message_contacts import message_branches, recipien
 from app.application.services.message_history import message_partner, message_visibility
 from app.infrastructure.models.models import ChatMessage as ChatMessageModel, User as UserModel, Role, UserRole
 from app.infrastructure.storage.message_attachments import (
-    MessageUpload, attachment_path, message_upload, save_message_attachment,
+    MessageUpload, message_attachment_response, message_upload, save_message_attachment,
 )
 
 router = APIRouter(prefix="/api/messages", tags=["Messages"])
@@ -285,13 +284,7 @@ async def download_message_attachment(
 ):
     visible = await message_visibility(db, tenant, branch_id)
     message = await db.scalar(select(ChatMessageModel).where(visible, ChatMessageModel.id == message_id))
-    if message is None or not message.attachment_name or not message.attachment_sha256:
-        raise NotFoundException("Mesaj eki bulunamadı")
-    path = attachment_path(message.id, message.attachment_sha256)
-    if path is None or not path.is_file():
-        raise NotFoundException("Mesaj eki bulunamadı")
-    return FileResponse(path, filename=message.attachment_name, media_type="application/octet-stream",
-        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
+    return message_attachment_response(message)
 
 
 @router.put("/{message_id}/read")

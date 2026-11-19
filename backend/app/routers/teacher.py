@@ -14,9 +14,11 @@ from app.infrastructure.models.models import User
 from app.core.tenant import TenantContext
 
 from app.core.teaching import teacher_classes_query
+from app.routers.staff_chat_attachments import router as staff_chat_attachments
 from app.application.services import teacher_day_service
 
 router = APIRouter(prefix="/api/teacher", tags=["Teacher"])
+router.include_router(staff_chat_attachments)
 
 
 @router.get("/my-classes")
@@ -112,6 +114,7 @@ async def get_chat_messages(
 
 class TeacherChatCreate(BaseModel):
     message: str
+    request_id: UUID | None = None
 
 
 @router.post("/chat/{student_id}")
@@ -123,4 +126,5 @@ async def send_chat_message(
     tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
 ):
     from app.application.services import teacher_chat_service
-    return success_response(await teacher_chat_service.send(db, tenant, student_id, request.message, parent_id))
+    return success_response(await teacher_chat_service.send(db, tenant, student_id, request.message, parent_id,
+        request.request_id))

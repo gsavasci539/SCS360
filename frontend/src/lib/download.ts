@@ -1,8 +1,10 @@
+import type { AxiosRequestConfig } from "axios";
 import { api } from "./api";
 
 /** Download protected API files through the authenticated client. */
-export async function downloadFile(path: string, filename: string) {
-  const response = await api.get(path, { responseType: "blob" });
+export async function downloadFile(path: string, filename: string, options?: Pick<AxiosRequestConfig, "params" | "signal">) {
+  const response = await api.get(path, { ...options, responseType: "blob" });
+  if (options?.signal?.aborted) return;
   const url = URL.createObjectURL(response.data);
   try {
     const link = document.createElement("a");

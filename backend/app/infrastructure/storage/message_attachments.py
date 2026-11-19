@@ -1,14 +1,16 @@
 """Private message files addressed by the persisted message ID and content hash."""
 import asyncio
-from dataclasses import dataclass
-from hashlib import sha256
 import os
 import re
+from dataclasses import dataclass
+from hashlib import sha256
 from uuid import UUID, uuid4
 
 from fastapi import UploadFile
+from fastapi.responses import FileResponse
 
 from app.core.config import get_settings
+from app.core.exceptions import NotFoundException
 from app.infrastructure.storage.local_storage import LocalFileStorage
 from app.infrastructure.storage.uploads import read_upload
 
@@ -30,6 +32,16 @@ def attachment_path(message_id: UUID, digest: str):
         return None
     storage = LocalFileStorage(get_settings().PRIVATE_UPLOAD_DIR)
     return storage.get_full_path(f"messages/{message_id}/{digest}")
+
+
+def message_attachment_response(message):
+    if message is None or not message.attachment_name or not message.attachment_sha256:
+        raise NotFoundException("Mesaj eki bulunamadı")
+    path = attachment_path(message.id, message.attachment_sha256)
+    if path is None or not path.is_file():
+        raise NotFoundException("Mesaj eki bulunamadı")
+    return FileResponse(path, filename=message.attachment_name, media_type="application/octet-stream",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"})
 
 
 async def save_message_attachment(message_id: UUID, upload: MessageUpload) -> None:

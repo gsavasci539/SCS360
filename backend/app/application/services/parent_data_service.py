@@ -1,10 +1,11 @@
 """Student-related portal reads backed by real, relationship-scoped records."""
 from collections import defaultdict
-from datetime import UTC, date, datetime
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import and_, or_, select
 
+from app.application.services import student_chat_messages
 from app.core.exceptions import NotFoundException
 from app.core.student_access import require_parent_child_access, parent_contacts_query
 from app.infrastructure.models.models import (
@@ -180,6 +181,8 @@ async def conversation(db, user, student_id, teacher_id, *, create=False):
     from app.core.student_access import require_teacher_for_student
     _, student = await child(db, user, student_id)
     teacher_id = UUID(str(teacher_id))
+    if create:
+        await student_chat_messages.lock_student(db, student)
     row = (await db.execute(select(ChatConversation).where(
         ChatConversation.student_id == student.id, ChatConversation.parent_id == user.id,
         ChatConversation.teacher_id == teacher_id, ChatConversation.is_active.is_(True))
@@ -194,18 +197,9 @@ async def conversation(db, user, student_id, teacher_id, *, create=False):
     return student, row
 
 
-async def send_chat(db, user, student_id, teacher_id, content):
+async def send_chat(db, user, student_id, teacher_id, content, request_id=None, upload=None):
     student, thread = await conversation(db, user, student_id, teacher_id, create=True)
-    message = ChatMessage(organization_id=student.organization_id, branch_id=student.branch_id,
-        conversation_id=thread.id, sender_id=user.id, sender_role="PARENT",
-        recipient_id=UUID(str(teacher_id)), class_id=student.class_id, content=content, is_read=False)
-    db.add(message)
-    thread.last_message, thread.last_message_at = content, datetime.now(UTC)
-    thread.teacher_unread_count = (thread.teacher_unread_count or 0) + 1
-    await db.flush()
-    return {"id": str(message.id), "message_id": str(message.id), "sender_id": str(user.id),
-        "receiver_id": str(teacher_id), "content": content, "sent_at": message.sent_at.isoformat(),
-        "is_current_user": True}
+    return await student_chat_messages.record(db, student, thread, user.id, "PARENT", content, request_id, upload)
 
 
 async def chat_history(db, user, student_id, teacher_id):
@@ -218,7 +212,6 @@ async def chat_history(db, user, student_id, teacher_id):
     for message, _ in rows:
         if message.recipient_id == user.id:
             message.is_read = True
-    return [{"id": str(row.id), "sender_id": str(row.sender_id), "receiver_id": str(row.recipient_id),
-        "content": row.content, "is_read": row.is_read, "sent_at": row.sent_at.isoformat(),
-        "sender_name": f"{sender.first_name} {sender.last_name}", "is_current_user": row.sender_id == user.id}
+    return [{**student_chat_messages.message_data(row, user.id),
+        "sender_name": f"{sender.first_name} {sender.last_name}"}
         for row, sender in rows]

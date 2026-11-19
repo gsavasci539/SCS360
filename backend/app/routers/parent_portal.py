@@ -1,5 +1,5 @@
 from app.core.dates import school_today
-from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Request, Body
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form, Request, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 from typing import Optional, List, Literal
@@ -646,6 +646,7 @@ async def get_chat_messages(
 
 class ChatMessageCreate(BaseModel):
     message: str = Field(min_length=1, max_length=10000)
+    request_id: UUID | None = None
 
 
 @router.post("/child/{student_id}/chat/{teacher_id}")
@@ -658,4 +659,53 @@ async def send_chat_message(
     tenant: TenantContext = Depends(PermissionChecker("parent.send_message")),
 ):
     from app.application.services import parent_data_service
-    return success_response(await parent_data_service.send_chat(db, current_user, student_id, teacher_id, message_data.message))
+    return success_response(await parent_data_service.send_chat(db, current_user, student_id, teacher_id,
+        message_data.message, message_data.request_id))
+
+
+@router.post("/child/{student_id}/chat/{teacher_id}/send-file")
+async def send_chat_file(
+    student_id: UUID,
+    teacher_id: UUID,
+    file: UploadFile = File(),
+    request_id: UUID = Form(),
+    message: str = Form(default="", max_length=10000),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(PermissionChecker("parent.send_message")),
+):
+    from app.application.services import parent_data_service
+    from app.infrastructure.storage.message_attachments import message_upload
+
+    return success_response(await parent_data_service.send_chat(db, current_user, student_id, teacher_id,
+        message.strip(), request_id, await message_upload(file)))
+
+
+@router.get("/child/{student_id}/chat/{teacher_id}/sent/{message_id}")
+async def get_chat_receipt(
+    student_id: UUID,
+    teacher_id: UUID,
+    message_id: UUID,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(PermissionChecker("parent.send_message")),
+):
+    from app.application.services import parent_data_service, student_chat_messages
+
+    _, thread = await parent_data_service.conversation(db, current_user, student_id, teacher_id)
+    return success_response(await student_chat_messages.receipt(db, thread, current_user.id, message_id))
+
+
+@router.get("/child/{student_id}/chat/{teacher_id}/attachments/{message_id}")
+async def download_chat_attachment(
+    student_id: UUID,
+    teacher_id: UUID,
+    message_id: UUID,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(PermissionChecker("parent.send_message")),
+):
+    from app.application.services import parent_data_service, student_chat_messages
+
+    _, thread = await parent_data_service.conversation(db, current_user, student_id, teacher_id)
+    return await student_chat_messages.download(db, thread, message_id)

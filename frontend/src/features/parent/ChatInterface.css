@@ -1,0 +1,100 @@
+.student-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: white;
+  color: #253745;
+}
+
+.student-chat > header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.student-chat h3,
+.student-chat p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.student-chat-history {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 4rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: clamp(0.5rem, 3vw, 1.25rem);
+  background: #f5f8f7;
+}
+
+.student-chat-history article {
+  max-width: min(36rem, 90%);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.8rem;
+  background: white;
+  border: 1px solid #e0e8e5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.student-chat-history .student-chat-own {
+  align-self: flex-end;
+  background: #e1f0eb;
+}
+
+.student-chat-history time {
+  display: block;
+  text-align: end;
+  font-size: 0.75rem;
+}
+
+.student-chat-link {
+  border: 0;
+  background: transparent;
+  padding: 0.25rem 0;
+  color: #195349;
+  text-align: start;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.student-chat-form {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: clamp(0.5rem, 2vw, 1rem);
+}
+
+.student-chat-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  max-height: 8rem;
+  resize: vertical;
+  border: 1px solid #b9cbc4;
+  border-radius: 0.65rem;
+  padding: 0.55rem;
+  font: inherit;
+}
+
+.student-chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.student-chat-actions button,
+.student-chat-file {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
