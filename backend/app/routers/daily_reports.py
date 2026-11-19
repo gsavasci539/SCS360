@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel, field_validator
-from sqlalchemy import Text, cast, delete, func, or_, select, update
+from sqlalchemy import Text, cast, delete, func, insert, literal, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -115,18 +115,21 @@ def report_fields(body):
 
 
 async def save(db, tenant, body):
-    student = await BaseRepository(db, tenant).get_by_id(body.student_id, Student)
+    # PostgreSQL locks the student row. SQLite serializes the single conditional insert.
+    student = await BaseRepository(db, tenant).get_by_id(body.student_id, Student, for_update=True)
     await require_student_access(db, tenant, student.id)
     if student.class_id is None or body.class_id and body.class_id != student.class_id:
         raise ValidationException("Öğrencinin sınıfı ile rapor sınıfı eşleşmiyor")
-    existing = (await db.execute(select(DailyDevelopmentReport.id).where(
-        DailyDevelopmentReport.student_id == student.id, DailyDevelopmentReport.date == body.date))).scalar_one_or_none()
-    if existing:
+    table = DailyDevelopmentReport.__table__
+    existing = select(table.c.id).where(table.c.student_id == student.id, table.c.date == body.date).exists()
+    values = {"student_id": student.id, "class_id": student.class_id, "date": body.date,
+        "recorded_by": tenant.user_id, **report_fields(body)}
+    candidate = select(*(literal(value, type_=table.c[key].type) for key, value in values.items())).where(~existing)
+    result = await db.execute(insert(table).from_select(list(values), candidate).returning(table.c.id))
+    identifier = result.scalar_one_or_none()
+    if identifier is None:
         raise ConflictException("Bu öğrenci ve tarihe ait rapor zaten var")
-    row = DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=body.date,
-        recorded_by=tenant.user_id, **report_fields(body))
-    db.add(row); await db.flush()
-    return await serialize(db, row)
+    return await serialize(db, await db.get(DailyDevelopmentReport, identifier))
 
 
 @router.get("")
@@ -167,11 +170,12 @@ async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = D
         ids = (await db.execute(select(Student.id).where(Student.class_id == body.class_id, Student.deleted_at.is_(None)))).scalars()
         values = body.model_dump(exclude={"reports"})
         records = [ReportCreate(**values, student_id=identifier) for identifier in ids]
-    result = []
-    for record in records:
+    result = [None] * len(records)
+    # Overlapping bulk requests take student locks in the same order.
+    for index, record in sorted(enumerate(records), key=lambda entry: entry[1].student_id):
         if record.class_id and record.class_id != body.class_id:
             raise ValidationException("Toplu rapordaki sınıflar eşleşmeli")
-        result.append(await save(db, tenant, record.model_copy(update={"class_id": body.class_id, "date": body.date})))
+        result[index] = await save(db, tenant, record.model_copy(update={"class_id": body.class_id, "date": body.date}))
     return success_response(result, f"{len(result)} rapor kaydedildi")
 
 

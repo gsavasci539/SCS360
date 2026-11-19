@@ -34,6 +34,47 @@ async def test_daily_report_roundtrip_and_branch_filter(materials_client):  # no
     assert (await client.post(path, headers=authorization, json=draft)).status_code == 409
 
 
+async def test_daily_report_concurrent_creates_keep_one_record_per_selected_date(materials_client):  # noqa: F811
+    client, _, data = materials_client
+    child = data["children"][0]
+    path = "/api/daily-reports"
+    authorization = headers(data["teacher"])
+    draft = {"student_id": str(child.id), "class_id": str(child.class_id), "date": "2026-11-16"}
+    first, second = await asyncio.gather(
+        client.post(path, headers=authorization, json={**draft, "teacher_notes": "Birinci gözlem"}),
+        client.post(path, headers=authorization, json={**draft, "teacher_notes": "İkinci gözlem"}),
+    )
+    assert sorted([first.status_code, second.status_code]) == [200, 409], (first.text, second.text)
+    created = (first if first.status_code == 200 else second).json()["data"]
+    historical = await client.post(path, headers=authorization, json={**draft, "date": "2026-11-15"})
+    assert historical.status_code == 200, historical.text
+    assert historical.json()["data"]["id"] != created["id"]
+    listed = await client.get(path, headers=authorization, params={"student_id": str(child.id), "date": draft["date"]})
+    assert listed.json()["data"]["items"] == [created]
+
+
+async def test_daily_report_bulk_create_preserves_order_and_rolls_back_on_conflict(materials_client):  # noqa: F811
+    client, _, data = materials_client
+    path = "/api/daily-reports"
+    authorization = headers(data["teacher"])
+    higher, lower = sorted((str(child.id) for child in data["children"]), reverse=True)
+    batch = {"class_id": str(data["classroom"].id), "date": "2026-11-15", "reports": [
+        {"student_id": student, "date": "2026-11-15", "teacher_notes": "Toplu gözlem"}
+        for student in (higher, lower)
+    ]}
+    response = await client.post(f"{path}/bulk", headers=authorization, json=batch)
+    assert response.status_code == 200, response.text
+    assert [row["student_id"] for row in response.json()["data"]] == [higher, lower]
+
+    conflict_date = "2026-11-16"
+    existing = await client.post(path, headers=authorization, json={"student_id": higher, "date": conflict_date})
+    assert existing.status_code == 200, existing.text
+    conflict = await client.post(f"{path}/bulk", headers=authorization, json={**batch, "date": conflict_date})
+    assert conflict.status_code == 409, conflict.text
+    remaining = await client.get(path, headers=authorization, params={"date": conflict_date})
+    assert remaining.json()["data"]["items"] == [existing.json()["data"]]
+
+
 async def test_daily_report_edit_and_delete_are_scoped_to_assigned_students(materials_client):  # noqa: F811
     client, sessions, data = materials_client
     actor = data["teacher"]
