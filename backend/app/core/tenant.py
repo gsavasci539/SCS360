@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from uuid import UUID
 
-
 # The first deployed roles used plural resource names (``students.read``),
 # while a number of earlier endpoints and frontend guards still use the
 # singular spelling (``student.read``).  Keep the permission vocabulary
@@ -48,6 +47,10 @@ class TenantContext:
     is_super_admin: bool = False
     platform_admin: bool = False
     parent_portal: bool = False
+
+    @property
+    def has_teacher_role(self) -> bool:
+        return bool(self.role_slugs & {"teacher", "teacher1", "teacher2", "teacher3"})
 
     @property
     def is_organization_owner(self) -> bool:

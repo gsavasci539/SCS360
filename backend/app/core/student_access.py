@@ -12,10 +12,16 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenException
-from app.core.tenant import TenantContext
 from app.core.teaching import teacher_class_condition
-from app.infrastructure.models.models import ClassRoom, ClassTeacher, Parent, Student, StudentParent, StudentTeacherAssignment, User
-
+from app.core.tenant import TenantContext
+from app.infrastructure.models.models import (
+    ClassRoom,
+    Parent,
+    Student,
+    StudentParent,
+    StudentTeacherAssignment,
+    User,
+)
 
 _UNSCOPED_ROLES = {"admin", "administrator", "school_admin", "manager", "principal", "org_admin", "branch_manager", "owner"}
 
@@ -51,7 +57,7 @@ def uses_relationship_scope(tenant: TenantContext) -> bool:
     """Whether this user's student access must be restricted by relationships."""
     return (
         not tenant.is_super_admin
-        and bool(tenant.role_slugs & {"parent", "teacher"})
+        and ("parent" in tenant.role_slugs or tenant.has_teacher_role)
         and not bool(tenant.role_slugs & _UNSCOPED_ROLES)
     )
 
@@ -65,7 +71,7 @@ async def accessible_student_ids(db: AsyncSession, tenant: TenantContext) -> set
     if "parent" in tenant.role_slugs:
         ids.update(await parent_student_ids(db, tenant.user_id, tenant.organization_id))
 
-    if "teacher" in tenant.role_slugs:
+    if tenant.has_teacher_role:
         result = await db.execute(
             select(Student.id).where(
                 Student.organization_id == tenant.organization_id,

@@ -2,12 +2,14 @@ import asyncio
 from datetime import date
 from uuid import uuid4
 
+import pytest
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from test_saas_platform import platform_client  # noqa: F401
 
-from app.infrastructure.models.models import AttendanceRecord
+from app.infrastructure.models.models import AttendanceRecord, Permission, Role, Student, UserRole
 
 DAY = date(2026, 11, 10)
 
@@ -121,3 +123,55 @@ async def test_noop_attendance_retry_does_not_undo_a_later_edit(platform_client)
     assert (await client.put("/api/attendance/bulk", headers=auth(data), json=changed)).status_code == 200
     assert (await client.put("/api/attendance/bulk", headers=auth(data), json=body)).json()["data"] == noop.json()["data"]
     assert (await listing(client, data))[0]["notes"] == "Later edit"
+
+
+@pytest.mark.parametrize("slug", ["teacher1", "teacher2", "teacher3"])
+async def test_legacy_teacher_roster_and_editor_follow_class_assignments(materials_client, slug):  # noqa: F811
+    client, sessions, data = materials_client
+    own_id = await seed(sessions, data)
+    async with sessions() as db:
+        role = (await db.execute(select(Role).where(Role.slug == "teacher")
+            .options(selectinload(Role.permissions)))).scalar_one()
+        role.slug = slug
+        role.permissions.extend(Permission(code=code, name=code, module="attendance")
+            for code in ("attendance.read", "attendance.write"))
+        other_class = data["other_class"]
+        other_student = Student(first_name="Other", last_name="Class", organization_id=other_class.organization_id,
+            branch_id=other_class.branch_id, class_id=other_class.id)
+        db.add(other_student)
+        await db.flush()
+        other_record = AttendanceRecord(organization_id=other_class.organization_id, branch_id=other_class.branch_id,
+            class_id=other_class.id, student_id=other_student.id, attendance_date=DAY, status="ABSENT",
+            recorded_by=data["teacher"].id)
+        db.add(other_record)
+        await db.commit()
+        other_id = str(other_record.id)
+
+    teacher = headers(data["teacher"])
+    params = {"attendance_date": DAY.isoformat()}
+    reply = await client.get("/api/attendance", headers=teacher, params=params)
+    assert reply.status_code == 200, reply.text
+    rows = reply.json()["data"]["items"]
+    assert [row["id"] for row in rows] == [str(own_id)]
+
+    body = {"class_id": str(data["classroom"].id), "attendance_date": DAY.isoformat(), "request_id": str(uuid4()),
+        "records": [{"student_id": rows[0]["student_id"], "status": "LATE", "expected_version": rows[0]["version"]}]}
+    result = await client.put("/api/attendance/bulk", headers=teacher, json=body)
+    assert result.status_code == 200, result.text
+    assert result.json()["data"]["updated"] == 1
+    outside_assignment = await client.put("/api/attendance/bulk", headers=teacher, json={
+        **body, "class_id": str(other_class.id), "request_id": str(uuid4()),
+        "records": [{"student_id": str(other_student.id), "status": "LATE"}],
+    })
+    assert outside_assignment.status_code in (403, 404)
+
+    async with sessions() as db:
+        owner = Role(name="Owner", slug="owner", organization_id=data["org"].id)
+        db.add(owner)
+        await db.flush()
+        db.add(UserRole(user_id=data["teacher"].id, role_id=owner.id))
+        await db.commit()
+
+    reply = await client.get("/api/attendance", headers=teacher, params=params)
+    assert reply.status_code == 200, reply.text
+    assert {row["id"] for row in reply.json()["data"]["items"]} == {str(own_id), other_id}

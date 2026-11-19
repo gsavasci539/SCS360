@@ -9,8 +9,8 @@ from sqlalchemy.sql import visitors
 
 from app.core.database import Base
 from app.core.exceptions import ForbiddenException
-from app.core.teaching import teacher_class_condition
 from app.core.student_access import uses_relationship_scope
+from app.core.teaching import teacher_class_condition
 
 
 def scope_filters(tenant, student_ids):
@@ -28,7 +28,7 @@ def scope_filters(tenant, student_ids):
     if student_ids is not None:
         linked_classes = select(students.c.class_id).where(students.c.id.in_(student_query))
         allowed = classes.c.id.in_(linked_classes)
-        if "teacher" in tenant.role_slugs:
+        if tenant.has_teacher_role:
             allowed = or_(allowed, teacher_class_condition(classes.c, tenant.user_id))
         class_query = class_query.where(allowed)
     user_query = select(users.c.id).where(users.c.organization_id == tenant.organization_id)
@@ -120,7 +120,7 @@ def criteria(model, tenant, student_ids):
         filters.append(or_(references(model.teacher_id, user_query), model.teacher_id.is_(None)))
     if table.name in {"tutoring_sessions", "tutoring_requests", "teacher_availability"}:
         filters.append(or_(references(model.teacher_id, staff_scope(tenant, branch_query, user_query)), model.teacher_id.is_(None)))
-        if uses_relationship_scope(tenant) and "teacher" in tenant.role_slugs:
+        if uses_relationship_scope(tenant) and tenant.has_teacher_role:
             filters.append(or_(model.teacher_id == tenant.user_id, model.teacher_id.is_(None)) if table.name == "tutoring_requests" else model.teacher_id == tenant.user_id)
     if "advisor_teacher_id" in columns:
         filters.append(or_(references(model.advisor_teacher_id, user_query), model.advisor_teacher_id.is_(None)))
@@ -210,7 +210,7 @@ def validate_tenant_writes(session, context, instances):
     for row in set(session.new) | set(session.dirty) | set(session.deleted):
         columns = row.__table__.c
         if row.__table__.name in {"tutoring_sessions", "tutoring_requests", "teacher_availability"}:
-            if uses_relationship_scope(tenant) and "teacher" in tenant.role_slugs and row.teacher_id not in {None, tenant.user_id}:
+            if uses_relationship_scope(tenant) and tenant.has_teacher_role and row.teacher_id not in {None, tenant.user_id}:
                 raise ForbiddenException("Yalnız kendi etüt kayıtlarınızı değiştirebilirsiniz")
             if row.teacher_id is not None and not session.execute(select(staff.exists().where(staff.selected_columns[0] == row.teacher_id))).scalar():
                 raise ForbiddenException("Öğretmen erişilebilir şubeye bağlı değil")
