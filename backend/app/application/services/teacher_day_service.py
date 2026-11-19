@@ -1,13 +1,74 @@
 """Teacher portal reads backed by actual class, schedule and student records."""
+from collections import Counter
 from uuid import UUID
-from sqlalchemy import func, select
 
-from app.core.dates import school_today
-from app.core.exceptions import ValidationException
-from app.core.teaching import teacher_classes_query
+from sqlalchemy import String, case, cast, func, or_, select
+
 from app.application.services.parent_day_service import weekday_matches
-from app.infrastructure.models.models import (AttendanceRecord, ClassRoom, ClassroomAssignment,
-    DailyDevelopmentReport, OperationalRecord, Student, Timetable, TimetableSlot)
+from app.application.services.recorded_attendance import measurement
+from app.core.dates import school_today
+from app.core.exceptions import ForbiddenException, ValidationException
+from app.core.teaching import teacher_classes_query
+from app.core.tenant_guard import scope_filters
+from app.infrastructure.models.models import (
+    AttendanceRecord,
+    ClassRoom,
+    ClassroomAssignment,
+    DailyDevelopmentReport,
+    OperationalRecord,
+    Student,
+    StudentStatus,
+    StudentTeacherAssignment,
+    Timetable,
+    TimetableSlot,
+)
+
+
+async def dashboard_summary(db, tenant):
+    if tenant.organization_id is None:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
+
+    today = school_today()
+    branches, _, _, _ = scope_filters(tenant, None)
+    classrooms = teacher_classes_query(tenant.user_id).where(
+        ClassRoom.organization_id == tenant.organization_id,
+        ClassRoom.branch_id.in_(branches), ClassRoom.is_active.is_(True),
+    ).with_only_columns(ClassRoom.id)
+    classroom_assignment = classrooms.where(
+        ClassRoom.id == Student.class_id, ClassRoom.branch_id == Student.branch_id,
+    ).exists()
+    assignments = StudentTeacherAssignment.__table__
+    direct_assignment = select(assignments.c.id).where(
+        assignments.c.student_id == Student.id, assignments.c.teacher_id == tenant.user_id,
+    ).exists()
+    students = select(Student.id).where(
+        Student.organization_id == tenant.organization_id,
+        Student.branch_id.in_(branches), Student.deleted_at.is_(None),
+        or_(classroom_assignment, direct_assignment),
+    )
+    total, active = (await db.execute(students.with_only_columns(
+        func.count(Student.id), func.count(case((Student.status == StudentStatus.ACTIVE, Student.id))),
+    ))).one()
+    total_classes = await db.scalar(select(func.count()).select_from(classrooms.subquery()))
+    attendance = None
+    if tenant.has_any_permission(["attendance.read", "teacher.view_attendance"]):
+        active_students = students.where(
+            Student.status == StudentStatus.ACTIVE, Student.branch_id == AttendanceRecord.branch_id,
+        ).correlate(AttendanceRecord)
+        statuses = (await db.execute(select(cast(AttendanceRecord.status, String)).where(
+                AttendanceRecord.organization_id == tenant.organization_id,
+                AttendanceRecord.attendance_date == today, AttendanceRecord.deleted_at.is_(None),
+                AttendanceRecord.student_id.in_(active_students),
+            ))).scalars()
+        counts = Counter(statuses)
+        attendance = {
+            "recorded_students": counts.total(),
+            "absent_students": counts["ABSENT"],
+            "participation_rate": measurement(counts)[0],
+        }
+
+    return {"date": today.isoformat(), "total_students": total, "active_students": active,
+        "total_classes": total_classes, "attendance": attendance}
 
 
 async def classes(db, user):

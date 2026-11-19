@@ -21,6 +21,7 @@ const actor: AuthUser = {
 };
 const response = (data: unknown) => ({ data: { data } });
 const renderDashboard = () => render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+const teacherSummary = { total_students: 8, active_students: 7, total_classes: 1, attendance: null };
 
 afterEach(() => {
   cleanup();
@@ -43,7 +44,7 @@ it("keeps the dialog and draft open after a lost response until the stored reply
     if (path === `${endpoint}/sent/${requestId}`) return response({
       id: requestId, content, is_current_user: true, is_read: false, sent_at: "2026-11-19T12:00:00Z",
     });
-    return response({});
+    return response(teacherSummary);
   });
   vi.mocked(api.post).mockImplementation(async (_, data) => {
     requestId = (data as { request_id: string }).request_id;
@@ -69,10 +70,11 @@ it("keeps the dialog and draft open after a lost response until the stored reply
 
 it("hides the quick-chat entry when the legacy role lacks student access", async () => {
   useAuthStore.getState().setUser({ ...actor, permissions: ["dashboard.read", "messaging.read"] });
-  vi.mocked(api.get).mockResolvedValue(response({}));
+  vi.mocked(api.get).mockResolvedValue(response(teacherSummary));
   renderDashboard();
   await screen.findByRole("heading", { name: "Günaydın, öğretmen paneli hazır." });
   expect(screen.queryByRole("button", { name: "Hızlı mesaj" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Yoklama Al" })).not.toBeInTheDocument();
   expect(screen.queryByText("Bildirimler", { exact: true })).not.toBeInTheDocument();
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path.includes("chat-"))).toBe(false);
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/notifications/unread-count")).toBe(false);
@@ -83,7 +85,7 @@ it("shows the API unread count for an authorized teacher, including a verified z
   let count = 7;
   useAuthStore.getState().setUser(authorized);
   vi.mocked(api.get).mockImplementation(async (path) =>
-    response(path === "/notifications/unread-count" ? { unread_count: count } : {}));
+    response(path === "/notifications/unread-count" ? { unread_count: count } : teacherSummary));
   renderDashboard();
   let card = (await screen.findByText("Okunmamış bildirimler")).closest(".stat-card");
   expect(card).toHaveTextContent("7");
@@ -99,7 +101,7 @@ it("holds an unavailable state while ignoring a previous actor's unread response
   let priorSignal: AbortSignal | undefined;
   let finish!: (value: unknown) => void;
   vi.mocked(api.get).mockImplementation(async (path, config) => {
-    if (path !== "/notifications/unread-count") return response({});
+    if (path !== "/notifications/unread-count") return response(teacherSummary);
     if (priorSignal) throw new Error("Test bağlantısı kesildi.");
     priorSignal = config?.signal as AbortSignal;
     return new Promise((resolve) => { finish = resolve; });
@@ -112,4 +114,34 @@ it("holds an unavailable state while ignoring a previous actor's unread response
   await act(async () => finish(response({ unread_count: 99 })));
   expect(card).toHaveTextContent("—");
   expect(card).not.toHaveTextContent(/0|99/);
+});
+
+it("shows the scoped attendance ratio and clears it when switching teachers", async () => {
+  const authorized = { ...actor, permissions: [...actor.permissions, "attendance.read"] };
+  useAuthStore.getState().setUser(authorized);
+  vi.mocked(api.get).mockResolvedValueOnce(response({ ...teacherSummary, attendance: {
+    recorded_students: 5, absent_students: 1, participation_rate: 62.5,
+  } })).mockResolvedValueOnce(response({ ...teacherSummary, attendance: {
+    recorded_students: 0, absent_students: 0, participation_rate: null,
+  } }));
+  renderDashboard();
+  expect(await screen.findByText("%62,5")).toBeInTheDocument();
+  expect(screen.getByText("5 öğrencinin yoklaması kayıtlı")).toBeInTheDocument();
+  expect(screen.getByText("Aktif atanmış sınıflarınız").closest(".stat-card")).toHaveTextContent("1");
+  act(() => useAuthStore.getState().setUser({ ...authorized, id: "next-teacher" }));
+  expect(screen.queryByText("%62,5")).not.toBeInTheDocument();
+  expect(await screen.findByText("Bugün yoklama kaydı yok")).toBeInTheDocument();
+  expect(screen.getByText("Katılım oranı").closest(".status-item")).toHaveTextContent("—");
+  expect(vi.mocked(api.get).mock.calls.map(([path]) => path)).toEqual([
+    "/teacher/dashboard-summary", "/teacher/dashboard-summary",
+  ]);
+});
+
+it("shows a server failure without filling the teacher cards with zeroes", async () => {
+  useAuthStore.getState().setUser(actor);
+  vi.mocked(api.get).mockRejectedValue(new Error("Test bağlantısı kesildi."));
+  renderDashboard();
+  expect(await screen.findByText("Test bağlantısı kesildi.")).toBeInTheDocument();
+  expect(screen.getByText("Atanmış öğrencileriniz").closest(".stat-card")).toHaveTextContent("—");
+  expect(screen.getByText("Katılım oranı").closest(".status-item")).toHaveTextContent("—");
 });

@@ -14,14 +14,29 @@ import type { ApiResponse } from "../../types/api";
 
 interface Summary { total_students?: number; active_students?: number; total_branches?: number; total_classes?: number; absent_today?: number; monthly_payments?: string | number; pending_debt?: string | number; overdue_debt?: string | number }
 interface Charts { monthly_income?: Array<{ month?: string; label?: string; amount?: number; income?: number }>; income?: Array<{ month?: string; amount?: number }> }
+interface TeacherSummary {
+  total_students: number;
+  active_students: number;
+  total_classes: number;
+  attendance: { recorded_students: number; absent_students: number; participation_rate: number | null } | null;
+}
 
 const fallbackChart: Array<{ month: string; amount: number }> = [];
 
 export function DashboardPage() {
-  const [summary, setSummary] = useState<Summary>({}); const [chart, setChart] = useState(fallbackChart); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [aiInsights, setAiInsights] = useState<any>(null);
   const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const isLegacyTeacher = user && !user.is_super_admin && !user.roles.some((role) => role.slug === "owner") &&
+    user.roles.some((role) => ["teacher1", "teacher2", "teacher3"].includes(role.slug));
+  if (isLegacyTeacher) {
+    return <TeacherDashboard key={JSON.stringify([session, user.id, user.organization_id, user.branch_ids])} />;
+  }
+  return <ManagementDashboard />;
+}
+
+function ManagementDashboard() {
+  const [summary, setSummary] = useState<Summary>({}); const [chart, setChart] = useState(fallbackChart); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [aiInsights, setAiInsights] = useState<any>(null);
   const can = useAuthStore((state) => state.can);
-  const isTeacher = user?.roles?.some((r) => r.slug === "teacher1" || r.slug === "teacher2" || r.slug === "teacher3") || false;
   
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -42,10 +57,6 @@ export function DashboardPage() {
 
   useEffect(() => { load(); }, []);
   if (loading) return <div className="card"><LoadingState label="Günün özeti hazırlanıyor" /></div>;
-  
-  if (isTeacher) {
-    return <TeacherDashboard summary={summary} error={error} load={load} />;
-  }
   
   return (
     <>
@@ -248,12 +259,26 @@ export function DashboardPage() {
   );
 }
 
-function TeacherDashboard({ summary, error, load }: { summary: Summary; error: string; load: () => void }) {
-  const totalStudents = summary?.total_students ?? 0;
-  const activeStudents = summary?.active_students ?? 0;
-  const absentToday = summary?.absent_today ?? 0;
-  const totalClasses = summary?.total_classes ?? 0;
-  
+function TeacherDashboard() {
+  const [result, setResult] = useState<{ data: TeacherSummary } | { error: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get<ApiResponse<TeacherSummary>>("/teacher/dashboard-summary", { signal: controller.signal })
+      .then((response) => {
+        const data = unwrap(response);
+        if (!data) throw new Error("Öğretmen özeti alınamadı.");
+        if (!controller.signal.aborted) setResult({ data });
+      })
+      .catch((err) => { if (!controller.signal.aborted) setResult({ error: apiMessage(err) }); });
+    return () => controller.abort();
+  }, [attempt]);
+  const summary = result && "data" in result ? result.data : null;
+  const attendance = summary?.attendance;
+  const absentToday = attendance?.recorded_students ? attendance.absent_students : "—";
+  const attendanceMeta = !summary ? "Günlük yoklama" : !attendance ? "Yoklama okuma yetkisi gerekli" :
+    attendance.recorded_students ? `${attendance.recorded_students} öğrencinin yoklaması kayıtlı` : "Bugün yoklama kaydı yok";
+  const canReadAttendance = useAuthStore((state) => hasPermission(state.user, "attendance.read"));
   const canOpenChat = useAuthStore((state) =>
     hasPermission(state.user, "messaging.read") && hasPermission(state.user, "students.read"));
   const [showQuickChat, setShowQuickChat] = useState(false);
@@ -266,13 +291,16 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
         title="Günaydın, öğretmen paneli hazır." 
         description="Sınıfınız, öğrencileriniz ve günlük aktiviteleriniz tek bakışta burada." 
       >
-        <Link to="/attendance" className="btn btn-primary"><CalendarCheck2 size={16} />Yoklama Al</Link>
+        {canReadAttendance && <Link to="/attendance" className="btn btn-primary"><CalendarCheck2 size={16} />Yoklama Al</Link>}
       </PageHeader>
-      {error && <div className="card" style={{ marginBottom: 18 }}><ErrorState message={error} retry={load} /></div>}
+      {!result && <LoadingState label="Öğretmen özeti yükleniyor" />}
+      {result && "error" in result && <div className="card" style={{ marginBottom: 18 }}>
+        <ErrorState message={result.error} retry={() => { setResult(null); setAttempt((value) => value + 1); }} />
+      </div>}
       <div className="grid stats-grid">
-        <StatCard icon={<UsersRound size={19} />} label="Sınıf öğrencisi" value={activeStudents} change="Bu dönem" meta={`${totalStudents} toplam kayıt`} />
-        <StatCard icon={<ClipboardCheck size={19} />} label="Bugün devamsız" value={absentToday} meta="Yoklama kayıtlarına göre" color="orange" />
-        <StatCard icon={<BookOpen size={19} />} label="Sınıflar" value={totalClasses} meta="Atanmış sınıflarınız" color="blue" />
+        <StatCard icon={<UsersRound size={19} />} label="Aktif öğrenci" value={summary?.active_students ?? "—"} meta="Atanmış öğrencileriniz" />
+        <StatCard icon={<ClipboardCheck size={19} />} label="Bugün devamsız" value={absentToday} meta={attendanceMeta} color="orange" />
+        <StatCard icon={<BookOpen size={19} />} label="Sınıflar" value={summary?.total_classes ?? "—"} meta="Aktif atanmış sınıflarınız" color="blue" />
         <TeacherNotificationCount />
       </div>
       <div className="grid dashboard-grid">
@@ -300,7 +328,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
           <div className="class-status">
             <div className="status-item">
               <div className="status-label">Toplam öğrenci</div>
-              <div className="status-value">{totalStudents}</div>
+              <div className="status-value">{summary?.total_students ?? "—"}</div>
             </div>
             <div className="status-item">
               <div className="status-label">Bugün devamsız</div>
@@ -309,9 +337,8 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
             <div className="status-item">
               <div className="status-label">Katılım oranı</div>
               <div className="status-value success">
-                {totalStudents > 0 
-                  ? Math.round(((totalStudents - absentToday) / totalStudents) * 100) 
-                  : 0}%
+                {attendance?.participation_rate == null ? "—" :
+                  new Intl.NumberFormat("tr-TR", { style: "percent", maximumFractionDigits: 1 }).format(attendance.participation_rate / 100)}
               </div>
             </div>
           </div>

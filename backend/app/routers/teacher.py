@@ -21,6 +21,14 @@ router = APIRouter(prefix="/api/teacher", tags=["Teacher"])
 router.include_router(staff_chat_attachments)
 
 
+@router.get("/dashboard-summary")
+async def get_teacher_dashboard_summary(
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("dashboard.read")),
+):
+    return success_response(await teacher_day_service.dashboard_summary(db, tenant))
+
+
 @router.get("/my-classes")
 async def get_teacher_classes(db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user)):
     return success_response(await teacher_day_service.classes(db, current_user))
