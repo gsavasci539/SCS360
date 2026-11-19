@@ -3,6 +3,8 @@ from datetime import date
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
+from app.infrastructure.models.models import DailyDevelopmentReport, Student
+
 
 async def test_daily_report_roundtrip_and_branch_filter(materials_client):  # noqa: F811
     client, _, data = materials_client
@@ -26,3 +28,43 @@ async def test_daily_report_roundtrip_and_branch_filter(materials_client):  # no
     assert (await client.get(path, headers=authorization, params={**params,
         "branch_id": str(data["other_branch"].id)})).json()["data"]["items"] == []
     assert (await client.post(path, headers=authorization, json=draft)).status_code == 409
+
+
+async def test_daily_report_edit_and_delete_are_scoped_to_assigned_students(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    actor = data["teacher"]
+    child = data["children"][0]
+    today = date(2026, 11, 19)
+    async with sessions() as db:
+        other_class = data["other_class"]
+        other = Student(first_name="Unassigned", last_name="Test", organization_id=other_class.organization_id,
+            branch_id=other_class.branch_id, class_id=other_class.id)
+        db.add(other)
+        await db.flush()
+        assigned = DailyDevelopmentReport(student_id=child.id, class_id=child.class_id, date=today,
+            teacher_notes="Önceki gözlem", mood="Sakin", recorded_by=actor.id)
+        unassigned = DailyDevelopmentReport(student_id=other.id, class_id=other_class.id, date=today, teacher_notes="Korunacak")
+        db.add_all([assigned, unassigned])
+        await db.commit()
+        path = f"/api/daily-reports/{assigned.id}"
+        other_path = f"/api/daily-reports/{unassigned.id}"
+        unassigned_id = unassigned.id
+
+    teacher = headers(actor)
+    parent = headers(data["user"])
+    change = {"meal_status": "Kahvaltı: Tümünü Yedi", "sleep_status": "30 dk", "mood": None,
+        "activities": ["Çizim"], "teacher_notes": "Güncel gözlem"}
+    assert (await client.put(path, headers=parent, json=change)).status_code == 403
+    assert (await client.put(other_path, headers=teacher, json=change)).status_code == 404
+    response = await client.put(path, headers=teacher, json=change)
+    assert response.status_code == 200, response.text
+    readback = await client.get(path, headers=teacher)
+    assert readback.status_code == 200, readback.text
+    assert readback.json()["data"] == response.json()["data"]
+    assert {key: readback.json()["data"][key] for key in change} == change
+    assert (await client.delete(other_path, headers=teacher)).status_code == 404
+    assert (await client.delete(path, headers=teacher)).status_code == 200
+    assert (await client.get(path, headers=teacher)).status_code == 404
+    async with sessions() as db:
+        other_record = await db.get(DailyDevelopmentReport, unassigned_id)
+        assert other_record.teacher_notes == "Korunacak"
