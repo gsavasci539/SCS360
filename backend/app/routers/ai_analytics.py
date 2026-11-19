@@ -25,10 +25,11 @@ from app.core.permissions import PermissionChecker
 from app.core.responses import success_response, NotFoundException
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import (
-    Student, AttendanceRecord, Payment, Debt, 
+    Branch, Student, AttendanceRecord, Payment, Debt,
     Parent, User, Receipt, Grade, DebtStatus, ClassRoom, ClassTeacher,
     NotificationJob, Announcement, StudentParent, ChatMessage
 )
+from app.infrastructure.repositories.base import BaseRepository
 from app.routers.daily_reports import scoped as scoped_daily_reports
 
 
@@ -252,6 +253,7 @@ async def get_ai_homework_analysis(
 
 @router.get("/ai-daily-reports-analysis")
 async def get_ai_daily_reports_analysis(
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(AnalysisPermission('/ai-daily-reports-analysis')),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
@@ -261,8 +263,11 @@ async def get_ai_daily_reports_analysis(
         query = (await scoped_daily_reports(db, tenant)).where(
             Student.organization_id == tenant.organization_id, Student.deleted_at.is_(None),
         ).add_columns(Student.first_name, Student.last_name)
+        if branch_id is not None:
+            await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+            query = query.where(Student.branch_id == branch_id)
         rows = (await db.execute(query)).all()
-        return success_response(summarize_daily_reports(rows))
+        return success_response({**summarize_daily_reports(rows), "branch_id": str(branch_id) if branch_id else None})
     except SQLAlchemyError as exc:
         import logging
         logging.getLogger(__name__).error("Daily report analysis query failed (%s)", type(exc).__name__)

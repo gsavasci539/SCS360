@@ -279,6 +279,24 @@ async def test_daily_report_analysis_uses_the_readable_student_scope(materials_c
     assert result["report_stats"]["total"] == 1
     assert [row["student_id"] for row in result["students_needing_attention"]] == [str(child.id)]
 
+    denied = await client.get(path, headers=authorization, params={"branch_id": str(distant.id)})
+    assert denied.status_code == 404, denied.text
+    foreign = await client.get(path, headers=authorization, params={"branch_id": str(data["other_branch"].id)})
+    assert foreign.status_code == 404, foreign.text
+
+    async with sessions() as db:
+        db.add(UserBranch(user_id=teacher.id, branch_id=distant.id))
+        await db.commit()
+
+    all_branches = await client.get(path, headers=authorization)
+    assert all_branches.status_code == 200, all_branches.text
+    assert all_branches.json()["data"]["report_stats"]["total"] == 2
+    chosen = await client.get(path, headers=authorization, params={"branch_id": str(distant.id)})
+    assert chosen.status_code == 200, chosen.text
+    selected = chosen.json()["data"]
+    assert selected["branch_id"] == str(distant.id) and selected["report_stats"]["total"] == 1
+    assert [row["student_id"] for row in selected["students_needing_attention"]] == [str(outside.id)]
+
 
 async def test_daily_report_analysis_counts_observed_web_and_android_values(materials_client):  # noqa: F811
     client, _, data = materials_client
