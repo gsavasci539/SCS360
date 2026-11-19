@@ -118,7 +118,8 @@ async def test_daily_report_student_choices_follow_write_permission_and_assignme
     teacher, branch, institution = data["teacher"], data["branch"], data["org"]
     async with sessions() as db:
         role = (await db.execute(select(Role).where(Role.slug == "teacher").options(selectinload(Role.permissions)))).scalar_one()
-        role.permissions = [permission for permission in role.permissions if permission.code != "students.read"]
+        role.permissions = [permission for permission in role.permissions
+            if permission.code not in {"students.read", "daily_reports.read", "academic.read"}]
         distant = Branch(name="Other campus", organization_id=institution.id)
         db.add_all([distant, UserBranch(user_id=teacher.id, branch_id=branch.id)])
         await db.flush()
@@ -144,20 +145,24 @@ async def test_daily_report_student_choices_follow_write_permission_and_assignme
     path = "/api/daily-reports/student-options"
     assert (await client.get(path, headers=headers(data["user"]))).status_code == 403
     assert (await client.get("/api/students", headers=authorization)).status_code == 403
+    assert (await client.get("/api/daily-reports", headers=authorization)).status_code == 403
 
     async def listed(**params):
         response = await client.get(path, headers=authorization, params=params)
         assert response.status_code == 200, response.text
         return response.json()["data"]
 
-    selected = {"id": str(direct.id), "name": "Bireysel Test · KARNE-11"}
+    selected = {"id": str(direct.id), "name": "Bireysel Test · KARNE-11", "student_name": "Bireysel Test",
+        "class_id": str(direct.class_id)}
     page = await listed(page=2, page_size=1, selected_id=str(direct.id))
     assert page["total"] == 3 and page["total_pages"] == 3 and page["selected"] == selected
     assert selected not in page["items"]
     assert (await listed(search="KARNE-11", branch_id=str(branch.id)))["items"] == [selected]
+    assert (await listed(class_id=str(direct.class_id)))["items"] == [selected]
+    assert (await listed(class_id=str(distant_class.id)))["items"] == []
     for excluded in (unrelated, without_class, outside, data["stranger"]):
         assert (await listed(selected_id=str(excluded.id)))["selected"] is None
     created = await client.post("/api/daily-reports", headers=authorization,
-        json={"student_id": str(direct.id), "date": "2026-11-19", "teacher_notes": "Bireysel gözlem"})
+        json={"student_id": str(direct.id), "class_id": selected["class_id"], "date": "2026-11-19", "teacher_notes": "Bireysel gözlem"})
     assert created.status_code == 200, created.text
     assert created.json()["data"]["student_id"] == str(direct.id)

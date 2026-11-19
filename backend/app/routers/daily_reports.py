@@ -179,6 +179,7 @@ async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = D
 async def daily_report_student_options(
     page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=100),
     search: str | None = Query(None, max_length=150), selected_id: UUID | None = None, branch_id: UUID | None = None,
+    class_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write")),
 ):
@@ -188,7 +189,7 @@ async def daily_report_student_options(
     classroom = select(ClassRoom.id).where(ClassRoom.id == Student.class_id,
         ClassRoom.organization_id == Student.organization_id, ClassRoom.branch_id == Student.branch_id,
         ClassRoom.deleted_at.is_(None))
-    query = repo._branch_filter(select(Student.id, Student.first_name, Student.last_name, Student.student_number)
+    query = repo._branch_filter(select(Student.id, Student.first_name, Student.last_name, Student.student_number, Student.class_id)
         .where(Student.organization_id == tenant.organization_id, Student.deleted_at.is_(None), classroom.exists()), Student)
     allowed = await accessible_student_ids(db, tenant)
     if allowed is not None:
@@ -196,6 +197,8 @@ async def daily_report_student_options(
     if branch_id is not None:
         await repo.get_by_id(branch_id, Branch)
         query = query.where(Student.branch_id == branch_id)
+    if class_id is not None:
+        query = query.where(Student.class_id == class_id)
     selected = (await db.execute(query.where(Student.id == selected_id))).one_or_none() if selected_id else None
     if search and (term := search.strip()):
         query = query.where(or_((Student.first_name + " " + Student.last_name).ilike(f"%{term}%"),
@@ -207,7 +210,8 @@ async def daily_report_student_options(
 
     def choice(row):
         name = f"{row.first_name} {row.last_name}".strip()
-        return {"id": str(row.id), "name": f"{name} · {row.student_number}" if row.student_number else name}
+        return {"id": str(row.id), "name": f"{name} · {row.student_number}" if row.student_number else name,
+            "student_name": name, "class_id": str(row.class_id)}
 
     return success_response({**paginate([choice(row) for row in rows], total, page, page_size),
         "selected": choice(selected) if selected else None})
