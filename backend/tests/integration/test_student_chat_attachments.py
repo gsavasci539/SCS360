@@ -131,6 +131,11 @@ async def test_staff_chat_directory_and_conversation_keep_student_guardian_and_b
     assert result["total"] == 2 and result["total_pages"] == 2
     assert result["items"][0]["parent_id"] == str(parent.id)
     assert (await client.get("/api/teacher/chat-contacts", headers=headers(parent))).status_code == 403
+    assert (await client.get("/api/teacher/chat-branches", headers=headers(parent))).status_code == 403
+    teacher_branches = await client.get("/api/teacher/chat-branches", headers=headers(teacher))
+    assert teacher_branches.json()["data"] == [{"id": str(child.branch_id), "name": data["branch"].name}]
+    owner_branches = await client.get("/api/admin/chat-branches", headers=headers(owner))
+    assert {entry["id"] for entry in owner_branches.json()["data"]} == {str(branch.id), str(child.branch_id)}
     result = await client.get("/api/admin/chat-contacts", headers=headers(owner),
         params={"branch_id": str(branch.id), "search": "guardian"})
     assert result.status_code == 200, result.text

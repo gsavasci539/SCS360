@@ -21,6 +21,10 @@
   overflow-wrap: anywhere;
 }
 
+.student-chat-status {
+  padding: 0.5rem;
+}
+
 .student-chat-history {
   display: flex;
   flex: 1;

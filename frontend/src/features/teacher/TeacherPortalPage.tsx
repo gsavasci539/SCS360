@@ -1,9 +1,9 @@
 import { reportClientError } from "../../lib/diagnostics";
 import { useState, useEffect, useRef } from "react";
-import { BookOpen, Calendar, Users, FileText, CheckCircle, Clock, MessageCircle, Pill } from "lucide-react";
+import { BookOpen, Calendar, Users, FileText, CheckCircle, Clock, Pill } from "lucide-react";
 import { api, apiMessage } from "../../lib/api";
 import { PageHeader, LoadingState, ErrorState, Badge, Tabs } from "../../components/ui";
-import { ChatInterface } from "../parent/ChatInterface";
+import { StaffStudentChat } from "../parent/StaffStudentChat";
 import { useAuthStore } from "../../stores/auth";
 
 interface ClassInfo {
@@ -44,14 +44,6 @@ interface MedicineRequest {
   created_at?: string;
 }
 
-interface StudentWithParent {
-  student_id: string;
-  student_name: string;
-  parent_id: string | null;
-  parent_name: string;
-  is_primary: boolean;
-}
-
 export default function TeacherPortalPage() {
   const canReadMedicine = useAuthStore((state) => state.can("health.read") || state.can("teacher.view_medicine_requests"));
   const [activeTab, setActiveTab] = useState("classes");
@@ -62,14 +54,6 @@ export default function TeacherPortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const loadSequence = useRef(0);
-  const studentSequence = useRef(0);
-  
-  // Chat state
-  const [selectedClass, setSelectedClass] = useState<string>("");
-  const [students, setStudents] = useState<StudentWithParent[]>([]);
-  const [chatStudentId, setChatStudentId] = useState<string>("");
-  const [chatParentName, setChatParentName] = useState<string>("");
-  const [chatParentId, setChatParentId] = useState<string>("");
 
   useEffect(() => {
     load();
@@ -133,25 +117,6 @@ export default function TeacherPortalPage() {
       if (request === loadSequence.current) setLoading(false);
     }
   }
-
-  const loadClassStudents = async (classId: string) => {
-    const request = ++studentSequence.current;
-    setSelectedClass(classId); setStudents([]); setChatStudentId(""); setChatParentId("");
-    try {
-      const result = await api.get(`/teacher/class/${classId}/students`);
-      if (request !== studentSequence.current) return;
-      setStudents(result.data.data || []);
-    } catch (err) {
-      if (request === studentSequence.current) setError(apiMessage(err));
-    }
-  };
-
-  const openChat = (studentId: string, parentName: string, parentId: string | null) => {
-    if (!parentId) return;
-    setChatStudentId(studentId);
-    setChatParentName(parentName);
-    setChatParentId(parentId);
-  };
 
   if (loading) return <LoadingState label="Yükleniyor..." />;
   if (error) return <ErrorState message={error} retry={load} />;
@@ -355,88 +320,7 @@ export default function TeacherPortalPage() {
           </div>
         )}
         {activeTab === "chat" && (
-          <div className="tab-content">
-            {chatStudentId ? (
-              <ChatInterface
-                studentId={chatStudentId}
-                parentId={chatParentId}
-                teacherName={chatParentName}
-                onBack={() => {
-                  setChatStudentId("");
-                  setChatParentName("");
-                }}
-                apiBase="/teacher"
-              />
-            ) : (
-              <div>
-                <h3 style={{ marginBottom: 16 }}>Sınıf Seçin</h3>
-                <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
-                  {classes.map((cls) => (
-                    <button type="button"
-                      key={cls.id}
-                      className="card"
-                      style={{ padding: 16, cursor: "pointer", textAlign: "center" }}
-                      onClick={() => loadClassStudents(cls.id)}
-                      aria-pressed={selectedClass === cls.id}
-                    >
-                      <div style={{ fontWeight: 600, marginBottom: 8 }}>{cls.name}</div>
-                      <div style={{ fontSize: 12, color: "#666" }}>{cls.student_count} öğrenci</div>
-                    </button>
-                  ))}
-                </div>
-
-                {selectedClass && students.length > 0 && (
-                  <>
-                    <h3 style={{ marginBottom: 16 }}>Öğrenciler ve Veliler</h3>
-                    <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
-                      {students.map((student) => (
-                        <button type="button"
-                          key={`${student.student_id}-${student.parent_id}`}
-                          className="card"
-                          style={{ padding: 16, cursor: "pointer" }}
-                          onClick={() => openChat(student.student_id, student.parent_name, student.parent_id)}
-                          disabled={!student.parent_id}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                            <div style={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: "50%",
-                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              fontWeight: 600
-                            }}>
-                              {student.student_name[0]}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{student.student_name}</div>
-                              <div style={{ fontSize: 12, color: "#666" }}>{student.parent_name}</div>
-                            </div>
-                          </div>
-                          <button
-                            className="btn btn-primary"
-                            style={{ width: "100%", padding: 8, fontSize: 14 }}
-                          >
-                            <MessageCircle size={16} style={{ marginRight: 8 }} />
-                            Mesaj Gönder
-                          </button>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {selectedClass && students.length === 0 && (
-                  <div style={{ textAlign: "center", padding: 40, color: "#666" }}>
-                    Bu sınıfta öğrenci bulunamadı
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <div className="tab-content"><StaffStudentChat area="/teacher" /></div>
         )}
       </div>
     </>

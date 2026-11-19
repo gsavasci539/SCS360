@@ -27,8 +27,8 @@ it("recovers a lost attachment response without sending the same file twice", as
   let requestId = "";
   vi.mocked(api.get).mockImplementation(async (path) =>
     response(path === endpoint ? [] : statement(requestId)));
-  vi.mocked(api.post).mockImplementation(async (_path, body: FormData) => {
-    requestId = String(body.get("request_id"));
+  vi.mocked(api.post).mockImplementation(async (_path, body) => {
+    requestId = String((body as FormData).get("request_id"));
     throw new Error("Lost response");
   });
   render(<ChatInterface studentId="student" teacherId="teacher" teacherName="Öğretmen" onBack={vi.fn()} />);

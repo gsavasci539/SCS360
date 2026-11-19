@@ -1,0 +1,80 @@
+.staff-student-chat {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.staff-student-chat p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.staff-chat-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.staff-chat-filters label {
+  display: grid;
+  flex: 1 1 12rem;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.staff-chat-filters input,
+.staff-chat-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+}
+
+.staff-chat-filters input {
+  box-sizing: border-box;
+  border: 1px solid #b9cbc4;
+  border-radius: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+}
+
+.staff-chat-contacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.staff-chat-contacts button {
+  display: grid;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.75rem;
+  border: 1px solid #d4e3df;
+  border-radius: 0.75rem;
+  background: #f6faf8;
+  color: #253745;
+  text-align: start;
+  font: inherit;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.staff-chat-contacts button:hover {
+  background: #e3f1eb;
+}
+
+.staff-chat-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.staff-student-chat .student-chat {
+  min-height: 12rem;
+  height: min(37rem, 75dvh);
+}

@@ -1,11 +1,11 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import TeacherPortalPage from "../features/teacher/TeacherPortalPage";
 import { api } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
-vi.mock("../lib/api", () => ({ api: { get: vi.fn() }, apiMessage: () => "Program alınamadı" }));
-vi.mock("../features/parent/ChatInterface", () => ({ ChatInterface: () => <div>Sohbet</div> }));
+vi.mock("../lib/api", () => ({ api: { get: vi.fn() }, apiMessage: () => "Program alınamadı",
+  unwrap: (result: { data: { data: unknown } }) => result.data.data }));
 const classrooms = [{ id: "class-a", name: "Sınıf A", student_count: 2 }, { id: "class-b", name: "Sınıf B", student_count: 2 }];
 const response = (data: unknown) => ({ data: { data } });
 beforeEach(() => {
@@ -33,19 +33,22 @@ it("sağlık talimatı yetkisi olmadan ilaç sekmesini ve isteğini açmaz", asy
   expect(api.get).not.toHaveBeenCalledWith("/teacher/medicine-requests");
 });
 
-it("hızlı sınıf değişiminde eski yanıt yeni sınıfın öğrencilerini değiştiremez", async () => {
+it("Mesajlar sekmesi atanmış öğrenci ve velileri sayfalı sohbet dizininden yükler", async () => {
+  useAuthStore.getState().setUser({
+    id: "teacher", organization_id: "school", first_name: "Test", last_name: "Öğretmen", email: "teacher@test.invalid",
+    permissions: ["students.read", "messaging.read"], roles: [], branch_ids: [], is_super_admin: false,
+  });
   const normal = vi.mocked(api.get).getMockImplementation()!;
-  let old!: (value: unknown) => void;
   vi.mocked(api.get).mockImplementation(async (path, config) => {
-    if (path === "/teacher/class/class-a/students") return new Promise((resolve) => { old = resolve; });
-    if (path === "/teacher/class/class-b/students") return response([{ student_id: "new", student_name: "Güncel öğrenci", parent_id: "parent", parent_name: "Veli", is_primary: true }]);
+    if (path === "/teacher/chat-contacts") return response({ page: 1, total_pages: 1, items: [
+      { student_id: "new", student_name: "Güncel öğrenci", parent_id: "parent", parent_name: "Veli", branch_id: "branch" },
+    ] });
     return normal(path, config);
   });
   render(<TeacherPortalPage />);
   fireEvent.click(await screen.findByRole("button", { name: "Mesajlar" }));
-  fireEvent.click(screen.getByRole("button", { name: "Sınıf A 2 öğrenci" }));
-  fireEvent.click(screen.getByRole("button", { name: "Sınıf B 2 öğrenci" }));
   await screen.findByText("Güncel öğrenci");
-  await act(async () => old(response([{ student_id: "old", student_name: "Eski öğrenci", parent_id: "parent", parent_name: "Veli" }])));
-  expect(screen.queryByText("Eski öğrenci")).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/teacher/chat-contacts", expect.objectContaining({
+    params: { branch_id: undefined, search: "", page: 1 },
+  }));
 });

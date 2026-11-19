@@ -8,21 +8,12 @@ import { ErrorState, LoadingState, PageHeader, StatCard, Tabs } from "../../comp
 import { api, apiMessage } from "../../lib/api";
 import { money } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
-import { ChatInterface } from "../parent/ChatInterface";
+import { StaffStudentChat } from "../parent/StaffStudentChat";
 import { ExcuseReviewPanel } from "../communications/ExcuseRequests";
 import type { ApiResponse } from "../../types/api";
 
 interface Summary { total_students?: number; active_students?: number; total_branches?: number; total_classes?: number; absent_today?: number; monthly_payments?: string | number; pending_debt?: string | number; overdue_debt?: string | number }
 interface Charts { monthly_income?: Array<{ month?: string; label?: string; amount?: number; income?: number }>; income?: Array<{ month?: string; amount?: number }> }
-
-interface StudentWithParent {
-  student_id: string;
-  student_name: string;
-  class_name: string;
-  parent_id: string;
-  parent_name: string;
-  is_primary: boolean;
-}
 
 const fallbackChart: Array<{ month: string; amount: number }> = [];
 
@@ -32,14 +23,8 @@ export function DashboardPage() {
   const can = useAuthStore((state) => state.can);
   const isTeacher = user?.roles?.some((r: any) => r.slug === "teacher1" || r.slug === "teacher2" || r.slug === "teacher3") || false;
   
-  // Admin chat state
   const [activeTab, setActiveTab] = useState("overview");
-  const [students, setStudents] = useState<StudentWithParent[]>([]);
-  const [chatStudentId, setChatStudentId] = useState<string>("");
-  const [chatParentName, setChatParentName] = useState<string>("");
-  const [chatParentId, setChatParentId] = useState<string>("");
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  
+
   async function load() {
     setLoading(true); setError("");
     try {
@@ -55,26 +40,7 @@ export function DashboardPage() {
     } catch (err) { setError(apiMessage(err)); } finally { setLoading(false); }
   }
 
-  const loadStudents = async () => {
-    setStudentsLoading(true);
-    try {
-      const result = await api.get<ApiResponse<StudentWithParent[]>>("/admin/students");
-      setStudents(result.data.data || []);
-    } catch (err) {
-      reportClientError("Failed to load students:", err);
-    } finally {
-      setStudentsLoading(false);
-    }
-  };
-
-  const openChat = (studentId: string, parentName: string, parentId: string) => {
-    setChatStudentId(studentId);
-    setChatParentName(parentName);
-    setChatParentId(parentId);
-  };
-
   useEffect(() => { load(); }, []);
-  useEffect(() => { if (activeTab === "chat") loadStudents(); }, [activeTab]);
   if (loading) return <div className="card"><LoadingState label="Günün özeti hazırlanıyor" /></div>;
   
   if (isTeacher) {
@@ -275,40 +241,7 @@ export function DashboardPage() {
           </div>
         )}
         {activeTab === "chat" && (
-          <div className="tab-content">
-            {chatStudentId ? (
-              <ChatInterface studentId={chatStudentId} parentId={chatParentId} teacherName={chatParentName} onBack={() => { setChatStudentId(""); setChatParentName(""); }} apiBase="/admin" />
-            ) : (
-              <div>
-                {studentsLoading ? (
-                  <LoadingState label="Öğrenciler yükleniyor..." />
-                ) : (
-                  <>
-                    <h3 style={{ marginBottom: 16 }}>Öğrenciler ve Veliler</h3>
-                    <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 16 }}>
-                      {students.map((student) => (
-                        <div key={`${student.student_id}-${student.parent_id}`} className="card" style={{ padding: 16, cursor: "pointer" }} onClick={() => openChat(student.student_id, student.parent_name, student.parent_id)}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 600 }}>{student.student_name[0]}</div>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{student.student_name}</div>
-                              <div style={{ fontSize: 12, color: "#666" }}>{student.class_name} - {student.parent_name}</div>
-                            </div>
-                          </div>
-                          <button className="btn btn-primary" style={{ width: "100%", padding: 8, fontSize: 14 }}>
-                            <MessageCircle size={16} style={{ marginRight: 8 }} />Mesaj Gönder
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    {students.length === 0 && (
-                      <div style={{ textAlign: "center", padding: 40, color: "#666" }}>Öğrenci bulunamadı</div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          <div className="tab-content"><StaffStudentChat area="/admin" /></div>
         )}
       </div>
     </>

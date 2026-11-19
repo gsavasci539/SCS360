@@ -1,5 +1,5 @@
 import { ArrowLeft, Paperclip, Send } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { api, apiMessage, unwrap } from "../../lib/api";
 import { downloadFile } from "../../lib/download";
@@ -23,6 +23,9 @@ interface ChatInterfaceProps {
   studentId: string;
   teacherId?: string;
   parentId?: string;
+  branchId?: string;
+  subjectName?: string;
+  canSend?: boolean;
   teacherName: string;
   onBack: () => void;
   apiBase?: string;
@@ -34,18 +37,21 @@ interface PendingMessage {
   file: File | null;
 }
 
-export function ChatInterface({ studentId, teacherId, parentId, apiBase = "/parent", ...props }: ChatInterfaceProps) {
+export function ChatInterface({ studentId, teacherId, parentId, branchId, canSend = true, apiBase = "/parent", ...props }: ChatInterfaceProps) {
   const session = useAuthStore((state) => state.sessionVersion);
   const workspace = usePlatformWorkspace((state) => state.workspace?.id);
   const endpoint = teacherId ? `${apiBase}/child/${studentId}/chat/${teacherId}` : `${apiBase}/chat/${studentId}`;
-  return <StudentChat key={JSON.stringify([session, workspace, endpoint, parentId])}
-    endpoint={endpoint} parentId={parentId} {...props} />;
+  return <StudentChat key={JSON.stringify([session, workspace, endpoint, parentId, branchId, canSend])}
+    endpoint={endpoint} parentId={parentId} branchId={branchId} canSend={canSend} {...props} />;
 }
 
-function StudentChat({ endpoint, parentId, teacherName, onBack }: {
+function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, canSend, onBack }: {
   endpoint: string;
   parentId?: string;
+  branchId?: string;
+  subjectName?: string;
   teacherName: string;
+  canSend: boolean;
   onBack: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -64,12 +70,16 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
   const fileInput = useRef<HTMLInputElement>(null);
   const followMessages = useRef(true);
   const lastId = messages.at(-1)?.id;
-  const params = parentId ? { parent_id: parentId } : undefined;
+  const params = useMemo(() => (parentId || branchId ? {
+    ...(parentId ? { parent_id: parentId } : {}),
+    ...(branchId ? { branch_id: branchId } : {}),
+  } : undefined),
+    [parentId, branchId]);
 
   const refresh = useCallback(async (signal: AbortSignal) => {
     try {
       const rows = unwrap(await api.get<ApiResponse<ChatMessage[]>>(endpoint, {
-        params: parentId ? { parent_id: parentId } : undefined, signal,
+        params, signal,
       }));
       if (signal.aborted) return;
       setMessages(rows);
@@ -79,7 +89,7 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [endpoint, parentId]);
+  }, [endpoint, params]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,7 +128,7 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
 
   async function submit(draft: PendingMessage, send: boolean) {
     const signal = session.current?.signal;
-    if (!signal || signal.aborted || sending.current) return;
+    if (!canSend || !signal || signal.aborted || sending.current) return;
     sending.current = true;
     setBusy(true);
     setPending(draft);
@@ -182,7 +192,10 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
       <header>
         <button type="button" aria-label="Sohbeti kapat" className="btn btn-ghost"
           onClick={onBack}><ArrowLeft size={20} /></button>
-        <h3>{teacherName}</h3>
+        <div>
+          <h3>{subjectName || teacherName}</h3>
+          {subjectName && <p>{teacherName}</p>}
+        </div>
       </header>
       <div className="student-chat-history" ref={history} onScroll={(event) => {
         const list = event.currentTarget;
@@ -203,8 +216,8 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
           </article>
         ))}
       </div>
-      <form onSubmit={sendMessage} className="student-chat-form">
-        {actionError && <p role="alert">{actionError}</p>}
+      {actionError && <p className="student-chat-status" role="alert">{actionError}</p>}
+      {canSend ? <form onSubmit={sendMessage} className="student-chat-form">
         <textarea aria-label="Sohbet mesajı" rows={2} maxLength={10000} value={message}
           disabled={!!pending} placeholder="Mesajınızı yazın…" onChange={(event) => setMessage(event.target.value)}
           onKeyDown={(event) => {
@@ -242,7 +255,7 @@ function StudentChat({ endpoint, parentId, teacherName, onBack }: {
             </>
           )}
         </div>
-      </form>
+      </form> : <p className="student-chat-status">Bu hesapla gönderim yapılamaz.</p>}
     </section>
   );
 }

@@ -14,6 +14,14 @@ from app.infrastructure.storage.message_attachments import message_upload
 router = APIRouter()
 
 
+@router.get("/chat-branches", dependencies=[Depends(PermissionChecker("students.read"))])
+async def chat_branches(
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("messaging.read")),
+):
+    return success_response(await teacher_chat_service.contact_branches(db, tenant))
+
+
 @router.get("/chat-contacts")
 async def chat_contacts(
     branch_id: UUID | None = None,
