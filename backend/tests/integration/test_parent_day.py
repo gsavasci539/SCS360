@@ -94,6 +94,35 @@ async def test_date_only_records_do_not_invent_an_event_time(materials_client):
     assert row["time"] is None and row["timestamp"] is None and row["status"] == "ABSENT"
 
 
+async def test_created_daily_report_is_visible_only_for_the_linked_child_and_date(materials_client, monkeypatch):
+    client, _, data = materials_client
+    day = date(2026, 11, 3)
+    monkeypatch.setattr(parent_day_service, "school_today", lambda: day)
+    student, sibling = data["children"]
+    parent = auth(data["user"])
+    observations = {"sleep_status": "30 dk", "mood": "Sakin", "activities": ["Kitap okuma", "Çizim"],
+        "teacher_notes": "Kayıtlı gözlem"}
+    created = await client.post("/api/daily-reports", headers=auth(data["teacher"]), json={"student_id": str(student.id),
+        "class_id": str(student.class_id), "date": str(day), "meal_breakfast": "Tümünü Yedi", **observations})
+    assert created.status_code == 200, created.text
+    expected = {**observations, "meal_status": "Kahvaltı: Tümünü Yedi"}
+
+    child_path = f"/api/parent/child/{student.id}"
+    today = await client.get(f"{child_path}/today-status", headers=parent)
+    assert today.status_code == 200, today.text
+    assert today.json()["data"]["daily_report"] == expected
+    timeline = await client.get(f"{child_path}/timeline", headers=parent, params={"date": str(day)})
+    assert timeline.status_code == 200, timeline.text
+    today_events = timeline.json()["data"]["events"]
+    assert [(event["type"], event["details"]) for event in today_events] == [("DAILY_REPORT", expected)]
+    previous = await client.get(f"{child_path}/timeline", headers=parent, params={"date": "2026-11-02"})
+    assert previous.json()["data"]["events"] == []
+    other = await client.get(f"/api/parent/child/{sibling.id}/today-status", headers=parent)
+    assert other.json()["data"]["daily_report"] is None
+    forbidden = await client.get(f'/api/parent/child/{data["stranger"].id}/timeline', headers=parent)
+    assert forbidden.status_code == 403
+
+
 async def test_teacher_with_assigned_branch_can_read_daily_reports_without_server_error(materials_client):
     client, sessions, data = materials_client
     async with sessions() as db:

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { ParentPortalPage } from "../features/parent/ParentPortalPage";
@@ -21,4 +21,30 @@ it("finans izni olmayan velinin panosu finans isteği yapmaz ve ödeme kartı g�
   expect(vi.mocked(api.get).mock.calls.some(([path]) => String(path).includes("financial-invoices"))).toBe(false);
   expect(screen.queryByText("Kalan Ödeme")).not.toBeInTheDocument();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("çocuk değiştiğinde yalnız yeni çocuğun karne etkinliklerini gösterir", async () => {
+  let finishOldChild!: (value: unknown) => void;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === "/parent/my-children") return { data: { data: [
+      { student_id: "child-1", first_name: "Deniz", last_name: "Test" },
+      { student_id: "child-2", first_name: "Ada", last_name: "Test" },
+    ] } };
+    if (path === "/parent/child/child-1/today-status") return new Promise((resolve) => { finishOldChild = resolve; });
+    if (path === "/parent/child/child-2/today-status") return { data: { data: { student_id: "child-2", date: "2026-11-03",
+      daily_report: { activities: ["Kitap okuma", "Çizim"], teacher_notes: "Yeni çocuğun karne notu" } } } };
+    if (path === "/parent/child/child-2/timeline") return { data: { data: { student_id: "child-2", date: "2026-11-03", events: [] } } };
+    return { data: { data: null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="children" /></MemoryRouter>);
+  const picker = await screen.findByRole("combobox", { name: "Öğrenci Seçin" });
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/parent/child/child-1/today-status", expect.anything()));
+  const oldRequest = vi.mocked(api.get).mock.calls.find(([path]) => path === "/parent/child/child-1/today-status")?.[1];
+  fireEvent.change(picker, { target: { value: "child-2" } });
+  expect(await screen.findByText("Kitap okuma, Çizim")).toBeInTheDocument();
+  expect(oldRequest?.signal?.aborted).toBe(true);
+  await act(async () => { finishOldChild({ data: { data: { student_id: "child-1", date: "2026-11-03",
+    daily_report: { teacher_notes: "Eski çocuğun karne notu" } } } }); });
+  expect(screen.queryByText("Eski çocuğun karne notu")).not.toBeInTheDocument();
+  expect(screen.getByText("Yeni çocuğun karne notu")).toBeInTheDocument();
 });

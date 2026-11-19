@@ -9,7 +9,7 @@ import { ChatInterface } from "./ChatInterface";
 import { HomeworkSubmissions } from "../academic/HomeworkSubmissions";
 import { downloadFile } from "../../lib/download";
 import { ParentExcuseRequests } from "../communications/ExcuseRequests";
-import { ParentDayTimeline } from "./ParentDayTimeline";
+import { formatDayActivities, ParentDayTimeline } from "./ParentDayTimeline";
 import { ParentCertificates } from "./ParentCertificates";
 import { ParentReportCards } from "./ParentReportCards";
 import { ParentConsents } from "./ParentConsents";
@@ -28,7 +28,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [medicineSubmitting, setMedicineSubmitting] = useState(false);
   const [children, setChildren] = useState<DataRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
-  const [status, setStatus] = useState<DataRecord | null>(null);
+  const [dayStatus, setDayStatus] = useState<DataRecord | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
   const [finances, setFinances] = useState<DataRecord | null>(null);
   const [medicineRequests, setMedicineRequests] = useState<DataRecord[]>([]);
@@ -95,12 +95,13 @@ export function ParentPortalPage({ view }: { view: View }) {
   useEffect(() => {
     if (!selectedId) return;
     let cancelled = false;
+    const controller = new AbortController();
     setLoading(true); setError("");
-    setStatus(null); setAttendance(null); setFinances(null); setMedicineRequests([]);
+    setDayStatus(null); setAttendance(null); setFinances(null); setMedicineRequests([]);
     setGrades([]); setSchedule([]); setHomework([]); setMaterials([]); setCommunications([]);
     setAnnouncements([]); setActivities([]); setWeeklyReports([]); setTeachers([]);
     setChatTeacherId(""); setAiRecommendations(null);
-    const requests: Promise<unknown>[] = [api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`)];
+    const requests: Promise<unknown>[] = [api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`, { signal: controller.signal })];
     if (view === "attendance") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, { params: { year: today.getFullYear(), month: today.getMonth() + 1 } }));
     if (view === "finances" || (view === "dashboard" && canReadFinances)) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/financial-invoices`));
     else if (view === "dashboard") requests.push(Promise.resolve({ data: { data: null } }));
@@ -125,7 +126,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     
     Promise.all(requests).then((responses) => {
       if (cancelled) return;
-      setStatus(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
+      setDayStatus(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
       if (view === "attendance") setAttendance(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
       if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
       if (view === "health") setMedicineRequests(((unwrap(responses[1] as { data: ApiResponse<DataRecord> }).medicine_requests as DataRecord[]) || []));
@@ -147,7 +148,7 @@ export function ParentPortalPage({ view }: { view: View }) {
       setAiRecommendations(aiResponse?.data?.data ?? null);
     }).catch((reason) => { if (!cancelled) setError(apiMessage(reason)); })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [selectedId, view, canReadFinances]);
 
   const selected = children.find((child) => String(child.student_id) === selectedId);
@@ -239,6 +240,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   if (error && !children.length) return <div className="card"><ErrorState message={error} /></div>;
   if (!children.length) return <div className="card"><ErrorState message="Bu veli hesabına bağlı öğrenci bulunamadı." /></div>;
 
+  const status = dayStatus?.student_id === selectedId ? dayStatus : null;
   const daily = status?.daily_report as DataRecord | undefined;
   const currentAttendance = status?.attendance as DataRecord | undefined;
   const summary = attendance?.summary as DataRecord | undefined;
@@ -254,7 +256,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     <div className="card parent-selector-gradient parent-animate-in">
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label className="field-label" style={{ color: "rgba(255,255,255,0.9)", marginBottom: 8, display: "block", fontWeight: 600 }}>Öğrenci Seçin</label>
+          <label htmlFor="parent-child" className="field-label" style={{ color: "rgba(255,255,255,0.9)", marginBottom: 8, display: "block", fontWeight: 600 }}>Öğrenci Seçin</label>
           <select 
             id="parent-child" 
             value={selectedId} 
@@ -635,7 +637,7 @@ export function ParentPortalPage({ view }: { view: View }) {
             }}>
               <span style={{ color: "#546e7a", fontSize: "14px", fontWeight: 600, display: "block", marginBottom: 8 }}>Etkinlikler</span>
               <strong style={{ fontSize: "16px", color: "#2c3e50" }}>
-                {Array.isArray(daily?.activities) ? (daily.activities as unknown[]).join(", ") : String(daily?.activities || "Henüz bildirilmedi")}
+                {formatDayActivities(daily?.activities) || "Henüz bildirilmedi"}
               </strong>
             </div>
           </div>
