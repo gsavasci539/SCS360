@@ -23,8 +23,10 @@ class ChatMessage(BaseModel):
 
 class ChatMessageCreate(BaseModel):
     conversation_id: Optional[UUID] = None
+    request_id: Optional[UUID] = None
     recipient_id: UUID
     class_id: Optional[UUID] = None
+    branch_id: Optional[UUID] = None
     content: str
     attachment_url: Optional[str] = None
 

@@ -1,19 +1,24 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc
-from typing import Optional, List
+from sqlalchemy import select, and_, or_, desc, func
+from sqlalchemy.exc import IntegrityError
+from collections import defaultdict
+from typing import Optional
 from uuid import UUID
-from datetime import datetime
-from pydantic import BaseModel
+from datetime import UTC, datetime
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response, paginate
 from app.domain.entities.user import User
-from app.domain.entities.chat_message import ChatMessage, ChatMessageCreate, ChatMessageUpdate
+from app.domain.entities.chat_message import ChatMessage, ChatMessageCreate
 from app.core.tenant import TenantContext
+from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
+from app.core.student_access import require_student_access
+from app.application.services.message_contacts import recipient_query, require_recipient
+from app.infrastructure.models.models import ChatMessage as ChatMessageModel, User as UserModel, Role, UserRole
 
 router = APIRouter(prefix="/api/messages", tags=["Messages"])
 
@@ -31,6 +36,52 @@ def message_to_dict(message: ChatMessage) -> dict:
         "is_read": message.is_read,
         "sent_at": message.sent_at.isoformat() if message.sent_at else None
     }
+
+
+@router.get("/recipients")
+async def list_message_recipients(
+    branch_id: UUID | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
+):
+    query = await recipient_query(db, tenant, branch_id)
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    users = UserModel.__table__.c
+    rows = (await db.execute(query.order_by(users.first_name, users.last_name, users.id)
+                            .offset((page - 1) * page_size).limit(page_size))).all()
+    roles, links = Role.__table__.c, UserRole.__table__.c
+    names = defaultdict(list)
+    if rows:
+        result = await db.execute(select(links.user_id, roles.name)
+            .join(Role.__table__, roles.id == links.role_id).where(
+                links.user_id.in_([row.id for row in rows]), roles.deleted_at.is_(None),
+                or_(roles.organization_id.is_(None), roles.organization_id == tenant.organization_id),
+            ).order_by(roles.name, roles.id))
+        for user_id, name in result:
+            names[user_id].append(name)
+    return success_response(paginate([
+        {"id": str(user.id), "name": f"{user.first_name} {user.last_name}",
+         "roles": names[user.id]}
+        for user in rows
+    ], total or 0, page, page_size))
+
+
+@router.get("/sent/{message_id}")
+async def get_sent_message(
+    message_id: UUID,
+    branch_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
+):
+    message = await db.scalar(select(ChatMessageModel).where(
+        ChatMessageModel.id == message_id, ChatMessageModel.sender_id == tenant.user_id,
+    ))
+    if message is None:
+        raise NotFoundException("Gönderilen mesaj bulunamadı")
+    await require_recipient(db, tenant, message.recipient_id, branch_id)
+    return success_response(message_to_dict(ChatMessage.model_validate(message)))
 
 
 @router.get("/conversations")
@@ -169,25 +220,43 @@ async def send_message(
     tenant: TenantContext = Depends(PermissionChecker("messaging.send"))
 ):
     """Send a message to another user"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel, ChatConversation, User as UserModel, ClassRoom
+    from app.infrastructure.models.models import ChatConversation, ClassRoom, Student
     from app.infrastructure.repositories.base import BaseRepository
-    from app.core.exceptions import ForbiddenException, ValidationException
-    from datetime import UTC
     repo = BaseRepository(db, tenant)
-    await repo.get_by_id(message.recipient_id, UserModel)
+    sender_id = current_user.id
+    await require_recipient(db, tenant, message.recipient_id, message.branch_id)
     if not message.content.strip() or len(message.content) > 10000:
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
     if message.class_id:
-        await repo.get_by_id(message.class_id, ClassRoom)
+        classroom = await repo.get_by_id(message.class_id, ClassRoom)
+        if message.branch_id and classroom.branch_id != message.branch_id:
+            raise ForbiddenException("Sınıf seçilen şubeye bağlı değil")
     conversation = None
     if message.conversation_id:
-        conversation = await repo.get_by_id(message.conversation_id, ChatConversation)
-        if {current_user.id, message.recipient_id} != {conversation.parent_id, conversation.teacher_id}:
+        conversation = await repo.get_by_id(message.conversation_id, ChatConversation, for_update=True)
+        if {sender_id, message.recipient_id} != {conversation.parent_id, conversation.teacher_id}:
             raise ForbiddenException("Görüşme katılımcıları eşleşmiyor")
+        student = await repo.get_by_id(conversation.student_id, Student)
+        await require_student_access(db, tenant, student.id)
+        if message.branch_id and student.branch_id != message.branch_id:
+            raise ForbiddenException("Görüşme seçilen şubeye bağlı değil")
+
+    def replay(row):
+        if (row.sender_id, row.recipient_id, row.content, row.class_id, row.conversation_id, row.attachment_url) != (
+            sender_id, message.recipient_id, message.content, message.class_id,
+            message.conversation_id, message.attachment_url,
+        ):
+            raise ConflictException("İşlem kimliği farklı bir mesaj için kullanılmış")
+        return success_response(message_to_dict(ChatMessage.model_validate(row)), "Mesaj kaydedildi")
+
+    if message.request_id is not None:
+        prior = await db.get(ChatMessageModel, message.request_id)
+        if prior:
+            return replay(prior)
     sender_role = "TEACHER" if "teacher" in tenant.role_slugs else "PARENT" if "parent" in tenant.role_slugs else "STAFF"
     new_message = ChatMessageModel(
         conversation_id=message.conversation_id,
-        sender_id=current_user.id,
+        sender_id=sender_id,
         sender_role=sender_role,
         recipient_id=message.recipient_id,
         class_id=message.class_id,
@@ -196,19 +265,29 @@ async def send_message(
         is_read=False,
         sent_at=datetime.now(UTC)
     )
-    
+    if message.request_id is not None:
+        new_message.id = message.request_id
     db.add(new_message)
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        if message.request_id is not None:
+            prior = await db.get(ChatMessageModel, message.request_id)
+            if prior:
+                return replay(prior)
+        raise
     if conversation:
         conversation.last_message = message.content
         conversation.last_message_at = new_message.sent_at
-        if current_user.id == conversation.teacher_id:
+        if sender_id == conversation.teacher_id:
             conversation.parent_unread_count = (conversation.parent_unread_count or 0) + 1
         else:
             conversation.teacher_unread_count = (conversation.teacher_unread_count or 0) + 1
     await db.commit()
     await db.refresh(new_message)
     
-    return success_response(message_to_dict(ChatMessage.model_validate(new_message)), "Message sent")
+    return success_response(message_to_dict(ChatMessage.model_validate(new_message)), "Mesaj kaydedildi")
 
 
 @router.put("/{message_id}/read")
