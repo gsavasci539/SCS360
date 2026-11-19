@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.core.exceptions import ForbiddenException, UnauthorizedException
 from app.core.security import verify_access_token
 from app.core.tenant import TenantContext, effective_roles
-from app.infrastructure.models.models import ClassTeacher, Role, User, UserStatus
+from app.infrastructure.models.models import Role, User, UserStatus
 from app.core import tenant_guard  # noqa: F401 - register session boundary guards
 from app.core import class_capacity_guard  # noqa: F401 - organization locks precede quota checks
 from app.core import subscription_guard  # noqa: F401 - register purchased capacity checks
@@ -101,18 +101,10 @@ async def get_tenant_context(
     # account; all queries remain constrained by organization_id.
     branch_ids = [] if "owner" in role_slugs and user.organization_id is not None else [b.id for b in user.branches]
 
-    class_ids: list[UUID] = []
-    if "teacher" in role_slugs:
-        result = await db.execute(
-            select(ClassTeacher.class_id).where(ClassTeacher.user_id == user.id)
-        )
-        class_ids = list(result.scalars().all())
-
     tenant = TenantContext(
         user_id=user.id,
         organization_id=user.organization_id,
         branch_ids=branch_ids,
-        class_ids=class_ids,
         permissions=permissions,
         role_slugs=role_slugs,
         is_super_admin=user.is_super_admin,

@@ -174,8 +174,6 @@ async def list_students(
         query = query.where(
             Student.first_name.ilike(f"%{search}%") | Student.last_name.ilike(f"%{search}%")
         )
-    if "teacher" in tenant.role_slugs and tenant.class_ids:
-        query = query.where(Student.class_id.in_(tenant.class_ids))
     query = query.order_by(Student.last_name, Student.first_name)
     items, total = await repo.paginate(query, page, page_size)
     return success_response(paginate([student_dict(s, tenant) for s in items], total, page, page_size))

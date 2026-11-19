@@ -20,6 +20,6 @@ async def activate_parent_scope(user: User = Depends(get_current_user), db: Asyn
     if not any(role.slug == "parent" for role in effective_roles(user)):
         return
     identifiers = await parent_student_ids(db, user.id, user.organization_id)
-    db.info["tenant_context"] = replace(tenant, branch_ids=[], class_ids=[], role_slugs={"parent"},
+    db.info["tenant_context"] = replace(tenant, branch_ids=[], role_slugs={"parent"},
         permissions={code for code in tenant.permissions if code.startswith("parent.")}, parent_portal=True)
     db.info["accessible_student_ids"] = identifiers

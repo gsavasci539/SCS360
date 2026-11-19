@@ -41,7 +41,6 @@ class TenantContext:
     user_id: UUID
     organization_id: UUID | None = None
     branch_ids: list[UUID] = field(default_factory=list)
-    class_ids: list[UUID] = field(default_factory=list)
     permissions: set[str] = field(default_factory=set)
     role_slugs: set[str] = field(default_factory=set)
     is_super_admin: bool = False
