@@ -591,31 +591,47 @@ async def webhook_sms_status(payload: dict, webhook_secret: str | None = Header(
     return success_response({"received": True}, "Teslim raporu kaydedildi")
 
 
+def _unread_notification_scope(tenant: TenantContext):
+    from app.core.exceptions import ForbiddenException
+    from app.core.tenant_guard import scope_filters
+    from app.infrastructure.models.models import NotificationJob, NotificationRecipient, NotificationStatus, Parent
+
+    if tenant.is_super_admin or tenant.organization_id is None:
+        raise ForbiddenException("Bildirimler için bir kurum seçin")
+    branches, _, _, _ = scope_filters(tenant, None)
+    jobs = select(NotificationJob.id).where(NotificationJob.organization_id == tenant.organization_id,
+        NotificationJob.branch_id.is_(None) | NotificationJob.branch_id.in_(branches))
+    parents = select(Parent.id).where(Parent.user_id == tenant.user_id,
+        Parent.organization_id == tenant.organization_id, Parent.deleted_at.is_(None))
+    return (
+        NotificationRecipient.notification_job_id.in_(jobs),
+        (NotificationRecipient.user_id == tenant.user_id) | NotificationRecipient.parent_id.in_(parents),
+        NotificationRecipient.status == NotificationStatus.SENT,
+        NotificationRecipient.read_at.is_(None),
+    )
+
+
 @router.get("/api/notifications/unread-count")
 async def get_unread_notifications_count(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db, scope="function")
+    tenant: TenantContext = Depends(PermissionChecker("notification.read", "parent.view_children")),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    from app.infrastructure.models.models import NotificationRecipient, NotificationStatus, Parent
     from sqlalchemy import func
-    permitted_parents = select(Parent.id).where(Parent.user_id == user.id, Parent.organization_id == user.organization_id)
-    count = (await db.execute(select(func.count()).select_from(NotificationRecipient).where(
-        (NotificationRecipient.user_id == user.id) | NotificationRecipient.parent_id.in_(permitted_parents),
-        NotificationRecipient.status == NotificationStatus.SENT, NotificationRecipient.read_at.is_(None)))).scalar_one()
+    from app.infrastructure.models.models import NotificationRecipient
+
+    count = await db.scalar(select(func.count()).select_from(NotificationRecipient).where(*_unread_notification_scope(tenant)))
     return success_response({"unread_count": count})
 
 
 @router.patch("/api/notifications/mark-all-read")
 async def mark_all_notifications_read(
-    user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db, scope="function")
+    tenant: TenantContext = Depends(PermissionChecker("notification.read", "parent.view_children")),
+    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    from app.infrastructure.models.models import NotificationRecipient, NotificationStatus, Parent
     from sqlalchemy import update
-    permitted_parents = select(Parent.id).where(Parent.user_id == user.id, Parent.organization_id == user.organization_id)
-    await db.execute(update(NotificationRecipient).where(
-        (NotificationRecipient.user_id == user.id) | NotificationRecipient.parent_id.in_(permitted_parents),
-        NotificationRecipient.status == NotificationStatus.SENT, NotificationRecipient.read_at.is_(None))
+    from app.infrastructure.models.models import NotificationRecipient
+
+    await db.execute(update(NotificationRecipient).where(*_unread_notification_scope(tenant))
         .values(read_at=datetime.now(UTC)))
     return success_response(message="Bildirimler okundu olarak kaydedildi")
 

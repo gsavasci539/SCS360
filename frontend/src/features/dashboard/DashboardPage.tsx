@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ErrorState, LoadingState, Modal, PageHeader, StatCard, Tabs } from "../../components/ui";
-import { api, apiMessage } from "../../lib/api";
+import { api, apiMessage, unwrap } from "../../lib/api";
 import { money } from "../../lib/format";
 import { hasPermission, useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import { StaffStudentChat } from "../parent/StaffStudentChat";
 import { ExcuseReviewPanel } from "../communications/ExcuseRequests";
 import type { ApiResponse } from "../../types/api";
@@ -272,7 +273,7 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
         <StatCard icon={<UsersRound size={19} />} label="Sınıf öğrencisi" value={activeStudents} change="Bu dönem" meta={`${totalStudents} toplam kayıt`} />
         <StatCard icon={<ClipboardCheck size={19} />} label="Bugün devamsız" value={absentToday} meta="Yoklama kayıtlarına göre" color="orange" />
         <StatCard icon={<BookOpen size={19} />} label="Sınıflar" value={totalClasses} meta="Atanmış sınıflarınız" color="blue" />
-        <StatCard icon={<Bell size={19} />} label="Bildirimler" value={0} meta="Yeni bildirimler" color="blue" />
+        <TeacherNotificationCount />
       </div>
       <div className="grid dashboard-grid">
         <section className="card">
@@ -332,6 +333,39 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
       )}
     </>
   );
+}
+
+function TeacherNotificationCount() {
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const organization = user?.is_super_admin
+    ? (workspace?.operatorId === user.id ? workspace.id : null)
+    : user?.organization_id;
+  if (!organization || !hasPermission(user, "notification.read")) return null;
+  return <UnreadNotificationCard key={JSON.stringify([session, user?.id, organization, user?.branch_ids])} />;
+}
+
+function UnreadNotificationCard() {
+  const [result, setResult] = useState<{ count: number } | "error" | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get<ApiResponse<{ unread_count: number }>>("/notifications/unread-count", { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const count = unwrap(response)?.unread_count;
+        if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) {
+          throw new Error("Bildirim sayısı geçersiz.");
+        }
+        setResult({ count });
+      })
+      .catch(() => { if (!controller.signal.aborted) setResult("error"); });
+    return () => controller.abort();
+  }, []);
+  const count = typeof result === "object" && result ? result.count : undefined;
+  const meta = result === null ? "Bildirim sayısı yükleniyor…" :
+    result === "error" ? "Bildirim sayısı alınamadı" : "Okunmamış bildirimler";
+  return <StatCard icon={<Bell size={19} />} label="Bildirimler" value={count ?? "—"} meta={meta} color="blue" />;
 }
 
 function Quick({ to, icon, title, caption }: { to: string; icon: React.ReactNode; title: string; caption: string }) {

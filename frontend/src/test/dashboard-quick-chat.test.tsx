@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
@@ -73,5 +73,43 @@ it("hides the quick-chat entry when the legacy role lacks student access", async
   renderDashboard();
   await screen.findByRole("heading", { name: "Günaydın, öğretmen paneli hazır." });
   expect(screen.queryByRole("button", { name: "Hızlı mesaj" })).not.toBeInTheDocument();
+  expect(screen.queryByText("Bildirimler", { exact: true })).not.toBeInTheDocument();
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path.includes("chat-"))).toBe(false);
+  expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/notifications/unread-count")).toBe(false);
+});
+
+it("shows the API unread count for an authorized teacher, including a verified zero", async () => {
+  const authorized = { ...actor, permissions: [...actor.permissions, "notification.read"] };
+  let count = 7;
+  useAuthStore.getState().setUser(authorized);
+  vi.mocked(api.get).mockImplementation(async (path) =>
+    response(path === "/notifications/unread-count" ? { unread_count: count } : {}));
+  renderDashboard();
+  let card = (await screen.findByText("Okunmamış bildirimler")).closest(".stat-card");
+  expect(card).toHaveTextContent("7");
+  count = 0;
+  act(() => useAuthStore.getState().setUser({ ...authorized, branch_ids: ["other-branch"] }));
+  card = (await screen.findByText("Okunmamış bildirimler")).closest(".stat-card");
+  expect(card).toHaveTextContent("0");
+});
+
+it("holds an unavailable state while ignoring a previous actor's unread response", async () => {
+  const authorized = { ...actor, permissions: [...actor.permissions, "notification.read"] };
+  useAuthStore.getState().setUser(authorized);
+  let priorSignal: AbortSignal | undefined;
+  let finish!: (value: unknown) => void;
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path !== "/notifications/unread-count") return response({});
+    if (priorSignal) throw new Error("Test bağlantısı kesildi.");
+    priorSignal = config?.signal as AbortSignal;
+    return new Promise((resolve) => { finish = resolve; });
+  });
+  renderDashboard();
+  await waitFor(() => expect(priorSignal).toBeDefined());
+  act(() => useAuthStore.getState().setUser({ ...authorized, id: "next-teacher" }));
+  const card = (await screen.findByText("Bildirim sayısı alınamadı")).closest(".stat-card");
+  expect(priorSignal?.aborted).toBe(true);
+  await act(async () => finish(response({ unread_count: 99 })));
+  expect(card).toHaveTextContent("—");
+  expect(card).not.toHaveTextContent(/0|99/);
 });
