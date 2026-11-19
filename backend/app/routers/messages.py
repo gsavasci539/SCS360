@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, desc, func
+from sqlalchemy import select, and_, case, or_, func
 from sqlalchemy.exc import IntegrityError
 from collections import defaultdict
 from typing import Optional
@@ -17,7 +17,8 @@ from app.domain.entities.chat_message import ChatMessage, ChatMessageCreate
 from app.core.tenant import TenantContext
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.student_access import require_student_access
-from app.application.services.message_contacts import recipient_query, require_recipient
+from app.application.services.message_contacts import message_branches, recipient_query, require_recipient
+from app.application.services.message_history import message_partner, message_visibility
 from app.infrastructure.models.models import ChatMessage as ChatMessageModel, User as UserModel, Role, UserRole
 
 router = APIRouter(prefix="/api/messages", tags=["Messages"])
@@ -75,96 +76,39 @@ async def get_sent_message(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
 ):
+    visible = await message_visibility(db, tenant, branch_id)
     message = await db.scalar(select(ChatMessageModel).where(
-        ChatMessageModel.id == message_id, ChatMessageModel.sender_id == tenant.user_id,
+        visible, ChatMessageModel.id == message_id, ChatMessageModel.sender_id == tenant.user_id,
     ))
     if message is None:
         raise NotFoundException("Gönderilen mesaj bulunamadı")
-    await require_recipient(db, tenant, message.recipient_id, branch_id)
     return success_response(message_to_dict(ChatMessage.model_validate(message)))
 
 
 @router.get("/conversations")
 async def get_conversations(
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read"))
 ):
-    """Get user's conversations (list of people they've messaged)"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel
-    from app.infrastructure.models.models import User as UserModel
-    
-    # Get all unique conversation partners
-    result = await db.execute(
-        select(ChatMessageModel.sender_id, ChatMessageModel.recipient_id)
-        .where(
-            or_(
-                ChatMessageModel.sender_id == current_user.id,
-                ChatMessageModel.recipient_id == current_user.id
-            )
-        )
-        .distinct()
-    )
-    
-    conversations = result.all()
-    partner_ids = set()
-    for sender_id, recipient_id in conversations:
-        if sender_id != current_user.id:
-            partner_ids.add(sender_id)
-        if recipient_id != current_user.id:
-            partner_ids.add(recipient_id)
-    
-    # Get user details for each partner
-    partners = []
-    if partner_ids:
-        result = await db.execute(
-            select(UserModel).where(UserModel.id.in_(partner_ids))
-        )
-        users = result.scalars().all()
-        
-        for user in users:
-            # Get last message with this user
-            last_message_result = await db.execute(
-                select(ChatMessageModel)
-                .where(
-                    or_(
-                        and_(
-                            ChatMessageModel.sender_id == current_user.id,
-                            ChatMessageModel.recipient_id == user.id
-                        ),
-                        and_(
-                            ChatMessageModel.sender_id == user.id,
-                            ChatMessageModel.recipient_id == current_user.id
-                        )
-                    )
-                )
-                .order_by(desc(ChatMessageModel.sent_at))
-                .limit(1)
-            )
-            last_message = last_message_result.scalar_one_or_none()
-            
-            # Get unread count
-            unread_result = await db.execute(
-                select(ChatMessageModel)
-                .where(
-                    and_(
-                        ChatMessageModel.sender_id == user.id,
-                        ChatMessageModel.recipient_id == current_user.id,
-                        ChatMessageModel.is_read == False
-                    )
-                )
-            )
-            unread_count = len(unread_result.scalars().all())
-            
-            partners.append({
-                "user_id": str(user.id),
-                "name": f"{user.first_name} {user.last_name}",
-                "email": user.email,
-                "last_message": message_to_dict(ChatMessage.model_validate(last_message)) if last_message else None,
-                "unread_count": unread_count
-            })
-    
-    return success_response(partners)
+    visible = await message_visibility(db, tenant, branch_id)
+    messages, users = ChatMessageModel.__table__, UserModel.__table__
+    partner = message_partner(tenant.user_id)
+    incoming = and_(messages.c.recipient_id == tenant.user_id, messages.c.is_read.is_(False))
+    ranked = select(
+        messages, partner.label("partner_id"),
+        func.row_number().over(partition_by=partner, order_by=(messages.c.sent_at.desc(), messages.c.id.desc())).label("rank"),
+        func.sum(case((incoming, 1), else_=0)).over(partition_by=partner).label("unread_count"),
+    ).where(visible).subquery()
+    result = await db.execute(select(ranked, users.c.first_name, users.c.last_name, users.c.email)
+        .join(users, users.c.id == ranked.c.partner_id).where(ranked.c.rank == 1)
+        .order_by(ranked.c.sent_at.desc(), ranked.c.id.desc()))
+    return success_response([
+        {"user_id": str(row.partner_id), "name": f"{row.first_name} {row.last_name}",
+         "email": row.email, "last_message": message_to_dict(ChatMessage.model_validate(row._mapping)),
+         "unread_count": row.unread_count}
+        for row in result
+    ])
 
 
 @router.get("/conversation/{partner_id}")
@@ -172,21 +116,16 @@ async def get_conversation_messages(
     partner_id: UUID,
     limit: int = Query(50, ge=1, le=100),
     before_id: Optional[UUID] = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read"))
 ):
     """Get messages between current user and a specific partner"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel
-    
-    participants = or_(
-        and_(ChatMessageModel.sender_id == current_user.id, ChatMessageModel.recipient_id == partner_id),
-        and_(ChatMessageModel.sender_id == partner_id, ChatMessageModel.recipient_id == current_user.id),
-    )
-    query = select(ChatMessageModel).where(participants)
+    visible = await message_visibility(db, tenant, branch_id)
+    query = select(ChatMessageModel).where(visible, message_partner(tenant.user_id) == partner_id)
     
     if before_id:
-        before = await db.scalar(select(ChatMessageModel).where(participants, ChatMessageModel.id == before_id))
+        before = await db.scalar(query.where(ChatMessageModel.id == before_id))
         if before is None:
             raise HTTPException(status_code=404, detail="Mesaj bulunamadı")
         query = query.where(or_(
@@ -200,7 +139,7 @@ async def get_conversation_messages(
     messages = result.scalars().all()
     
     # Mark received messages as read
-    received_messages = [m for m in messages if m.recipient_id == current_user.id and not m.is_read]
+    received_messages = [m for m in messages if m.recipient_id == tenant.user_id and not m.is_read]
     for msg in received_messages:
         msg.is_read = True
     
@@ -224,13 +163,15 @@ async def send_message(
     from app.infrastructure.repositories.base import BaseRepository
     repo = BaseRepository(db, tenant)
     sender_id = current_user.id
-    await require_recipient(db, tenant, message.recipient_id, message.branch_id)
+    branches = await message_branches(db, tenant, message.branch_id)
+    branch_id = message.branch_id
     if not message.content.strip() or len(message.content) > 10000:
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
     if message.class_id:
         classroom = await repo.get_by_id(message.class_id, ClassRoom)
-        if message.branch_id and classroom.branch_id != message.branch_id:
+        if branch_id and classroom.branch_id != branch_id:
             raise ForbiddenException("Sınıf seçilen şubeye bağlı değil")
+        branch_id = classroom.branch_id
     conversation = None
     if message.conversation_id:
         conversation = await repo.get_by_id(message.conversation_id, ChatConversation, for_update=True)
@@ -238,8 +179,12 @@ async def send_message(
             raise ForbiddenException("Görüşme katılımcıları eşleşmiyor")
         student = await repo.get_by_id(conversation.student_id, Student)
         await require_student_access(db, tenant, student.id)
-        if message.branch_id and student.branch_id != message.branch_id:
+        if branch_id and student.branch_id != branch_id:
             raise ForbiddenException("Görüşme seçilen şubeye bağlı değil")
+        branch_id = student.branch_id
+    if branch_id is None and len(branches) == 1:
+        branch_id = branches[0]
+    await require_recipient(db, tenant, message.recipient_id, branch_id)
 
     def replay(row):
         if (row.sender_id, row.recipient_id, row.content, row.class_id, row.conversation_id, row.attachment_url) != (
@@ -247,14 +192,23 @@ async def send_message(
             message.conversation_id, message.attachment_url,
         ):
             raise ConflictException("İşlem kimliği farklı bir mesaj için kullanılmış")
+        if row.organization_id not in {None, tenant.organization_id} or row.branch_id != branch_id:
+            raise ConflictException("İşlem kimliği farklı bir mesaj kapsamı için kullanılmış")
         return success_response(message_to_dict(ChatMessage.model_validate(row)), "Mesaj kaydedildi")
 
+    saved_query = None
     if message.request_id is not None:
-        prior = await db.get(ChatMessageModel, message.request_id)
+        stored = ChatMessageModel.__table__
+        # Check only the exact operation key. A collision in another scope
+        # must still be rejected consistently without returning that row.
+        saved_query = select(stored).where(stored.c.id == message.request_id)
+        prior = (await db.execute(saved_query)).first()
         if prior:
-            return replay(prior)
+            return replay(prior._mapping)
     sender_role = "TEACHER" if "teacher" in tenant.role_slugs else "PARENT" if "parent" in tenant.role_slugs else "STAFF"
     new_message = ChatMessageModel(
+        organization_id=tenant.organization_id,
+        branch_id=branch_id,
         conversation_id=message.conversation_id,
         sender_id=sender_id,
         sender_role=sender_role,
@@ -272,10 +226,10 @@ async def send_message(
         await db.flush()
     except IntegrityError:
         await db.rollback()
-        if message.request_id is not None:
-            prior = await db.get(ChatMessageModel, message.request_id)
+        if saved_query is not None:
+            prior = (await db.execute(saved_query)).first()
             if prior:
-                return replay(prior)
+                return replay(prior._mapping)
         raise
     if conversation:
         conversation.last_message = message.content
@@ -293,22 +247,18 @@ async def send_message(
 @router.put("/{message_id}/read")
 async def mark_message_read(
     message_id: UUID,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read"))
 ):
     """Mark a message as read"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel
-    
-    result = await db.execute(
-        select(ChatMessageModel).where(ChatMessageModel.id == message_id)
-    )
-    message = result.scalar_one_or_none()
+    visible = await message_visibility(db, tenant, branch_id)
+    message = await db.scalar(select(ChatMessageModel).where(visible, ChatMessageModel.id == message_id))
     
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
     
-    if message.recipient_id != current_user.id:
+    if message.recipient_id != tenant.user_id:
         raise HTTPException(status_code=403, detail="You can only mark messages sent to you as read")
     
     message.is_read = True
@@ -320,22 +270,18 @@ async def mark_message_read(
 @router.delete("/{message_id}")
 async def delete_message(
     message_id: UUID,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.write"))
 ):
     """Delete a message"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel
-    
-    result = await db.execute(
-        select(ChatMessageModel).where(ChatMessageModel.id == message_id)
-    )
-    message = result.scalar_one_or_none()
+    visible = await message_visibility(db, tenant, branch_id)
+    message = await db.scalar(select(ChatMessageModel).where(visible, ChatMessageModel.id == message_id))
     
     if not message:
         raise HTTPException(status_code=404, detail="Message not found")
     
-    if message.sender_id != current_user.id:
+    if message.sender_id != tenant.user_id:
         raise HTTPException(status_code=403, detail="You can only delete your own messages")
     
     await db.delete(message)
@@ -347,20 +293,16 @@ async def delete_message(
 @router.post("/conversation/{partner_id}/mark-all-read")
 async def mark_conversation_read(
     partner_id: UUID,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read"))
 ):
     """Mark all messages from a partner as read"""
-    from app.infrastructure.models.models import ChatMessage as ChatMessageModel
-    
+    visible = await message_visibility(db, tenant, branch_id)
     result = await db.execute(
         select(ChatMessageModel).where(
-            and_(
-                ChatMessageModel.sender_id == partner_id,
-                ChatMessageModel.recipient_id == current_user.id,
-                ChatMessageModel.is_read == False
-            )
+            visible, ChatMessageModel.sender_id == partner_id,
+            ChatMessageModel.recipient_id == tenant.user_id, ChatMessageModel.is_read.is_(False),
         )
     )
     messages = result.scalars().all()

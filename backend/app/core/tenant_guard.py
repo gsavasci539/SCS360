@@ -68,7 +68,7 @@ def criteria(model, tenant, student_ids):
         filters.append(model.id == tenant.organization_id)
     if "organization_id" in columns:
         expression = model.organization_id == str(tenant.organization_id) if tenant.organization_id else model.organization_id.is_(None)
-        if table.name == "roles":
+        if table.name in {"roles", "chat_messages"}:
             expression = or_(expression, model.organization_id.is_(None))
         filters.append(expression)
     if table.name == "branches":

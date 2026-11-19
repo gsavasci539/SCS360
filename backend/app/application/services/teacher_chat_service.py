@@ -64,7 +64,8 @@ async def send(db, tenant, student_id, content, parent_id=None):
     if not content or len(content) > 10000:
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
     student, parent, conversation = await thread(db, tenant, student_id, parent_id, create=True)
-    message = ChatMessage(conversation_id=conversation.id, sender_id=tenant.user_id,
+    message = ChatMessage(organization_id=student.organization_id, branch_id=student.branch_id,
+        conversation_id=conversation.id, sender_id=tenant.user_id,
         sender_role="TEACHER" if "teacher" in tenant.role_slugs else "STAFF",
         recipient_id=parent.id, class_id=student.class_id, content=content, is_read=False)
     db.add(message)

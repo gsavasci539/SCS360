@@ -1019,6 +1019,8 @@ async def connect_teacher(
     # --------------------------------------------------------
 
     message = ChatMessage(
+        organization_id=student.organization_id,
+        branch_id=student.branch_id,
         conversation_id=conversation.id,
         sender_id=current_user.id,
         sender_role="PARENT",

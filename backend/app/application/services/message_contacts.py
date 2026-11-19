@@ -14,14 +14,17 @@ from app.infrastructure.models.models import (
 from app.infrastructure.repositories.base import BaseRepository
 
 
-async def recipient_query(db: AsyncSession, tenant: TenantContext, branch_id: UUID | None):
+async def message_branches(db: AsyncSession, tenant: TenantContext, branch_id: UUID | None) -> list[UUID]:
     if tenant.organization_id is None or tenant.is_super_admin:
         raise ForbiddenException("Mesajlaşmadan önce kurum seçin")
     if branch_id is not None:
         await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
-    branch_ids = [branch_id] if branch_id is not None else (
-        [] if tenant.is_organization_owner else tenant.branch_ids
-    )
+        return [branch_id]
+    return [] if tenant.is_organization_owner else tenant.branch_ids
+
+
+async def recipient_query(db: AsyncSession, tenant: TenantContext, branch_id: UUID | None, *, for_history: bool = False):
+    branch_ids = await message_branches(db, tenant, branch_id)
     organization = tenant.organization_id
     # Each join names its tenant boundary explicitly because branch assignment
     # and a student's guardian or teacher relationship are separate access paths.
@@ -31,9 +34,11 @@ async def recipient_query(db: AsyncSession, tenant: TenantContext, branch_id: UU
     )
     query = select(users.id, users.first_name, users.last_name).where(
         users.organization_id == organization, users.id != tenant.user_id,
-        users.is_super_admin.is_(False), users.deleted_at.is_(None), users.status == "ACTIVE",
+        users.is_super_admin.is_(False), users.deleted_at.is_(None),
     )
-    relationship_scope = uses_relationship_scope(tenant)
+    if not for_history:
+        query = query.where(users.status == "ACTIVE")
+    relationship_scope = not for_history and uses_relationship_scope(tenant)
     is_parent = relationship_scope and "parent" in tenant.role_slugs
     if not relationship_scope and not branch_ids:
         return query

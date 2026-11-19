@@ -799,6 +799,8 @@ class ChatMessage(Base, TimestampMixin):
     __tablename__ = "chat_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("organizations.id"))
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("branches.id"))
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chat_conversations.id", ondelete="CASCADE"))
     sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     sender_role: Mapped[str | None] = mapped_column(String(20))  # 'PARENT', 'TEACHER', 'SYSTEM'

@@ -196,7 +196,8 @@ async def conversation(db, user, student_id, teacher_id, *, create=False):
 
 async def send_chat(db, user, student_id, teacher_id, content):
     student, thread = await conversation(db, user, student_id, teacher_id, create=True)
-    message = ChatMessage(conversation_id=thread.id, sender_id=user.id, sender_role="PARENT",
+    message = ChatMessage(organization_id=student.organization_id, branch_id=student.branch_id,
+        conversation_id=thread.id, sender_id=user.id, sender_role="PARENT",
         recipient_id=UUID(str(teacher_id)), class_id=student.class_id, content=content, is_read=False)
     db.add(message)
     thread.last_message, thread.last_message_at = content, datetime.now(UTC)
