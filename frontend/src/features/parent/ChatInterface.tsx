@@ -1,5 +1,5 @@
 import { ArrowLeft, Paperclip, Send } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { api, apiMessage, unwrap } from "../../lib/api";
 import { downloadFile } from "../../lib/download";
@@ -39,6 +39,13 @@ interface PendingMessage {
   sha256?: string;
 }
 
+const PAGE_SIZE = 50;
+
+interface HistoryWindow {
+  rows: ChatMessage[];
+  hasOlder: boolean;
+}
+
 export function ChatInterface({ studentId, teacherId, parentId, branchId, canSend = true, apiBase = "/parent", ...props }: ChatInterfaceProps) {
   const session = useAuthStore((state) => state.sessionVersion);
   const workspace = usePlatformWorkspace((state) => state.workspace?.id);
@@ -56,21 +63,25 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
   canSend: boolean;
   onBack: () => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [historyWindow, setHistoryWindow] = useState<HistoryWindow>({ rows: [], hasOlder: false });
+  const messages = historyWindow.rows;
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [historyError, setHistoryError] = useState("");
   const [actionError, setActionError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PendingMessage | null>(null);
   const [missingReceipt, setMissingReceipt] = useState(false);
   const session = useRef<AbortController | null>(null);
   const historyRequest = useRef<Promise<void> | null>(null);
+  const olderPending = useRef(false);
   const sending = useRef(false);
   const history = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const followMessages = useRef(true);
+  const scrollAnchor = useRef<{ height: number; top: number } | null>(null);
   const lastId = messages.at(-1)?.id;
   const params = useMemo(() => (parentId || branchId ? {
     ...(parentId ? { parent_id: parentId } : {}),
@@ -78,13 +89,28 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
   } : undefined),
     [parentId, branchId]);
 
-  const refresh = useCallback(async (signal: AbortSignal) => {
+  const refresh = useCallback(async (signal: AbortSignal, before?: string) => {
     try {
       const rows = unwrap(await api.get<ApiResponse<ChatMessage[]>>(endpoint, {
-        params, signal,
+        params: { ...params, limit: PAGE_SIZE, ...(before ? { before_id: before } : {}) }, signal,
       }));
       if (signal.aborted) return;
-      setMessages(rows);
+      if (before && rows.length && history.current) {
+        scrollAnchor.current = { height: history.current.scrollHeight, top: history.current.scrollTop };
+        followMessages.current = false;
+      }
+      setHistoryWindow((current) => {
+        const hasOlder = rows.length === PAGE_SIZE;
+        if (before) {
+          if (current.rows[0]?.id !== before) return current;
+          const ids = new Set(current.rows.map((row) => row.id));
+          return { rows: [...rows.filter((row) => !ids.has(row.id)), ...current.rows], hasOlder };
+        }
+        // Keep loaded older pages only when the newest response overlaps the window.
+        const first = current.rows.findIndex((row) => row.id === rows[0]?.id);
+        return first > 0 ? { rows: [...current.rows.slice(0, first), ...rows], hasOlder: current.hasOlder }
+          : { rows, hasOlder: first === 0 ? current.hasOlder || hasOlder : hasOlder };
+      });
       setHistoryError("");
     } catch (error) {
       if (!signal.aborted) setHistoryError(apiMessage(error));
@@ -93,16 +119,20 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
     }
   }, [endpoint, params]);
 
+  const trackHistory = useCallback((signal: AbortSignal, before?: string) => {
+    const request = refresh(signal, before);
+    historyRequest.current = request;
+    return request.finally(() => {
+      if (historyRequest.current === request) historyRequest.current = null;
+    });
+  }, [refresh]);
+
   useEffect(() => {
     const controller = new AbortController();
     session.current = controller;
     const poll = () => {
-      if (historyRequest.current || sending.current) return;
-      const request = refresh(controller.signal);
-      historyRequest.current = request;
-      void request.finally(() => {
-        if (historyRequest.current === request) historyRequest.current = null;
-      });
+      if (historyRequest.current || sending.current || olderPending.current) return;
+      void trackHistory(controller.signal);
     };
     poll();
     const timer = window.setInterval(poll, 5000);
@@ -111,7 +141,30 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
       historyRequest.current = null;
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [trackHistory]);
+
+  async function loadOlder() {
+    const signal = session.current?.signal;
+    if (!signal || signal.aborted || sending.current || olderPending.current) return;
+    olderPending.current = true;
+    setLoadingOlder(true);
+    try {
+      await historyRequest.current;
+      const first = history.current?.querySelector<HTMLElement>("article[data-message-id]")?.dataset.messageId;
+      if (!signal.aborted && first && !sending.current) await trackHistory(signal, first);
+    } finally {
+      olderPending.current = false;
+      if (!signal.aborted) setLoadingOlder(false);
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (scrollAnchor.current && history.current) {
+      const { height, top } = scrollAnchor.current;
+      history.current.scrollTop = top + history.current.scrollHeight - height;
+      scrollAnchor.current = null;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (history.current && followMessages.current) history.current.scrollTop = history.current.scrollHeight;
@@ -159,7 +212,8 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
       await historyRequest.current;
       if (signal.aborted) return;
       followMessages.current = true;
-      setMessages((rows) => rows.some((row) => row.id === receipt.id) ? rows : [...rows, receipt]);
+      setHistoryWindow((current) => current.rows.some((row) => row.id === receipt.id) ? current
+        : { ...current, rows: [...current.rows, receipt] });
       setPending(null);
       setMessage("");
       setFile(null);
@@ -213,8 +267,10 @@ function StudentChat({ endpoint, parentId, branchId, subjectName, teacherName, c
       }}>
         {historyError && <p role="alert">{historyError}</p>}
         {loading ? <p>Mesajlar yükleniyor…</p> : !messages.length && !historyError && <p>Henüz mesaj yok.</p>}
+        {historyWindow.hasOlder && <button type="button" className="btn btn-secondary" disabled={loadingOlder || busy}
+          onClick={() => void loadOlder()}>{loadingOlder ? "Yükleniyor…" : "Daha eski mesajları göster"}</button>}
         {messages.map((row) => (
-          <article key={row.id} className={row.is_current_user ? "student-chat-own" : ""}>
+          <article key={row.id} data-message-id={row.id} className={row.is_current_user ? "student-chat-own" : ""}>
             {row.content && <div>{row.content}</div>}
             {row.attachment_name && row.attachment_sha256 &&
               <button type="button" onClick={() => void download(row)} className="student-chat-link">

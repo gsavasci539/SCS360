@@ -14,7 +14,6 @@ from app.core.student_access import (
 from app.core.tenant_guard import scope_filters
 from app.infrastructure.models.models import (
     ChatConversation,
-    ChatMessage,
     ClassRoom,
     Parent,
     Student,
@@ -112,18 +111,9 @@ async def thread(db, tenant, student_id, parent_id=None, *, create=False, branch
     return student, parent, conversation
 
 
-async def history(db, tenant, student_id, parent_id=None, branch_id=None):
+async def history(db, tenant, student_id, parent_id=None, branch_id=None, *, limit=None, before_id=None):
     _, _, conversation = await thread(db, tenant, student_id, parent_id, branch_id=branch_id)
-    if conversation is None:
-        return []
-    rows = (await db.execute(select(ChatMessage, User).join(User, User.id == ChatMessage.sender_id)
-        .where(ChatMessage.conversation_id == conversation.id).order_by(ChatMessage.sent_at))).all()
-    conversation.teacher_unread_count = 0
-    for message, _ in rows:
-        if message.recipient_id == tenant.user_id:
-            message.is_read = True
-    return [{**student_chat_messages.message_data(message, tenant.user_id),
-        "sender_name": f"{sender.first_name} {sender.last_name}"} for message, sender in rows]
+    return await student_chat_messages.history(db, conversation, tenant.user_id, limit=limit, before_id=before_id)
 
 
 async def send(db, tenant, student_id, content, parent_id=None, request_id=None, upload=None, *, branch_id=None):

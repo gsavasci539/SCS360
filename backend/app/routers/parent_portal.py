@@ -636,12 +636,15 @@ async def send_message_to_teacher(
 async def get_chat_messages(
     student_id: UUID,
     teacher_id: UUID,
+    limit: int | None = Query(None, ge=1, le=100),
+    before_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("parent.send_message")),
 ):
     from app.application.services import parent_data_service
-    return success_response(await parent_data_service.chat_history(db, current_user, student_id, teacher_id))
+    return success_response(await parent_data_service.chat_history(db, current_user, student_id, teacher_id,
+        limit=limit, before_id=before_id))
 
 
 class ChatMessageCreate(BaseModel):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 from typing import Optional
@@ -106,11 +106,14 @@ async def get_chat_messages(
     student_id: UUID,
     parent_id: Optional[UUID] = None,
     branch_id: UUID | None = None,
+    limit: int | None = Query(None, ge=1, le=100),
+    before_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read")),
 ):
     from app.application.services import teacher_chat_service
-    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id, branch_id))
+    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id, branch_id,
+        limit=limit, before_id=before_id))
 
 
 class TeacherChatCreate(BaseModel):

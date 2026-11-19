@@ -27,7 +27,14 @@ test("teacher uses the scoped directory and private attachments on small screens
   const contact = pane.getByRole("button", { name: /Deniz Kabul.*Parent Kabul/ });
   await expect(contact).toBeVisible();
   expect(await pane.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  const history = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return /\/api\/teacher\/chat\/[^/]+$/.test(url.pathname) &&
+      Boolean(url.searchParams.get("parent_id")) && url.searchParams.get("branch_id") === branchId[0] &&
+      url.searchParams.get("limit") === "50";
+  });
   await contact.click();
+  expect((await history).ok()).toBe(true);
   await expect(pane.getByRole("heading", { name: "Deniz Kabul" })).toBeVisible();
 
   const name = "Kabul-belgesi.pdf";

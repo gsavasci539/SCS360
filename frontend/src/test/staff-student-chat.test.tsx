@@ -56,7 +56,9 @@ it("pages through real contacts and keeps student, guardian and branch on send, 
   fireEvent.click(await screen.findByRole("button", { name: /İkinci Veli/ }));
   await screen.findByText("Henüz mesaj yok.");
   const config = expect.objectContaining({ params: { parent_id: "guardian-two", branch_id: "north" } });
-  expect(api.get).toHaveBeenCalledWith(endpoint, config);
+  expect(api.get).toHaveBeenCalledWith(endpoint, expect.objectContaining({
+    params: { parent_id: "guardian-two", branch_id: "north", limit: 50 },
+  }));
   const file = new File(["%PDF-1.4"], "ders.pdf");
   fireEvent.change(screen.getByLabelText("Sohbet dosyası"), { target: { files: [file] } });
   fireEvent.click(screen.getByRole("button", { name: "Gönder" }));
@@ -99,7 +101,7 @@ it("aborts the old branch list and opens a read-only teacher conversation in the
     params: { branch_id: "south", search: "Sınıf A", page: 1 },
   }));
   expect(api.get).toHaveBeenCalledWith("/teacher/chat/student", expect.objectContaining({
-    params: { branch_id: "south", parent_id: "guardian" },
+    params: { branch_id: "south", parent_id: "guardian", limit: 50 },
   }));
 });
 

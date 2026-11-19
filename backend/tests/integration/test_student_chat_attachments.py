@@ -1,15 +1,16 @@
 from asyncio import gather
 from hashlib import sha256
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import literal_column, select
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
 from app.infrastructure.models.models import (
     Branch,
     ChatConversation,
+    ChatMessage,
     ClassRoom,
     Parent,
     Role,
@@ -158,3 +159,43 @@ async def test_staff_chat_directory_and_conversation_keep_student_guardian_and_b
     assert saved.json()["data"]["receiver_id"] == str(parent.id)
     receipt = await client.get(f"{path}/sent/{payload['request_id']}", headers=headers(owner), params=valid)
     assert receipt.json()["data"] == saved.json()["data"]
+
+
+async def test_student_history_pages_same_timestamp_and_only_marks_visible_messages(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    child, sibling = data["children"]
+    parent, teacher = data["user"], data["teacher"]
+    ids = [UUID(int=n) for n in range(1, 7)]
+    async with sessions() as db:
+        thread = ChatConversation(student_id=child.id, parent_id=parent.id, teacher_id=teacher.id,
+            subject_context="Fixture", parent_unread_count=5)
+        unrelated = ChatConversation(student_id=sibling.id, parent_id=parent.id, teacher_id=teacher.id,
+            subject_context="Fixture sibling")
+        db.add_all([thread, unrelated])
+        await db.flush()
+        for identifier in ids:
+            db.add(ChatMessage(id=identifier, organization_id=child.organization_id, branch_id=child.branch_id,
+                class_id=child.class_id, conversation_id=unrelated.id if identifier == ids[-1] else thread.id,
+                sender_id=teacher.id, recipient_id=parent.id, content=f"Fixture {identifier.int}",
+                sent_at=literal_column("'2026-11-19 09:00:00'"), is_read=False))
+        await db.commit()
+    endpoint = f"/api/parent/child/{child.id}/chat/{teacher.id}"
+    latest = await client.get(endpoint, headers=headers(parent), params={"limit": 2})
+    assert latest.status_code == 200, latest.text
+    assert [entry["id"] for entry in latest.json()["data"]] == [str(ids[3]), str(ids[4])]
+    assert all(entry["is_read"] for entry in latest.json()["data"])
+    async with sessions() as db:
+        assert (await db.get(ChatConversation, thread.id)).parent_unread_count == 3
+        assert not (await db.get(ChatMessage, ids[2])).is_read
+    previous = await client.get(endpoint, headers=headers(parent), params={"limit": 2, "before_id": str(ids[3])})
+    assert [entry["id"] for entry in previous.json()["data"]] == [str(ids[1]), str(ids[2])]
+    bad = await client.get(endpoint, headers=headers(parent), params={"limit": 2, "before_id": str(ids[5])})
+    assert bad.status_code == 404
+    teacher_page = await client.get(f"/api/teacher/chat/{child.id}", headers=headers(teacher),
+        params={"parent_id": str(parent.id), "limit": 2, "before_id": str(ids[3])})
+    assert [entry["id"] for entry in teacher_page.json()["data"]] == [str(ids[1]), str(ids[2])]
+    legacy = await client.get(endpoint, headers=headers(parent))
+    assert [entry["id"] for entry in legacy.json()["data"]] == [str(identifier) for identifier in ids[:-1]]
+    async with sessions() as db:
+        assert (await db.get(ChatConversation, thread.id)).parent_unread_count == 0
+        assert not (await db.get(ChatMessage, ids[-1])).is_read

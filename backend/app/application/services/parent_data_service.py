@@ -202,16 +202,6 @@ async def send_chat(db, user, student_id, teacher_id, content, request_id=None, 
     return await student_chat_messages.record(db, student, thread, user.id, "PARENT", content, request_id, upload)
 
 
-async def chat_history(db, user, student_id, teacher_id):
+async def chat_history(db, user, student_id, teacher_id, *, limit=None, before_id=None):
     _, thread = await conversation(db, user, student_id, teacher_id)
-    if thread is None:
-        return []
-    rows = (await db.execute(select(ChatMessage, User).join(User, User.id == ChatMessage.sender_id)
-        .where(ChatMessage.conversation_id == thread.id).order_by(ChatMessage.sent_at))).all()
-    thread.parent_unread_count = 0
-    for message, _ in rows:
-        if message.recipient_id == user.id:
-            message.is_read = True
-    return [{**student_chat_messages.message_data(row, user.id),
-        "sender_name": f"{sender.first_name} {sender.last_name}"}
-        for row, sender in rows]
+    return await student_chat_messages.history(db, thread, user.id, limit=limit, before_id=before_id)

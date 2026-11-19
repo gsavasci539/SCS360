@@ -59,7 +59,7 @@ it("keeps the selected parent on admin history and protected attachment requests
   render(<ChatInterface apiBase="/admin" studentId="student" parentId="parent"
     teacherName="Veli" onBack={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "rapor.pdf" }));
-  const config = expect.objectContaining({ params: { parent_id: "parent" } });
+  const config = expect.objectContaining({ params: { parent_id: "parent", limit: 50 } });
   expect(api.get).toHaveBeenCalledWith("/admin/chat/student", config);
   expect(downloadFile).toHaveBeenCalledWith("/admin/chat/student/attachments/saved", "rapor.pdf",
     expect.objectContaining({ params: { parent_id: "parent" }, expectedSha256: "a".repeat(64) }));
@@ -112,4 +112,26 @@ it("does not start a send if the conversation changes during fingerprinting", as
   await act(async () => finish("a".repeat(64)));
   expect(api.post).not.toHaveBeenCalled();
   expect(screen.queryByText("rapor.pdf")).not.toBeInTheDocument();
+});
+
+it("prepends older messages with the oldest visible id and preserves the current scoped page", async () => {
+  const first = Array.from({ length: 50 }, (_, index) => ({
+    ...statement(`r-${index + 2}`), content: `Son mesaj ${index + 2}`, attachment_name: null, attachment_sha256: null,
+  }));
+  const older = { ...first[0], id: "r-1", content: "Önceki mesaj" };
+  vi.mocked(api.get).mockImplementation(async (_, config) => {
+    const params = config?.params as { before_id?: string } | undefined;
+    return response(params?.before_id ? [older] : first);
+  });
+  render(<ChatInterface apiBase="/teacher" studentId="student" parentId="guardian" branchId="branch"
+    teacherName="Veli" onBack={vi.fn()} />);
+  await screen.findByText("Son mesaj 51");
+  fireEvent.click(screen.getByRole("button", { name: "Daha eski mesajları göster" }));
+  const previous = await screen.findByText("Önceki mesaj");
+  const newest = screen.getByText("Son mesaj 51");
+  expect(previous.compareDocumentPosition(newest) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Daha eski mesajları göster" })).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/teacher/chat/student", expect.objectContaining({
+    params: { before_id: "r-2", limit: 50, parent_id: "guardian", branch_id: "branch" },
+  }));
 });

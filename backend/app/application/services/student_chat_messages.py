@@ -1,11 +1,11 @@
 """Persistence and private attachments for an authorized student conversation."""
 from datetime import UTC, datetime
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.core.exceptions import ConflictException, NotFoundException
-from app.infrastructure.models.models import ChatMessage, Student
+from app.infrastructure.models.models import ChatConversation, ChatMessage, Student, User
 from app.infrastructure.storage.message_attachments import (
     message_attachment_response,
     save_message_attachment,
@@ -88,10 +88,60 @@ async def receipt(db, thread, actor_id, message_id):
 async def download(db, thread, message_id):
     if thread is None:
         raise NotFoundException("Mesaj eki bulunamadı")
-    message = await db.scalar(select(ChatMessage).where(
-        ChatMessage.id == message_id, ChatMessage.conversation_id == thread.id,
-        or_(
-            and_(ChatMessage.sender_id == thread.parent_id, ChatMessage.recipient_id == thread.teacher_id),
-            and_(ChatMessage.sender_id == thread.teacher_id, ChatMessage.recipient_id == thread.parent_id),
-        )))
+    message = await db.scalar(select(ChatMessage).where(conversation_scope(thread), ChatMessage.id == message_id))
     return message_attachment_response(message)
+
+
+def conversation_scope(thread):
+    return and_(ChatMessage.conversation_id == thread.id, or_(
+        and_(ChatMessage.sender_id == thread.parent_id, ChatMessage.recipient_id == thread.teacher_id),
+        and_(ChatMessage.sender_id == thread.teacher_id, ChatMessage.recipient_id == thread.parent_id),
+    ))
+
+
+async def history(db, thread, actor_id, *, limit=None, before_id=None):
+    if thread is None:
+        if before_id is not None:
+            raise NotFoundException("Mesaj bulunamadı")
+        return []
+    scope = conversation_scope(thread)
+    query = select(ChatMessage, User).join(User, User.id == ChatMessage.sender_id).where(scope)
+    paged = limit is not None or before_id is not None
+    if before_id is not None:
+        cursor = query.where(ChatMessage.id == before_id)
+        if await db.scalar(cursor.with_only_columns(ChatMessage.id)) is None:
+            raise NotFoundException("Mesaj bulunamadı")
+        # Keep the timestamp in SQL so SQLite does not reformat its stored precision.
+        before_time = select(ChatMessage.sent_at).where(ChatMessage.id == before_id).correlate(None).scalar_subquery()
+        query = query.where(or_(
+            ChatMessage.sent_at < before_time,
+            and_(ChatMessage.sent_at == before_time, ChatMessage.id < before_id),
+        ))
+    if paged:
+        query = query.order_by(ChatMessage.sent_at.desc(), ChatMessage.id.desc()).limit(limit or 50)
+    else:
+        query = query.order_by(ChatMessage.sent_at)
+    rows = list((await db.execute(query)).all())
+    if paged:
+        rows.reverse()
+    unread = [row.id for row, _ in rows if row.recipient_id == actor_id and not row.is_read]
+    counter = ChatConversation.parent_unread_count if actor_id == thread.parent_id else ChatConversation.teacher_unread_count
+    if unread and paged:
+        changed = await db.execute(update(ChatMessage).where(scope, ChatMessage.id.in_(unread),
+            ChatMessage.recipient_id == actor_id, ChatMessage.is_read.is_not(True))
+            .values(is_read=True).execution_options(synchronize_session=False))
+        if changed.rowcount:
+            remaining = func.coalesce(counter, 0) - changed.rowcount
+            await db.execute(update(ChatConversation).where(ChatConversation.id == thread.id)
+                .values({counter: case((remaining > 0, remaining), else_=0)}).execution_options(synchronize_session=False))
+    if not paged:
+        setattr(thread, counter.key, 0)
+    result = []
+    for message, sender in rows:
+        if not paged and message.recipient_id == actor_id:
+            message.is_read = True
+        item = message_data(message, actor_id)
+        if message.recipient_id == actor_id:
+            item["is_read"] = True
+        result.append({**item, "sender_name": f"{sender.first_name} {sender.last_name}"})
+    return result
