@@ -7,8 +7,10 @@ import { useToast } from "../../components/Toast";
 import { ErrorState, Field, LoadingState, Modal, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { useForm } from "react-hook-form";
+import { ResourceChoice } from "../resources/ResourceChoice";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
@@ -33,6 +35,9 @@ export function DailyReportsPage() {
   const [dailyReportsAI, setDailyReportsAI] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
+  const user = useAuthStore((s) => s.user);
+  const session = useAuthStore((s) => s.sessionVersion);
+  const workspaceId = usePlatformWorkspace((s) => s.workspace?.id);
   const canWrite = can("daily_reports.write") || can("academic.write");
 
   async function load(page = data.page) {
@@ -173,18 +178,26 @@ export function DailyReportsPage() {
         />
       )}
 
-      <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => load()} />
+      {createOpen && canWrite && <CreateModal
+        key={JSON.stringify([session, user?.id, user?.organization_id, user?.branch_ids, workspaceId])}
+        onClose={() => setCreateOpen(false)} onSuccess={() => load()} />}
     </>
   );
 }
 
-function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+function CreateModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm<Record<string, string | number | boolean>>({
+    defaultValues: { student_id: "", date: "", mood: "", sleep_status: "", meal_status: "", teacher_notes: "" },
+  });
   const { showToast } = useToast();
 
-  async function submit(values: any) {
+  async function submit(values: Record<string, string | number | boolean>) {
     try {
-      await api.post("/daily-reports", values);
+      await api.post("/daily-reports", {
+        student_id: values.student_id, date: values.date, mood: values.mood || undefined,
+        sleep_status: values.sleep_status || undefined, meal_status: values.meal_status || undefined,
+        teacher_notes: values.teacher_notes || undefined,
+      });
       showToast("Günlük karne oluşturuldu", "Yeni günlük karne başarıyla eklendi.");
       onClose();
       onSuccess();
@@ -194,20 +207,19 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
   }
 
   return (
-    <Modal open={open} title="Yeni günlük karne" description="Günlük karne bilgilerini girin." onClose={onClose} actions={
+    <Modal open title="Yeni günlük karne" description="Günlük karne bilgilerini girin." onClose={() => { if (!isSubmitting) onClose(); }} actions={
       <>
-        <button className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
+        <button className="btn btn-secondary" disabled={isSubmitting} onClick={onClose}>Vazgeç</button>
         <button className="btn btn-primary" disabled={isSubmitting} onClick={handleSubmit(submit)}>
           <Plus size={16} />Oluştur
         </button>
       </>
     }>
       <form className="form-grid">
-        <Field label="Öğrenci" required error={errors.student_id?.message as string}>
-          <input {...register("student_id", { required: "Öğrenci seçimi zorunludur." })} />
-        </Field>
-        <Field label="Tarih" error={errors.date?.message as string}>
-          <input type="date" {...register("date")} />
+        <ResourceChoice control={control} field={{ name: "student_id", label: "Öğrenci", required: true,
+          type: "select", searchable: true, optionSource: "/daily-reports/student-options", full: true }} />
+        <Field label="Tarih" required error={errors.date?.message as string}>
+          <input type="date" {...register("date", { required: "Karne tarihini seçin." })} />
         </Field>
         <Field label="Ruh Hali" error={errors.mood?.message as string}>
           <select {...register("mood")}>

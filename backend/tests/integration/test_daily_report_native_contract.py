@@ -1,10 +1,12 @@
 import asyncio
 from datetime import date
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
-from app.infrastructure.models.models import DailyDevelopmentReport, Student
+from app.infrastructure.models.models import Branch, ClassRoom, DailyDevelopmentReport, Role, Student, StudentTeacherAssignment, UserBranch
 from app.routers import daily_reports
 
 
@@ -109,3 +111,53 @@ async def test_concurrent_daily_report_write_and_stale_delete_preserve_latest_re
     assert (await client.delete(path, headers=stale)).status_code == 412
     assert (await client.get(path, headers=actor)).json()["data"]["teacher_notes"] == "Yeni gözlem"
     assert (await client.delete(path, headers={**actor, "If-Match": f'"{latest["version"]}"'})).status_code == 200
+
+
+async def test_daily_report_student_choices_follow_write_permission_and_assignments(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    teacher, branch, institution = data["teacher"], data["branch"], data["org"]
+    async with sessions() as db:
+        role = (await db.execute(select(Role).where(Role.slug == "teacher").options(selectinload(Role.permissions)))).scalar_one()
+        role.permissions = [permission for permission in role.permissions if permission.code != "students.read"]
+        distant = Branch(name="Other campus", organization_id=institution.id)
+        db.add_all([distant, UserBranch(user_id=teacher.id, branch_id=branch.id)])
+        await db.flush()
+        distant_class = ClassRoom(name="Other class", organization_id=institution.id, branch_id=distant.id)
+        db.add(distant_class)
+        await db.flush()
+
+        def student(name, campus, classroom=None, number=None):
+            return Student(first_name=name, last_name="Test", organization_id=institution.id,
+                branch_id=campus.id, class_id=classroom.id if classroom else None, student_number=number)
+
+        direct = student("Bireysel", branch, data["other_class"], "KARNE-11")
+        unrelated = student("Unassigned", branch, data["other_class"])
+        without_class = student("Classless", branch)
+        outside = student("Another campus", distant, distant_class)
+        db.add_all([direct, unrelated, without_class, outside])
+        await db.flush()
+        db.add_all([StudentTeacherAssignment(student_id=row.id, teacher_id=teacher.id, subject_name="Matematik")
+            for row in (direct, without_class, outside)])
+        await db.commit()
+
+    authorization = headers(teacher)
+    path = "/api/daily-reports/student-options"
+    assert (await client.get(path, headers=headers(data["user"]))).status_code == 403
+    assert (await client.get("/api/students", headers=authorization)).status_code == 403
+
+    async def listed(**params):
+        response = await client.get(path, headers=authorization, params=params)
+        assert response.status_code == 200, response.text
+        return response.json()["data"]
+
+    selected = {"id": str(direct.id), "name": "Bireysel Test · KARNE-11"}
+    page = await listed(page=2, page_size=1, selected_id=str(direct.id))
+    assert page["total"] == 3 and page["total_pages"] == 3 and page["selected"] == selected
+    assert selected not in page["items"]
+    assert (await listed(search="KARNE-11", branch_id=str(branch.id)))["items"] == [selected]
+    for excluded in (unrelated, without_class, outside, data["stranger"]):
+        assert (await listed(selected_id=str(excluded.id)))["selected"] is None
+    created = await client.post("/api/daily-reports", headers=authorization,
+        json={"student_id": str(direct.id), "date": "2026-11-19", "teacher_notes": "Bireysel gözlem"})
+    assert created.status_code == 200, created.text
+    assert created.json()["data"]["student_id"] == str(direct.id)

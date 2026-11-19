@@ -5,16 +5,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel, field_validator
-from sqlalchemy import Text, cast, delete, select, update
+from sqlalchemy import Text, cast, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import AppException, ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import AppException, ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.permissions import PermissionChecker
 from app.core.responses import paginate, success_response
 from app.core.student_access import accessible_student_ids, require_student_access
 from app.core.tenant import TenantContext
-from app.infrastructure.models.models import DailyDevelopmentReport, Student
+from app.infrastructure.models.models import Branch, ClassRoom, DailyDevelopmentReport, Student
 from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/daily-reports", tags=["Daily Reports"])
@@ -160,7 +160,6 @@ async def create_daily_report(report: ReportCreate, db: AsyncSession = Depends(g
 async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
     from app.application.services.homework_service import class_scope
-    from app.infrastructure.models.models import ClassRoom
     if (await db.execute(class_scope(tenant).where(ClassRoom.id == body.class_id))).scalar_one_or_none() is None:
         raise ValidationException("Bu sınıfa rapor yazma yetkiniz yok")
     records = body.reports
@@ -174,6 +173,44 @@ async def create_bulk_daily_reports(body: BulkReportCreate, db: AsyncSession = D
             raise ValidationException("Toplu rapordaki sınıflar eşleşmeli")
         result.append(await save(db, tenant, record.model_copy(update={"class_id": body.class_id, "date": body.date})))
     return success_response(result, f"{len(result)} rapor kaydedildi")
+
+
+@router.get("/student-options")
+async def daily_report_student_options(
+    page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=100),
+    search: str | None = Query(None, max_length=150), selected_id: UUID | None = None, branch_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write")),
+):
+    if tenant.organization_id is None:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
+    repo = BaseRepository(db, tenant)
+    classroom = select(ClassRoom.id).where(ClassRoom.id == Student.class_id,
+        ClassRoom.organization_id == Student.organization_id, ClassRoom.branch_id == Student.branch_id,
+        ClassRoom.deleted_at.is_(None))
+    query = repo._branch_filter(select(Student.id, Student.first_name, Student.last_name, Student.student_number)
+        .where(Student.organization_id == tenant.organization_id, Student.deleted_at.is_(None), classroom.exists()), Student)
+    allowed = await accessible_student_ids(db, tenant)
+    if allowed is not None:
+        query = query.where(Student.id.in_(allowed))
+    if branch_id is not None:
+        await repo.get_by_id(branch_id, Branch)
+        query = query.where(Student.branch_id == branch_id)
+    selected = (await db.execute(query.where(Student.id == selected_id))).one_or_none() if selected_id else None
+    if search and (term := search.strip()):
+        query = query.where(or_((Student.first_name + " " + Student.last_name).ilike(f"%{term}%"),
+            Student.student_number.ilike(f"%{term}%")))
+    ordered = query.order_by(Student.first_name, Student.last_name, Student.id)
+    # Keep the projection so this form cannot expose student profile fields.
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = (await db.execute(ordered.offset((page - 1) * page_size).limit(page_size))).all()
+
+    def choice(row):
+        name = f"{row.first_name} {row.last_name}".strip()
+        return {"id": str(row.id), "name": f"{name} · {row.student_number}" if row.student_number else name}
+
+    return success_response({**paginate([choice(row) for row in rows], total, page, page_size),
+        "selected": choice(selected) if selected else None})
 
 
 @router.get("/{report_id}")

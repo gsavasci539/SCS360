@@ -1,12 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { DailyReportsDetailPage } from "../features/academic/DailyReportsPage";
+import { DailyReportsDetailPage, DailyReportsPage } from "../features/academic/DailyReportsPage";
 import { api } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 
 const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }));
-vi.mock("../lib/api", () => ({ api: { get: vi.fn(), put: vi.fn(), delete: vi.fn() }, apiMessage: (error: Error) => error.message }));
+vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }, apiMessage: (error: Error) => error.message }));
+vi.mock("../lib/analysis", () => ({ getAnalysis: vi.fn(async () => null) }));
 vi.mock("../components/Toast", () => ({ useToast: () => ({ showToast }) }));
 
 const version = "b".repeat(64);
@@ -48,4 +49,24 @@ it("uses the displayed version for confirmed deletion", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Sil" }));
   await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/daily-reports/report", { headers: { "If-Match": `"${version}"` } }));
   expect(screen.getByText("İlk not")).toBeInTheDocument();
+});
+
+it("creates a report with the selected server student and required date", async () => {
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/daily-reports/student-options"
+    ? { items: [{ id: "server-student", name: "Atanmış öğrenci · KARNE-11" }], total_pages: 1 }
+    : [] } }));
+  vi.mocked(api.post).mockResolvedValue({ data: { data: row } });
+  render(<MemoryRouter><DailyReportsPage /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Yeni karne" }));
+  const form = within(screen.getByRole("dialog"));
+  await form.findByRole("option", { name: "Atanmış öğrenci · KARNE-11" });
+  fireEvent.change(form.getByRole("combobox", { name: /Öğrenci/ }), { target: { value: "server-student" } });
+  fireEvent.click(form.getByRole("button", { name: "Oluştur" }));
+  await form.findByText("Karne tarihini seçin.");
+  expect(api.post).not.toHaveBeenCalled();
+  fireEvent.change(form.getByLabelText(/Tarih/), { target: { value: "2026-11-19" } });
+  fireEvent.click(form.getByRole("button", { name: "Oluştur" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/daily-reports", expect.objectContaining({
+    student_id: "server-student", date: "2026-11-19",
+  })));
 });
