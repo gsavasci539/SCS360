@@ -13,6 +13,17 @@ import { useForm } from "react-hook-form";
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): Paginated<DataRecord> => 
   Array.isArray(data) ? { items: data, total: data.length, page: 1, page_size: data.length, total_pages: 1 } : data;
 
+function reportPrecondition(row: DataRecord) {
+  if (typeof row.version !== "string" || !/^[a-f0-9]{64}$/.test(row.version)) {
+    throw new Error("Karne sürümü alınamadı. Güncel kaydı açın.");
+  }
+  return { headers: { "If-Match": `"${row.version}"` } };
+}
+
+function storedOption(value: unknown, options: string[]) {
+  return typeof value === "string" && value && !options.includes(value) ? <option value={value}>{value}</option> : null;
+}
+
 export function DailyReportsPage() {
   const [data, setData] = useState<Paginated<DataRecord>>({ items: [], total: 0, page: 1, page_size: 20, total_pages: 1 });
   const [search, setSearch] = useState("");
@@ -22,9 +33,11 @@ export function DailyReportsPage() {
   const [dailyReportsAI, setDailyReportsAI] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
+  const canWrite = can("daily_reports.write") || can("academic.write");
 
   async function load(page = data.page) {
     setLoading(true);
+    setError("");
     try {
       const [r, aiResult] = await Promise.allSettled([
         api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
@@ -32,7 +45,8 @@ export function DailyReportsPage() {
         }),
         getAnalysis("/ai/ai-daily-reports-analysis").catch(() => null)
       ]);
-      setData(normalize(r.status === "fulfilled" ? r.value.data.data : []));
+      if (r.status === "rejected") throw r.reason;
+      setData(normalize(r.value.data.data));
       if (aiResult.status === "fulfilled" && aiResult.value) {
         setDailyReportsAI(aiResult.value.data.data);
       }
@@ -51,8 +65,9 @@ export function DailyReportsPage() {
   );
 
   async function handleDelete(row: DataRecord) {
+    if (!window.confirm("Günlük karne silinsin mi?")) return;
     try {
-      await api.delete(`/daily-reports/${row.id}`);
+      await api.delete(`/daily-reports/${row.id}`, reportPrecondition(row));
       showToast("Günlük karne silindi", "Günlük karne başarıyla silindi.");
       await load();
     } catch (e) {
@@ -67,7 +82,7 @@ export function DailyReportsPage() {
         title="Günlük Karne"
         description="Öğrencilerin günlük gelişim raporlarını yönetin."
       >
-        {can("academic.write") && (
+        {canWrite && (
           <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
             <Plus size={16} />Yeni karne
           </button>
@@ -153,8 +168,8 @@ export function DailyReportsPage() {
           total={data.total}
           onPage={load}
           detailBase="/daily-reports"
-          canEdit={can("academic.write")}
-          onDelete={can("academic.write") ? handleDelete : undefined}
+          canEdit={canWrite}
+          onDelete={canWrite ? handleDelete : undefined}
         />
       )}
 
@@ -234,9 +249,12 @@ export function DailyReportsDetailPage() {
   const [error, setError] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const { showToast } = useToast();
+  const can = useAuthStore((state) => state.can);
+  const canWrite = can("daily_reports.write") || can("academic.write");
 
   async function load() {
     setLoading(true);
+    setError("");
     try {
       const r = await api.get<ApiResponse<DataRecord>>(`/daily-reports/${id}`);
       setData(r.data.data);
@@ -250,9 +268,9 @@ export function DailyReportsDetailPage() {
   useEffect(() => { load(); }, [id]);
 
   async function handleDelete() {
-    if (!data) return;
+    if (!data || !window.confirm("Günlük karne silinsin mi?")) return;
     try {
-      await api.delete(`/daily-reports/${data.id}`);
+      await api.delete(`/daily-reports/${data.id}`, reportPrecondition(data));
       showToast("Günlük karne silindi", "Günlük karne başarıyla silindi.");
       window.location.href = "/daily-reports";
     } catch (e) {
@@ -271,13 +289,13 @@ export function DailyReportsDetailPage() {
         title="Günlük Karne Detayı"
         description="Günlük karne bilgileri ve detayları."
       >
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-secondary" onClick={() => setEditOpen(true)}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {canWrite && <button className="btn btn-secondary" onClick={() => setEditOpen(true)}>
             <Edit size={16} />Düzenle
-          </button>
-          <button className="btn btn-danger" onClick={handleDelete}>
+          </button>}
+          {canWrite && <button className="btn btn-danger" onClick={handleDelete}>
             <Trash2 size={16} />Sil
-          </button>
+          </button>}
           <Link to="/daily-reports" className="btn btn-secondary">
             <ArrowLeft size={16} />Geri Dön
           </Link>
@@ -330,19 +348,18 @@ export function DailyReportsDetailPage() {
         </div>
       </div>
 
-      <EditModal open={editOpen} data={data} onClose={() => setEditOpen(false)} onSuccess={() => load()} />
+      {editOpen && canWrite && <EditModal data={data} onClose={() => setEditOpen(false)} onSuccess={() => load()} />}
     </>
   );
 }
 
-function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: DataRecord | null; onClose: () => void; onSuccess: () => void }) {
+function EditModal({ data, onClose, onSuccess }: { data: DataRecord; onClose: () => void; onSuccess: () => void }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const { showToast } = useToast();
 
   async function submit(values: any) {
-    if (!data) return;
     try {
-      await api.put(`/daily-reports/${data.id}`, values);
+      await api.put(`/daily-reports/${data.id}`, values, reportPrecondition(data));
       showToast("Günlük karne güncellendi", "Günlük karne başarıyla güncellendi.");
       onClose();
       onSuccess();
@@ -352,7 +369,7 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
   }
 
   return (
-    <Modal open={open} title="Günlük karne düzenle" description="Günlük karne bilgilerini güncelleyin." onClose={onClose} actions={
+    <Modal open title="Günlük karne düzenle" description="Günlük karne bilgilerini güncelleyin." onClose={onClose} actions={
       <>
         <button className="btn btn-secondary" onClick={onClose}>Vazgeç</button>
         <button className="btn btn-primary" disabled={isSubmitting} onClick={handleSubmit(submit)}>
@@ -361,15 +378,16 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
       </>
     }>
       <form className="form-grid">
-        <Field label="Öğrenci" required error={errors.student_id?.message as string}>
-          <input {...register("student_id", { required: "Öğrenci seçimi zorunludur." })} defaultValue={String(data?.student_id || "")} />
+        <Field label="Öğrenci">
+          <input readOnly value={String(data.student_name || "")} />
         </Field>
-        <Field label="Tarih" error={errors.date?.message as string}>
-          <input type="date" {...register("date")} defaultValue={String(data?.date || "")} />
+        <Field label="Tarih">
+          <input type="date" readOnly value={String(data.date || "")} />
         </Field>
         <Field label="Ruh Hali" error={errors.mood?.message as string}>
           <select {...register("mood")} defaultValue={String(data?.mood || "")}>
             <option value="">Seçiniz</option>
+            {storedOption(data.mood, ["HAPPY", "CALM", "UNSETTLED", "TIRED"])}
             <option value="HAPPY">Mutlu</option>
             <option value="CALM">Sakin</option>
             <option value="UNSETTLED">Huzursuz</option>
@@ -379,6 +397,7 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
         <Field label="Uyku Durumu" error={errors.sleep_status?.message as string}>
           <select {...register("sleep_status")} defaultValue={String(data?.sleep_status || "")}>
             <option value="">Seçiniz</option>
+            {storedOption(data.sleep_status, ["SLEPT_WELL", "SHORT", "NO_SLEEP"])}
             <option value="SLEPT_WELL">İyi uyudu</option>
             <option value="SHORT">Kısa uyku</option>
             <option value="NO_SLEEP">Uyku yok</option>
@@ -387,6 +406,7 @@ function EditModal({ open, data, onClose, onSuccess }: { open: boolean; data: Da
         <Field label="Beslenme Durumu" error={errors.meal_status?.message as string}>
           <select {...register("meal_status")} defaultValue={String(data?.meal_status || "")}>
             <option value="">Seçiniz</option>
+            {storedOption(data.meal_status, ["ALL", "HALF", "NONE"])}
             <option value="ALL">Tam yedi</option>
             <option value="HALF">Yarım yedi</option>
             <option value="NONE">Yemedi</option>

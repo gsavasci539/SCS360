@@ -1,13 +1,15 @@
-from datetime import date
+import hashlib
+import json
+from datetime import UTC, date, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 from pydantic import BaseModel, field_validator
-from sqlalchemy import select
+from sqlalchemy import Text, cast, delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import AppException, ConflictException, NotFoundException, ValidationException
 from app.core.permissions import PermissionChecker
 from app.core.responses import paginate, success_response
 from app.core.student_access import accessible_student_ids, require_student_access
@@ -16,6 +18,8 @@ from app.infrastructure.models.models import DailyDevelopmentReport, Student
 from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/daily-reports", tags=["Daily Reports"])
+OBSERVATIONS = ("meal_status", "sleep_status", "mood", "activities", "teacher_notes")
+REPORT_SNAPSHOT = ("student_id", "class_id", "date", "recorded_by", *OBSERVATIONS, "created_at", "updated_at")
 
 
 class ReportFields(BaseModel):
@@ -55,10 +59,41 @@ async def scoped(db, tenant):
 
 
 async def get(db, tenant, identifier):
-    row = (await db.execute((await scoped(db, tenant)).where(DailyDevelopmentReport.id == identifier))).scalar_one_or_none()
+    query = (await scoped(db, tenant)).where(DailyDevelopmentReport.id == identifier)
+    row = (await db.execute(query.execution_options(populate_existing=True))).scalar_one_or_none()
     if row is None:
         raise NotFoundException("Günlük rapor bulunamadı")
     return row
+
+
+def report_version(row):
+    values = [str(row.id), *(getattr(row, key) for key in REPORT_SNAPSHOT)]
+    encoded = json.dumps(values, default=str, ensure_ascii=False, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def stale_report():
+    return AppException("Günlük karne değişti. Güncel kaydı açın.", status_code=412)
+
+
+async def mutation_filter(db, tenant, identifier, if_match):
+    table = DailyDevelopmentReport.__table__
+    query = (await scoped(db, tenant)).where(DailyDevelopmentReport.id == identifier)
+    # Compare the stored representation of JSON and timestamps on both dialects.
+    text_fields = ("activities", "created_at", "updated_at")
+    raw = [cast(table.c[key], Text) for key in text_fields]
+    snapshots = [cast(getattr(DailyDevelopmentReport, key), Text).label(f"snapshot_{key}") for key in text_fields]
+    result = (await db.execute(query.add_columns(*snapshots).execution_options(populate_existing=True))).one_or_none()
+    if result is None:
+        raise NotFoundException("Günlük rapor bulunamadı")
+    row, *stored = result
+    if if_match is not None and if_match != f'"{report_version(row)}"':
+        raise stale_report()
+    return (
+        table.c.id.in_(query.with_only_columns(DailyDevelopmentReport.id).correlate(None)),
+        *(column.is_not_distinct_from(value) for column, value in zip(raw, stored, strict=True)),
+        *(table.c[key].is_not_distinct_from(getattr(row, key)) for key in REPORT_SNAPSHOT if key not in text_fields),
+    )
 
 
 async def serialize(db, row):
@@ -67,18 +102,16 @@ async def serialize(db, row):
         "student_name": f"{student.first_name} {student.last_name}" if student else None,
         "date": row.date.isoformat(), "meal_status": row.meal_status, "sleep_status": row.sleep_status,
         "mood": row.mood, "activities": row.activities, "teacher_notes": row.teacher_notes,
-        "recorded_by": str(row.recorded_by) if row.recorded_by else None}
+        "recorded_by": str(row.recorded_by) if row.recorded_by else None, "version": report_version(row)}
 
 
-def apply_fields(row, body):
+def report_fields(body):
     values = body.model_dump(exclude_unset=True)
     meal_parts = [f"{label}: {values[key]}" for key, label in
         (("meal_breakfast", "Kahvaltı"), ("meal_lunch", "Öğle"), ("meal_snack", "Ara öğün")) if values.get(key)]
     if meal_parts:
         values["meal_status"] = " / ".join(meal_parts)
-    for key in ("meal_status", "sleep_status", "mood", "activities", "teacher_notes"):
-        if key in values:
-            setattr(row, key, values[key])
+    return {key: values[key] for key in OBSERVATIONS if key in values}
 
 
 async def save(db, tenant, body):
@@ -90,8 +123,8 @@ async def save(db, tenant, body):
         DailyDevelopmentReport.student_id == student.id, DailyDevelopmentReport.date == body.date))).scalar_one_or_none()
     if existing:
         raise ConflictException("Bu öğrenci ve tarihe ait rapor zaten var")
-    row = DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=body.date, recorded_by=tenant.user_id)
-    apply_fields(row, body)
+    row = DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=body.date,
+        recorded_by=tenant.user_id, **report_fields(body))
     db.add(row); await db.flush()
     return await serialize(db, row)
 
@@ -151,15 +184,24 @@ async def get_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db, s
 
 @router.put("/{report_id}")
 async def update_daily_report(report_id: UUID, body: ReportFields, db: AsyncSession = Depends(get_db, scope="function"),
-    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
-    row = await get(db, tenant, report_id)
-    apply_fields(row, body)
-    row.recorded_by = tenant.user_id
-    return success_response(await serialize(db, row))
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write")),
+    if_match: str | None = Header(None)):
+    conditions = await mutation_filter(db, tenant, report_id, if_match)
+    table = DailyDevelopmentReport.__table__
+    result = await db.execute(update(table).where(*conditions).values(**report_fields(body),
+        recorded_by=tenant.user_id, updated_at=datetime.now(UTC)).returning(table.c.id))
+    if result.scalar_one_or_none() is None:
+        raise stale_report()
+    return success_response(await serialize(db, await get(db, tenant, report_id)))
 
 
 @router.delete("/{report_id}")
 async def delete_daily_report(report_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
-    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write"))):
-    await db.delete(await get(db, tenant, report_id))
+    tenant: TenantContext = Depends(PermissionChecker("daily_reports.write", "academic.write")),
+    if_match: str | None = Header(None)):
+    conditions = await mutation_filter(db, tenant, report_id, if_match)
+    table = DailyDevelopmentReport.__table__
+    result = await db.execute(delete(table).where(*conditions).returning(table.c.id))
+    if result.scalar_one_or_none() is None:
+        raise stale_report()
     return success_response(message="Günlük rapor silindi")

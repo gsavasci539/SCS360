@@ -1,9 +1,11 @@
+import asyncio
 from datetime import date
 
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
 from app.infrastructure.models.models import DailyDevelopmentReport, Student
+from app.routers import daily_reports
 
 
 async def test_daily_report_roundtrip_and_branch_filter(materials_client):  # noqa: F811
@@ -68,3 +70,42 @@ async def test_daily_report_edit_and_delete_are_scoped_to_assigned_students(mate
     async with sessions() as db:
         other_record = await db.get(DailyDevelopmentReport, unassigned_id)
         assert other_record.teacher_notes == "Korunacak"
+
+
+async def test_concurrent_daily_report_write_and_stale_delete_preserve_latest_record(materials_client, monkeypatch):  # noqa: F811
+    client, _, data = materials_client
+    actor = headers(data["teacher"])
+    child = data["children"][0]
+    created = await client.post("/api/daily-reports", headers=actor, json={"student_id": str(child.id),
+        "date": "2026-11-19", "teacher_notes": "İlk not"})
+    assert created.status_code == 200, created.text
+    initial = created.json()["data"]
+    path = f'/api/daily-reports/{initial["id"]}'
+    stale = {**actor, "If-Match": f'"{initial["version"]}"'}
+
+    captured = asyncio.Event()
+    release = asyncio.Event()
+    original = daily_reports.mutation_filter
+
+    async def pause_first_snapshot(*args):
+        conditions = await original(*args)
+        if not captured.is_set():
+            captured.set()
+            await release.wait()
+        return conditions
+
+    monkeypatch.setattr(daily_reports, "mutation_filter", pause_first_snapshot)
+    first = asyncio.create_task(client.put(path, headers=stale, json={"teacher_notes": "Eski taslak"}))
+    try:
+        await asyncio.wait_for(captured.wait(), timeout=8)
+        newer = await client.put(path, headers=stale, json={"teacher_notes": "Yeni gözlem"})
+    finally:
+        release.set()
+        superseded = await first
+    assert newer.status_code == 200, newer.text
+    assert superseded.status_code == 412, superseded.text
+    latest = newer.json()["data"]
+    assert latest["version"] != initial["version"]
+    assert (await client.delete(path, headers=stale)).status_code == 412
+    assert (await client.get(path, headers=actor)).json()["data"]["teacher_notes"] == "Yeni gözlem"
+    assert (await client.delete(path, headers={**actor, "If-Match": f'"{latest["version"]}"'})).status_code == 200
