@@ -1,6 +1,6 @@
 import { getAnalysis } from "../../lib/analysis";
 import { Plus, ArrowLeft, FileText, Edit, Trash2, Brain, TrendingUp } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
@@ -62,48 +62,57 @@ export function DailyReportsPage() {
 function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boolean; canWrite: boolean; canAnalyze: boolean }) {
   const [data, setData] = useState<Paginated<DataRecord>>({ items: [], total: 0, page: 1, page_size: 20, total_pages: 1 });
   const [search, setSearch] = useState("");
+  const [reportDate, setReportDate] = useState("");
+  const [page, setPage] = useState(1);
+  const [revision, setRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [dailyReportsAI, setDailyReportsAI] = useState<DailyReportAnalysis | null>(null);
   const { showToast } = useToast();
 
-  async function load(page = data.page) {
+  const searchTerm = search.trim();
+  const refresh = () => setRevision((value) => value + 1);
+
+  useEffect(() => {
     if (!canRead) return;
+    const controller = new AbortController();
     setLoading(true);
     setError("");
-    try {
-      const [r, aiResult] = await Promise.allSettled([
-        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
-          params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
-        }),
-        canAnalyze ? getAnalysis<ApiResponse<DailyReportAnalysis | null>>("/ai/ai-daily-reports-analysis").catch(() => null) : null
-      ]);
-      if (r.status === "rejected") throw r.reason;
-      setData(normalize(r.value.data.data));
-      if (aiResult.status === "fulfilled" && aiResult.value) {
-        setDailyReportsAI(aiResult.value.data.data);
-      }
-    } catch (e) {
-      setError(apiMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  }
+    const timer = window.setTimeout(() => {
+      api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
+        params: { page, page_size: 20, search: searchTerm || undefined, date: reportDate || undefined },
+        signal: controller.signal,
+      }).then((response) => {
+        if (controller.signal.aborted) return;
+        const result = normalize(response.data.data);
+        const lastPage = Math.max(1, result.total_pages);
+        if (page > lastPage) setPage(lastPage);
+        else setData(result);
+      }).catch((reason) => {
+        if (!controller.signal.aborted) setError(apiMessage(reason));
+      }).finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    }, searchTerm ? 220 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [canRead, page, reportDate, revision, searchTerm]);
 
-  useEffect(() => { load(1); }, []);
-
-  const filtered = useMemo(() => 
-    data.items.filter((r) => JSON.stringify(r).toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))),
-    [data.items, search]
-  );
+  useEffect(() => {
+    if (!canAnalyze) return;
+    const controller = new AbortController();
+    getAnalysis<ApiResponse<DailyReportAnalysis | null>>("/ai/ai-daily-reports-analysis", { signal: controller.signal })
+      .then((response) => { if (!controller.signal.aborted && response) setDailyReportsAI(response.data.data); })
+      .catch(() => { if (!controller.signal.aborted) setDailyReportsAI(null); });
+    return () => controller.abort();
+  }, [canAnalyze, revision]);
 
   async function handleDelete(row: DataRecord) {
     if (!window.confirm("Günlük karne silinsin mi?")) return;
     try {
       await api.delete(`/daily-reports/${row.id}`, reportPrecondition(row));
       showToast("Günlük karne silindi", "Günlük karne başarıyla silindi.");
-      await load();
+      refresh();
     } catch (e) {
       showToast("Silinemedi", apiMessage(e), "error");
     }
@@ -128,7 +137,7 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
           <div className="card-head">
             <div>
               <h2>Günlük Karne Analizi</h2>
-              <p>Ruh hali, uyku ve öğün gözlemlerinin özeti</p>
+              <p>Tüm yetkili karnelerdeki ruh hali, uyku ve öğün gözlemleri</p>
             </div>
             <Brain size={20} color="#176b5b" />
           </div>
@@ -180,13 +189,9 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
 
       {!canRead ? (
         <div className="card card-pad">Kayıtlı karneleri görüntüleme yetkiniz yok.</div>
-      ) : loading ? (
-        <div className="card"><LoadingState /></div>
-      ) : error ? (
-        <div className="card"><ErrorState message={error} retry={() => load()} /></div>
       ) : (
         <DataTable
-          rows={filtered}
+          rows={data.items}
           columns={[
             { key: "student_name", label: "Öğrenci" },
             { key: "date", label: "Tarih", type: "date" },
@@ -196,11 +201,16 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
             { key: "teacher_notes", label: "Öğretmen Notları" }
           ]}
           search={search}
-          onSearch={setSearch}
+          searchLabel="Karne ara"
+          onSearch={(value) => { setSearch(value.slice(0, 150)); setPage(1); }}
+          filters={<Field label="Karne tarihi"><input type="date" value={reportDate} onChange={(event) => {
+            setReportDate(event.target.value); setPage(1);
+          }} /></Field>}
+          status={loading ? <LoadingState /> : error ? <ErrorState message={error} retry={refresh} /> : null}
           page={data.page}
           totalPages={data.total_pages}
           total={data.total}
-          onPage={load}
+          onPage={setPage}
           detailBase="/daily-reports"
           canEdit={canWrite}
           onDelete={canWrite ? handleDelete : undefined}
@@ -208,7 +218,7 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
       )}
 
       {createOpen && canWrite && <CreateModal
-        onClose={() => setCreateOpen(false)} onSuccess={() => load()} />}
+        onClose={() => setCreateOpen(false)} onSuccess={refresh} />}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DailyReportsDetailPage, DailyReportsPage } from "../features/academic/DailyReportsPage";
@@ -102,4 +102,37 @@ it("shows a recorded zero rate separately from missing observations", async () =
   expect(screen.getAllByText("Gözlem yok")).toHaveLength(1);
   expect(screen.getByText("%66,7")).toBeInTheDocument();
   expect(screen.getByText("3 öğün kaydı")).toBeInTheDocument();
+});
+
+it("requests scoped search and date from page one and ignores an older page response", async () => {
+  const initial = { items: [row], total: 40, page: 1, page_size: 20, total_pages: 2 };
+  let resolvePrevious!: (value: { data: { data: typeof initial } }) => void;
+  const previous = new Promise<{ data: { data: typeof initial } }>((resolve) => { resolvePrevious = resolve; });
+  vi.mocked(api.get).mockImplementation(async (_path, config) => {
+    const params = config?.params as { page?: number; search?: string } | undefined;
+    if (params?.page === 2) return previous;
+    if (params?.search) return { data: { data: { ...initial, total_pages: 1, total: 1,
+      items: [{ ...row, id: "match", student_name: "IŞIK ÇAĞLAR" }] } } };
+    return { data: { data: initial } };
+  });
+  render(<MemoryRouter><DailyReportsPage /></MemoryRouter>);
+
+  fireEvent.click(await screen.findByRole("button", { name: "Sonraki sayfa" }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/daily-reports", expect.objectContaining({
+    params: expect.objectContaining({ page: 2 }),
+  })));
+  const previousRequest = vi.mocked(api.get).mock.calls.find(([, config]) =>
+    (config?.params as { page?: number } | undefined)?.page === 2)?.[1];
+  const search = screen.getByRole("textbox", { name: "Karne ara" });
+  fireEvent.change(search, { target: { value: " ışık çağlar " } });
+  fireEvent.change(screen.getByLabelText("Karne tarihi"), { target: { value: "2026-11-18" } });
+  expect(search).toBeInTheDocument();
+  expect(await screen.findByText("IŞIK ÇAĞLAR")).toBeInTheDocument();
+  expect(api.get).toHaveBeenLastCalledWith("/daily-reports", expect.objectContaining({ params: {
+    page: 1, page_size: 20, search: "ışık çağlar", date: "2026-11-18",
+  } }));
+  expect(previousRequest?.signal?.aborted).toBe(true);
+  await act(async () => { resolvePrevious({ data: { data: { ...initial, page: 2 } } }); });
+  expect(screen.queryByText("Ada Test")).not.toBeInTheDocument();
+  expect(getAnalysis).toHaveBeenCalledTimes(1);
 });

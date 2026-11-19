@@ -20,6 +20,14 @@ from app.infrastructure.repositories.base import BaseRepository
 router = APIRouter(prefix="/api/daily-reports", tags=["Daily Reports"])
 OBSERVATIONS = ("meal_status", "sleep_status", "mood", "activities", "teacher_notes")
 REPORT_SNAPSHOT = ("student_id", "class_id", "date", "recorded_by", *OBSERVATIONS, "created_at", "updated_at")
+TURKISH_CASE = str.maketrans("IİÇĞÖŞÜ", "ıiçğöşü")
+
+
+def contains_turkish_text(column, term: str):
+    # SQLite's lower() only converts ASCII. Fold Turkish capitals on both databases.
+    for upper, lower in TURKISH_CASE.items():
+        column = func.replace(column, chr(upper), chr(lower))
+    return column.icontains(term.translate(TURKISH_CASE), autoescape=True)
 
 
 class ReportFields(BaseModel):
@@ -136,7 +144,8 @@ async def save(db, tenant, body):
 @router.get("/")
 async def list_daily_reports(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
     class_id: UUID | None = None, student_id: UUID | None = None, date: date | None = None, branch_id: UUID | None = None,
-    report_date: str | None = None, db: AsyncSession = Depends(get_db, scope="function"),
+    report_date: str | None = None, search: str | None = Query(None, max_length=150),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("daily_reports.read", "academic.read"))):
     query = await scoped(db, tenant)
     if class_id: query = query.where(DailyDevelopmentReport.class_id == class_id)
@@ -147,6 +156,13 @@ async def list_daily_reports(page: int = Query(1, ge=1), page_size: int = Query(
         from datetime import date as Date
         try: query = query.where(DailyDevelopmentReport.date == Date.fromisoformat(report_date))
         except ValueError as exc: raise ValidationException("Geçerli bir tarih girin") from exc
+    if search and (term := " ".join(search.split())):
+        query = query.where(or_(
+            contains_turkish_text(Student.first_name + " " + Student.last_name, term),
+            Student.student_number.icontains(term, autoescape=True),
+            *(contains_turkish_text(getattr(DailyDevelopmentReport, name), term)
+                for name in ("mood", "sleep_status", "meal_status", "teacher_notes")),
+        ))
     rows, total = await BaseRepository(db, tenant).paginate(query.order_by(DailyDevelopmentReport.date.desc(),
         DailyDevelopmentReport.id), page, page_size)
     return success_response(paginate([await serialize(db, row) for row in rows], total, page, page_size))

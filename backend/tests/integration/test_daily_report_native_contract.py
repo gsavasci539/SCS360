@@ -53,6 +53,40 @@ async def test_daily_report_concurrent_creates_keep_one_record_per_selected_date
     assert listed.json()["data"]["items"] == [created]
 
 
+async def test_daily_report_filters_before_pagination_and_preserves_scope(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    match, newer = data["children"]
+    async with sessions() as db:
+        visible = await db.get(Student, match.id)
+        visible.first_name, visible.last_name = "IŞIK", "ÇAĞLAR"
+        visible.student_number = "KARNE-20"
+        outside = Student(first_name="IŞIK", last_name="ÇAĞLAR", organization_id=visible.organization_id,
+            branch_id=visible.branch_id, class_id=data["other_class"].id)
+        db.add(outside)
+        await db.flush()
+        db.add_all([DailyDevelopmentReport(student_id=student.id, class_id=student.class_id,
+            date=date(2026, 11, day), teacher_notes=note) for student, day, note in [
+            (outside, 20, "Kapsam dışı %_"), (newer, 19, "Yeni karne"),
+            (visible, 18, "Gözlem %_ kayıtlı"), (visible, 17, "Önceki karne"),
+        ]])
+        await db.commit()
+
+    async def listed(**params):
+        response = await client.get("/api/daily-reports", headers=headers(data["teacher"]), params=params)
+        assert response.status_code == 200, response.text
+        return response.json()["data"]
+
+    assert (await listed(page_size=1))["items"][0]["student_id"] == str(newer.id)
+    filtered = await listed(page_size=1, search="  ışık  çağlar  ")
+    assert (filtered["total"], filtered["total_pages"]) == (2, 2)
+    assert [(row["student_id"], row["date"]) for row in filtered["items"]] == [(str(match.id), "2026-11-18")]
+    assert (await listed(page_size=1, page=2, search="KARNE-20"))["items"][0]["date"] == "2026-11-17"
+    by_date = await listed(search="ışık çağlar", date="2026-11-17", branch_id=str(data["branch"].id))
+    assert by_date["total"] == 1 and by_date["items"][0]["date"] == "2026-11-17"
+    literal = await listed(search="%_")
+    assert literal["total"] == 1 and literal["items"][0]["student_id"] == str(match.id)
+
+
 async def test_daily_report_bulk_create_preserves_order_and_rolls_back_on_conflict(materials_client):  # noqa: F811
     client, _, data = materials_client
     path = "/api/daily-reports"
