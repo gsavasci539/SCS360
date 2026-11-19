@@ -199,3 +199,35 @@ async def test_student_history_pages_same_timestamp_and_only_marks_visible_messa
     async with sessions() as db:
         assert (await db.get(ChatConversation, thread.id)).parent_unread_count == 0
         assert not (await db.get(ChatMessage, ids[-1])).is_read
+
+
+async def test_legacy_teacher_quick_chat_uses_assigned_students_in_both_directories(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    teacher, parent = data["teacher"], data["user"]
+    child = data["children"][0]
+    async with sessions() as db:
+        role = await db.scalar(select(Role).where(Role.slug == "teacher", Role.organization_id == child.organization_id))
+        role.slug = "teacher2"
+        unassigned = Student(first_name="Unassigned", last_name="Fixture", organization_id=child.organization_id,
+            branch_id=child.branch_id, class_id=data["other_class"].id)
+        guardian = await db.scalar(select(Parent).where(Parent.user_id == parent.id))
+        db.add(unassigned)
+        await db.flush()
+        db.add(StudentParent(student_id=unassigned.id, parent_id=guardian.id))
+        await db.commit()
+
+    params = {"parent_id": str(parent.id), "branch_id": str(child.branch_id)}
+    for area in ("teacher", "admin"):
+        directory = await client.get(f"/api/{area}/chat-contacts", headers=headers(teacher))
+        assert directory.status_code == 200, directory.text
+        assert {row["student_id"] for row in directory.json()["data"]["items"]} == {str(row.id) for row in data["children"]}
+        unrelated = f"/api/{area}/chat/{unassigned.id}"
+        rejected = await client.post(unrelated, headers=headers(teacher), params=params, json={"message": "Fixture rejection"})
+        assert rejected.status_code in (403, 404)
+    path = f"/api/teacher/chat/{child.id}"
+    request_id = str(uuid4())
+    saved = await client.post(path, headers=headers(teacher), params=params,
+        json={"message": "Fixture legacy teacher message", "request_id": request_id})
+    assert saved.status_code == 200, saved.text
+    receipt = await client.get(f"{path}/sent/{request_id}", headers=headers(teacher), params=params)
+    assert receipt.json()["data"] == saved.json()["data"]

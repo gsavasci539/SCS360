@@ -22,8 +22,17 @@ from app.infrastructure.models.models import (
 )
 from app.infrastructure.repositories.base import BaseRepository
 
+_LEGACY_TEACHER_ROLES = {"teacher1", "teacher2", "teacher3"}
+
+
+def _relationship_tenant(tenant):
+    if tenant.role_slugs & _LEGACY_TEACHER_ROLES:
+        return replace(tenant, role_slugs=tenant.role_slugs | {"teacher"})
+    return tenant
+
 
 async def contact_query(db, tenant, branch_id=None):
+    tenant = _relationship_tenant(tenant)
     branch_ids = await message_branches(db, tenant, branch_id)
     student_ids = await accessible_student_ids(db, tenant)
     _, allowed_students, allowed_classes, _ = scope_filters(replace(tenant, branch_ids=branch_ids), student_ids)
@@ -75,7 +84,7 @@ async def participants(db, tenant, student_id, parent_id=None):
     if tenant.is_super_admin or tenant.organization_id is None:
         raise ForbiddenException("Mesajlaşmadan önce kurum seçin")
     student = await BaseRepository(db, tenant).get_by_id(student_id, Student)
-    if uses_relationship_scope(tenant):
+    if uses_relationship_scope(_relationship_tenant(tenant)):
         await require_teacher_for_student(db, student, tenant.user_id)
     query = select(Parent, StudentParent).join(StudentParent, StudentParent.parent_id == Parent.id).where(
         StudentParent.student_id == student.id, Parent.organization_id == student.organization_id,
@@ -121,6 +130,6 @@ async def send(db, tenant, student_id, content, parent_id=None, request_id=None,
     if (not content and upload is None) or len(content) > 10000:
         raise ValidationException("Mesaj 1–10000 karakter olmalı")
     student, _, conversation = await thread(db, tenant, student_id, parent_id, create=True, branch_id=branch_id)
-    sender_role = "TEACHER" if "teacher" in tenant.role_slugs else "STAFF"
+    sender_role = "TEACHER" if "teacher" in _relationship_tenant(tenant).role_slugs else "STAFF"
     return await student_chat_messages.record(db, student, conversation, tenant.user_id, sender_role,
         content, request_id, upload)

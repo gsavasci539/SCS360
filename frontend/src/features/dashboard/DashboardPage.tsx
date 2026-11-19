@@ -1,13 +1,12 @@
 import { getAnalysis } from "../../lib/analysis";
-import { reportClientError } from "../../lib/diagnostics";
-import { CalendarCheck2, ChevronRight, CreditCard, GraduationCap, ReceiptText, UserPlus, UsersRound, WalletCards, Bell, BookOpen, ClipboardCheck, MessageCircle, X, Send, Brain, TrendingUp, AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CalendarCheck2, ChevronRight, CreditCard, GraduationCap, ReceiptText, UserPlus, UsersRound, WalletCards, Bell, BookOpen, ClipboardCheck, MessageCircle, Brain, TrendingUp, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ErrorState, LoadingState, PageHeader, StatCard, Tabs } from "../../components/ui";
+import { ErrorState, LoadingState, Modal, PageHeader, StatCard, Tabs } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { money } from "../../lib/format";
-import { useAuthStore } from "../../stores/auth";
+import { hasPermission, useAuthStore } from "../../stores/auth";
 import { StaffStudentChat } from "../parent/StaffStudentChat";
 import { ExcuseReviewPanel } from "../communications/ExcuseRequests";
 import type { ApiResponse } from "../../types/api";
@@ -21,7 +20,7 @@ export function DashboardPage() {
   const [summary, setSummary] = useState<Summary>({}); const [chart, setChart] = useState(fallbackChart); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [aiInsights, setAiInsights] = useState<any>(null);
   const user = useAuthStore((state) => state.user);
   const can = useAuthStore((state) => state.can);
-  const isTeacher = user?.roles?.some((r: any) => r.slug === "teacher1" || r.slug === "teacher2" || r.slug === "teacher3") || false;
+  const isTeacher = user?.roles?.some((r) => r.slug === "teacher1" || r.slug === "teacher2" || r.slug === "teacher3") || false;
   
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -254,39 +253,11 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
   const absentToday = summary?.absent_today ?? 0;
   const totalClasses = summary?.total_classes ?? 0;
   
-  // Chat widget state
+  const canOpenChat = useAuthStore((state) =>
+    hasPermission(state.user, "messaging.read") && hasPermission(state.user, "students.read"));
   const [showQuickChat, setShowQuickChat] = useState(false);
-  const [chatCategory, setChatCategory] = useState<'parents' | 'class' | 'admin'>('parents');
-  const [selectedRecipient, setSelectedRecipient] = useState<string>('');
-  const [messageInput, setMessageInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [loadingContacts, setLoadingContacts] = useState(false);
+  const closeQuickChat = useCallback(() => setShowQuickChat(false), []);
 
-  const loadContacts = async () => {
-    setLoadingContacts(true);
-    try {
-      // Load users (for admin category)
-      const usersResult = await api.get<ApiResponse<any[]>>("/users");
-      setUsers(usersResult.data.data || []);
-      
-      // Load students (for parents/class categories)
-      const studentsResult = await api.get<ApiResponse<any[]>>("/students");
-      setStudents(studentsResult.data.data || []);
-    } catch (err) {
-      reportClientError("Failed to load contacts:", err);
-    } finally {
-      setLoadingContacts(false);
-    }
-  };
-
-  useEffect(() => {
-    if (showQuickChat) {
-      loadContacts();
-    }
-  }, [showQuickChat]);
-  
   return (
     <>
       <PageHeader 
@@ -346,309 +317,18 @@ function TeacherDashboard({ summary, error, load }: { summary: Summary; error: s
         </section>
       </div>
 
-      {/* Quick Chat Widget - Fixed Bottom Right */}
-      {showQuickChat && (
-        <div style={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          width: 380,
-          maxHeight: 500,
-          background: 'white',
-          borderRadius: 12,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <div style={{
-            padding: 16,
-            borderBottom: '1px solid #e5e7eb',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '12px 12px 0 0',
-            color: 'white'
-          }}>
-            <div style={{ fontWeight: 600 }}>Hızlı Mesaj</div>
-            <button
-              onClick={() => setShowQuickChat(false)}
-              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div style={{ padding: 12, borderBottom: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setChatCategory('parents')}
-                style={{
-                  flex: 1,
-                  padding: 8,
-                  border: chatCategory === 'parents' ? '2px solid #667eea' : '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  background: chatCategory === 'parents' ? '#f0f4ff' : 'white',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: chatCategory === 'parents' ? 600 : 400
-                }}
-              >
-                Veliler
-              </button>
-              <button
-                onClick={() => setChatCategory('class')}
-                style={{
-                  flex: 1,
-                  padding: 8,
-                  border: chatCategory === 'class' ? '2px solid #667eea' : '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  background: chatCategory === 'class' ? '#f0f4ff' : 'white',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: chatCategory === 'class' ? 600 : 400
-                }}
-              >
-                Sınıf
-              </button>
-              <button
-                onClick={() => setChatCategory('admin')}
-                style={{
-                  flex: 1,
-                  padding: 8,
-                  border: chatCategory === 'admin' ? '2px solid #667eea' : '1px solid #e5e7eb',
-                  borderRadius: 6,
-                  background: chatCategory === 'admin' ? '#f0f4ff' : 'white',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: chatCategory === 'admin' ? 600 : 400
-                }}
-              >
-                İdare
-              </button>
-            </div>
-          </div>
-          <div style={{ padding: 16, flex: 1, overflowY: 'auto', maxHeight: 350 }}>
-            {loadingContacts && (
-              <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-                Yükleniyor...
-              </div>
-            )}
-            {chatCategory === 'parents' && !loadingContacts && (
-              <>
-                <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
-                  Velilere mesaj göndermek için öğrenci seçin:
-                </p>
-                {students.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-                    Öğrenci bulunamadı
-                  </div>
-                ) : (
-                  students.slice(0, 10).map((student) => (
-                    <div
-                      key={student.student_id}
-                      style={{
-                        padding: 12,
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        marginBottom: 8,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onClick={() => {
-                        setSelectedRecipient(student.student_id);
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                    >
-                      <div style={{ fontWeight: 600 }}>{student.first_name} {student.last_name}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>{student.class_name || 'Sınıf atanmamış'}</div>
-                    </div>
-                  ))
-                )}
-              </>
-            )}
-            {chatCategory === 'class' && !loadingContacts && (
-              <>
-                <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
-                  Sınıf içi iletişim:
-                </p>
-                {students.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-                    Öğrenci bulunamadı
-                  </div>
-                ) : (
-                  students.slice(0, 10).map((student) => (
-                    <div
-                      key={student.student_id}
-                      style={{
-                        padding: 12,
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        marginBottom: 8,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      onClick={() => {
-                        setSelectedRecipient(student.student_id);
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                    >
-                      <div style={{ fontWeight: 600 }}>{student.first_name} {student.last_name}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>{student.class_name || 'Sınıf atanmamış'}</div>
-                    </div>
-                  ))
-                )}
-              </>
-            )}
-            {chatCategory === 'admin' && !loadingContacts && (
-              <>
-                <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>
-                  İdare ile iletişim:
-                </p>
-                {!selectedRecipient ? (
-                  <>
-                    {users.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 20, color: '#666' }}>
-                        Personel bulunamadı
-                      </div>
-                    ) : (
-                      users.filter((u) => u.roles?.some((r: any) => r.slug === 'admin' || r.slug === 'super_admin' || r.slug === 'teacher')).map((user) => (
-                        <div
-                          key={user.id}
-                          style={{
-                            padding: 12,
-                            border: '1px solid #e5e7eb',
-                            borderRadius: 8,
-                            marginBottom: 8,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                          onClick={() => setSelectedRecipient(user.id)}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                        >
-                          <div style={{ fontWeight: 600 }}>{user.first_name} {user.last_name}</div>
-                          <div style={{ fontSize: 12, color: '#666' }}>
-                            {user.roles?.map((r: any) => r.name).join(', ') || 'Rol atanmamış'}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div style={{ marginBottom: 12 }}>
-                      <button
-                        onClick={() => setSelectedRecipient('')}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#667eea',
-                          cursor: 'pointer',
-                          fontSize: 13,
-                          padding: 0
-                        }}
-                      >
-                        ← Geri dön
-                      </button>
-                      <div style={{ fontWeight: 600, marginTop: 8 }}>
-                        {users.find((u) => u.id === selectedRecipient)?.first_name} {users.find((u) => u.id === selectedRecipient)?.last_name}
-                      </div>
-                    </div>
-                    <textarea
-                      value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
-                      placeholder="Mesajınızı yazın..."
-                      style={{
-                        width: '100%',
-                        minHeight: 100,
-                        padding: 12,
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 8,
-                        fontSize: 14,
-                        resize: 'vertical',
-                        marginBottom: 12,
-                        fontFamily: 'inherit'
-                      }}
-                    />
-                    <button
-                      onClick={async () => {
-                        if (!messageInput.trim()) return;
-                        setSending(true);
-                        try {
-                          // TODO: Implement actual message sending
-                          
-                          setMessageInput('');
-                          setSelectedRecipient('');
-                          setShowQuickChat(false);
-                        } catch (err) {
-                          reportClientError('Failed to send message:', err);
-                        } finally {
-                          setSending(false);
-                        }
-                      }}
-                      disabled={sending || !messageInput.trim()}
-                      style={{
-                        width: '100%',
-                        padding: 12,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 8,
-                        cursor: sending || !messageInput.trim() ? 'not-allowed' : 'pointer',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        opacity: sending || !messageInput.trim() ? 0.5 : 1
-                      }}
-                    >
-                      {sending ? 'Gönderiliyor...' : (
-                        <>
-                          <Send size={16} />
-                          Gönder
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Chat Toggle Button */}
-      {!showQuickChat && (
-        <button
-          onClick={() => setShowQuickChat(true)}
-          style={{
-            position: 'fixed',
-            bottom: 20,
-            right: 20,
-            width: 60,
-            height: 60,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <MessageCircle size={28} />
-        </button>
+      {canOpenChat && (
+        <>
+          <button type="button" className="btn btn-primary" aria-haspopup="dialog"
+            style={{ position: "fixed", insetInlineEnd: "1.25rem", bottom: "1.25rem", zIndex: 900,
+              maxWidth: "calc(100% - 2.5rem)", whiteSpace: "normal" }}
+            onClick={() => setShowQuickChat(true)}>
+            <MessageCircle size={20} aria-hidden="true" /> Hızlı mesaj
+          </button>
+          <Modal open={showQuickChat} title="Hızlı mesaj" onClose={closeQuickChat}>
+            <StaffStudentChat area="/teacher" />
+          </Modal>
+        </>
       )}
     </>
   );
