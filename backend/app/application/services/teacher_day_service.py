@@ -24,16 +24,28 @@ from app.infrastructure.models.models import (
 )
 
 
-async def dashboard_summary(db, tenant):
+def assigned_classrooms(tenant):
     if tenant.organization_id is None:
         raise ForbiddenException("Önce kurum çalışma alanını seçin")
-
-    today = school_today()
     branches, _, _, _ = scope_filters(tenant, None)
-    classrooms = teacher_classes_query(tenant.user_id).where(
+    return teacher_classes_query(tenant.user_id).where(
         ClassRoom.organization_id == tenant.organization_id,
-        ClassRoom.branch_id.in_(branches), ClassRoom.is_active.is_(True),
-    ).with_only_columns(ClassRoom.id)
+        ClassRoom.branch_id.in_(branches),
+    )
+
+
+def active_students_in(class_ids):
+    return select(Student.id, Student.class_id).join(ClassRoom, ClassRoom.id == Student.class_id).where(
+        Student.class_id.in_(class_ids), Student.organization_id == ClassRoom.organization_id,
+        Student.branch_id == ClassRoom.branch_id,
+        Student.deleted_at.is_(None), Student.status == StudentStatus.ACTIVE,
+    )
+
+
+async def dashboard_summary(db, tenant):
+    today = school_today()
+    classrooms = assigned_classrooms(tenant).where(ClassRoom.is_active.is_(True)).with_only_columns(ClassRoom.id)
+    branches, _, _, _ = scope_filters(tenant, None)
     classroom_assignment = classrooms.where(
         ClassRoom.id == Student.class_id, ClassRoom.branch_id == Student.branch_id,
     ).exists()
@@ -71,35 +83,39 @@ async def dashboard_summary(db, tenant):
         "total_classes": total_classes, "attendance": attendance}
 
 
-async def classes(db, user):
-    rows = (await db.execute(teacher_classes_query(user.id).order_by(ClassRoom.name, ClassRoom.id))).scalars().all()
-    ids = [row.id for row in rows if row is not None]
-    counts = dict((await db.execute(select(Student.class_id, func.count(Student.id)).where(Student.class_id.in_(ids),
-        Student.status == "ACTIVE", Student.deleted_at.is_(None)).group_by(Student.class_id))).all()) if ids else {}
-    return [{"id": str(row.id), "name": row.name, "student_count": counts.get(row.id, 0)} for row in rows if row is not None]
+async def classes(db, tenant):
+    rows = (await db.execute(assigned_classrooms(tenant).order_by(ClassRoom.name, ClassRoom.id))).scalars().all()
+    if not rows:
+        return []
+    counts = dict((await db.execute(active_students_in([row.id for row in rows])
+        .with_only_columns(Student.class_id, func.count(Student.id)).group_by(Student.class_id))).all())
+    return [{"id": str(row.id), "name": row.name, "student_count": counts.get(row.id, 0)} for row in rows]
 
 
-async def pending_tasks(db, user):
+async def pending_tasks(db, tenant):
     today = school_today()
-    classrooms = await classes(db, user)
+    classrooms = await classes(db, tenant)
     ids = [UUID(row["id"]) for row in classrooms]
     if not ids:
         return {"date": today.isoformat(), "tasks": []}
-    students = (await db.execute(select(Student.id, Student.class_id).where(Student.class_id.in_(ids),
-        Student.deleted_at.is_(None), Student.status == "ACTIVE"))).all()
-    active_ids = [row.id for row in students]
-    attendance = dict((await db.execute(select(AttendanceRecord.class_id, func.count(func.distinct(AttendanceRecord.student_id)))
-        .where(AttendanceRecord.class_id.in_(ids), AttendanceRecord.student_id.in_(active_ids),
-            AttendanceRecord.attendance_date == today, AttendanceRecord.deleted_at.is_(None))
-        .group_by(AttendanceRecord.class_id))).all()) if active_ids else {}
-    reports = dict((await db.execute(select(DailyDevelopmentReport.class_id, func.count(func.distinct(DailyDevelopmentReport.student_id)))
-        .where(DailyDevelopmentReport.class_id.in_(ids), DailyDevelopmentReport.student_id.in_(active_ids), DailyDevelopmentReport.date == today)
-        .group_by(DailyDevelopmentReport.class_id))).all()) if active_ids else {}
+    active_ids = active_students_in(ids).with_only_columns(Student.id)
+    categories = []
+    if tenant.has_any_permission(["attendance.read", "teacher.view_attendance"]):
+        attendance = dict((await db.execute(select(AttendanceRecord.class_id, func.count(func.distinct(AttendanceRecord.student_id)))
+            .where(AttendanceRecord.class_id.in_(ids), AttendanceRecord.student_id.in_(active_ids),
+                AttendanceRecord.attendance_date == today, AttendanceRecord.deleted_at.is_(None))
+            .group_by(AttendanceRecord.class_id))).all())
+        categories.append(("attendance", attendance, "high"))
+    if tenant.has_any_permission(["daily_reports.read", "academic.read"]):
+        reports = dict((await db.execute(select(DailyDevelopmentReport.class_id, func.count(func.distinct(DailyDevelopmentReport.student_id)))
+            .where(DailyDevelopmentReport.class_id.in_(ids), DailyDevelopmentReport.student_id.in_(active_ids), DailyDevelopmentReport.date == today)
+            .group_by(DailyDevelopmentReport.class_id))).all())
+        categories.append(("daily_report", reports, "medium"))
     tasks = []
     for classroom in classrooms:
         identifier = UUID(classroom["id"])
         total = classroom["student_count"]
-        for kind, counts, priority in (("attendance", attendance, "high"), ("daily_report", reports, "medium")):
+        for kind, counts, priority in categories:
             remaining = max(0, total - counts.get(identifier, 0))
             if remaining:
                 tasks.append({"task_id": f"{kind}_{classroom['id']}", "task_type": kind, "class_id": classroom["id"],
@@ -108,9 +124,9 @@ async def pending_tasks(db, user):
     return {"date": today.isoformat(), "tasks": tasks}
 
 
-async def today_schedule(db, user):
+async def today_schedule(db, tenant):
     today = school_today()
-    classrooms = {row.id: row for row in (await db.execute(teacher_classes_query(user.id))).scalars() if row is not None}
+    classrooms = {row.id: row for row in (await db.execute(assigned_classrooms(tenant))).scalars()}
     if not classrooms:
         return []
     saved = (await db.execute(select(OperationalRecord).where(OperationalRecord.kind == "CLASS_SCHEDULE",

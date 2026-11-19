@@ -30,18 +30,27 @@ async def get_teacher_dashboard_summary(
 
 
 @router.get("/my-classes")
-async def get_teacher_classes(db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user)):
-    return success_response(await teacher_day_service.classes(db, current_user))
+async def get_teacher_classes(
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("teacher.view_classes")),
+):
+    return success_response(await teacher_day_service.classes(db, tenant))
 
 
 @router.get("/today-schedule")
-async def get_teacher_today_schedule(db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user)):
-    return success_response(await teacher_day_service.today_schedule(db, current_user))
+async def get_teacher_today_schedule(
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("teacher.view_schedule")),
+):
+    return success_response(await teacher_day_service.today_schedule(db, tenant))
 
 
 @router.get("/pending-tasks")
-async def get_teacher_pending_tasks(db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user)):
-    return success_response(await teacher_day_service.pending_tasks(db, current_user))
+async def get_teacher_pending_tasks(
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("teacher.manage_tasks")),
+):
+    return success_response(await teacher_day_service.pending_tasks(db, tenant))
 
 
 @router.get("/medicine-requests")

@@ -1,11 +1,20 @@
 from uuid import UUID
 
 from sqlalchemy import select
-
-from test_saas_platform import platform_client  # noqa: F401
-from test_material_files import materials_client, headers  # noqa: F401
+from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
-from app.infrastructure.models.models import Branch, ClassRoom, ClassTeacher, Permission, Role, Student, User, UserStatus
+from test_saas_platform import platform_client  # noqa: F401
+
+from app.infrastructure.models.models import (
+    Branch,
+    ClassTeacher,
+    Permission,
+    Role,
+    RolePermission,
+    Student,
+    User,
+    UserStatus,
+)
 
 
 async def editor(sessions, data, codes):
@@ -34,6 +43,13 @@ async def test_class_teacher_and_active_fields_persist_and_teacher_portal_reads_
     assert record["teacher_id"] == body["teacher_id"] and record["teacher_name"] == "Teacher Test" and record["is_active"] is False
     assert (await client.get(path, headers=auth)).json()["data"]["description"] == "Saved description"
     assert (await client.post("/api/classes", headers=auth, json=body)).status_code == 409
+    async with sessions() as db:
+        teacher_role = (await db.execute(select(Role).where(Role.slug == "teacher"))).scalar_one()
+        permission = Permission(code="teacher.view_classes", name="Teacher classes", module="teacher")
+        db.add(permission)
+        await db.flush()
+        db.add(RolePermission(role_id=teacher_role.id, permission_id=permission.id))
+        await db.commit()
     portal = await client.get("/api/teacher/my-classes", headers=headers(data["teacher"]))
     assert portal.status_code == 200 and record["id"] in {row["id"] for row in portal.json()["data"]}, portal.text
     changed = await client.put(path, headers=auth, json={"is_active": True, "teacher_id": None})

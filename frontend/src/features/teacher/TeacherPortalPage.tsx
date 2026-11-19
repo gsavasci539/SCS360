@@ -1,16 +1,15 @@
-import { reportClientError } from "../../lib/diagnostics";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { BookOpen, Calendar, Users, FileText, CheckCircle, Clock, Pill } from "lucide-react";
-import { api, apiMessage } from "../../lib/api";
+import { api, apiMessage, unwrap } from "../../lib/api";
 import { PageHeader, LoadingState, ErrorState, Badge, Tabs } from "../../components/ui";
 import { StaffStudentChat } from "../parent/StaffStudentChat";
-import { useAuthStore } from "../../stores/auth";
+import { hasPermission, useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
+import type { ApiResponse } from "../../types/api";
 
 interface ClassInfo {
   id: string;
   name: string;
-  grade: string;
-  section: string;
   student_count: number;
 }
 
@@ -32,6 +31,25 @@ interface Task {
   priority: 'high' | 'medium' | 'low';
 }
 
+interface ScheduleRow {
+  timetable_id: string;
+  subject: string;
+  class_name: string;
+  room_number: string | null;
+  start_time: string;
+  end_time: string;
+  day: string;
+}
+
+interface TaskRow {
+  task_id: string;
+  task_type: "attendance" | "daily_report";
+  class_name: string;
+  remaining_count: number;
+  due_date: string;
+  priority: Task["priority"];
+}
+
 interface MedicineRequest {
   id: string;
   student_name: string;
@@ -45,7 +63,19 @@ interface MedicineRequest {
 }
 
 export default function TeacherPortalPage() {
-  const canReadMedicine = useAuthStore((state) => state.can("health.read") || state.can("teacher.view_medicine_requests"));
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const canReadSchedule = hasPermission(user, "teacher.view_schedule");
+  const canReadTasks = hasPermission(user, "teacher.manage_tasks");
+  const canReadMedicine = hasPermission(user, "health.read") || hasPermission(user, "teacher.view_medicine_requests");
+  return <TeacherPortal key={JSON.stringify([session, user?.id, user?.organization_id, user?.branch_ids, user?.permissions, workspace?.id])}
+    canReadSchedule={canReadSchedule} canReadTasks={canReadTasks} canReadMedicine={canReadMedicine} />;
+}
+
+function TeacherPortal({ canReadSchedule, canReadTasks, canReadMedicine }: {
+  canReadSchedule: boolean; canReadTasks: boolean; canReadMedicine: boolean;
+}) {
   const [activeTab, setActiveTab] = useState("classes");
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
@@ -53,73 +83,51 @@ export default function TeacherPortalPage() {
   const [medicineRequests, setMedicineRequests] = useState<MedicineRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const loadSequence = useRef(0);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    load();
-  }, [canReadMedicine]);
-
-  async function load() {
-    const request = ++loadSequence.current;
-    setLoading(true);
-    setError("");
-    try {
-      const [classesResult, scheduleResult, tasksResult, medicineResult] = await Promise.allSettled([
-        api.get("/teacher/my-classes"),
-        api.get("/teacher/today-schedule"),
-        api.get("/teacher/pending-tasks"),
-        canReadMedicine ? api.get("/teacher/medicine-requests") : Promise.resolve({ data: { data: [] } })
-      ]);
-      if (request !== loadSequence.current) return;
-      const failed = [classesResult, scheduleResult, tasksResult, medicineResult].find((result) => result.status === "rejected");
-      if (failed?.status === "rejected") setError(apiMessage(failed.reason));
-      if (classesResult.status === "fulfilled") {
-        
-        const classesData = classesResult.value.data.data || [];
-        
-        setClasses(classesData);
-      } else {
-        reportClientError("Classes error:", classesResult.reason);
-        setError(apiMessage(classesResult.reason));
-      }
-      if (scheduleResult.status === "fulfilled") {
-        
-        const scheduleData = scheduleResult.value.data.data || [];
-        
-        setSchedule(scheduleData.map((item: any) => ({
-          id: item.timetable_id,
-          subject: item.subject || "Ders",
-          class_name: item.class_name,
-          room: item.room_number || "Belirtilmedi",
-          time: `${item.start_time} - ${item.end_time}`,
-          day: item.day
-        })));
-      } else {
-        reportClientError("Schedule error:", scheduleResult.reason);
-      }
-      if (tasksResult.status === "fulfilled") {
-        const tasksData = tasksResult.value.data.data;
-        setTasks((tasksData?.tasks || []).map((task: any) => ({
-          id: task.task_id || `${task.class_id}-${task.task_type}`,
-          type: task.task_type,
-          title: task.class_name || "Görev",
-          description: task.task_type === "attendance" ? `Yoklama bekleyen: ${task.remaining_count ?? "—"} öğrenci` : task.task_type === "daily_report" ? `Günlük raporu bekleyen: ${task.remaining_count ?? "—"} öğrenci` : "Diğer",
-          due_date: task.due_date,
-          priority: task.priority
-        })));
-      }
-      if (medicineResult.status === "fulfilled") {
-        setMedicineRequests(medicineResult.value.data.data || []);
-      }
-    } catch (err) {
-      if (request === loadSequence.current) setError(apiMessage(err));
-    } finally {
-      if (request === loadSequence.current) setLoading(false);
-    }
-  }
+    const controller = new AbortController();
+    const request = { signal: controller.signal };
+    Promise.all([
+      api.get<ApiResponse<ClassInfo[]>>("/teacher/my-classes", request).then(unwrap),
+      canReadSchedule ? api.get<ApiResponse<ScheduleRow[]>>("/teacher/today-schedule", request).then(unwrap) : [],
+      canReadTasks ? api.get<ApiResponse<{ tasks: TaskRow[] }>>("/teacher/pending-tasks", request).then(unwrap) : { tasks: [] },
+      canReadMedicine ? api.get<ApiResponse<MedicineRequest[]>>("/teacher/medicine-requests", request).then(unwrap) : [],
+    ]).then(([classRows, scheduleRows, taskResponse, medicineRows]) => {
+      if (controller.signal.aborted) return;
+      setClasses(classRows);
+      setSchedule(scheduleRows.map((item) => ({
+        id: item.timetable_id,
+        subject: item.subject,
+        class_name: item.class_name,
+        room: item.room_number || "Belirtilmedi",
+        time: item.end_time ? `${item.start_time} - ${item.end_time}` : item.start_time,
+        day: item.day,
+      })));
+      setTasks(taskResponse.tasks.map((task) => ({
+        id: task.task_id,
+        type: task.task_type,
+        title: task.class_name,
+        description: task.task_type === "attendance" ? `Yoklama bekleyen öğrenci sayısı ${task.remaining_count}` :
+          `Günlük raporu bekleyen öğrenci sayısı ${task.remaining_count}`,
+        due_date: task.due_date,
+        priority: task.priority,
+      })));
+      setMedicineRequests(medicineRows);
+    }).catch((err) => {
+      if (!controller.signal.aborted) setError(apiMessage(err));
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [attempt, canReadSchedule, canReadTasks, canReadMedicine]);
 
   if (loading) return <LoadingState label="Yükleniyor..." />;
-  if (error) return <ErrorState message={error} retry={load} />;
+  if (error) return <ErrorState message={error} retry={() => {
+    setError("");
+    setLoading(true);
+    setAttempt((value) => value + 1);
+  }} />;
 
   const taskIcons = {
     attendance: <CheckCircle size={16} />,
@@ -145,8 +153,8 @@ export default function TeacherPortalPage() {
           tabs={[
             { id: "overview", label: "Genel Bakış" },
             { id: "classes", label: "Sınıflarım" },
-            { id: "schedule", label: "Bugünkü Program" },
-            { id: "tasks", label: "Görevler" },
+            ...(canReadSchedule ? [{ id: "schedule", label: "Bugünkü Program" }] : []),
+            ...(canReadTasks ? [{ id: "tasks", label: "Görevler" }] : []),
             ...(canReadMedicine ? [{ id: "medicine", label: "İlaç Talepleri" }] : []),
             { id: "chat", label: "Mesajlar" }
           ]}
@@ -162,23 +170,23 @@ export default function TeacherPortalPage() {
                 <div className="stat-label">Toplam Sınıf</div>
                 <div className="stat-value">{classes.length}</div>
               </div>
-              <div className="card stat-card">
+              {canReadSchedule && <div className="card stat-card">
                 <div className="stat-top">
                   <div className="stat-icon"><Calendar size={20} /></div>
                 </div>
                 <div className="stat-label">Bugünkü Ders</div>
                 <div className="stat-value">{schedule.length}</div>
-              </div>
-              <div className="card stat-card">
+              </div>}
+              {canReadTasks && <div className="card stat-card">
                 <div className="stat-top">
                   <div className="stat-icon"><CheckCircle size={20} /></div>
                 </div>
                 <div className="stat-label">Bekleyen Görev</div>
                 <div className="stat-value">{tasks.length}</div>
-              </div>
+              </div>}
             </div>
 
-            <div className="mt-6">
+            {canReadSchedule && <div className="mt-6">
               <h3>Bugünkü Ders Programı</h3>
               {schedule.length > 0 ? (
                 <table className="data-table mt-4">
@@ -204,7 +212,7 @@ export default function TeacherPortalPage() {
               ) : (
                 <p className="text-gray-500 mt-4">Bugün ders programınız yok.</p>
               )}
-            </div>
+            </div>}
           </div>
         )}
 
@@ -230,7 +238,7 @@ export default function TeacherPortalPage() {
           </div>
         )}
 
-        {activeTab === "schedule" && (
+        {activeTab === "schedule" && canReadSchedule && (
           <div className="tab-content">
             <table className="data-table">
               <thead>
@@ -258,7 +266,7 @@ export default function TeacherPortalPage() {
           </div>
         )}
 
-        {activeTab === "tasks" && (
+        {activeTab === "tasks" && canReadTasks && (
           <div className="tab-content">
             <table className="data-table">
               <thead>
