@@ -244,3 +244,38 @@ async def test_daily_report_analysis_uses_the_readable_student_scope(materials_c
     result = response.json()["data"]
     assert result["report_stats"]["total"] == 1
     assert [row["student_id"] for row in result["students_needing_attention"]] == [str(child.id)]
+
+
+async def test_daily_report_analysis_counts_observed_web_and_android_values(materials_client):  # noqa: F811
+    client, _, data = materials_client
+    authorization = headers(data["teacher"])
+    first, second = data["children"]
+    path = "/api/ai/ai-daily-reports-analysis"
+
+    async def create(student, day, **fields):
+        response = await client.post("/api/daily-reports", headers=authorization,
+            json={"student_id": str(student.id), "date": day, **fields})
+        assert response.status_code == 200, response.text
+
+    await create(first, "2026-11-19", mood="Not happy", meal_status="Allergy note", teacher_notes="Henüz gözlem yok")
+    unknown = (await client.get(path, headers=authorization)).json()["data"]
+    assert unknown["recommendations"] == ["Özetlenecek kayıtlı gözlem bulunamadı."]
+    assert unknown["students_needing_attention"] == []
+    assert all(unknown["report_stats"][f"{domain}_rate"] is None for domain in ("mood", "sleep", "meal"))
+
+    await create(first, "2026-11-18", mood="HAPPY", sleep_status="SHORT", meal_status="ALL")
+    await create(first, "2026-11-17", mood="Çok Neşeli & Uyumlu", sleep_status="30 dk",
+        meal_breakfast="Tümünü Yedi", meal_lunch="Yarısını Yedi", meal_snack="Yemedi")
+    await create(first, "2026-11-16", mood="Sakin")
+    await create(second, "2026-11-15", mood="Yorgun", sleep_status="Uyumadı")
+    response = await client.get(path, headers=authorization)
+    assert response.status_code == 200, response.text
+    analysis = response.json()["data"]
+    assert analysis["report_stats"] == {
+        "total": 5, "mood_happy": 2, "mood_tired": 1,
+        "mood_observations": 4, "sleep_observations": 3, "meal_observations": 4,
+        "mood_rate": 50, "sleep_rate": 66.7, "meal_rate": 50,
+    }
+    follow_up = {row["student_id"]: row for row in analysis["students_needing_attention"]}
+    assert follow_up[str(first.id)]["poor_meal"] == 2
+    assert follow_up[str(second.id)]["poor_meal"] == 0

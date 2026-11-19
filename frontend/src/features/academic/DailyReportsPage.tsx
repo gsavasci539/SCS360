@@ -26,6 +26,27 @@ function storedOption(value: unknown, options: string[]) {
   return typeof value === "string" && value && !options.includes(value) ? <option value={value}>{value}</option> : null;
 }
 
+interface DailyReportAnalysis {
+  report_stats: {
+    total: number;
+    mood_rate: number | null;
+    sleep_rate: number | null;
+    meal_rate: number | null;
+    mood_observations: number;
+    sleep_observations: number;
+    meal_observations: number;
+  };
+  students_needing_attention: Array<{
+    student_id: string;
+    student_name: string;
+    total_reports: number;
+    poor_mood: number;
+    poor_sleep: number;
+    poor_meal: number;
+  }>;
+  recommendations: string[];
+}
+
 export function DailyReportsPage() {
   const user = useWorkspaceUser();
   const session = useAuthStore((state) => state.sessionVersion);
@@ -44,7 +65,7 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [dailyReportsAI, setDailyReportsAI] = useState<any>(null);
+  const [dailyReportsAI, setDailyReportsAI] = useState<DailyReportAnalysis | null>(null);
   const { showToast } = useToast();
 
   async function load(page = data.page) {
@@ -56,7 +77,7 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
         api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/daily-reports", {
           params: { page, page_size: 20, limit: 20, skip: (page - 1) * 20 }
         }),
-        canAnalyze ? getAnalysis("/ai/ai-daily-reports-analysis").catch(() => null) : null
+        canAnalyze ? getAnalysis<ApiResponse<DailyReportAnalysis | null>>("/ai/ai-daily-reports-analysis").catch(() => null) : null
       ]);
       if (r.status === "rejected") throw r.reason;
       setData(normalize(r.value.data.data));
@@ -106,47 +127,45 @@ function DailyReportsContent({ canRead, canWrite, canAnalyze }: { canRead: boole
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="card-head">
             <div>
-              <h2>AI Günlük Karne Analizi</h2>
-              <p>Öğrenci gelişim ve wellness analizi - {dailyReportsAI.ai_model}</p>
+              <h2>Günlük Karne Analizi</h2>
+              <p>Ruh hali, uyku ve öğün gözlemlerinin özeti</p>
             </div>
             <Brain size={20} color="#176b5b" />
           </div>
           <div className="card-pad">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 130px), 1fr))", gap: 12, marginBottom: 16 }}>
               <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
                 <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Toplam Rapor</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{dailyReportsAI.report_stats?.total || 0}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>{dailyReportsAI.report_stats.total}</div>
               </div>
-              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
-                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Mutlu Oranı</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.mood_rate || 0}</div>
-              </div>
-              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
-                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Uyku Oranı</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.sleep_rate || 0}</div>
-              </div>
-              <div style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
-                <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>Beslenme Oranı</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{dailyReportsAI.report_stats?.meal_rate || 0}</div>
-              </div>
+              {([
+                ["mood", "Mutlu Oranı"], ["sleep", "Uyudu Oranı"], ["meal", "Tam Yedi Oranı"],
+              ] as const).map(([domain, label]) => {
+                const count = dailyReportsAI.report_stats[`${domain}_observations`];
+                const rate = dailyReportsAI.report_stats[`${domain}_rate`];
+                return <div key={domain} style={{ padding: 12, borderRadius: 8, background: "#f8faf8", border: "1px solid #e5e7eb" }}>
+                  <div style={{ fontSize: 11, color: "#6e7b7d", marginBottom: 4 }}>{label}</div>
+                  {count > 0 && rate != null ? <>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: "#1b2b2e" }}>%{rate.toLocaleString("tr-TR")}</div>
+                    <div style={{ fontSize: 11, color: "#6e7b7d" }}>{count} {domain === "meal" ? "öğün kaydı" : "gözlem"}</div>
+                  </> : <div>Gözlem yok</div>}
+                </div>;
+              })}
             </div>
             {dailyReportsAI.students_needing_attention && dailyReportsAI.students_needing_attention.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Dikkat Gerektiren Öğrenciler</h3>
-                {dailyReportsAI.students_needing_attention.slice(0, 3).map((student: any, index: number) => (
-                  <div key={index} style={{ padding: 10, borderRadius: 6, background: student.risk_level === "yüksek" ? "#fee2e2" : "#f8faf8", marginBottom: 6, borderLeft: `3px solid ${student.risk_level === "yüksek" ? "#dc2626" : "#ca8a04"}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{student.student_name}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: student.risk_level === "yüksek" ? "#dc2626" : "#ca8a04" }}>{student.wellness_score} wellness</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "#6e7b7d" }}>{student.total_reports} rapor • {student.poor_mood} ruh hali sorunu • {student.poor_sleep} uyku sorunu</div>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Takip edilebilecek gözlemler</h3>
+                {dailyReportsAI.students_needing_attention.slice(0, 3).map((student) => (
+                  <div key={student.student_id} style={{ padding: 10, borderRadius: 6, background: "#f8faf8", marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, overflowWrap: "anywhere" }}>{student.student_name}</div>
+                    <div style={{ fontSize: 11, color: "#6e7b7d" }}>{student.total_reports} rapor • {student.poor_mood} yorgunluk veya huzursuzluk • {student.poor_sleep} kısa uyku veya uyumama • {student.poor_meal} az yenen veya yenmeyen öğün</div>
                   </div>
                 ))}
               </div>
             )}
             {dailyReportsAI.recommendations && dailyReportsAI.recommendations.length > 0 && (
               <div>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>AI Önerileri</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Kayıtlardan notlar</h3>
                 {dailyReportsAI.recommendations.map((rec: string, index: number) => (
                   <div key={index} style={{ display: "flex", gap: 8, marginBottom: 6, padding: 8, borderRadius: 6, background: "#f0fdf4" }}>
                     <TrendingUp size={16} color="#176b5b" />

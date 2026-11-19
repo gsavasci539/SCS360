@@ -87,3 +87,19 @@ it.each(["daily_reports.read", "academic.read"])("keeps %s read-only and applies
   expect(screen.queryByRole("button", { name: "Yeni karne" })).not.toBeInTheDocument();
   expect(getAnalysis).toHaveBeenCalledTimes(permission === "daily_reports.read" ? 1 : 0);
 });
+
+it("shows a recorded zero rate separately from missing observations", async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: [] } });
+  vi.mocked(getAnalysis).mockResolvedValueOnce({ data: { data: {
+    report_stats: { total: 2, mood_rate: 0, mood_observations: 1, sleep_rate: null, sleep_observations: 0,
+      meal_rate: 66.7, meal_observations: 3 },
+    students_needing_attention: [], recommendations: [],
+  } } });
+  render(<MemoryRouter><DailyReportsPage /></MemoryRouter>);
+
+  expect(await screen.findByRole("heading", { name: "Günlük Karne Analizi" })).toBeInTheDocument();
+  expect(screen.getByText("%0")).toBeInTheDocument();
+  expect(screen.getAllByText("Gözlem yok")).toHaveLength(1);
+  expect(screen.getByText("%66,7")).toBeInTheDocument();
+  expect(screen.getByText("3 öğün kaydı")).toBeInTheDocument();
+});
