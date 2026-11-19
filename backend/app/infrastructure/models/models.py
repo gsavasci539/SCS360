@@ -787,7 +787,7 @@ class DailyDevelopmentReport(Base, TimestampMixin):
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"))
     class_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("classes.id", ondelete="CASCADE"))
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    meal_status: Mapped[str | None] = mapped_column(String(30))  # ALL, HALF, NONE
+    meal_status: Mapped[str | None] = mapped_column(Text)
     sleep_status: Mapped[str | None] = mapped_column(String(30))  # SLEPT_WELL, SHORT, NO_SLEEP
     mood: Mapped[str | None] = mapped_column(String(50))  # HAPPY, CALM, UNSETTLED, TIRED
     activities: Mapped[list[str] | None] = mapped_column(JSON)

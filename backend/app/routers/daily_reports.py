@@ -99,18 +99,20 @@ async def save(db, tenant, body):
 @router.get("")
 @router.get("/")
 async def list_daily_reports(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
-    class_id: UUID | None = None, student_id: UUID | None = None, date: date | None = None,
+    class_id: UUID | None = None, student_id: UUID | None = None, date: date | None = None, branch_id: UUID | None = None,
     report_date: str | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("daily_reports.read", "academic.read"))):
     query = await scoped(db, tenant)
     if class_id: query = query.where(DailyDevelopmentReport.class_id == class_id)
     if student_id: query = query.where(DailyDevelopmentReport.student_id == student_id)
+    if branch_id: query = query.where(Student.branch_id == branch_id)
     if date: query = query.where(DailyDevelopmentReport.date == date)
     if report_date:
         from datetime import date as Date
         try: query = query.where(DailyDevelopmentReport.date == Date.fromisoformat(report_date))
         except ValueError as exc: raise ValidationException("Geçerli bir tarih girin") from exc
-    rows, total = await BaseRepository(db, tenant).paginate(query.order_by(DailyDevelopmentReport.date.desc()), page, page_size)
+    rows, total = await BaseRepository(db, tenant).paginate(query.order_by(DailyDevelopmentReport.date.desc(),
+        DailyDevelopmentReport.id), page, page_size)
     return success_response(paginate([await serialize(db, row) for row in rows], total, page, page_size))
 
 
