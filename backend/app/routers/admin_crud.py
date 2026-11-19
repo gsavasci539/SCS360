@@ -218,11 +218,12 @@ async def get_all_students(
 async def get_admin_chat_messages(
     student_id: UUID,
     parent_id: UUID | None = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read")),
 ):
     from app.application.services import teacher_chat_service
-    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id))
+    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id, branch_id))
 
 
 @router.post("/api/admin/chat/{student_id}")
@@ -230,9 +231,10 @@ async def send_admin_chat_message(
     student_id: UUID,
     message_data: ChatMessageCreate,
     parent_id: UUID | None = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
 ):
     from app.application.services import teacher_chat_service
     return success_response(await teacher_chat_service.send(db, tenant, student_id, message_data.message, parent_id,
-        message_data.request_id))
+        message_data.request_id, branch_id=branch_id))

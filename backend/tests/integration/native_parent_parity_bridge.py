@@ -20,7 +20,8 @@ async def test_native_parent_parity_real_api(materials_client):  # noqa: F811
     client, sessions, data = materials_client
     async with sessions() as db:
         existing = {p.code: p for p in (await db.execute(select(Permission))).scalars()}
-        codes = ["parents.read", "parents.write", "users.write", "student.read", "student.write", "students.read", "students.write"]
+        codes = ["parents.read", "parents.write", "users.write", "student.read", "student.write", "students.read", "students.write",
+            "messaging.read", "messaging.send"]
         permissions = [existing.get(code) or Permission(code=code, name=code, module=code.split(".")[0]) for code in codes]
         role = Role(name="Native contact manager", slug="native_contact_manager", organization_id=data["org"].id, permissions=permissions)
         branch = await db.get(Branch, data["branch"].id)
@@ -68,6 +69,8 @@ async def test_native_parent_parity_real_api(materials_client):  # noqa: F811
             assert (await db.execute(select(func.count()).select_from(MedicationSchedule).where(MedicationSchedule.medication_name == "Synthetic acceptance request", MedicationSchedule.request_status == "PENDING"))).scalar_one() == 1
             assert (await db.execute(select(func.count()).select_from(OperationalRecord).where(OperationalRecord.kind == "STUDENT_EXCUSE", OperationalRecord.data["description"].as_string() == "Synthetic acceptance excuse"))).scalar_one() == 1
             assert (await db.execute(select(func.count()).select_from(ChatMessage).where(ChatMessage.content == "Native acceptance message"))).scalar_one() == 1
+            assert (await db.execute(select(func.count()).select_from(ChatMessage).where(
+                ChatMessage.content == "Native staff student attachment", ChatMessage.attachment_sha256.is_not(None)))).scalar_one() == 1
             assert (await db.execute(select(func.count()).select_from(Payment))).scalar_one() == 0
             assert (await db.execute(select(func.count()).select_from(NotificationJob))).scalar_one() == 0
         Path(env["NATIVE_ACCEPTANCE_REPORT"]).write_text(json.dumps({"real_api": True, "temporary_database": "sqlite", "actual_native_login": True, "custom_role_preserved": True, "parent_contacts_paged": 101, "contact_create_update_delete": True, "account_student_link_roundtrip": True, "parent_children_finance_visible": True, "parent_directory_rejected": True, "no_synthetic_daily_report": True, "pending_medicine_excuse_persisted": True, "isolated_stored_message_roundtrip": True, "real_message_delivery": 0, "payment_rows": 0, "notification_jobs": 0, "requests": events}, indent=2), encoding="utf-8")

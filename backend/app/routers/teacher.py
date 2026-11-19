@@ -105,11 +105,12 @@ async def get_class_students(
 async def get_chat_messages(
     student_id: UUID,
     parent_id: Optional[UUID] = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.read")),
 ):
     from app.application.services import teacher_chat_service
-    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id))
+    return success_response(await teacher_chat_service.history(db, tenant, student_id, parent_id, branch_id))
 
 
 class TeacherChatCreate(BaseModel):
@@ -122,9 +123,10 @@ async def send_chat_message(
     student_id: UUID,
     request: TeacherChatCreate,
     parent_id: Optional[UUID] = None,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("messaging.send")),
 ):
     from app.application.services import teacher_chat_service
     return success_response(await teacher_chat_service.send(db, tenant, student_id, request.message, parent_id,
-        request.request_id))
+        request.request_id, branch_id=branch_id))

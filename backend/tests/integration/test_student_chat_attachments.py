@@ -7,7 +7,16 @@ from sqlalchemy import select
 from test_material_files import headers, materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
-from app.infrastructure.models.models import ChatConversation
+from app.infrastructure.models.models import (
+    Branch,
+    ChatConversation,
+    ClassRoom,
+    Parent,
+    Role,
+    Student,
+    StudentParent,
+    User,
+)
 
 PDF = b"%PDF-1.4\nstudent chat test\n"
 
@@ -88,3 +97,59 @@ async def test_failed_private_write_rolls_back_first_message_and_thread(material
     saved = await client.post(path, headers=actor, json={"message": "Yazılı mesaj", "request_id": request_id})
     assert saved.status_code == 200
     assert (await client.get(f"{path}/sent/{request_id}", headers=actor)).json()["data"] == saved.json()["data"]
+
+
+async def test_staff_chat_directory_and_conversation_keep_student_guardian_and_branch_scope(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    child = data["children"][0]
+    teacher = data["teacher"]
+    parent = data["user"]
+    organization = data["org"].id
+    async with sessions() as db:
+        branch = Branch(name="Second branch", organization_id=organization)
+        role = Role(name="Owner", slug="owner", organization_id=organization)
+        owner = User(email="chat-owner@fixture.invalid", password_hash="unused", first_name="Owner", last_name="Fixture",
+            organization_id=organization, roles=[role])
+        other_account = User(email="other-guardian@fixture.invalid", password_hash="unused", first_name="Other", last_name="Guardian",
+            organization_id=organization)
+        db.add_all([branch, owner, other_account])
+        await db.flush()
+        classroom = ClassRoom(name="Other class", organization_id=organization, branch_id=branch.id)
+        db.add(classroom)
+        await db.flush()
+        other_student = Student(first_name="Other branch learner", last_name="Fixture", organization_id=organization,
+            branch_id=branch.id, class_id=classroom.id)
+        other_guardian = Parent(user_id=other_account.id, organization_id=organization, first_name="Other", last_name="Guardian")
+        db.add_all([other_student, other_guardian])
+        await db.flush()
+        db.add(StudentParent(student_id=other_student.id, parent_id=other_guardian.id))
+        await db.commit()
+
+    result = await client.get("/api/teacher/chat-contacts", headers=headers(teacher), params={"page_size": 1})
+    assert result.status_code == 200, result.text
+    result = result.json()["data"]
+    assert result["total"] == 2 and result["total_pages"] == 2
+    assert result["items"][0]["parent_id"] == str(parent.id)
+    assert (await client.get("/api/teacher/chat-contacts", headers=headers(parent))).status_code == 403
+    result = await client.get("/api/admin/chat-contacts", headers=headers(owner),
+        params={"branch_id": str(branch.id), "search": "guardian"})
+    assert result.status_code == 200, result.text
+    assert [r["student_id"] for r in result.json()["data"]["items"]] == [str(other_student.id)]
+    assert result.json()["data"]["items"][0]["branch_id"] == str(branch.id)
+    foreign_branch = await client.get("/api/admin/chat-contacts", headers=headers(owner),
+        params={"branch_id": str(data["other_branch"].id)})
+    assert foreign_branch.status_code in (403, 404)
+
+    path = f"/api/admin/chat/{child.id}"
+    payload = {"message": "Branch-bound reply", "request_id": str(uuid4())}
+    wrong_branch = await client.post(path, headers=headers(owner), json=payload,
+        params={"parent_id": str(parent.id), "branch_id": str(branch.id)})
+    assert wrong_branch.status_code == 404
+    wrong_parent = await client.get(path, headers=headers(owner), params={"parent_id": str(other_account.id)})
+    assert wrong_parent.status_code == 404
+    valid = {"parent_id": str(parent.id), "branch_id": str(child.branch_id)}
+    saved = await client.post(path, headers=headers(owner), json=payload, params=valid)
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["data"]["receiver_id"] == str(parent.id)
+    receipt = await client.get(f"{path}/sent/{payload['request_id']}", headers=headers(owner), params=valid)
+    assert receipt.json()["data"] == saved.json()["data"]
