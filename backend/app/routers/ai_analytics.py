@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,14 +19,16 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.dependencies import get_tenant_context
 from app.core.analysis_access import AnalysisPermission
+from app.core.exceptions import AppException, ForbiddenException
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response, NotFoundException
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import (
     Student, AttendanceRecord, Payment, Debt, 
     Parent, User, Receipt, Grade, DebtStatus, ClassRoom, ClassTeacher,
-    NotificationJob, Announcement, StudentParent, DailyDevelopmentReport, ChatMessage
+    NotificationJob, Announcement, StudentParent, ChatMessage
 )
+from app.routers.daily_reports import scoped as scoped_daily_reports
 
 
 router = APIRouter(prefix="/api/ai", tags=["AI Analytics"])
@@ -251,19 +254,15 @@ async def get_ai_daily_reports_analysis(
     tenant: TenantContext = Depends(AnalysisPermission('/ai-daily-reports-analysis')),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    """
-    Get AI daily reports analysis for frontend
-    """
+    if tenant.organization_id is None:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
     try:
-        organization_id = tenant.organization_id
-        
-        # Fetch students from this organization
-        student_result = await db.execute(
-            select(Student).where(Student.organization_id == organization_id)
-        )
-        students = student_result.scalars().all()
-        
-        if not students:
+        query = (await scoped_daily_reports(db, tenant)).where(
+            Student.organization_id == tenant.organization_id, Student.deleted_at.is_(None),
+        ).add_columns(Student.first_name, Student.last_name)
+        rows = (await db.execute(query)).all()
+
+        if not rows:
             return success_response({
                 "ai_model": "Daily Reports Analytics v1.0",
                 "report_stats": {
@@ -275,18 +274,11 @@ async def get_ai_daily_reports_analysis(
                     "meal_rate": 0
                 },
                 "students_needing_attention": [],
-                "recommendations": ["Öğrenci verisi bulunamadı"]
+                "recommendations": ["Gösterilebilecek günlük karne bulunamadı."]
             })
-        
-        student_ids = [s.id for s in students]
-        
-        # Fetch daily reports for these students
-        report_result = await db.execute(
-            select(DailyDevelopmentReport).where(DailyDevelopmentReport.student_id.in_(student_ids))
-        )
-        reports = report_result.scalars().all()
-        
-        student_map = {str(s.id): f"{s.first_name} {s.last_name}" for s in students}
+
+        reports = [report for report, _, _ in rows]
+        student_map = {str(report.student_id): f"{first} {last}" for report, first, last in rows}
         
         # Calculate report statistics
         total_reports = len(reports)
@@ -421,24 +413,10 @@ async def get_ai_daily_reports_analysis(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Daily reports analysis error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "ai_model": "Daily Reports Analytics v1.0",
-            "report_stats": {
-                "total": 0,
-                "mood_happy": 0,
-                "mood_tired": 0,
-                "mood_rate": 0,
-                "sleep_rate": 0,
-                "meal_rate": 0
-            },
-            "students_needing_attention": [],
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except SQLAlchemyError as exc:
+        import logging
+        logging.getLogger(__name__).error("Daily report analysis query failed (%s)", type(exc).__name__)
+        raise AppException("Günlük karne analizi yüklenemedi; daha sonra tekrar deneyin", status_code=503) from None
 
 
 @router.get("/student-performance/{student_id}")

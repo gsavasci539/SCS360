@@ -187,6 +187,7 @@ async def test_daily_report_student_choices_follow_write_permission_and_assignme
     assert (await client.get(path, headers=headers(data["user"]))).status_code == 403
     assert (await client.get("/api/students", headers=authorization)).status_code == 403
     assert (await client.get("/api/daily-reports", headers=authorization)).status_code == 403
+    assert (await client.get("/api/ai/ai-daily-reports-analysis", headers=authorization)).status_code == 403
 
     async def listed(**params):
         response = await client.get(path, headers=authorization, params=params)
@@ -207,3 +208,39 @@ async def test_daily_report_student_choices_follow_write_permission_and_assignme
         json={"student_id": str(direct.id), "class_id": selected["class_id"], "date": "2026-11-19", "teacher_notes": "Bireysel gözlem"})
     assert created.status_code == 200, created.text
     assert created.json()["data"]["student_id"] == str(direct.id)
+
+
+async def test_daily_report_analysis_uses_the_readable_student_scope(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    teacher, branch, institution = data["teacher"], data["branch"], data["org"]
+    authorization = headers(teacher)
+    path = "/api/ai/ai-daily-reports-analysis"
+    empty = await client.get(path, headers=authorization)
+    assert empty.status_code == 200, empty.text
+    assert empty.json()["data"]["recommendations"] == ["Gösterilebilecek günlük karne bulunamadı."]
+
+    async with sessions() as db:
+        distant = Branch(name="Other campus", organization_id=institution.id)
+        db.add_all([distant, UserBranch(user_id=teacher.id, branch_id=branch.id)])
+        await db.flush()
+        distant_class = ClassRoom(name="Outside classroom", organization_id=institution.id, branch_id=distant.id)
+        db.add(distant_class)
+        await db.flush()
+        outside = Student(first_name="Outside", last_name="Test", organization_id=institution.id,
+            branch_id=distant.id, class_id=distant_class.id)
+        unrelated = Student(first_name="Unassigned", last_name="Test", organization_id=institution.id,
+            branch_id=branch.id, class_id=data["other_class"].id)
+        db.add_all([outside, unrelated])
+        await db.flush()
+        db.add(StudentTeacherAssignment(student_id=outside.id, teacher_id=teacher.id, subject_name="Matematik"))
+        child = data["children"][0]
+        db.add_all([DailyDevelopmentReport(student_id=student.id, class_id=student.class_id,
+            date=date(2026, 11, 19), mood="TIRED", sleep_status="SHORT", meal_status="NONE")
+            for student in (child, outside, unrelated)])
+        await db.commit()
+
+    response = await client.get(path, headers=authorization)
+    assert response.status_code == 200, response.text
+    result = response.json()["data"]
+    assert result["report_stats"]["total"] == 1
+    assert [row["student_id"] for row in result["students_needing_attention"]] == [str(child.id)]
