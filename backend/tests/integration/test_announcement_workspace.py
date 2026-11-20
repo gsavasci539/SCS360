@@ -1,9 +1,12 @@
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import func, select
 
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.infrastructure.models.models import (
-    Announcement, AnnouncementAudience, AnnouncementStatus, Branch, NotificationJob, NotificationRecipient, Parent, User,
+    Announcement, AnnouncementAudience, AnnouncementStatus, Branch, NotificationJob, NotificationRecipient,
+    NotificationStatus, Parent, User,
 )
 
 
@@ -84,3 +87,32 @@ async def test_targeted_announcement_queues_once_after_an_eligible_address_exist
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(NotificationJob)) == 1
         assert await db.scalar(select(func.count()).select_from(NotificationRecipient)) == 1
+
+    async with sessions() as db:
+        job = (await db.execute(select(NotificationJob))).scalar_one()
+        recipient = (await db.execute(select(NotificationRecipient))).scalar_one()
+        job.status = NotificationStatus.FAILED
+        job.retry_count = 3
+        job.locked_until = datetime.now(UTC) + timedelta(minutes=5)
+        recipient.status = NotificationStatus.FAILED
+        recipient.error_message = "Isolated transport error"
+        job_id = job.id
+        await db.commit()
+    reports = await client.get(path + "/results", headers=auth)
+    assert reports.json()["data"] == [{"job_id": str(job_id), "channel": "EMAIL", "sent": 0, "failed": 1,
+                                      "pending": 0, "error": "Isolated transport error"}]
+    locked = await client.post(path + "/retry", headers=auth)
+    assert locked.json()["data"] == {"announcement_id": identifier, "recipients_retried": 0}
+    async with sessions() as db:
+        job = await db.get(NotificationJob, job_id)
+        job.locked_until = None
+        await db.commit()
+    for expected_count in (1, 0):
+        retry = await client.post(path + "/retry", headers=auth)
+        assert retry.status_code == 200, retry.text
+        assert retry.json()["data"] == {"announcement_id": identifier, "recipients_retried": expected_count}
+    async with sessions() as db:
+        job = await db.get(NotificationJob, job_id)
+        recipient = (await db.execute(select(NotificationRecipient))).scalar_one()
+        assert job.status == NotificationStatus.PENDING and job.retry_count == 0
+        assert recipient.status == NotificationStatus.PENDING and recipient.error_message is None

@@ -660,6 +660,15 @@ async def announcement_targets(
         if kind == "students" else row.name} for row in choices], "more": len(rows) > 100})
 
 
+def _announcement_jobs(announcement: Announcement):
+    return (
+        NotificationJob.reference_type == "announcement",
+        NotificationJob.reference_id == announcement.id,
+        NotificationJob.organization_id == announcement.organization_id,
+        NotificationJob.branch_id == announcement.branch_id,
+    )
+
+
 @router.get("/api/announcements/{announcement_id}")
 async def get_announcement(
     announcement_id: UUID,
@@ -670,10 +679,7 @@ async def get_announcement(
     jobs = (
         (
             await db.execute(
-                select(NotificationJob).where(
-                    NotificationJob.reference_type == "announcement",
-                    NotificationJob.reference_id == announcement.id,
-                )
+                select(NotificationJob).where(*_announcement_jobs(announcement))
             )
         )
         .scalars()
@@ -722,14 +728,11 @@ async def announcement_results(
     tenant: TenantContext = Depends(PermissionChecker("announcement.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
     jobs = (
         (
             await db.execute(
-                select(NotificationJob).where(
-                    NotificationJob.reference_type == "announcement",
-                    NotificationJob.reference_id == announcement_id,
-                )
+                select(NotificationJob).where(*_announcement_jobs(announcement))
             )
         )
         .scalars()
@@ -750,6 +753,7 @@ async def announcement_results(
         )
         results.append(
             {
+                "job_id": str(job.id),
                 "channel": job.channel.value,
                 "sent": sum(r.status == NotificationStatus.SENT for r in job_recipients),
                 "failed": sum(r.status == NotificationStatus.FAILED for r in job_recipients),
@@ -766,44 +770,33 @@ async def retry_announcement(
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
-    jobs = (
-        (
-            await db.execute(
-                select(NotificationJob).where(
-                    NotificationJob.reference_type == "announcement",
-                    NotificationJob.reference_id == announcement_id,
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
+    announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    now = datetime.now(UTC)
+    failed_recipient = select(NotificationRecipient.id).where(
+        NotificationRecipient.notification_job_id == NotificationJob.id,
+        NotificationRecipient.status == NotificationStatus.FAILED,
+    ).exists()
+    jobs = (await db.execute(
+        update(NotificationJob).where(
+            *_announcement_jobs(announcement),
+            NotificationJob.status.in_((NotificationStatus.PENDING, NotificationStatus.FAILED)),
+            or_(NotificationJob.locked_until.is_(None), NotificationJob.locked_until <= now),
+            failed_recipient,
+        ).values(
+            status=NotificationStatus.PENDING, retry_count=0, scheduled_at=now,
+            processed_at=None, locked_until=None, lock_token=None,
+        ).returning(NotificationJob.id)
+    )).scalars().all()
     retried = 0
-    for job in jobs:
-        failed = (
-            (
-                await db.execute(
-                    select(NotificationRecipient).where(
-                        NotificationRecipient.notification_job_id == job.id,
-                        NotificationRecipient.status == NotificationStatus.FAILED,
-                    )
-                )
-            )
-            .scalars()
-            .all()
-        )
-        if not failed:
-            continue
-        for recipient in failed:
-            recipient.status = NotificationStatus.PENDING
-            recipient.error_message = None
-            recipient.provider_response = None
-            retried += 1
-        job.status = NotificationStatus.PENDING
-        job.processed_at = None
+    if jobs:
+        recipients = await db.execute(update(NotificationRecipient).where(
+            NotificationRecipient.notification_job_id.in_(jobs),
+            NotificationRecipient.status == NotificationStatus.FAILED,
+        ).values(status=NotificationStatus.PENDING, error_message=None, provider_response=None))
+        retried = recipients.rowcount
     return success_response(
-        {"recipients_retried": retried}, "Başarısız gönderimler yeniden kuyruğa alındı"
+        {"announcement_id": str(announcement.id), "recipients_retried": retried},
+        "Başarısız gönderimler yeniden kuyruğa alındı" if retried else "Kuyruğa alınabilecek başarısız gönderim bulunamadı",
     )
 
 

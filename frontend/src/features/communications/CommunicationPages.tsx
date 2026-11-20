@@ -9,21 +9,10 @@ import { EmptyState, ErrorState, Field, LoadingState, Modal, PageHeader } from "
 import { api, apiMessage } from "../../lib/api";
 import { toArray } from "../../lib/data";
 import { useAuthStore } from "../../stores/auth";
-import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
+import { useAnnouncementScope } from "./useAnnouncementScope";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): DataRecord[] => Array.isArray(data) ? data : data?.items || [];
-
-function useAnnouncementScope() {
-  const account = useAuthStore((state) => state.user);
-  const session = useAuthStore((state) => state.sessionVersion);
-  const workspace = usePlatformWorkspace((state) => state.workspace);
-  const institution = account?.is_super_admin ? workspace?.operatorId === account.id ? workspace.id : null : account?.organization_id;
-  const canRead = useAuthStore((state) => state.can("announcement.read"));
-  const canWrite = useAuthStore((state) => state.can("announcement.write"));
-  const active = Boolean(account && (!account.is_super_admin || institution));
-  return { active, canRead, canWrite, key: JSON.stringify([session, account?.id, institution, account?.branch_ids, canRead, canWrite]) };
-}
 
 export function AnnouncementsPage() {
   const scope = useAnnouncementScope();

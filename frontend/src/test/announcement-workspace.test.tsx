@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ToastProvider } from "../components/Toast";
 import { AnnouncementFormPage, AnnouncementsPage } from "../features/communications/CommunicationPages";
+import { AnnouncementDetailPage } from "../features/communications/AnnouncementDetailPage";
 import { api } from "../lib/api";
 import { useAuthStore } from "../stores/auth";
 import type { AuthUser } from "../types/api";
@@ -55,4 +56,22 @@ it("yalnız seçilen taslağı sıraya alır ve farklı kimlikteki kuyruk yanıt
   await waitFor(() => expect(api.post).toHaveBeenLastCalledWith(`/announcements/${draft.id}/send`, undefined,
     expect.objectContaining({ signal: expect.any(AbortSignal) })));
   expect(await screen.findByText("Duyuru kuyruğa alındı")).toBeInTheDocument();
+});
+
+it("duyuru ayrıntısında sıfır kuyruk sonucunu başarı olarak göstermez ve gerçek sonucu yeniler", async () => {
+  const record = { ...draft, status: "SENT" };
+  const results = { job_id: "notification-job", channel: "EMAIL", sent: 0, failed: 1, pending: 0 };
+  vi.mocked(api.get).mockImplementation(async (path) => ({
+    data: { data: path.endsWith("/results") ? [results] : record },
+  }));
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { announcement_id: record.id, recipients_retried: 0 } } });
+  render(<MemoryRouter initialEntries={[`/announcements/${record.id}`]}><ToastProvider><Routes>
+    <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
+  </Routes></ToastProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Başarısızları yeniden dene" }));
+  expect(await screen.findByText("Şu anda yeniden kuyruğa alınabilecek gönderim yok.")).toBeInTheDocument();
+  expect(screen.queryByText("Gönderimler kuyruğa alındı")).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledTimes(4);
+  expect(api.post).toHaveBeenCalledWith(`/announcements/${record.id}/retry`, undefined,
+    expect.objectContaining({ signal: expect.any(AbortSignal) }));
 });
