@@ -99,7 +99,11 @@ async def authorized(db, tenant, identifier, *, action=False):
 async def status(db, tenant, identifier):
     row = await authorized(db, tenant, identifier)
     debt = await BaseRepository(db, tenant).get_by_id(row.debt_id, Debt)
-    return {**view(row, tenant, can_act=await allowed_actions(db, tenant, row, debt)), "remaining_amount": str(debt.remaining_amount)}
+    return {
+        **view(row, tenant, can_act=await allowed_actions(db, tenant, row, debt)),
+        "student_id": str(debt.student_id),
+        "remaining_amount": str(debt.remaining_amount),
+    }
 
 
 async def resume(db, tenant, identifier): return view(await authorized(db, tenant, identifier, action=True), tenant, True)

@@ -395,10 +395,11 @@ async def initialize_parent_payment(
 
 @router.get("/payments/checkouts/{checkout_id}")
 async def parent_checkout_status(
-    checkout_id: UUID, db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user),
+    checkout_id: UUID, response: Response, db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("parent.make_payment")),
 ):
     from app.application.services import school_checkout_service
+    response.headers["Cache-Control"] = "private, no-store"
     return success_response(await school_checkout_service.status(db, tenant, checkout_id))
 
 

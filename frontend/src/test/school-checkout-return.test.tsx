@@ -9,7 +9,7 @@ import { usePlatformWorkspace } from "../stores/platformWorkspace";
 import { api } from "../lib/api";
 vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn() }, apiMessage: () => "İstek tamamlanamadı" }));
 const debtId = "00000000-0000-4000-8000-000000000001", checkoutId = "00000000-0000-4000-8000-000000000002";
-const metadata = { conversation_id: checkoutId, debt_id: debtId, amount: "25.00", status: "FRAUD_REVIEW", can_resume: false, can_refresh: true };
+const metadata = { conversation_id: checkoutId, debt_id: debtId, student_id: "child", amount: "25.00", status: "FRAUD_REVIEW", can_resume: false, can_refresh: true };
 beforeEach(() => {
   useAuthStore.setState({ user: { id: "actor", organization_id: "school", first_name: "Test", last_name: "User", email: "actor@example.invalid", is_super_admin: false, roles: [], permissions: ["parent.view_children", "parent.view_finances", "parent.make_payment", "finance.write"], branch_ids: [] }, sessionVersion: 1 });
   usePlatformWorkspace.setState({ workspace: null }); sessionStorage.clear();
@@ -29,12 +29,46 @@ it("a staff callback query reads its checkout and never trusts URL success or st
 });
 
 it("a parent callback uses only the parent-purpose status and refresh routes", async () => {
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { ...metadata, status: "PAID_REVIEW", can_resume: false } } });
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { ...metadata, student_id: undefined, status: "PAID_REVIEW", can_resume: false } } });
   render(<MemoryRouter initialEntries={[`/parent/finances?checkout=${checkoutId}`]}><ParentPortalPage view="finances" /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
   expect(await screen.findByText(/Ödeme alınmış, kayıt uzlaştırması bekleniyor/)).toBeInTheDocument();
   expect(api.post).toHaveBeenCalledWith(`/parent/payments/checkouts/${checkoutId}/refresh`, {}, expect.anything());
   expect(vi.mocked(api.get).mock.calls.some(([path]) => String(path).includes("/payments/iyzico/"))).toBe(false);
+});
+
+it("ödeme dönüşünü yalnız işlemdeki öğrenci seçiliyken gösterir", async () => {
+  const checkoutPath = `/parent/payments/checkouts/${checkoutId}`;
+  let checkoutReads = 0;
+  let finishOldRead!: (value: unknown) => void;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === checkoutPath) {
+      if (++checkoutReads === 1) return new Promise((resolve) => { finishOldRead = resolve; });
+      return { data: { data: { ...metadata, student_id: "sibling" } } };
+    }
+    if (path === "/parent/my-children") return { data: { data: [
+      { student_id: "child", first_name: "Deniz" }, { student_id: "sibling", first_name: "Ada" },
+    ] } };
+    if (path.endsWith("/financial-invoices")) {
+      return { data: { data: { student_id: path.split("/")[3], total_remaining: 0, invoices: [] } } };
+    }
+    return { data: { data: null } };
+  });
+  render(<MemoryRouter initialEntries={[`/parent/finances?checkout=${checkoutId}`]}><ParentPortalPage view="finances" /></MemoryRouter>);
+  const choose = (value: string) => fireEvent.change(screen.getByRole("combobox", { name: "Öğrenci Seçin" }), { target: { value } });
+  await waitFor(() => expect(checkoutReads).toBe(1));
+  const firstRead = vi.mocked(api.get).mock.calls.find(([path]) => path === checkoutPath)?.[1];
+  choose("sibling");
+  expect(await screen.findByText(/Ödeme incelemede/)).toBeInTheDocument();
+  expect(firstRead?.signal?.aborted).toBe(true);
+  await act(async () => finishOldRead({ data: { data: { ...metadata, status: "COMPLETED",
+    payment_id: "00000000-0000-4000-8000-000000000010" } } }));
+  expect(screen.queryByText("Ödemeniz doğrulandı ve borcunuza işlendi.")).not.toBeInTheDocument();
+  choose("child");
+  expect(await screen.findByRole("alert")).toBeInTheDocument();
+  expect(screen.queryByText(/Ödeme incelemede/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Ödeme sonucunu kontrol et" })).not.toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
 });
 
 it("the real parent invoice modal initializes with the persisted nonce and hides payment entry when permission is absent", async () => {

@@ -15,17 +15,17 @@ function statusMessage(status: string | undefined) {
   if (status === "INITIALIZING") return "Ödeme oturumu hazırlanıyor. Yeni ödeme başlatmadan bu işlemin sonucunu kontrol edin.";
   return "Ödemenizin doğrulanması bekleniyor. Sonuç kesinleşmeden yeniden ödeme yapmayın.";
 }
-export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff", onUpdate, onMissing, initialResult, expectedDebtId, expectedAmount, readOnly = false }: {
+export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff", onUpdate, onMissing, initialResult, expectedDebtId, expectedAmount, expectedStudentId, readOnly = false }: {
   checkoutId: string; onComplete?: () => void; purpose?: CheckoutPurpose; onUpdate?: (result: SchoolCheckoutResult) => void;
   onMissing?: () => void; initialResult?: SchoolCheckoutResult | null;
-  expectedDebtId?: string; expectedAmount?: string; readOnly?: boolean;
+  expectedDebtId?: string; expectedAmount?: string; expectedStudentId?: string; readOnly?: boolean;
 }) {
   const user = useAuthStore((state) => state.user), sessionVersion = useAuthStore((state) => state.sessionVersion);
   const workspace = usePlatformWorkspace((state) => state.workspace);
   const allowed = purpose === "parent" ? hasPermission(user, "parent.make_payment")
     : ["parent.make_payment", "finance.write", "finance.read"].some((permission) => hasPermission(user, permission));
   const scope = allowed ? checkoutScope(user, workspace, purpose) : null;
-  const accessKey = JSON.stringify([scope, sessionVersion, checkoutId, purpose, expectedDebtId, expectedAmount, readOnly, [...(user?.permissions || [])].sort()]);
+  const accessKey = JSON.stringify([scope, sessionVersion, checkoutId, purpose, expectedDebtId, expectedAmount, expectedStudentId, readOnly, [...(user?.permissions || [])].sort()]);
   const activeKey = useRef(accessKey);
   const handlers = useRef({ onComplete, onUpdate, onMissing });
   useLayoutEffect(() => {
@@ -37,9 +37,14 @@ export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff"
   const [pageUrl, setPageUrl] = useState<{ key: string; value: string } | null>(null);
   const controller = useRef<AbortController | null>(null), completed = useRef(new Set<string>()), inFlight = useRef(false);
   const result = record.key === accessKey ? record.result : null;
-  function accept(value: unknown, key: string, allowUrl: boolean) {
+  function accept(value: unknown, key: string, allowUrl: boolean, verifiedDebtId?: string) {
     const data = checkoutResult(value, checkoutId);
     if (expectedDebtId && data.debt_id !== expectedDebtId || expectedAmount && data.amount !== expectedAmount) throw new Error("Ödeme sonucu seçilen borç ve tutarla eşleşmiyor.");
+    if (expectedStudentId) {
+      const wrongStudent = data.student_id !== expectedStudentId && (data.student_id !== undefined || !verifiedDebtId);
+      const wrongDebt = !checkoutIdentifier(data.debt_id) || verifiedDebtId && data.debt_id !== verifiedDebtId;
+      if (wrongStudent || wrongDebt) throw new Error("Bu ödeme seçili öğrenciye ait değil. Ödemenin ait olduğu öğrenciyi seçin.");
+    }
     if ((readOnly || purpose === "parent") && data.status === "COMPLETED" && !checkoutIdentifier(data.payment_id)) throw new Error("Tahsilat kaydı doğrulanamadı.");
     if (activeKey.current !== key) return;
     setRecord({ key, result: data }); setMissing(false); setError("");
@@ -82,14 +87,15 @@ export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff"
     inFlight.current = true; setBusy(true); setError("");
     try {
       const response = await api.post(`${checkoutBase(purpose)}/${checkoutId}/${kind}`, {}, { signal: abort.signal });
-      if (!abort.signal.aborted && activeKey.current === key) accept(response.data.data, key, kind === "resume");
+      if (!abort.signal.aborted && activeKey.current === key) accept(response.data.data, key, kind === "resume", result.debt_id);
     } catch (reason) { if (!abort.signal.aborted && activeKey.current === key) setError(apiMessage(reason)); }
     finally { if (!abort.signal.aborted && activeKey.current === key) { inFlight.current = false; setBusy(false); } }
   }
   const url = !readOnly && pageUrl?.key === accessKey && result?.status === "PENDING" ? pageUrl.value : null;
+  const waitForVerifiedStatus = readOnly || Boolean(expectedStudentId);
   return <section aria-label="Öğrenci ödeme sonucu">
-    {(!readOnly || result || scope && !error && !missing) && <p role="status">
-      {readOnly && !result ? "Kayıtlı ödeme sonucu yükleniyor." : statusMessage(result?.status)}
+    {(!waitForVerifiedStatus || result || scope && !error && !missing) && <p role="status">
+      {waitForVerifiedStatus && !result ? "Kayıtlı ödeme sonucu yükleniyor." : statusMessage(result?.status)}
     </p>}
     {missing && <p>{readOnly ? "Kayıtlı işlem sunucuda bulunamadı." :
       "Ödeme isteği henüz sunucuya ulaşmamış olabilir. Aynı işlem kimliğiyle fatura bilgilerini tekrar girin; yeni ödeme başlatmayın."}</p>}

@@ -406,8 +406,8 @@ export function ParentPortalPage({ view }: { view: View }) {
     </PageHeader>
     {currentFinance?.error && <ErrorState message={currentFinance.error} retry={refreshPaymentFinances} />}
     {balanceNoticeScope && balanceNoticeScope === financeScope && <p role="status">Kalan borç değişti. Güncel tutarı kontrol edin.</p>}
-    {view === "finances" && canMakePayment && paymentSearch.has("checkout") && <ParentCheckoutReturn
-      checkoutId={paymentSearch.get("checkout") || ""} onComplete={refreshPaymentFinances}
+    {view === "finances" && canMakePayment && financeScope && paymentSearch.has("checkout") && <ParentCheckoutReturn
+      key={financeScope} checkoutId={paymentSearch.get("checkout") || ""} studentId={selectedId} onComplete={refreshPaymentFinances}
       onClose={() => { const next = new URLSearchParams(paymentSearch); next.delete("checkout"); setPaymentSearch(next, { replace: true }); }} />}
     
     {/* Child Selector */}

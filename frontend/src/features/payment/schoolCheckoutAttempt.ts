@@ -5,7 +5,7 @@ export type CheckoutPurpose = "staff" | "parent";
 export type CheckoutState = "INITIALIZING" | "PENDING" | "PROCESSING" | "REVIEW" | "FRAUD_REVIEW" | "PAID_REVIEW" | "COMPLETED" | "FAILED" | "REFUNDED";
 export type SchoolCheckoutReference = { request_id: string; debt_id: string; amount: string };
 export type SchoolCheckoutAttempt = SchoolCheckoutReference & { version: 1; status: CheckoutState };
-export type SchoolCheckoutResult = { conversation_id: string; status: CheckoutState; debt_id?: string; amount?: string;
+export type SchoolCheckoutResult = { conversation_id: string; status: CheckoutState; debt_id?: string; student_id?: string; amount?: string;
   checkout_url?: string; payment_page_url?: string; message?: string; payment_id?: string; can_resume?: boolean; can_refresh?: boolean };
 const states = new Set<CheckoutState>(["INITIALIZING", "PENDING", "PROCESSING", "REVIEW", "FRAUD_REVIEW", "PAID_REVIEW", "COMPLETED", "FAILED", "REFUNDED"]);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -129,6 +129,8 @@ async def test_parent_financial_invoices_discover_only_owned_open_checkouts(mate
     assert refreshed.json()["data"] == response.json()["data"]
     status = await client.get(checkout_url(own_checkout), headers=auth(owner))
     assert status.status_code == 200 and status.json()["data"]["status"] == "REVIEW"
+    assert status.json()["data"]["student_id"] == str(first.id)
+    assert status.headers["cache-control"] == "private, no-store"
     assert (await client.get(checkout_url(other_checkout), headers=auth(owner))).status_code == 403
     assert (await client.get(checkout_url(own_checkout), headers=auth(other))).status_code == 403
     assert (await client.get(invoice_url(foreign), headers=auth(owner))).status_code == 403

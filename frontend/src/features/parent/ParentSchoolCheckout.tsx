@@ -14,12 +14,14 @@ export function ParentSchoolCheckout({ debtId, amount, childName, available, onC
   </Modal>;
 }
 
-export function ParentCheckoutReturn({ checkoutId, onComplete, onClose }: { checkoutId: string; onComplete: () => void; onClose: () => void }) {
+export function ParentCheckoutReturn({ checkoutId, studentId, onComplete, onClose }: {
+  checkoutId: string; studentId: string; onComplete: () => void; onClose: () => void;
+}) {
   const identifier = checkoutIdentifier(checkoutId);
   return <section className="card card-pad" aria-label="Dönen öğrenci ödemesi" style={{ marginBottom: 18 }}>
     <h2>Ödeme işlem sonucu</h2>
-    <p>Bu sonuç ödeme işlemine aittir. Öğrenci borçları güncel kayıtlardan ayrıca yüklenir.</p>
-    {identifier ? <SchoolCheckoutStatus purpose="parent" checkoutId={identifier} onComplete={onComplete} /> : <p role="alert">Ödeme işlem kimliği geçersiz.</p>}
+    {identifier ? <SchoolCheckoutStatus purpose="parent" checkoutId={identifier} expectedStudentId={studentId} onComplete={onComplete} />
+      : <p role="alert">Ödeme işlem kimliği geçersiz.</p>}
     <button className="btn btn-secondary" onClick={onClose}>Sonuç bölümünü kapat</button>
   </section>;
 }
