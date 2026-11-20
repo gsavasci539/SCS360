@@ -396,7 +396,12 @@ export function ParentPortalPage({ view }: { view: View }) {
     ? invoices.find((invoice) => invoice.debt_id === paymentModal.debtId) : undefined;
 
   return <>
-    <PageHeader eyebrow="Veli Portalı" title={heading} description={description} />
+    <PageHeader eyebrow="Veli Portalı" title={heading} description={description}>
+      {view === "finances" && financeScope && !currentFinance?.error &&
+        <button type="button" className="btn btn-secondary" disabled={!finances} onClick={refreshPaymentFinances}>
+          Borçları yenile
+        </button>}
+    </PageHeader>
     {currentFinance?.error && <ErrorState message={currentFinance.error} retry={refreshPaymentFinances} />}
     {view === "finances" && canMakePayment && paymentSearch.has("checkout") && <ParentCheckoutReturn
       checkoutId={paymentSearch.get("checkout") || ""} onComplete={refreshPaymentFinances}

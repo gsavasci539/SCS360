@@ -65,7 +65,7 @@ it("çocuk değiştiğinde ödeme penceresini kapatır ve gecikmiş veya yanlı�
       { student_id: "child", first_name: "Deniz" }, { student_id: "sibling", first_name: "Ada" },
     ] } };
     if (path === "/parent/child/child/financial-invoices") {
-      if (++firstRequests === 2) return new Promise((resolve) => { finishOldRequest = resolve; });
+      if (++firstRequests === 3) return new Promise((resolve) => { finishOldRequest = resolve; });
       return { data: { data: firstSnapshot } };
     }
     if (path === "/parent/child/sibling/financial-invoices") {
@@ -83,7 +83,9 @@ it("çocuk değiştiğinde ödeme penceresini kapatır ve gecikmiş veya yanlı�
   expect(screen.queryByText("Kalan toplam:")).not.toBeInTheDocument();
   expect(screen.queryByText("Bekleyen ödeme bulunmuyor.")).not.toBeInTheDocument();
   choose("child");
-  await waitFor(() => expect(firstRequests).toBe(2));
+  await screen.findByText("İlk çocuğun borcu");
+  fireEvent.click(screen.getByRole("button", { name: "Borçları yenile" }));
+  await waitFor(() => expect(firstRequests).toBe(3));
   const lastRequest = vi.mocked(api.get).mock.calls.filter(([path]) => path === "/parent/child/child/financial-invoices").at(-1)?.[1];
   choose("sibling");
   expect(lastRequest?.signal?.aborted).toBe(true);
@@ -92,6 +94,35 @@ it("çocuk değiştiğinde ödeme penceresini kapatır ve gecikmiş veya yanlı�
   expect(screen.queryByText("İlk çocuğun borcu")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Öde" }));
   expect(screen.getByText(/Ada · .*50/)).toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
+});
+
+it("borç yenileme, açık işlem sona erince ödeme düğmesini geri getirir ve oturum değişimini korur", async () => {
+  const invoicePath = "/parent/child/child/financial-invoices";
+  const snapshot = (description: string, payment_in_progress: boolean) => ({ data: { data: {
+    student_id: "child", total_remaining: 25, online_payment_available: true,
+    invoices: [{ debt_id: debtId, description, payment_in_progress, remaining_amount: 25, status: "UNPAID" }],
+  } } });
+  let reads = 0;
+  let completeOldRequest!: (value: unknown) => void;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path !== invoicePath) return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+    if (++reads === 3) return new Promise((resolve) => { completeOldRequest = resolve; });
+    return snapshot(reads === 4 ? "Yeni oturumun borcu" : "Öğrenci borcu", reads === 1);
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  expect(await screen.findByText("Bu borç için açık bir ödeme işlemi var.")).toBeInTheDocument();
+  const refresh = () => screen.getByRole("button", { name: "Borçları yenile" });
+  fireEvent.click(refresh());
+  expect(refresh()).toBeDisabled();
+  expect(await screen.findByRole("button", { name: "Öde" })).toBeInTheDocument();
+  fireEvent.click(refresh());
+  const pending = vi.mocked(api.get).mock.calls.filter(([path]) => path === invoicePath).at(-1)?.[1];
+  act(() => useAuthStore.setState({ sessionVersion: 2 }));
+  expect(await screen.findByText("Yeni oturumun borcu")).toBeInTheDocument();
+  expect(pending?.signal?.aborted).toBe(true);
+  await act(async () => completeOldRequest(snapshot("Eski oturumun borcu", true)));
+  expect(screen.queryByText("Eski oturumun borcu")).not.toBeInTheDocument();
   expect(api.post).not.toHaveBeenCalled();
 });
 
