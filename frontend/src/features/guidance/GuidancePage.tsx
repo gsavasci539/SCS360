@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
@@ -11,11 +11,16 @@ import type { DataRecord } from "../../types/api";
 type Kind = "sessions" | "incidents" | "notes";
 interface Summary { total_sessions: number; total_notes: number; total_incidents: number; active_cases: number; student_id?: string }
 type RecordLoad = { key: string; rows: Record<Kind, DataRecord[]>; stats: Summary } | { key: string; error: string };
+interface WriteOperation { studentId: string; controller: AbortController }
 interface Choice { id: string; name: string }
 interface Options { students: Choice[]; counselors: Choice[]; more_students?: boolean; more_counselors?: boolean; today: string }
 const empty: Options = { students: [], counselors: [], today: "" };
 const firstPages = { sessions: 1, incidents: 1, notes: 1 };
 const kinds = ["sessions", "incidents", "notes"] as const;
+function matchesAcknowledgement(record: DataRecord | undefined, expected: Record<string, unknown>) {
+  return typeof record?.id === "string" && record.id.trim() !== "" &&
+    Object.entries(expected).every(([field, value]) => record[field] === value);
+}
 
 export function GuidancePage() {
   const user = useAuthStore((state) => state.user);
@@ -41,10 +46,16 @@ function GuidanceRecords({ userId, canWrite, canReadPrivate }: { userId?: string
   const [search, setSearch] = useState("");
   const [counselorSearch, setCounselorSearch] = useState("");
   const [revision, setRevision] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const pendingWrite = useRef<WriteOperation | null>(null);
+  const [write, setWrite] = useState<WriteOperation | null>(null);
+  const busy = write?.studentId === studentId && !write.controller.signal.aborted;
   const { showToast } = useToast();
   const requestKey = JSON.stringify([studentId, pages, revision]);
   const current = result?.key === requestKey ? result : null;
+  useLayoutEffect(() => () => {
+    pendingWrite.current?.controller.abort();
+    pendingWrite.current = null;
+  }, [studentId]);
   useEffect(() => {
     const controller = new AbortController();
     const request = { student_id: studentId || undefined };
@@ -80,23 +91,65 @@ function GuidanceRecords({ userId, canWrite, canReadPrivate }: { userId?: string
     }, search || counselorSearch ? 250 : 0);
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [studentId, search, counselorSearch, userId, revision]);
-  async function save(event: FormEvent<HTMLFormElement>, kind: Kind) {
+  async function performWrite(action: (signal: AbortSignal) => Promise<void>, errorTitle: string) {
+    if (pendingWrite.current) return;
+    const operation = { studentId, controller: new AbortController() };
+    const { signal } = operation.controller;
+    pendingWrite.current = operation;
+    setWrite(operation);
+    try {
+      await action(signal);
+    } catch (reason) {
+      if (!signal.aborted) showToast(errorTitle, apiMessage(reason), "error");
+    } finally {
+      if (pendingWrite.current === operation) {
+        pendingWrite.current = null;
+        setWrite(null);
+      }
+    }
+  }
+  function save(event: FormEvent<HTMLFormElement>, kind: Kind) {
     event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
     const payload: Record<string, unknown> = Object.fromEntries([...data].map(([key, value]) => [key, value === "" ? null : value]));
     payload.student_id = studentId;
     if (kind === "sessions" || kind === "notes") payload.counselor_id = counselor;
     if (kind === "notes") payload.tags = String(data.get("tags") || "").split(",").map((value) => value.trim()).filter(Boolean);
     if (kind === "incidents") payload.parent_notified = data.get("parent_notified") === "on";
-    setBusy(true);
-    try { await api.post(`/guidance/${kind}`, payload); form.reset(); setPages(firstPages); setRevision((value) => value + 1); showToast("Rehberlik kaydı oluşturuldu"); }
-    catch (reason) { showToast("Kayıt oluşturulamadı", apiMessage(reason), "error"); }
-    finally { setBusy(false); }
+    const expected = { student_id: studentId, ...(kind === "sessions" ?
+      { counselor_id: counselor, session_type: payload.session_type, session_date: payload.session_date } :
+      kind === "notes" ? { counselor_id: counselor, note_type: payload.note_type, confidentiality_level: payload.confidentiality_level } :
+        { reported_by: userId, severity: payload.severity, incident_date: payload.incident_date }) };
+    void performWrite(async (signal) => {
+      const response = await api.post<{ data: DataRecord }>(`/guidance/${kind}`, payload, { signal });
+      if (signal.aborted) return;
+      if (!matchesAcknowledgement(response.data.data, expected)) {
+        showToast("Kayıt doğrulanamadı", "Sunucu yanıtı gönderilen kayıtla eşleşmiyor.", "error");
+        return;
+      }
+      form.reset();
+      setPages(firstPages);
+      setRevision((value) => value + 1);
+      showToast("Rehberlik kaydı oluşturuldu");
+    }, "Kayıt oluşturulamadı");
   }
-  async function resolve(event: FormEvent<HTMLFormElement>, id: string) {
-    event.preventDefault(); const note = String(new FormData(event.currentTarget).get("resolution_notes") || ""); setBusy(true);
-    try { await api.put(`/guidance/incidents/${id}/resolve`, { resolution_notes: note || null }); setRevision((value) => value + 1); showToast("Olay çözümü kaydedildi"); }
-    catch (reason) { showToast("Çözüm kaydedilemedi", apiMessage(reason), "error"); }
-    finally { setBusy(false); }
+  function resolve(event: FormEvent<HTMLFormElement>, row: DataRecord) {
+    event.preventDefault();
+    const note = String(new FormData(event.currentTarget).get("resolution_notes") ?? "").trim() || null;
+    void performWrite(async (signal) => {
+      const response = await api.put<{ data: DataRecord }>(`/guidance/incidents/${row.id}/resolve`, { resolution_notes: note }, { signal });
+      if (signal.aborted) return;
+      const confirmed = response.data.data;
+      if (!matchesAcknowledgement(confirmed, { id: row.id, student_id: row.student_id, resolved: true })) {
+        showToast("Çözüm doğrulanamadı", "Sunucu yanıtı seçili olayla eşleşmiyor.", "error");
+        return;
+      }
+      setRevision((value) => value + 1);
+      if ((typeof confirmed.resolution_notes === "string" ? confirmed.resolution_notes.trim() || null : null) !== note) {
+        showToast("Kayıtlı çözüm farklı", "Olayın sunucuda kayıtlı çözümü gösteriliyor.", "error");
+        return;
+      }
+      showToast("Olay çözümü kaydedildi");
+    }, "Çözüm kaydedilemedi");
   }
   function confidentiality() {
     return <label>Gizlilik düzeyi<select className="filter-select" name="confidentiality_level" aria-label="Gizlilik düzeyi"><option value="STANDARD">Standart</option><option value="RESTRICTED">Kısıtlı</option><option value="CONFIDENTIAL">Gizli</option></select></label>;
@@ -113,7 +166,7 @@ function GuidanceRecords({ userId, canWrite, canReadPrivate }: { userId?: string
           <p style={{ whiteSpace: "pre-wrap" }}>{String(kind === "sessions" ? row.summary || "Özet eklenmedi" : kind === "notes" ? row.content : row.description)}</p>
           {row.action_plan && <p>Takip planı: {String(row.action_plan)}</p>}{row.follow_up_date && <p>Takip tarihi: {shortDate(row.follow_up_date)}</p>}
           {row.resolution_notes && <p>Çözüm: {String(row.resolution_notes)}</p>}
-          {kind === "incidents" && !row.resolved && canWrite && <form onSubmit={(event) => resolve(event, String(row.id))} style={{ display: "grid", gap: 10 }}>
+          {kind === "incidents" && !row.resolved && canWrite && <form onSubmit={(event) => resolve(event, row)} style={{ display: "grid", gap: 10 }}>
             <label>Çözüm notu<textarea className="filter-select" name="resolution_notes" maxLength={2000} disabled={busy} /></label><button className="btn btn-primary" disabled={busy}>Çözüldü olarak kaydet</button>
           </form>}
         </details></td>
@@ -155,7 +208,7 @@ function GuidanceRecords({ userId, canWrite, canReadPrivate }: { userId?: string
           <label>Olay tarihi<input className="filter-select" type="date" name="incident_date" defaultValue={options.today} required /></label>
           <label>Olay yeri<input className="filter-select" name="location" maxLength={255} /></label><label>Olay açıklaması<textarea className="filter-select" name="description" required maxLength={2000} rows={4} /></label>
           <label>Olay düzeyi<select className="filter-select" name="severity"><option value="MINOR">Düşük</option><option value="MODERATE">Orta</option><option value="SEVERE">Yüksek</option><option value="CRITICAL">Kritik</option></select></label>
-          <label><input type="checkbox" name="parent_notified" />Veli bilgilendirildi</label><button className="btn btn-primary">Olayı kaydet</button>
+          <label><input type="checkbox" name="parent_notified" />Veliye daha önce bilgi verildi</label><button className="btn btn-primary">Olayı kaydet</button>
         </fieldset></form>
       </div>
     </section>}
