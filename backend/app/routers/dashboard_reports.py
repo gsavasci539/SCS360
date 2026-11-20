@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.schemas.common import AnnouncementCreate
@@ -674,6 +674,7 @@ async def get_announcement(
             "title": announcement.title,
             "content": announcement.content,
             "audience": announcement.audience.value,
+            "branch_id": str(announcement.branch_id) if announcement.branch_id else None,
             "channels": announcement.channels,
             "status": announcement.status.value,
             "scheduled_at": (
@@ -960,6 +961,10 @@ async def update_integrations(
 
 @router.get("/api/announcements")
 async def list_announcements(
+    branch_id: UUID | None = None,
+    status: AnnouncementStatus | None = None,
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     tenant: TenantContext = Depends(PermissionChecker("announcement.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
@@ -967,14 +972,21 @@ async def list_announcements(
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, Announcement)
     query = repo._branch_filter(query, Announcement)
-    result = await db.execute(query.order_by(Announcement.created_at.desc()))
+    if branch_id is not None:
+        await repo.require_related(branch_id, Branch)
+        query = query.where(or_(Announcement.branch_id == branch_id, Announcement.branch_id.is_(None)))
+    if status is not None:
+        query = query.where(Announcement.status == status)
+    result = await db.execute(query.order_by(Announcement.created_at.desc(), Announcement.id).limit(limit).offset(offset))
     items = [item for item in result.scalars().all() if item is not None]
     return success_response(
         [
             {
                 "id": str(a.id),
                 "title": a.title,
+                "content": a.content,
                 "audience": a.audience.value,
+                "branch_id": str(a.branch_id) if a.branch_id else None,
                 "status": a.status.value,
                 "created_at": a.created_at.isoformat(),
             }
