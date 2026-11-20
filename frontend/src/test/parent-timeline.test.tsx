@@ -1,22 +1,83 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { ParentDayTimeline } from "../features/parent/ParentDayTimeline";
+import { ParentPortalPage } from "../features/parent/ParentPortalPage";
 import { api } from "../lib/api";
+import { useAuthStore } from "../stores/auth";
 
 vi.mock("../lib/api", () => ({ api: { get: vi.fn() }, apiMessage: () => "Akış yüklenemedi" }));
-afterEach(() => { cleanup(); vi.resetAllMocks(); });
+afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
+
+function parentWithAttendanceAccess() {
+  useAuthStore.getState().setUser({ id: "parent", organization_id: "school", first_name: "Veli", last_name: "Test",
+    email: "parent@test.invalid", roles: [], branch_ids: [], is_super_admin: false, permissions: ["parent.view_attendance"] });
+}
+
+const attendanceEvent = { id: "attendance-1", type: "ATTENDANCE", title: "Yoklama kaydı", status: "PRESENT",
+  time: "08:30", details: {}, detail_url: "/parent/attendance" };
+
+const children = [{ student_id: "child-1", first_name: "Deniz", last_name: "Test" },
+  { student_id: "child-2", first_name: "Ada", last_name: "Test" }];
 
 it("gerçek etkinlik saatini ve detay bağlantısını gösterir, tarihi değişince doğru günü ister", async () => {
+  parentWithAttendanceAccess();
   vi.mocked(api.get).mockImplementation(async (_path, config) => ({ data: { data: { student_id: "child-1",
-    date: (config?.params as { date: string }).date, events: [{ id: "attendance-1", type: "ATTENDANCE",
-      title: "Yoklama kaydı", status: "PRESENT", time: "08:30", details: {}, detail_url: "/parent/attendance" }] } } }));
+    date: (config?.params as { date: string }).date, events: [attendanceEvent] } } }));
   render(<MemoryRouter><ParentDayTimeline studentId="child-1" initialDate="2026-11-03" /></MemoryRouter>);
   expect(await screen.findByText("08:30 · Yoklama kaydı")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "İlgili sayfayı aç" })).toHaveAttribute("href", "/parent/attendance");
   fireEvent.change(screen.getByLabelText("Akış tarihi"), { target: { value: "2026-11-02" } });
   await waitFor(() => expect(api.get).toHaveBeenLastCalledWith("/parent/child/child-1/timeline",
     expect.objectContaining({ params: { date: "2026-11-02" } })));
+});
+
+it("yoklama bağlantısı doğrulanmış çocuğu ve geçmiş ayı açar", async () => {
+  parentWithAttendanceAccess();
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path.endsWith("/timeline")) return { data: { data: { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] } } };
+    if (path === "/parent/my-children") return { data: { data: children } };
+    if (path === "/parent/child/child-2/attendance") return { data: { data: { student_id: "child-2", year: 2025, month: 10,
+      summary: { present: 17, late: 0, absent: 1 } } } };
+    return { data: { data: null } };
+  });
+  render(<MemoryRouter initialEntries={["/parent/children"]}><Routes>
+    <Route path="/parent/children" element={<ParentDayTimeline studentId="child-2" initialDate="2025-10-07" />} />
+    <Route path="/parent/attendance" element={<ParentPortalPage view="attendance" />} />
+  </Routes></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("link", { name: "İlgili sayfayı aç" }));
+  expect(await screen.findByText("Yoklama dönemi · 10/2025")).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Öğrenci Seçin" })).toHaveValue("child-2");
+  expect(await screen.findByText("17")).toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/parent/child/child-2/attendance", expect.objectContaining({
+    params: { year: 2025, month: 10 },
+  }));
+  expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/parent/child/child-1/attendance")).toBe(false);
+});
+
+it("yoklama izni yoksa akışta geçiş sunmaz ve takvim isteği yapmaz", async () => {
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path.endsWith("/timeline")
+    ? { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] }
+    : path === "/parent/my-children" ? children : null } }));
+  const { unmount } = render(<MemoryRouter><ParentDayTimeline studentId="child-2" initialDate="2025-10-07" /></MemoryRouter>);
+  expect(await screen.findByText("08:30 · Yoklama kaydı")).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "İlgili sayfayı aç" })).not.toBeInTheDocument();
+  unmount();
+  render(<MemoryRouter><ParentPortalPage view="attendance" /></MemoryRouter>);
+  expect(await screen.findByText("Yoklama kayıtlarını görüntüleme yetkiniz yok.")).toBeInTheDocument();
+  expect(vi.mocked(api.get).mock.calls.some(([path]) => path.endsWith("/attendance"))).toBe(false);
+});
+
+it("bağlı olmayan çocukla gelen yoklama adresinden yetkisiz istek göndermez", async () => {
+  parentWithAttendanceAccess();
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/parent/my-children" ? children : null } }));
+  render(<MemoryRouter initialEntries={[{ pathname: "/parent/attendance", state: {
+    parentAttendance: { studentId: "outside", date: "2025-10-07" },
+  } }]}><ParentPortalPage view="attendance" /></MemoryRouter>);
+  expect(await screen.findByRole("combobox", { name: "Öğrenci Seçin" })).toHaveValue("child-1");
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/parent/child/child-1/attendance", expect.anything()));
+  expect(vi.mocked(api.get).mock.calls.some(([path]) => path.includes("/outside/"))).toBe(false);
+  expect(screen.queryByText("Yoklama dönemi · 10/2025")).not.toBeInTheDocument();
 });
 
 it("saati olmayan kayda saat uydurmaz ve eski çocuğun gecikmiş yanıtını göstermez", async () => {

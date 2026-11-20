@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, ErrorState, LoadingState } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
+import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse } from "../../types/api";
 
 interface DayEvent {
@@ -39,6 +40,7 @@ function DailyReportDetails({ details }: { details: DayEvent["details"] }) {
 }
 
 export function ParentDayTimeline({ studentId, initialDate }: { studentId: string; initialDate: string }) {
+  const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
   const [day, setDay] = useState(initialDate);
   const [result, setResult] = useState<{ studentId: string; day: string; events: DayEvent[] } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,9 @@ export function ParentDayTimeline({ studentId, initialDate }: { studentId: strin
               {(event.details.teacher_notes || event.details.notes || event.details.complaint || event.details.medicine_name || event.details.pickup_person_name) &&
                 <p style={{ overflowWrap: "anywhere" }}>{[event.details.medicine_name, event.details.dosage,
                   event.details.teacher_notes || event.details.notes || event.details.complaint || event.details.pickup_person_name].filter(Boolean).join(" · ")}</p>}
-              <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}>İlgili sayfayı aç</Link>
+              {(event.type !== "ATTENDANCE" || canReadAttendance) &&
+                <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}
+                  state={event.type === "ATTENDANCE" ? { parentAttendance: { studentId, date: day } } : undefined}>İlgili sayfayı aç</Link>}
             </>}
           </li>)}
       </ol>}

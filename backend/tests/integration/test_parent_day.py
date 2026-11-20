@@ -1,12 +1,15 @@
 from datetime import UTC, date, datetime, time, timedelta
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
 from app.core.config import get_settings
 from app.application.services import parent_day_service
 from app.infrastructure.models.models import AttendanceRecord, AttendanceStatus, DailyDevelopmentReport, OperationalRecord
-from app.infrastructure.models.models import UserBranch
+from app.infrastructure.models.models import Permission, Role, UserBranch
 from app.domain.entities.health import MedicationLog, MedicationSchedule, InfirmaryVisit
 from app.domain.entities.bus import BusRoute, BusAttendance
 from app.domain.entities.pickup import PickupLog
@@ -121,6 +124,34 @@ async def test_created_daily_report_is_visible_only_for_the_linked_child_and_dat
     assert other.json()["data"]["daily_report"] is None
     forbidden = await client.get(f'/api/parent/child/{data["stranger"].id}/timeline', headers=parent)
     assert forbidden.status_code == 403
+
+
+async def test_parent_attendance_requires_permission_and_returns_the_requested_child_month(materials_client):
+    client, sessions, data = materials_client
+    sibling, child = data["children"]
+    parent = auth(data["user"])
+    path = f"/api/parent/child/{child.id}/attendance"
+    period = {"year": 2025, "month": 10}
+    assert (await client.get(path, headers=parent, params=period)).status_code == 403
+
+    async with sessions() as db:
+        role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+        code = "parent.view_attendance"
+        role.permissions.append(Permission(code=code, name=code, module="parent"))
+        db.add_all([AttendanceRecord(student_id=student.id, class_id=student.class_id,
+            organization_id=student.organization_id, branch_id=student.branch_id, attendance_date=day,
+            status=AttendanceStatus.PRESENT, recorded_by=data["teacher"].id, notes=note)
+            for student, day, note in [(child, date(2025, 10, 7), "Seçilen çocuk"),
+                (child, date(2025, 11, 7), "Farklı ay"), (sibling, date(2025, 10, 8), "Kardeş")]])
+        await db.commit()
+
+    response = await client.get(path, headers=parent, params=period)
+    assert response.status_code == 200, response.text
+    payload = response.json()["data"]
+    assert (payload["student_id"], payload["year"], payload["month"]) == (str(child.id), 2025, 10)
+    assert payload["calendar"]["7"]["note"] == "Seçilen çocuk" and payload["calendar"]["8"]["status"] is None
+    assert payload["summary"]["total"] == 1
+    assert (await client.get(f'/api/parent/child/{data["stranger"].id}/attendance', headers=parent, params=period)).status_code == 403
 
 
 async def test_teacher_with_assigned_branch_can_read_daily_reports_without_server_error(materials_client):

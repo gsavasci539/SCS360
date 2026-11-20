@@ -1,5 +1,5 @@
 import { ParentSchoolCheckout, ParentCheckoutReturn } from "./ParentSchoolCheckout";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { CalendarCheck2, CreditCard, FileHeart, GraduationCap, HeartPulse, UsersRound, Activity, Clock, CheckCircle, XCircle, Wallet, MessageCircle, Bell, BookOpen, Brain, Lightbulb } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui";
@@ -18,16 +18,34 @@ import { useAuthStore } from "../../stores/auth";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 
-const today = new Date();
 const unwrap = <T,>(response: { data: ApiResponse<T> }) => response.data.data;
+
+function attendanceLinkDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return date.getUTCFullYear() > 0 && date.toISOString().slice(0, 10) === value ? date : null;
+}
 
 export function ParentPortalPage({ view }: { view: View }) {
   const canMakePayment = useAuthStore((state) => state.can("parent.make_payment"));
   const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
+  const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
   const [medicineSubmitting, setMedicineSubmitting] = useState(false);
   const [children, setChildren] = useState<DataRecord[]>([]);
-  const [selectedId, setSelectedId] = useState("");
+  const location = useLocation();
+  const attendanceLink = view === "attendance" ? (location.state as { parentAttendance?: { studentId?: unknown; date?: unknown } } | null)?.parentAttendance : undefined;
+  const linkedChild = typeof attendanceLink?.studentId === "string"
+    ? children.find((child) => child.student_id === attendanceLink.studentId) : undefined;
+  const linkedDate = linkedChild ? attendanceLinkDate(attendanceLink?.date) : null;
+  const entryKey = attendanceLink ? location.key : null;
+  const [childChoice, setChildChoice] = useState<{ entryKey: string | null; id: string } | null>(null);
+  const selected = (childChoice && childChoice.entryKey === entryKey
+    ? children.find((child) => child.student_id === childChoice.id) : linkedChild) ?? children[0];
+  const selectedId = selected?.student_id ? String(selected.student_id) : "";
+  const today = new Date();
+  const attendanceYear = linkedDate?.getUTCFullYear() ?? today.getFullYear();
+  const attendanceMonth = (linkedDate?.getUTCMonth() ?? today.getMonth()) + 1;
   const [dayStatus, setDayStatus] = useState<DataRecord | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
   const [finances, setFinances] = useState<DataRecord | null>(null);
@@ -86,7 +104,6 @@ export function ParentPortalPage({ view }: { view: View }) {
       .then((response) => {
         const records = response.data.data || [];
         setChildren(records);
-        setSelectedId(records[0]?.student_id ? String(records[0].student_id) : "");
       })
       .catch((reason) => setError(apiMessage(reason)))
       .finally(() => setLoading(false));
@@ -102,7 +119,9 @@ export function ParentPortalPage({ view }: { view: View }) {
     setAnnouncements([]); setActivities([]); setWeeklyReports([]); setTeachers([]);
     setChatTeacherId(""); setAiRecommendations(null);
     const requests: Promise<unknown>[] = [api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`, { signal: controller.signal })];
-    if (view === "attendance") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, { params: { year: today.getFullYear(), month: today.getMonth() + 1 } }));
+    if (view === "attendance" && canReadAttendance) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, {
+      params: { year: attendanceYear, month: attendanceMonth }, signal: controller.signal,
+    }));
     if (view === "finances" || (view === "dashboard" && canReadFinances)) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/financial-invoices`));
     else if (view === "dashboard") requests.push(Promise.resolve({ data: { data: null } }));
     if (view === "health") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/medicine-requests`));
@@ -122,12 +141,13 @@ export function ParentPortalPage({ view }: { view: View }) {
     if (view === "reports") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/weekly-reports`));
     
     // Consent decisions depend on the document, not a student performance score.
-    requests.push(view === "consents" || view === "surveys" ? Promise.resolve(null) : api.get(`/parent/child/${selectedId}/insights`, { params: { context: view } }).catch(() => null));
+    requests.push(view === "consents" || view === "surveys" || (view === "attendance" && !canReadAttendance)
+      ? Promise.resolve(null) : api.get(`/parent/child/${selectedId}/insights`, { params: { context: view } }).catch(() => null));
     
     Promise.all(requests).then((responses) => {
       if (cancelled) return;
       setDayStatus(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
-      if (view === "attendance") setAttendance(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
+      if (view === "attendance" && canReadAttendance) setAttendance(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
       if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
       if (view === "health") setMedicineRequests(((unwrap(responses[1] as { data: ApiResponse<DataRecord> }).medicine_requests as DataRecord[]) || []));
       if (view === "academic") setGrades(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
@@ -149,9 +169,8 @@ export function ParentPortalPage({ view }: { view: View }) {
     }).catch((reason) => { if (!cancelled) setError(apiMessage(reason)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; controller.abort(); };
-  }, [selectedId, view, canReadFinances]);
+  }, [selectedId, view, canReadFinances, canReadAttendance, attendanceYear, attendanceMonth]);
 
-  const selected = children.find((child) => String(child.student_id) === selectedId);
   const heading = { 
     dashboard: "Veli Paneli", 
     children: "Çocuğum", 
@@ -243,7 +262,8 @@ export function ParentPortalPage({ view }: { view: View }) {
   const status = dayStatus?.student_id === selectedId ? dayStatus : null;
   const daily = status?.daily_report as DataRecord | undefined;
   const currentAttendance = status?.attendance as DataRecord | undefined;
-  const summary = attendance?.summary as DataRecord | undefined;
+  const summary = attendance?.student_id === selectedId && attendance?.year === attendanceYear && attendance?.month === attendanceMonth
+    ? attendance.summary as DataRecord | undefined : undefined;
   const invoices = (finances?.invoices as DataRecord[] | undefined) || [];
 
   return <>
@@ -261,7 +281,7 @@ export function ParentPortalPage({ view }: { view: View }) {
             id="parent-child" 
             value={selectedId} 
             disabled={medicineSubmitting}
-            onChange={(event) => setSelectedId(event.target.value)}
+            onChange={(event) => setChildChoice({ entryKey, id: event.target.value })}
             className="parent-input-glass"
             style={{ 
               width: "100%", 
@@ -687,10 +707,12 @@ export function ParentPortalPage({ view }: { view: View }) {
     )}
 
     {/* Attendance View */}
-    {view === "attendance" && (
+    {view === "attendance" && !canReadAttendance && <p>Yoklama kayıtlarını görüntüleme yetkiniz yok.</p>}
+    {view === "attendance" && canReadAttendance && selectedId && (
       <>
+        <p>Yoklama dönemi · {String(attendanceMonth).padStart(2, "0")}/{attendanceYear}</p>
         <ParentExcuseRequests key={selectedId} studentId={selectedId} />
-        <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
+        {summary ? <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))", gap: 20 }}>
           <div className="card parent-stat-card parent-animate-in" style={{ 
             textAlign: "center", 
             padding: "32px", 
@@ -714,9 +736,9 @@ export function ParentPortalPage({ view }: { view: View }) {
                 <CheckCircle size={32} />
               </div>
               <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-                {String(summary?.present || 0)}
+                {String(summary.present ?? "—")}
               </h3>
-              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Mevcut (Bu Ay)</p>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Mevcut</p>
             </div>
           </div>
           
@@ -744,9 +766,9 @@ export function ParentPortalPage({ view }: { view: View }) {
                 <Clock size={32} />
               </div>
               <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-                {String(summary?.late || 0)}
+                {String(summary.late ?? "—")}
               </h3>
-              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Geç (Bu Ay)</p>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Geç</p>
             </div>
           </div>
           
@@ -774,12 +796,12 @@ export function ParentPortalPage({ view }: { view: View }) {
                 <XCircle size={32} />
               </div>
               <h3 style={{ fontSize: "48px", fontWeight: 700, marginBottom: 8, lineHeight: 1 }}>
-                {String(summary?.absent || 0)}
+                {String(summary.absent ?? "—")}
               </h3>
-              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Devamsız (Bu Ay)</p>
+              <p style={{ fontSize: "16px", margin: 0, opacity: 0.95, fontWeight: 600 }}>Devamsız</p>
             </div>
           </div>
-        </div>
+        </div> : loading ? <LoadingState label="Yoklama özeti yükleniyor" /> : !error && <p>Yoklama özeti alınamadı.</p>}
 
         {aiRecommendations?.recommendations?.length > 0 && (
           <div className="card parent-animate-in" style={{ 
