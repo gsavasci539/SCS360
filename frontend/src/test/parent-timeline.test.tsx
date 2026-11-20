@@ -32,13 +32,19 @@ it("gerçek etkinlik saatini ve detay bağlantısını gösterir, tarihi değiş
     expect.objectContaining({ params: { date: "2026-11-02" } })));
 });
 
-it("yoklama bağlantısı doğrulanmış çocuğu ve geçmiş ayı açar", async () => {
+it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve sonraki ay eski ayrıntıyı temizler", async () => {
   parentWithAttendanceAccess();
-  vi.mocked(api.get).mockImplementation(async (path) => {
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
     if (path.endsWith("/timeline")) return { data: { data: { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] } } };
     if (path === "/parent/my-children") return { data: { data: children } };
-    if (path === "/parent/child/child-2/attendance") return { data: { data: { student_id: "child-2", year: 2025, month: 10,
-      summary: { present: 17, late: 0, absent: 1 } } } };
+    if (path === "/parent/child/child-2/attendance") {
+      const month = (config?.params as { month: number }).month;
+      return { data: { data: { student_id: "child-2", year: 2025, month,
+        summary: { present: month === 10 ? 1 : 0, late: 0, absent: 0 }, calendar: month === 10 ? {
+          "7": { date: "2025-10-07", status: "PRESENT", check_in_time: "08:45", check_out_time: null, note: "Kayıtlı yoklama notu" },
+          "8": { date: "2025-10-08", status: null },
+        } : {} } } };
+    }
     return { data: { data: null } };
   });
   render(<MemoryRouter initialEntries={["/parent/children"]}><Routes>
@@ -48,11 +54,21 @@ it("yoklama bağlantısı doğrulanmış çocuğu ve geçmiş ayı açar", async
   fireEvent.click(await screen.findByRole("link", { name: "İlgili sayfayı aç" }));
   expect(await screen.findByText("Yoklama dönemi · 10/2025")).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Öğrenci Seçin" })).toHaveValue("child-2");
-  expect(await screen.findByText("17")).toBeInTheDocument();
+  expect(await screen.findByText("Kayıtlı yoklama notu")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "2025-10-07 · Mevcut" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByText("Giriş · 08:45")).toBeInTheDocument();
+  expect(screen.queryByText(/Çıkış ·/)).not.toBeInTheDocument();
   expect(api.get).toHaveBeenCalledWith("/parent/child/child-2/attendance", expect.objectContaining({
     params: { year: 2025, month: 10 },
   }));
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/parent/child/child-1/attendance")).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "2025-10-08 · Kayıt yok" }));
+  expect(screen.getByText("2025-10-08 · Kayıt yok")).toBeInTheDocument();
+  expect(screen.queryByText("Kayıtlı yoklama notu")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Sonraki ay" }));
+  expect(await screen.findByRole("button", { name: "2025-11-01 · Kayıt yok" })).toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/parent/child/child-2/attendance", expect.objectContaining({ params: { year: 2025, month: 11 } }));
+  expect(screen.queryByRole("button", { name: "2025-10-07 · Mevcut" })).not.toBeInTheDocument();
 });
 
 it("yoklama izni yoksa akışta geçiş sunmaz ve takvim isteği yapmaz", async () => {

@@ -10,6 +10,7 @@ import { HomeworkSubmissions } from "../academic/HomeworkSubmissions";
 import { downloadFile } from "../../lib/download";
 import { ParentExcuseRequests } from "../communications/ExcuseRequests";
 import { formatDayActivities, ParentDayTimeline } from "./ParentDayTimeline";
+import { ParentAttendanceCalendar } from "./ParentAttendanceCalendar";
 import { ParentCertificates } from "./ParentCertificates";
 import { ParentReportCards } from "./ParentReportCards";
 import { ParentConsents } from "./ParentConsents";
@@ -40,12 +41,20 @@ export function ParentPortalPage({ view }: { view: View }) {
   const linkedDate = linkedChild ? attendanceLinkDate(attendanceLink?.date) : null;
   const entryKey = attendanceLink ? location.key : null;
   const [childChoice, setChildChoice] = useState<{ entryKey: string | null; id: string } | null>(null);
+  const [periodChoice, setPeriodChoice] = useState<{ entryKey: string | null; year: number; month: number } | null>(null);
   const selected = (childChoice && childChoice.entryKey === entryKey
     ? children.find((child) => child.student_id === childChoice.id) : linkedChild) ?? children[0];
   const selectedId = selected?.student_id ? String(selected.student_id) : "";
   const today = new Date();
-  const attendanceYear = linkedDate?.getUTCFullYear() ?? today.getFullYear();
-  const attendanceMonth = (linkedDate?.getUTCMonth() ?? today.getMonth()) + 1;
+  const period = periodChoice?.entryKey === entryKey ? periodChoice : null;
+  const attendanceYear = period?.year ?? linkedDate?.getUTCFullYear() ?? today.getFullYear();
+  const attendanceMonth = period?.month ?? (linkedDate?.getUTCMonth() ?? today.getMonth()) + 1;
+  const initialAttendanceDay = linkedChild?.student_id === selectedId && linkedDate?.getUTCFullYear() === attendanceYear &&
+    linkedDate.getUTCMonth() + 1 === attendanceMonth ? linkedDate.getUTCDate() : undefined;
+  function moveAttendanceMonth(offset: number) {
+    const index = attendanceYear * 12 + attendanceMonth - 1 + offset;
+    setPeriodChoice({ entryKey, year: Math.floor(index / 12), month: index % 12 + 1 });
+  }
   const [dayStatus, setDayStatus] = useState<DataRecord | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
   const [finances, setFinances] = useState<DataRecord | null>(null);
@@ -262,8 +271,9 @@ export function ParentPortalPage({ view }: { view: View }) {
   const status = dayStatus?.student_id === selectedId ? dayStatus : null;
   const daily = status?.daily_report as DataRecord | undefined;
   const currentAttendance = status?.attendance as DataRecord | undefined;
-  const summary = attendance?.student_id === selectedId && attendance?.year === attendanceYear && attendance?.month === attendanceMonth
-    ? attendance.summary as DataRecord | undefined : undefined;
+  const verifiedAttendance = attendance?.student_id === selectedId && attendance?.year === attendanceYear && attendance?.month === attendanceMonth
+    ? attendance : null;
+  const summary = verifiedAttendance?.summary as DataRecord | undefined;
   const invoices = (finances?.invoices as DataRecord[] | undefined) || [];
 
   return <>
@@ -710,7 +720,15 @@ export function ParentPortalPage({ view }: { view: View }) {
     {view === "attendance" && !canReadAttendance && <p>Yoklama kayıtlarını görüntüleme yetkiniz yok.</p>}
     {view === "attendance" && canReadAttendance && selectedId && (
       <>
-        <p>Yoklama dönemi · {String(attendanceMonth).padStart(2, "0")}/{attendanceYear}</p>
+        <div className="toolbar" style={{ flexWrap: "wrap", justifyContent: "space-between" }}>
+          <p>Yoklama dönemi · {String(attendanceMonth).padStart(2, "0")}/{attendanceYear}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <button type="button" className="btn btn-secondary" onClick={() => moveAttendanceMonth(-1)}
+              disabled={attendanceYear === 1 && attendanceMonth === 1}>Önceki ay</button>
+            <button type="button" className="btn btn-secondary" onClick={() => moveAttendanceMonth(1)}
+              disabled={attendanceYear === 9999 && attendanceMonth === 12}>Sonraki ay</button>
+          </div>
+        </div>
         <ParentExcuseRequests key={selectedId} studentId={selectedId} />
         {summary ? <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))", gap: 20 }}>
           <div className="card parent-stat-card parent-animate-in" style={{ 
@@ -802,6 +820,9 @@ export function ParentPortalPage({ view }: { view: View }) {
             </div>
           </div>
         </div> : loading ? <LoadingState label="Yoklama özeti yükleniyor" /> : !error && <p>Yoklama özeti alınamadı.</p>}
+
+        {verifiedAttendance?.calendar && <ParentAttendanceCalendar key={JSON.stringify([entryKey, selectedId, attendanceYear, attendanceMonth])}
+          year={attendanceYear} month={attendanceMonth} calendar={verifiedAttendance.calendar} initialDay={initialAttendanceDay} />}
 
         {aiRecommendations?.recommendations?.length > 0 && (
           <div className="card parent-animate-in" style={{ 
