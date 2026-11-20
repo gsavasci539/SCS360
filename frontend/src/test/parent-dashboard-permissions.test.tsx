@@ -58,7 +58,7 @@ it.each(["today-status", "financial-invoices"] as const)("panelde %s hatası di�
     if (path.endsWith(`/${failedEndpoint}`)) throw new Error("Bölüm isteği başarısız");
     if (path === "/parent/my-children") return { data: { data: [{ student_id: "child", first_name: "Deniz" }] } };
     if (path.endsWith("/today-status")) return { data: { data: { student_id: "child", date: "2026-11-03", daily_report: { mood: "Sakin" } } } };
-    if (path.endsWith("/financial-invoices")) return { data: { data: { total_remaining: 250, invoices: [] } } };
+    if (path.endsWith("/financial-invoices")) return { data: { data: { student_id: "child", total_remaining: 250, invoices: [] } } };
     if (path.endsWith("/timeline")) return { data: { data: { student_id: "child", date: "2026-11-03", events: [] } } };
     return { data: { data: null } };
   });

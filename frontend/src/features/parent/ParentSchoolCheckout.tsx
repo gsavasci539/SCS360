@@ -7,7 +7,7 @@ import { checkoutIdentifier } from "../payment/schoolCheckoutAttempt";
 export function ParentSchoolCheckout({ debtId, amount, childName, available, onClose, onComplete }: {
   debtId: string; amount: unknown; childName: string; available: boolean; onClose: () => void; onComplete: () => void;
 }) {
-  return <Modal open title="Öğrenci ödemesi" description={`${childName} · ${money(amount)}`} onClose={onClose}>
+  return <Modal open title="Öğrenci ödemesi" description={amount == null ? childName : `${childName} · ${money(amount)}`} onClose={onClose}>
     <SchoolCheckoutForm purpose="parent" debtId={debtId} amount={amount} available={available} onComplete={onComplete} />
   </Modal>;
 }

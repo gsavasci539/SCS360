@@ -25,7 +25,7 @@ function portalData(path: string) {
     student_id: child, total_remaining: "100.25", online_payment_available: false,
     invoices: [{ debt_id: debt, remaining_amount: "100.25", paid_amount: "25.10", status: "PARTIALLY_PAID", description: "Kasım ödemesi" }],
   };
-  if (path === `/parent/child/${sibling}/financial-invoices`) return { student_id: sibling, invoices: [] };
+  if (path === `/parent/child/${sibling}/financial-invoices`) return { student_id: sibling, total_remaining: "0.00", invoices: [] };
   return null;
 }
 

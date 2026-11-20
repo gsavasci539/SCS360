@@ -21,8 +21,14 @@ import { checkoutIdentifier } from "../payment/schoolCheckoutAttempt";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 type ChildDate = { studentId?: unknown; date?: unknown };
+type ParentFinances = { student_id: string; total_remaining: string | number; invoices: DataRecord[]; online_payment_available?: boolean };
 
 const unwrap = <T,>(response: { data: ApiResponse<T> }) => response.data.data;
+
+function validFinanceAmount(value: unknown): boolean {
+  return (typeof value === "number" || (typeof value === "string" && value.trim() !== "")) &&
+    Number.isFinite(Number(value)) && Number(value) >= 0;
+}
 
 function parseDateOnly(value: unknown): Date | null {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -43,8 +49,8 @@ export function ParentPortalPage({ view }: { view: View }) {
   if (!canReadChildren && ((view === "attendance" && canReadAttendance) || (view === "finances" && canReadFinances))) {
     childrenPath = `/parent/my-children/options?module=${view}`;
   }
-  const [childList, setChildList] = useState<{ view: View; path: string; records: DataRecord[] } | null>(null);
-  const children = childList?.view === view && childList.path === childrenPath ? childList.records : [];
+  const [childList, setChildList] = useState<{ view: View; path: string; sessionVersion: number; records: DataRecord[] } | null>(null);
+  const children = childList?.view === view && childList.path === childrenPath && childList.sessionVersion === sessionVersion ? childList.records : [];
   const location = useLocation();
   const navigate = useNavigate();
   const isTimelineView = view === "dashboard" || view === "children";
@@ -83,7 +89,11 @@ export function ParentPortalPage({ view }: { view: View }) {
   }
   const [dayStatus, setDayStatus] = useState<{ studentId: string; data: DataRecord | null; error?: string } | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
-  const [finances, setFinances] = useState<DataRecord | null>(null);
+  const [financeResult, setFinanceResult] = useState<{ scope: string; data: ParentFinances | null; error?: string } | null>(null);
+  const financeScope = selectedId && canReadFinances && (view === "dashboard" || view === "finances")
+    ? JSON.stringify([sessionVersion, view, selectedId]) : "";
+  const currentFinance = financeScope && financeResult?.scope === financeScope ? financeResult : null;
+  const finances = currentFinance?.data ?? null;
   const [medicineRequests, setMedicineRequests] = useState<DataRecord[]>([]);
   const [medicine, setMedicine] = useState({ medicine_name: "", dosage: "", time_to_give: "", instructions: "" });
   const [requestMessage, setRequestMessage] = useState("");
@@ -126,14 +136,41 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [teachers, setTeachers] = useState<DataRecord[]>([]);
   const [chatTeacherId, setChatTeacherId] = useState("");
   const [chatTeacherName, setChatTeacherName] = useState("");
-  const [paymentModal, setPaymentModal] = useState<{ debtId: string; amount: number; childName: string } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ scope: string; debtId: string; childName: string } | null>(null);
   const [receiptModal, setReceiptModal] = useState<{ debtId: string; studentId: string; sessionVersion: number } | null>(null);
   const closeReceiptModal = useCallback(() => setReceiptModal(null), []);
   const [paymentSearch, setPaymentSearch] = useSearchParams();
-  const paymentController = useRef<AbortController | null>(null), paymentChild = useRef(selectedId);
-  useLayoutEffect(() => { paymentChild.current = selectedId; paymentController.current?.abort(); }, [selectedId]);
-  useEffect(() => { setPaymentModal(null); return () => paymentController.current?.abort(); }, [selectedId]);
+  const financeController = useRef<AbortController | null>(null);
+  const activeFinanceScope = useRef(financeScope);
+  useLayoutEffect(() => {
+    activeFinanceScope.current = financeScope;
+    return () => { activeFinanceScope.current = ""; financeController.current?.abort(); };
+  }, [financeScope]);
+  useEffect(() => { setPaymentModal(null); }, [financeScope, canMakePayment]);
   useEffect(closeReceiptModal, [closeReceiptModal, view, selectedId, sessionVersion, canReadFinances]);
+
+  const refreshPaymentFinances = useCallback(() => {
+    if (!financeScope || activeFinanceScope.current !== financeScope) return;
+    financeController.current?.abort();
+    const controller = new AbortController();
+    financeController.current = controller;
+    setFinanceResult({ scope: financeScope, data: null });
+    api.get<ApiResponse<ParentFinances>>(`/parent/child/${selectedId}/financial-invoices`, { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const data = unwrap(response);
+        if (data?.student_id !== selectedId || !validFinanceAmount(data.total_remaining) || !Array.isArray(data.invoices) ||
+            data.invoices.some((invoice) => !checkoutIdentifier(invoice?.debt_id) || !validFinanceAmount(invoice.remaining_amount))) {
+          setFinanceResult({ scope: financeScope, data: null, error: "Ödeme kayıtları seçili öğrenci için doğrulanamadı." });
+          return;
+        }
+        setFinanceResult({ scope: financeScope, data });
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setFinanceResult({ scope: financeScope, data: null, error: apiMessage(reason) });
+      });
+  }, [financeScope, selectedId]);
+  useEffect(() => { refreshPaymentFinances(); }, [refreshPaymentFinances]);
   
   
 
@@ -144,12 +181,12 @@ export function ParentPortalPage({ view }: { view: View }) {
     setLoading(true);
     api.get<ApiResponse<DataRecord[]>>(childrenPath, { signal: controller.signal })
       .then((response) => {
-        if (!controller.signal.aborted) setChildList({ view, path: childrenPath, records: response.data.data || [] });
+        if (!controller.signal.aborted) setChildList({ view, path: childrenPath, sessionVersion, records: response.data.data || [] });
       })
       .catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [view, childrenPath]);
+  }, [view, childrenPath, sessionVersion]);
 
   useEffect(() => {
     setDayStatus(null);
@@ -176,7 +213,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     let cancelled = false;
     const controller = new AbortController();
     setLoading(true); setError("");
-    setAttendance(null); setFinances(null); setMedicineRequests([]);
+    setAttendance(null); setMedicineRequests([]);
     setGrades([]); setSchedule([]); setHomework([]); setMaterials([]); setCommunications([]);
     setAnnouncements([]); setActivities([]); setWeeklyReports([]); setTeachers([]);
     setChatTeacherId(""); setAiRecommendations(null);
@@ -184,8 +221,6 @@ export function ParentPortalPage({ view }: { view: View }) {
     if (view === "attendance" && canReadAttendance) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, {
       params: { year: attendanceYear, month: attendanceMonth }, signal: controller.signal,
     }));
-    if (view === "finances" || (view === "dashboard" && canReadFinances)) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/financial-invoices`));
-    else if (view === "dashboard") requests.push(Promise.resolve({ data: { data: null } }));
     if (view === "health") requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/medicine-requests`));
     if (view === "academic") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/grades`));
     if (view === "schedule") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/schedule`));
@@ -203,13 +238,13 @@ export function ParentPortalPage({ view }: { view: View }) {
     if (view === "reports") requests.push(api.get<ApiResponse<DataRecord[]>>(`/parent/child/${selectedId}/weekly-reports`));
     
     // Consent decisions depend on the document, not a student performance score.
-    requests.push(view === "consents" || view === "surveys" || (view === "attendance" && !canReadAttendance)
+    requests.push(view === "consents" || view === "surveys" || (view === "attendance" && !canReadAttendance) ||
+      (view === "finances" && !canReadFinances)
       ? Promise.resolve(null) : api.get(`/parent/child/${selectedId}/insights`, { params: { context: view } }).catch(() => null));
     
     Promise.all(requests).then((responses) => {
       if (cancelled) return;
       if (view === "attendance" && canReadAttendance) setAttendance(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
-      if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
       if (view === "health") setMedicineRequests(((unwrap(responses[0] as { data: ApiResponse<DataRecord> }).medicine_requests as DataRecord[]) || []));
       if (view === "academic") setGrades(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
       if (view === "schedule") setSchedule(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
@@ -298,20 +333,15 @@ export function ParentPortalPage({ view }: { view: View }) {
     } catch (reason) { setRequestMessage(apiMessage(reason)); }
   }
 
-  function initializePayment(debtId: string, amount: number) {
-    setRequestMessage("");
-    setPaymentModal({ debtId, amount, childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
+  function canPayInvoice(invoice: DataRecord) {
+    return canMakePayment && finances?.online_payment_available === true &&
+      ["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) && Number(invoice.remaining_amount) > 0;
   }
 
-  
-
-  function refreshPaymentFinances() {
-    if (!selectedId || !canReadFinances) return;
-    paymentController.current?.abort();
-    const controller = new AbortController(); paymentController.current = controller;
-    api.get(`/parent/child/${selectedId}/financial-invoices`, { signal: controller.signal })
-      .then((response) => { if (!controller.signal.aborted && paymentChild.current === selectedId) setFinances(response.data.data); })
-      .catch((reason) => { if (!controller.signal.aborted && paymentChild.current === selectedId) setRequestMessage(apiMessage(reason)); });
+  function initializePayment(invoice: DataRecord) {
+    if (!canPayInvoice(invoice) || financeScope !== activeFinanceScope.current) return;
+    setPaymentModal({ scope: financeScope, debtId: String(invoice.debt_id),
+      childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
   }
   function closePaymentModal() { setPaymentModal(null); refreshPaymentFinances(); }
 
@@ -329,10 +359,13 @@ export function ParentPortalPage({ view }: { view: View }) {
   const verifiedAttendance = attendance?.student_id === selectedId && attendance?.year === attendanceYear && attendance?.month === attendanceMonth
     ? attendance : null;
   const summary = verifiedAttendance?.summary as DataRecord | undefined;
-  const invoices = (finances?.invoices as DataRecord[] | undefined) || [];
+  const invoices = finances?.invoices ?? [];
+  const paymentInvoice = paymentModal?.scope === financeScope
+    ? invoices.find((invoice) => invoice.debt_id === paymentModal.debtId) : undefined;
 
   return <>
     <PageHeader eyebrow="Veli Portalı" title={heading} description={description} />
+    {currentFinance?.error && <ErrorState message={currentFinance.error} retry={refreshPaymentFinances} />}
     {view === "finances" && canMakePayment && paymentSearch.has("checkout") && <ParentCheckoutReturn
       checkoutId={paymentSearch.get("checkout") || ""} onComplete={refreshPaymentFinances}
       onClose={() => { const next = new URLSearchParams(paymentSearch); next.delete("checkout"); setPaymentSearch(next, { replace: true }); }} />}
@@ -516,7 +549,7 @@ export function ParentPortalPage({ view }: { view: View }) {
               <span style={{ fontSize: "10px", fontWeight: 600, opacity: 0.9, textTransform: "uppercase", letterSpacing: "0.5px" }}>Kalan Ödeme</span>
             </div>
             <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: 2 }}>
-              ₺{Number(finances?.total_remaining || 0).toLocaleString("tr-TR")}
+              ₺{Number(finances.total_remaining).toLocaleString("tr-TR")}
             </div>
             <div style={{ fontSize: "12px", opacity: 0.9 }}>
               {invoices.length} kayıt
@@ -925,7 +958,9 @@ export function ParentPortalPage({ view }: { view: View }) {
     )}
 
     {/* Finances View */}
-    {view === "finances" && (
+    {view === "finances" && !canReadFinances && <p>Ödeme kayıtlarını görüntüleme yetkiniz yok.</p>}
+    {view === "finances" && financeScope && !finances && !currentFinance?.error && <LoadingState label="Ödeme kayıtları yükleniyor" />}
+    {view === "finances" && finances && (
       <>
         <div className="card parent-animate-in" style={{ border: "none", boxShadow: "0 8px 30px rgba(0,0,0,0.08)" }}>
           <div style={{ 
@@ -938,7 +973,7 @@ export function ParentPortalPage({ view }: { view: View }) {
               <div>
                 <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, marginBottom: 8 }}>Ödeme Kayıtları</h2>
                 <p style={{ margin: 0, fontSize: "14px", opacity: 0.9 }}>
-                  Kalan toplam: <strong style={{ fontSize: "20px", fontWeight: 700 }}>₺{Number(finances?.total_remaining || 0).toLocaleString("tr-TR")}</strong>
+                  Kalan toplam: <strong style={{ fontSize: "20px", fontWeight: 700 }}>₺{Number(finances.total_remaining).toLocaleString("tr-TR")}</strong>
                 </p>
               </div>
               <div className="parent-icon-circle">
@@ -1026,7 +1061,7 @@ export function ParentPortalPage({ view }: { view: View }) {
                         color: "#e74c3c",
                         fontSize: "15px",
                         borderRadius: "0"
-                      }}>₺{Number(invoice.remaining_amount || 0).toLocaleString("tr-TR")}</td>
+                      }}>₺{Number(invoice.remaining_amount).toLocaleString("tr-TR")}</td>
                       <td style={{ 
                         padding: "16px", 
                         borderRadius: "0"
@@ -1035,7 +1070,7 @@ export function ParentPortalPage({ view }: { view: View }) {
                         padding: "16px", 
                         borderRadius: "0 8px 8px 0"
                       }}>
-                        {canMakePayment && finances?.online_payment_available && ["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) && Number(invoice.remaining_amount || 0) > 0 && (
+                        {canPayInvoice(invoice) && (
                           <button 
                             className="btn btn-primary" 
                             style={{ 
@@ -1046,7 +1081,7 @@ export function ParentPortalPage({ view }: { view: View }) {
                               borderRadius: 8,
                               fontWeight: 600
                             }}
-                            onClick={() => initializePayment(String(invoice.debt_id), Number(invoice.remaining_amount))}
+                            onClick={() => initializePayment(invoice)}
                           >
                             <Wallet size={16} style={{ marginRight: 8 }} />
                             Öde
@@ -1074,7 +1109,7 @@ export function ParentPortalPage({ view }: { view: View }) {
           )}
         </div>
 
-        {aiRecommendations?.recommendations?.length > 0 && (
+        {aiRecommendations?.student_id === selectedId && aiRecommendations?.recommendations?.length > 0 && (
           <div className="card parent-animate-in" style={{ 
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", 
             color: "white",
@@ -2014,8 +2049,9 @@ export function ParentPortalPage({ view }: { view: View }) {
     )}
 
     {/* Payment Modal */}
-    {paymentModal && <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentModal.amount} childName={paymentModal.childName}
-      available={Boolean(finances?.online_payment_available) && canMakePayment} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />}
+    {paymentModal && canMakePayment && paymentModal.scope === financeScope &&
+      <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentInvoice?.remaining_amount} childName={paymentModal.childName}
+        available={Boolean(paymentInvoice && canPayInvoice(paymentInvoice))} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />}
     {view === "finances" && canReadFinances && receiptModal?.studentId === selectedId &&
       receiptModal.sessionVersion === sessionVersion &&
       <ParentDebtReceipts key={`${receiptModal.studentId}:${receiptModal.debtId}`} studentId={receiptModal.studentId}

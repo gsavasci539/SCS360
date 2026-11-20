@@ -176,7 +176,7 @@ it("yoklama ile günlük akış arasında geri ve ileri giderken seçimi doğrul
   fireEvent.click(screen.getByRole("button", { name: "Geri" }));
   expect(await screen.findByLabelText("Akış tarihi")).toHaveValue(today);
   expect(childSelector()).toHaveValue("child-1");
-  expect(api.get).toHaveBeenCalledWith("/parent/child/child-1/timeline", expect.objectContaining({ params: { date: today } }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/parent/child/child-1/timeline", expect.objectContaining({ params: { date: today } })));
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path.includes("/child-2/"))).toBe(false);
 });
 
