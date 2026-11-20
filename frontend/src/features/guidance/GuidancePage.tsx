@@ -4,25 +4,36 @@ import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { shortDate } from "../../lib/format";
-import { useAuthStore } from "../../stores/auth";
+import { hasPermission, useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { DataRecord } from "../../types/api";
 
 type Kind = "sessions" | "incidents" | "notes";
+interface Summary { total_sessions: number; total_notes: number; total_incidents: number; active_cases: number; student_id?: string }
+type RecordLoad = { key: string; rows: Record<Kind, DataRecord[]>; stats: Summary } | { key: string; error: string };
 interface Choice { id: string; name: string }
 interface Options { students: Choice[]; counselors: Choice[]; more_students?: boolean; more_counselors?: boolean; today: string }
 const empty: Options = { students: [], counselors: [], today: "" };
 const firstPages = { sessions: 1, incidents: 1, notes: 1 };
+const kinds = ["sessions", "incidents", "notes"] as const;
 
 export function GuidancePage() {
-  const canWrite = useAuthStore((state) => state.can("guidance.write"));
-  const canReadPrivate = useAuthStore((state) => state.can("guidance.read_confidential"));
-  const userId = useAuthStore((state) => state.user?.id);
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const institution = user?.is_super_admin ? (workspace?.operatorId === user.id ? workspace.id : null) : user?.organization_id;
+  if (user?.is_super_admin && !institution) return <p>Rehberlik kayıtlarını açmak için bir kurum seçin.</p>;
+  if (!hasPermission(user, "guidance.read")) return <p>Rehberlik kayıtlarını görüntüleme yetkiniz yok.</p>;
+  const canWrite = hasPermission(user, "guidance.write");
+  const canReadPrivate = hasPermission(user, "guidance.read_confidential");
+  return <GuidanceRecords key={JSON.stringify([session, user?.id, institution, user?.branch_ids, canReadPrivate, canWrite])}
+    userId={user?.id} canWrite={canWrite} canReadPrivate={canReadPrivate} />;
+}
+
+function GuidanceRecords({ userId, canWrite, canReadPrivate }: { userId?: string; canWrite: boolean; canReadPrivate: boolean }) {
   const [params, setParams] = useSearchParams(); const studentId = params.get("student") || "";
-  const [rows, setRows] = useState<Record<Kind, DataRecord[]>>({ sessions: [], incidents: [], notes: [] });
-  const [stats, setStats] = useState<DataRecord>({ id: "summary" });
+  const [result, setResult] = useState<RecordLoad | null>(null);
   const [pages, setPages] = useState(firstPages);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [options, setOptions] = useState<Options>(empty);
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [optionsError, setOptionsError] = useState("");
@@ -32,17 +43,30 @@ export function GuidancePage() {
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const requestKey = JSON.stringify([studentId, pages, revision]);
+  const current = result?.key === requestKey ? result : null;
   useEffect(() => {
-    const controller = new AbortController(); setLoading(true);
-    Promise.all([...["sessions", "incidents", "notes"].map((kind) => api.get(`/guidance/${kind}`, {
-      params: { student_id: studentId || undefined, limit: 21, offset: (pages[kind as Kind] - 1) * 20 }, signal: controller.signal,
-    })), api.get("/guidance/summary", { params: { student_id: studentId || undefined }, signal: controller.signal })])
-      .then(([sessions, incidents, notes, summary]) => {
-        if (!controller.signal.aborted) { setRows({ sessions: sessions.data.data || [], incidents: incidents.data.data || [], notes: notes.data.data || [] }); setStats(summary.data.data); setError(""); }
-      }).catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    const controller = new AbortController();
+    const request = { student_id: studentId || undefined };
+    const lists = kinds.map((kind) => api.get<{ data: DataRecord[] }>(`/guidance/${kind}`, {
+      params: { ...request, limit: 21, offset: (pages[kind] - 1) * 20 }, signal: controller.signal,
+    }));
+    Promise.all([Promise.all(lists), api.get<{ data: Summary }>("/guidance/summary", { params: request, signal: controller.signal })])
+      .then(([[sessions, incidents, notes], summary]) => {
+        if (controller.signal.aborted) return;
+        const stats = summary.data.data;
+        const rows = { sessions: sessions.data.data, incidents: incidents.data.data, notes: notes.data.data };
+        if (!stats || [stats.total_sessions, stats.total_notes, stats.total_incidents, stats.active_cases]
+          .some((count) => !Number.isInteger(count) || count < 0) ||
+          (stats.student_id ?? "") !== studentId || Object.values(rows).some((records) =>
+            !Array.isArray(records) || Boolean(studentId && records.some((row) => row.student_id !== studentId)))) {
+          setResult({ key: requestKey, error: "Rehberlik verileri seçili öğrenci kapsamıyla eşleşmiyor." });
+          return;
+        }
+        setResult({ key: requestKey, rows, stats });
+      }).catch((reason) => { if (!controller.signal.aborted) setResult({ key: requestKey, error: apiMessage(reason) }); });
     return () => controller.abort();
-  }, [studentId, pages, revision]);
+  }, [studentId, pages, requestKey]);
   useEffect(() => {
     const controller = new AbortController(); setOptionsLoading(true);
     const timer = window.setTimeout(() => {
@@ -78,8 +102,9 @@ export function GuidancePage() {
     return <label>Gizlilik düzeyi<select className="filter-select" name="confidentiality_level" aria-label="Gizlilik düzeyi"><option value="STANDARD">Standart</option><option value="RESTRICTED">Kısıtlı</option><option value="CONFIDENTIAL">Gizli</option></select></label>;
   }
   function table(kind: Kind, title: string) {
+    const rows = current && "rows" in current ? current.rows[kind] : [];
     return <section className="card card-pad" style={{ marginTop: 18 }} aria-label={title}><h2>{title}</h2>
-      {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={() => setRevision((value) => value + 1)} /> : rows[kind].length === 0 ? <p>Bu kapsamda kayıt bulunmuyor.</p> : <div style={{ overflowX: "auto" }}><table className="data-table"><thead><tr><th>Öğrenci</th><th>Tarih</th><th>{kind === "incidents" ? "Bildirici" : "Danışman"}</th><th>Tür / düzey</th><th>Ayrıntı</th></tr></thead><tbody>{rows[kind].slice(0, 20).map((row) => <tr key={row.id}>
+      {!current ? <LoadingState /> : "error" in current ? <ErrorState message={current.error} retry={() => setRevision((value) => value + 1)} /> : rows.length === 0 ? <p>Bu kapsamda kayıt bulunmuyor.</p> : <div style={{ overflowX: "auto" }}><table className="data-table"><thead><tr><th>Öğrenci</th><th>Tarih</th><th>{kind === "incidents" ? "Bildirici" : "Danışman"}</th><th>Tür / düzey</th><th>Ayrıntı</th></tr></thead><tbody>{rows.slice(0, 20).map((row) => <tr key={row.id}>
         <td><Link to={`/guidance?student=${row.student_id}`}>{String(row.student_name || "Öğrenci")}</Link></td>
         <td>{shortDate(kind === "sessions" ? row.session_date : kind === "incidents" ? row.incident_date : row.created_at)}</td>
         <td>{String(row.counselor_name || row.reported_by_name || "—")}</td>
@@ -93,13 +118,17 @@ export function GuidancePage() {
           </form>}
         </details></td>
       </tr>)}</tbody></table></div>}
-      <div className="toolbar" aria-label={`${title} sayfaları`}><button className="btn btn-secondary" disabled={loading || pages[kind] === 1} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] - 1 }))}>Önceki</button><span>Sayfa {pages[kind]}</span><button className="btn btn-secondary" disabled={loading || rows[kind].length <= 20} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] + 1 }))}>Sonraki</button></div>
+      <div className="toolbar" aria-label={`${title} sayfaları`}><button className="btn btn-secondary" disabled={!current || pages[kind] === 1} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] - 1 }))}>Önceki</button><span>Sayfa {pages[kind]}</span><button className="btn btn-secondary" disabled={rows.length <= 20} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] + 1 }))}>Sonraki</button></div>
     </section>;
   }
   const counselorReady = options.counselors.some((row) => row.id === counselor);
   return <>
     <PageHeader eyebrow="Rehberlik" title="Rehberlik Servisi" description="Öğrenci görüşmeleri, danışman notları ve davranış kayıtları." />
-    <div className="card card-pad" style={{ marginTop: 18 }}>Erişime açık görüşme: {Number(stats.total_sessions || 0)} · Not: {Number(stats.total_notes || 0)} · Olay: {Number(stats.total_incidents || 0)} · Açık olay: {Number(stats.active_cases || 0)}</div>
+    <section className="card card-pad" style={{ marginTop: 18 }} aria-label="Rehberlik özeti">
+      {!current ? <p role="status">Rehberlik özeti yükleniyor…</p> : "error" in current ?
+        <ErrorState message={current.error} retry={() => setRevision((value) => value + 1)} /> :
+        <p>Erişime açık görüşme: {current.stats.total_sessions} · Not: {current.stats.total_notes} · Olay: {current.stats.total_incidents} · Açık olay: {current.stats.active_cases}</p>}
+    </section>
     <section className="card card-pad" style={{ marginTop: 18 }} aria-label="Rehberlik kapsamı">
       <p>{canReadPrivate ? "Gizli kayıtları görme yetkiniz, kurum ve şube kapsamınızda geçerlidir." : "Standart kayıtlar ve danışmanı olduğunuz gizli kayıtlar gösterilir."}</p>
       {optionsError && <ErrorState message={optionsError} retry={() => setRevision((value) => value + 1)} />}
