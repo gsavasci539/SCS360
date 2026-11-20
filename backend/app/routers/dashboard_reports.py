@@ -1,16 +1,17 @@
 from app.core.dates import school_today
 from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.schemas.common import AnnouncementCreate
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.exceptions import ForbiddenException, NotFoundException, ValidationException
+from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.integration_config import IntegrationUpdate
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
@@ -635,6 +636,30 @@ async def _export_report_rows(report_type, year, month, branch_id, tenant, db):
     return rows if isinstance(rows, list) else rows.get("items", [])
 
 
+@router.get("/api/announcements/targets")
+async def announcement_targets(
+    kind: Literal["branches", "classes", "students"],
+    search: str = Query("", max_length=100),
+    selected_id: UUID | None = None,
+    tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    model = {"branches": Branch, "classes": ClassRoom, "students": Student}[kind]
+    repo = BaseRepository(db, tenant)
+    base = repo._branch_filter(repo._org_filter(select(model).where(model.deleted_at.is_(None)), model), model)
+    columns = (Student.first_name, Student.last_name) if kind == "students" else (model.name,)
+    term = search.strip()
+    page = base.where(or_(*(column.ilike(f"%{term}%") for column in columns))) if term else base
+    rows = list((await db.execute(page.order_by(*columns, model.id).limit(101))).scalars())
+    choices = rows[:100]
+    if selected_id and not any(row.id == selected_id for row in choices):
+        selected = (await db.execute(base.where(model.id == selected_id))).scalar_one_or_none()
+        if selected is not None:
+            choices.append(selected)
+    return success_response({"items": [{"id": str(row.id), "name": f"{row.first_name} {row.last_name}"
+        if kind == "students" else row.name} for row in choices], "more": len(rows) > 100})
+
+
 @router.get("/api/announcements/{announcement_id}")
 async def get_announcement(
     announcement_id: UUID,
@@ -675,6 +700,8 @@ async def get_announcement(
             "content": announcement.content,
             "audience": announcement.audience.value,
             "branch_id": str(announcement.branch_id) if announcement.branch_id else None,
+            "class_id": str(announcement.class_id) if announcement.class_id else None,
+            "student_id": str(announcement.student_id) if announcement.student_id else None,
             "channels": announcement.channels,
             "status": announcement.status.value,
             "scheduled_at": (
@@ -787,16 +814,16 @@ async def update_announcement(
     tenant: TenantContext = Depends(PermissionChecker("announcement.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement, for_update=True)
     if announcement.status == AnnouncementStatus.SENT:
-        from app.core.exceptions import ValidationException
-
         raise ValidationException("Gönderilmiş duyuru düzenlenemez")
+    branch_id, class_id, student_id = await announcement_target(db, tenant, body)
     announcement.title = body.title
     announcement.content = body.content
     announcement.audience = AnnouncementAudience(body.audience)
-    announcement.channels = body.channels
-    return success_response(message="Duyuru güncellendi")
+    announcement.channels = list(dict.fromkeys(body.channels))
+    announcement.branch_id, announcement.class_id, announcement.student_id = branch_id, class_id, student_id
+    return success_response({"id": str(announcement.id)}, "Duyuru güncellendi")
 
 
 @router.delete("/api/announcements/{announcement_id}")
@@ -987,6 +1014,7 @@ async def list_announcements(
                 "content": a.content,
                 "audience": a.audience.value,
                 "branch_id": str(a.branch_id) if a.branch_id else None,
+                "channels": a.channels,
                 "status": a.status.value,
                 "created_at": a.created_at.isoformat(),
             }
@@ -1002,17 +1030,25 @@ async def create_announcement(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    org_id = tenant.organization_id
-    if not org_id:
+    if not tenant.organization_id:
         raise ForbiddenException()
+    branch_id, class_id, student_id = await announcement_target(db, tenant, body)
+    announcement = Announcement(
+        organization_id=tenant.organization_id, branch_id=branch_id, class_id=class_id, student_id=student_id,
+        title=body.title, content=body.content, audience=AnnouncementAudience(body.audience),
+        channels=list(dict.fromkeys(body.channels)), status=AnnouncementStatus.DRAFT, created_by=user.id,
+    )
+    db.add(announcement)
+    await db.flush()
+    return success_response({"id": str(announcement.id)}, "Duyuru oluşturuldu")
+
+
+async def announcement_target(db: AsyncSession, tenant: TenantContext, body: AnnouncementCreate):
+    org_id = tenant.organization_id
     repo = BaseRepository(db, tenant)
-    branch = await repo.require_related(UUID(body.branch_id), Branch) if body.branch_id else None
-    classroom = (
-        await repo.require_related(UUID(body.class_id), ClassRoom) if body.class_id else None
-    )
-    student = (
-        await repo.require_related(UUID(body.student_id), Student) if body.student_id else None
-    )
+    branch = await repo.require_related(body.branch_id, Branch) if body.branch_id else None
+    classroom = await repo.require_related(body.class_id, ClassRoom) if body.class_id else None
+    student = await repo.require_related(body.student_id, Student) if body.student_id else None
     audience = AnnouncementAudience(body.audience)
     if audience == AnnouncementAudience.BRANCH_PARENTS and not branch:
         raise ValidationException("Şube hedefi zorunludur")
@@ -1032,21 +1068,10 @@ async def create_announcement(
         or (classroom and student.class_id != classroom.id)
     ):
         raise ValidationException("Öğrenci duyuru kapsamıyla eşleşmiyor")
-    announcement = Announcement(
-        organization_id=org_id,
-        branch_id=branch.id if branch else None,
-        class_id=classroom.id if classroom else None,
-        student_id=student.id if student else None,
-        title=body.title,
-        content=body.content,
-        audience=audience,
-        channels=body.channels,
-        status=AnnouncementStatus.DRAFT,
-        created_by=user.id,
-    )
-    db.add(announcement)
-    await db.flush()
-    return success_response({"id": str(announcement.id)}, "Duyuru oluşturuldu")
+    branch_id = branch.id if branch else student.branch_id if student else classroom.branch_id if classroom else None
+    if branch_id is None and tenant.branch_ids and not (tenant.is_super_admin or tenant.is_organization_owner):
+        raise ForbiddenException("Kurum geneline duyuru yetkiniz yok. Şube hedefi seçin.")
+    return branch_id, classroom.id if classroom else None, student.id if student else None
 
 
 @router.post("/api/announcements/{announcement_id}/send")
@@ -1057,6 +1082,25 @@ async def send_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    if not announcement.branch_id and tenant.branch_ids and not (tenant.is_super_admin or tenant.is_organization_owner):
+        raise ForbiddenException("Kurum geneline duyuru yetkiniz yok")
+
+    async def previously_queued():
+        jobs = (await db.execute(select(func.count()).select_from(NotificationJob).where(
+            NotificationJob.reference_type == "announcement", NotificationJob.reference_id == announcement.id))).scalar_one()
+        return success_response({"announcement_id": str(announcement.id), "jobs_created": jobs, "already_queued": True})
+
+    if announcement.status == AnnouncementStatus.SENT:
+        return await previously_queued()
+    if announcement.status not in {AnnouncementStatus.DRAFT, AnnouncementStatus.SCHEDULED}:
+        raise ConflictException("Bu duyuru sıraya alınamaz")
+    channels = list(dict.fromkeys(announcement.channels))
+    if not channels or any(channel not in {member.value for member in NotificationChannel} for channel in channels):
+        raise ValidationException("Geçerli bir bildirim kanalı seçin")
+    if (announcement.audience == AnnouncementAudience.BRANCH_PARENTS and not announcement.branch_id or
+        announcement.audience == AnnouncementAudience.CLASS_PARENTS and not announcement.class_id or
+        announcement.audience == AnnouncementAudience.SINGLE_STUDENT and not announcement.student_id):
+        raise ValidationException("Duyuru hedefi eksik")
     parents_q = (
         select(Parent)
         .join(StudentParent)
@@ -1069,16 +1113,33 @@ async def send_announcement(
             Parent.receive_notifications.is_(True),
         )
     )
-    if announcement.audience.value == "BRANCH_PARENTS" and announcement.branch_id:
+    if announcement.branch_id:
         parents_q = parents_q.where(Student.branch_id == announcement.branch_id)
-    elif announcement.audience.value == "CLASS_PARENTS" and announcement.class_id:
+    if announcement.audience == AnnouncementAudience.CLASS_PARENTS:
         parents_q = parents_q.where(Student.class_id == announcement.class_id)
-    elif announcement.audience.value == "SINGLE_STUDENT" and announcement.student_id:
+    elif announcement.audience == AnnouncementAudience.SINGLE_STUDENT:
         parents_q = parents_q.where(Student.id == announcement.student_id)
     result = await db.execute(parents_q.distinct())
     parents = result.scalars().all()
-    jobs_created = 0
-    for channel in announcement.channels:
+    targets = {}
+    for channel in channels:
+        addresses = {}
+        for parent in parents:
+            address = parent.email if channel == "EMAIL" else (
+                (parent.whatsapp_phone if channel == "WHATSAPP" else parent.sms_phone) or parent.phone)
+            if address and address.strip():
+                addresses.setdefault(address.strip(), parent)
+        if addresses:
+            targets[channel] = addresses
+    if not targets:
+        raise ValidationException("Gönderim için uygun alıcı adresi bulunamadı")
+    claimed = await db.execute(update(Announcement).where(Announcement.id == announcement.id,
+        Announcement.status.in_([AnnouncementStatus.DRAFT, AnnouncementStatus.SCHEDULED]))
+        .values(status=AnnouncementStatus.SENT, sent_at=datetime.now(UTC))
+        .execution_options(synchronize_session=False))
+    if claimed.rowcount != 1:
+        return await previously_queued()
+    for channel, addresses in targets.items():
         job = NotificationJob(
             organization_id=announcement.organization_id,
             branch_id=announcement.branch_id,
@@ -1091,23 +1152,17 @@ async def send_announcement(
         )
         db.add(job)
         await db.flush()
-        for parent in parents:
-            address = parent.email if channel == "EMAIL" else (parent.sms_phone or parent.phone)
-            if address:
-                from app.infrastructure.models.models import NotificationRecipient
-
-                db.add(
-                    NotificationRecipient(
-                        notification_job_id=job.id,
-                        parent_id=parent.id,
-                        recipient_name=f"{parent.first_name} {parent.last_name}",
-                        recipient_address=address,
-                    )
+        for address, parent in addresses.items():
+            db.add(
+                NotificationRecipient(
+                    notification_job_id=job.id,
+                    parent_id=parent.id,
+                    recipient_name=f"{parent.first_name} {parent.last_name}",
+                    recipient_address=address,
                 )
-        jobs_created += 1
-    announcement.status = AnnouncementStatus.SENT
-    announcement.sent_at = datetime.now(UTC)
-    return success_response({"jobs_created": jobs_created}, "Duyuru gönderim kuyruğuna alındı")
+            )
+    return success_response({"announcement_id": str(announcement.id), "jobs_created": len(targets), "already_queued": False},
+        "Duyuru gönderim kuyruğuna alındı")
 
 
 @router.get("/api/notifications")

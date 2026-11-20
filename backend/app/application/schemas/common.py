@@ -348,13 +348,14 @@ class DebtUpdate(DebtFields):
 
 
 class AnnouncementCreate(BaseModel):
-    title: str
-    content: str
-    audience: str
-    channels: list[str]
-    branch_id: str | None = None
-    class_id: str | None = None
-    student_id: str | None = None
+    model_config = ConfigDict(str_strip_whitespace=True)
+    title: str = Field(min_length=2, max_length=255)
+    content: str = Field(min_length=1, max_length=10000)
+    audience: Literal["ALL_PARENTS", "BRANCH_PARENTS", "CLASS_PARENTS", "SINGLE_STUDENT"]
+    channels: list[Literal["EMAIL", "SMS", "WHATSAPP"]] = Field(max_length=3)
+    branch_id: UUID | None = None
+    class_id: UUID | None = None
+    student_id: UUID | None = None
 
 
 class RoleAssignRequest(BaseModel):

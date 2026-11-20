@@ -1,7 +1,7 @@
 import { getAnalysis } from "../../lib/analysis";
 import { ArrowLeft, Plus, RefreshCw, Save, Send, Settings2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { DataTable } from "../../components/DataTable";
 import { useToast } from "../../components/Toast";
@@ -9,84 +9,259 @@ import { EmptyState, ErrorState, Field, LoadingState, Modal, PageHeader } from "
 import { api, apiMessage } from "../../lib/api";
 import { toArray } from "../../lib/data";
 import { useAuthStore } from "../../stores/auth";
-import { useWorkspaceUser } from "../../lib/workspaceUser";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 
 const normalize = (data: DataRecord[] | Paginated<DataRecord>): DataRecord[] => Array.isArray(data) ? data : data?.items || [];
 
+function useAnnouncementScope() {
+  const account = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const institution = account?.is_super_admin ? workspace?.operatorId === account.id ? workspace.id : null : account?.organization_id;
+  const canRead = useAuthStore((state) => state.can("announcement.read"));
+  const canWrite = useAuthStore((state) => state.can("announcement.write"));
+  const active = Boolean(account && (!account.is_super_admin || institution));
+  return { active, canRead, canWrite, key: JSON.stringify([session, account?.id, institution, account?.branch_ids, canRead, canWrite]) };
+}
+
 export function AnnouncementsPage() {
-  const [rows, setRows] = useState<DataRecord[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [search, setSearch] = useState(""); const [aiAnalysis, setAiAnalysis] = useState<any>(null); const { showToast } = useToast(); const can = useAuthStore((s) => s.can);
-  async function load() { setLoading(true); try { const r = await api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/announcements", { params: { page_size: 100, limit: 100 } }); setRows(normalize(r.data.data)); } catch (e) { setError(apiMessage(e)); } finally { setLoading(false); } }
-  useEffect(() => { load(); }, []);
-  useEffect(() => { getAnalysis("/ai/communication-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {}); }, []);
-  async function send(id: string) { try { await api.post(`/announcements/${id}/send`); showToast("Duyuru gönderime alındı", "Seçili kanallar için bildirim işleri oluşturuldu."); await load(); } catch (e) { showToast("Gönderilemedi", apiMessage(e), "error"); } }
-  const filtered = useMemo(() => rows.filter((row) => JSON.stringify(row).toLocaleLowerCase("tr-TR").includes(search.toLocaleLowerCase("tr-TR"))), [rows, search]);
-  return <><PageHeader eyebrow="İletişim" title="Duyurular" description="Doğru veli grubuna, doğru kanaldan anlaşılır mesajlar gönderin.">{can("announcement.write") && <Link className="btn btn-primary" to="/announcements/new"><Plus size={16} />Duyuru oluştur</Link>}</PageHeader>{aiAnalysis && <div className="card" style={{ marginBottom: 18 }}><div className="card-head"><div><h2>AI İletişim Analizi</h2><p>Duyuru gönderim istatistikleri ve öneriler</p></div><Send size={20} color="#176b5b" /></div><div className="card-pad"><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}><div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}><div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Bildirim</div><div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_notifications}</div></div><div style={{ padding: 16, borderRadius: 11, background: aiAnalysis.success_rate >= 80 ? "#dcfce7" : "#fef3c7" }}><div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Başarı Oranı</div><div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>%{aiAnalysis.success_rate}</div></div><div style={{ padding: 16, borderRadius: 11, background: "#f8faf8" }}><div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>Toplam Alıcı</div><div style={{ fontSize: 24, fontWeight: 800, color: "#1b2b2e" }}>{aiAnalysis.total_recipients}</div></div></div>{aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && <div><h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>AI Önerileri</h3>{aiAnalysis.recommendations.slice(0, 3).map((rec: string, index: number) => <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}><span style={{ fontSize: 13 }}>{rec}</span></div>)}</div>}</div></div>}{loading ? <div className="card"><LoadingState /></div> : error ? <div className="card"><ErrorState message={error} retry={load} /></div> : <DataTable rows={filtered} columns={[{ key: "title", label: "Başlık", subKey: "content" }, { key: "audience", label: "Hedef kitle" }, { key: "channels", label: "Kanallar" }, { key: "created_at", label: "Oluşturulma", type: "date" }, { key: "status", label: "Durum", type: "status" }]} search={search} onSearch={setSearch} page={1} totalPages={1} total={filtered.length} onPage={() => {}} canEdit={false} filters={can("announcement.write") ? <button className="btn btn-secondary" disabled={!filtered[0]} onClick={() => filtered[0] && send(filtered[0].id)}><Send size={15} />İlk taslağı gönder</button> : undefined} />}</>;
+  const scope = useAnnouncementScope();
+  if (!scope.active || !scope.canRead) return <p>Duyuru kayıtları için yetkili kurum çalışma alanını açın.</p>;
+  return <AnnouncementList key={scope.key} canWrite={scope.canWrite} />;
+}
+
+interface CommunicationMetrics {
+  total_notifications: number;
+  total_recipients: number;
+  success_rate: number;
+  recommendations?: string[];
+}
+
+function AnnouncementList({ canWrite }: { canWrite: boolean }) {
+  const [rows, setRows] = useState<DataRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [metrics, setMetrics] = useState<CommunicationMetrics | null>(null);
+  const pending = useRef<AbortController | null>(null);
+  const { showToast } = useToast();
+  useLayoutEffect(() => () => pending.current?.abort(), []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/announcements", { signal: controller.signal })
+      .then((response) => { if (!controller.signal.aborted) setRows(normalize(response.data.data)); })
+      .catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [attempt]);
+  useEffect(() => {
+    let active = true;
+    getAnalysis("/ai/communication-analysis").then((response) => {
+      const summary = response.data.data as CommunicationMetrics | null;
+      if (active && summary && [summary.total_notifications, summary.total_recipients, summary.success_rate].every(Number.isFinite)) setMetrics(summary);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [attempt]);
+  async function send(row: DataRecord) {
+    if (pending.current || !canWrite || row.status !== "DRAFT" || !Array.isArray(row.channels) || !row.channels.length) return;
+    const controller = new AbortController();
+    pending.current = controller;
+    setBusy(true);
+    try {
+      const response = await api.post<ApiResponse<{ announcement_id: string; jobs_created: number; already_queued: boolean }>>(
+        `/announcements/${encodeURIComponent(row.id)}/send`, undefined, { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      const outcome = response.data.data;
+      if (outcome?.announcement_id !== row.id || !Number.isInteger(outcome.jobs_created) || outcome.jobs_created < 1 ||
+        typeof outcome.already_queued !== "boolean") {
+        showToast("Kuyruk doğrulanamadı", "Sunucu seçili duyuru için bir bildirim işi doğrulamadı.", "error");
+        return;
+      }
+      showToast(outcome.already_queued ? "Mevcut kuyruk kaydı doğrulandı" : "Duyuru kuyruğa alındı", `${outcome.jobs_created} bildirim işi`);
+      setAttempt((value) => value + 1);
+    } catch (reason) {
+      if (!controller.signal.aborted) showToast("Duyuru kuyruğa alınamadı", apiMessage(reason), "error");
+    } finally {
+      pending.current = null;
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+  const filtered = useMemo(() => rows.filter((row) => [row.title, row.content, row.audience, row.status].some((value) =>
+    String(value ?? "").toLocaleLowerCase("tr-TR").includes(search.trim().toLocaleLowerCase("tr-TR")))), [rows, search]);
+  return <>
+    <PageHeader eyebrow="İletişim" title="Duyurular" description="Taslakları, hedef kitleyi ve gönderim durumunu yönetin.">
+      {canWrite && <Link className="btn btn-primary" to="/announcements/new"><Plus size={16} />Duyuru oluştur</Link>}
+    </PageHeader>
+    {metrics && <section className="card card-pad" style={{ marginBottom: 18 }} aria-label="Bildirim özeti">
+      <h2>Bildirim özeti</h2><p>Bildirim {metrics.total_notifications} · Alıcı {metrics.total_recipients} · Başarı %{metrics.success_rate}</p>
+      {!!metrics.recommendations?.length && <ul>{metrics.recommendations.slice(0, 3).map((item, index) => <li key={index}>{item}</li>)}</ul>}
+    </section>}
+    {loading ? <div className="card"><LoadingState /></div> : error ?
+      <div className="card"><ErrorState message={error} retry={() => setAttempt((value) => value + 1)} /></div> :
+      <DataTable rows={filtered} columns={[{ key: "title", label: "Başlık", subKey: "content" }, { key: "audience", label: "Hedef kitle" },
+        { key: "channels", label: "Kanallar" }, { key: "created_at", label: "Oluşturulma", type: "date" }, { key: "status", label: "Durum", type: "status" }]}
+        search={search} onSearch={setSearch} page={1} totalPages={1} total={filtered.length} onPage={() => {}} detailBase="/announcements" editBase="/announcements"
+        canEdit={(row) => canWrite && row.status === "DRAFT"} rowActions={(row) =>
+          canWrite && row.status === "DRAFT" && Array.isArray(row.channels) && row.channels.length > 0 ?
+            <button className="btn btn-secondary" aria-label={`${row.title} duyurusunu kuyruğa al`} disabled={busy} onClick={() => void send(row)}>
+              <Send size={15} />Kuyruğa al
+            </button> : null} />}
+  </>;
 }
 
 interface AnnouncementForm { title: string; content: string; audience: string; channels: string[]; branch_id: string; class_id: string; student_id: string }
-type AnnouncementApi = Omit<AnnouncementForm, "channels"> & { channels: string | string[] };
+type AnnouncementApi = Omit<AnnouncementForm, "channels"> & { id: string; channels: string | string[]; status: string };
+const targetForAudience = {
+  BRANCH_PARENTS: { field: "branch_id", kind: "branches", label: "Şube" },
+  CLASS_PARENTS: { field: "class_id", kind: "classes", label: "Sınıf" },
+  SINGLE_STUDENT: { field: "student_id", kind: "students", label: "Öğrenci" },
+} as const;
+type AnnouncementTarget = typeof targetForAudience[keyof typeof targetForAudience];
+
+function AnnouncementTargetSelect({ target, selected, registration, error }: {
+  target: AnnouncementTarget; selected: string; registration: UseFormRegisterReturn; error?: string;
+}) {
+  const [search, setSearch] = useState("");
+  const [options, setOptions] = useState<{ items: { id: string; name: string }[]; more: boolean } | null>(null);
+  const [failed, setFailed] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      api.get<ApiResponse<{ items: { id: string; name: string }[]; more: boolean }>>("/announcements/targets", {
+        params: { kind: target.kind, search: search.trim(), selected_id: selected || undefined }, signal: controller.signal,
+      }).then((response) => {
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(response.data.data?.items)) {
+          setFailed("Duyuru hedef listesi doğrulanamadı.");
+          return;
+        }
+        setFailed("");
+        setOptions(response.data.data);
+      }).catch((reason) => { if (!controller.signal.aborted) setFailed(apiMessage(reason)); });
+    }, search ? 250 : 0);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [target.kind, search, selected, attempt]);
+  return <>
+    <Field label={`${target.label} ara`}><input value={search} maxLength={100} onChange={(event) => setSearch(event.target.value)} /></Field>
+    <Field label={target.label} required error={error}>
+      <select {...registration} value={selected}>
+        <option value="">{target.label} seçin</option>
+        {options?.items.map((choice) => <option key={choice.id} value={choice.id}>{choice.name}</option>)}
+      </select>
+    </Field>
+    {options?.more && <p>Diğer kayıtları adla arayın.</p>}
+    {failed && <p role="alert">{failed} <button type="button" className="btn btn-secondary" onClick={() => setAttempt((value) => value + 1)}>Tekrar dene</button></p>}
+  </>;
+}
+
 export function AnnouncementFormPage() {
   const { id } = useParams();
+  const scope = useAnnouncementScope();
+  if (!scope.active || !scope.canWrite || !scope.canRead) return <p>Duyuru taslakları için okuma ve yazma yetkisi gerekli.</p>;
+  return <ScopedAnnouncementForm key={JSON.stringify([scope.key, id])} id={id} />;
+}
+
+function ScopedAnnouncementForm({ id }: { id?: string }) {
   const editing = Boolean(id);
-  const user = useWorkspaceUser(); const { showToast } = useToast(); const navigate = useNavigate(); const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = useForm<AnnouncementForm>({ defaultValues: { audience: "ALL_PARENTS", channels: ["EMAIL"] } }); const audience = watch("audience");
-  
+  const { showToast } = useToast();
+  const navigate = useNavigate();
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting }, reset } = useForm<AnnouncementForm>({
+    defaultValues: { audience: "ALL_PARENTS", channels: ["EMAIL"] },
+  });
+  const audience = watch("audience");
+  const target = targetForAudience[audience as keyof typeof targetForAudience];
+  const [ready, setReady] = useState(!editing);
+  const pending = useRef<AbortController | null>(null);
+  useLayoutEffect(() => () => pending.current?.abort(), []);
   useEffect(() => {
     if (!id) return;
-    api.get<ApiResponse<AnnouncementApi>>(`/announcements/${id}`).then((response) => {
-      const data = response.data.data;
-      const channelsValue = data.channels;
-      let channelsArray: string[] = ["EMAIL"];
-      
-      if (typeof channelsValue === "string") {
-        channelsArray = channelsValue.split(",");
-      } else if (Array.isArray(channelsValue)) {
-        channelsArray = channelsValue;
+    const controller = new AbortController();
+    api.get<ApiResponse<AnnouncementApi>>(`/announcements/${encodeURIComponent(id)}`, { signal: controller.signal }).then((response) => {
+      if (controller.signal.aborted) return;
+      const existing = response.data.data;
+      if (existing?.id !== id || existing.status !== "DRAFT") {
+        showToast("Taslak doğrulanamadı", "Yalnız seçili taslak düzenlenebilir.", "error");
+        return;
       }
-      
       reset({
-        title: data.title,
-        content: data.content,
-        audience: data.audience,
-        channels: channelsArray,
-        branch_id: data.branch_id || "",
-        class_id: data.class_id || "",
-        student_id: data.student_id || ""
+        title: existing.title, content: existing.content, audience: existing.audience,
+        channels: Array.isArray(existing.channels) ? existing.channels : existing.channels?.split(",") ?? [],
+        branch_id: existing.branch_id || "", class_id: existing.class_id || "", student_id: existing.student_id || "",
       });
-    }).catch((error) => showToast("Duyuru yüklenemedi", apiMessage(error), "error"));
+      setReady(true);
+    }).catch((reason) => { if (!controller.signal.aborted) showToast("Duyuru yüklenemedi", apiMessage(reason), "error"); });
+    return () => controller.abort();
   }, [id, reset, showToast]);
 
-  async function submit(values: AnnouncementForm) { 
-    try { 
-      if (editing) {
-        await api.put(`/announcements/${id}`, { 
-          title: values.title, 
-          content: values.content, 
-          audience: values.audience, 
-          channels: values.channels.join(","), 
-          branch_id: values.branch_id || null, 
-          class_id: values.class_id || null,
-          student_id: values.student_id || null
-        });
-        showToast("Duyuru güncellendi", "Değişiklikler kaydedildi.");
-      } else {
-        await api.post("/announcements", { 
-          organization_id: user?.organization_id, 
-          title: values.title, 
-          content: values.content, 
-          audience: values.audience, 
-          channels: values.channels.join(","), 
-          branch_id: values.branch_id || null, 
-          status: "DRAFT" 
-        });
-        showToast("Duyuru kaydedildi", "Taslağı listeden gönderime alabilirsiniz.");
+  async function submit(values: AnnouncementForm) {
+    if (!ready || pending.current) return;
+    const controller = new AbortController();
+    pending.current = controller;
+    const { signal } = controller;
+    const body = {
+      title: values.title.trim(), content: values.content.trim(), audience: values.audience,
+      channels: Array.isArray(values.channels) ? [...new Set(values.channels)] : [],
+      branch_id: values.audience === "BRANCH_PARENTS" ? values.branch_id?.trim() || null : null,
+      class_id: values.audience === "CLASS_PARENTS" ? values.class_id?.trim() || null : null,
+      student_id: values.audience === "SINGLE_STUDENT" ? values.student_id?.trim() || null : null,
+    };
+    try {
+      const path = id ? `/announcements/${encodeURIComponent(id)}` : "/announcements";
+      const response = id ? await api.put<ApiResponse<{ id: string }>>(path, body, { signal }) :
+        await api.post<ApiResponse<{ id: string }>>(path, body, { signal });
+      if (signal.aborted) return;
+      const savedId = response.data.data?.id;
+      if (!savedId || id && savedId !== id) throw new Error("Sunucu taslak kimliğini doğrulamadı.");
+      const read = await api.get<ApiResponse<AnnouncementApi>>(`/announcements/${encodeURIComponent(savedId)}`, { signal });
+      if (signal.aborted) return;
+      const saved = read.data.data;
+      if (saved?.id !== savedId || saved.status !== "DRAFT" || saved.title !== body.title || saved.content !== body.content ||
+        saved.audience !== body.audience || !Array.isArray(saved.channels) ||
+        saved.channels.length !== body.channels.length || body.channels.some((channel) => !saved.channels.includes(channel)) ||
+        (body.branch_id && saved.branch_id !== body.branch_id) || (body.class_id && saved.class_id !== body.class_id) ||
+        (body.student_id && saved.student_id !== body.student_id)) {
+        showToast("Taslak doğrulanamadı", "Sunucudaki kayıt gönderilen taslakla eşleşmiyor.", "error");
+        return;
       }
-      navigate("/announcements"); 
-    } catch (e) { 
-      showToast(editing ? "Duyuru güncellenemedi" : "Duyuru kaydedilemedi", apiMessage(e), "error"); 
-    } 
+      showToast(editing ? "Duyuru taslağı güncellendi" : "Duyuru taslağı kaydedildi");
+      navigate("/announcements");
+    } catch (reason) {
+      if (!signal.aborted) showToast("Duyuru taslağı kaydedilemedi", apiMessage(reason), "error");
+    } finally {
+      pending.current = null;
+    }
   }
-  return <><PageHeader eyebrow="İletişim" title={editing ? "Duyuru düzenle" : "Duyuru oluştur"} description="Hedef kitleyi ve iletişim kanallarını belirleyin."><Link className="btn btn-secondary" to="/announcements"><ArrowLeft size={16} />Listeye dön</Link></PageHeader><form className="card form-card" onSubmit={handleSubmit(submit)}><div className="form-section"><h2>Mesaj</h2><p>Veliye ulaşacak açık ve kısa metni hazırlayın.</p><div className="form-grid"><Field label="Duyuru başlığı" required error={errors.title?.message} full><input {...register("title", { required: "Başlık zorunludur.", minLength: { value: 2, message: "En az 2 karakter yazın." } })} /></Field><Field label="İçerik" required error={errors.content?.message} full><textarea {...register("content", { required: "İçerik zorunludur.", minLength: { value: 10, message: "En az 10 karakter yazın." } })} /></Field></div></div><div className="form-section"><h2>Hedef ve kanallar</h2><p>Yalnızca ilgili velilere gönderim yapılır.</p><div className="form-grid"><Field label="Hedef kitle" required><select {...register("audience")}><option value="ALL_PARENTS">Tüm veliler</option><option value="BRANCH_PARENTS">Şube velileri</option><option value="CLASS_PARENTS">Sınıf velileri</option><option value="SINGLE_STUDENT">Tek öğrenci velisi</option></select></Field>{audience === "BRANCH_PARENTS" && <Field label="Şube"><input {...register("branch_id")} placeholder="Şube ID" /></Field>}{audience === "CLASS_PARENTS" && <Field label="Sınıf"><input {...register("class_id")} placeholder="Sınıf ID" /></Field>}{audience === "SINGLE_STUDENT" && <Field label="Öğrenci"><input {...register("student_id")} placeholder="Öğrenci ID" /></Field>}<Field label="Gönderim kanalları" full><div className="inline" style={{ gap: 20, minHeight: 43 }}><label className="checkbox-line"><input type="checkbox" value="EMAIL" {...register("channels")} />E-posta</label><label className="checkbox-line"><input type="checkbox" value="SMS" {...register("channels")} />SMS</label><label className="checkbox-line"><input type="checkbox" value="WHATSAPP" {...register("channels")} />WhatsApp</label></div></Field></div></div><div className="form-actions"><Link className="btn btn-secondary" to="/announcements">Vazgeç</Link><button className="btn btn-primary" disabled={isSubmitting}><Save size={16} />Taslak olarak kaydet</button></div></form></>;
+  return <>
+    <PageHeader eyebrow="İletişim" title={editing ? "Duyuru düzenle" : "Duyuru oluştur"} description="Hedef kitleyi ve iletişim kanallarını belirleyin.">
+      <Link className="btn btn-secondary" to="/announcements"><ArrowLeft size={16} />Listeye dön</Link>
+    </PageHeader>
+    <form className="card form-card" onSubmit={handleSubmit(submit)}>
+      <fieldset disabled={!ready || isSubmitting} style={{ border: 0, padding: 0 }}>
+        <div className="form-section"><h2>Mesaj</h2><div className="form-grid">
+          <Field label="Duyuru başlığı" required error={errors.title?.message} full><input {...register("title", { required: "Başlık zorunludur.", minLength: 2, maxLength: 255 })} /></Field>
+          <Field label="İçerik" required error={errors.content?.message} full><textarea {...register("content", { required: "İçerik zorunludur.", minLength: 10, maxLength: 10000 })} /></Field>
+        </div></div>
+        <div className="form-section"><h2>Hedef ve kanallar</h2><div className="form-grid">
+          <Field label="Hedef kitle" required><select {...register("audience")}><option value="ALL_PARENTS">Tüm veliler</option><option value="BRANCH_PARENTS">Şube velileri</option><option value="CLASS_PARENTS">Sınıf velileri</option><option value="SINGLE_STUDENT">Tek öğrenci velisi</option></select></Field>
+          {target && <AnnouncementTargetSelect key={target.kind} target={target} selected={watch(target.field) || ""}
+            registration={register(target.field, { required: `${target.label} seçin.` })} error={errors[target.field]?.message} />}
+          <Field label="Gönderim kanalları" full><div className="inline" style={{ gap: 16, flexWrap: "wrap" }}>
+            <label className="checkbox-line"><input type="checkbox" value="EMAIL" {...register("channels")} />E-posta</label>
+            <label className="checkbox-line"><input type="checkbox" value="SMS" {...register("channels")} />SMS</label>
+            <label className="checkbox-line"><input type="checkbox" value="WHATSAPP" {...register("channels")} />WhatsApp</label>
+          </div></Field>
+        </div></div>
+      </fieldset>
+      <div className="form-actions"><Link className="btn btn-secondary" to="/announcements">Vazgeç</Link><button className="btn btn-primary" disabled={!ready || isSubmitting}><Save size={16} />Taslak olarak kaydet</button></div>
+    </form>
+  </>;
 }
 
 export function NotificationsPage() {

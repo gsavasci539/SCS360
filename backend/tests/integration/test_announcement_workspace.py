@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.infrastructure.models.models import (
-    Announcement, AnnouncementAudience, AnnouncementStatus, Branch, NotificationJob, User,
+    Announcement, AnnouncementAudience, AnnouncementStatus, Branch, NotificationJob, NotificationRecipient, Parent, User,
 )
 
 
@@ -39,3 +39,48 @@ async def test_announcement_draft_and_branch_status_listing_do_not_enqueue_notif
     assert foreign.status_code in {403, 404}, foreign.text
     async with sessions() as db:
         assert await db.scalar(select(func.count()).select_from(NotificationJob)) == 0
+
+
+async def test_targeted_announcement_queues_once_after_an_eligible_address_exists(materials_client):
+    client, sessions, data = materials_client
+    async with sessions() as db:
+        owner = User(organization_id=data["org"].id, email="announcement-sender@example.invalid", first_name="Test",
+            last_name="Sender", password_hash="unused", is_super_admin=True)
+        db.add(owner)
+        await db.commit()
+    auth = {**headers(owner), "X-SCS360-Organization-Id": str(data["org"].id)}
+    form = {"title": "Initial title", "content": "Initial content", "audience": "SINGLE_STUDENT",
+        "student_id": str(data["children"][0].id), "channels": ["EMAIL"]}
+    targets = await client.get("/api/announcements/targets", headers=auth,
+        params={"kind": "students", "search": "No match", "selected_id": form["student_id"]})
+    assert targets.status_code == 200, targets.text
+    assert [row["id"] for row in targets.json()["data"]["items"]] == [form["student_id"]]
+    unauthorized_target = await client.get("/api/announcements/targets", headers=auth,
+        params={"kind": "students", "search": "No match", "selected_id": str(data["stranger"].id)})
+    assert unauthorized_target.status_code == 200 and unauthorized_target.json()["data"]["items"] == []
+    created = await client.post("/api/announcements", headers=auth, json=form)
+    assert created.status_code == 200, created.text
+    identifier = created.json()["data"]["id"]
+    path = f"/api/announcements/{identifier}"
+    changed = await client.put(path, headers=auth, json={**form, "audience": "CLASS_PARENTS",
+        "class_id": str(data["classroom"].id), "student_id": None})
+    assert changed.status_code == 200 and changed.json()["data"]["id"] == identifier, changed.text
+    detail = await client.get(path, headers=auth)
+    assert detail.json()["data"]["class_id"] == str(data["classroom"].id)
+    assert detail.json()["data"]["student_id"] is None
+    assert detail.json()["data"]["branch_id"] == str(data["branch"].id)
+    rejected = await client.post(path + "/send", headers=auth)
+    assert rejected.status_code in {400, 422}, rejected.text
+    assert (await client.get(path, headers=auth)).json()["data"]["status"] == "DRAFT"
+    async with sessions() as db:
+        parent = (await db.execute(select(Parent).where(Parent.user_id == data["user"].id))).scalar_one()
+        parent.email = "isolated-recipient@example.invalid"
+        parent.receive_notifications = True
+        await db.commit()
+    for expected_retry in (False, True):
+        queued = await client.post(path + "/send", headers=auth)
+        assert queued.status_code == 200, queued.text
+        assert queued.json()["data"] == {"announcement_id": identifier, "jobs_created": 1, "already_queued": expected_retry}
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(NotificationJob)) == 1
+        assert await db.scalar(select(func.count()).select_from(NotificationRecipient)) == 1
