@@ -33,6 +33,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
+  const canReadDailyReport = useAuthStore((state) => state.can("parent.view_daily_report"));
   const [medicineSubmitting, setMedicineSubmitting] = useState(false);
   const [childList, setChildList] = useState<{ view: View; records: DataRecord[] } | null>(null);
   const children = childList?.view === view ? childList.records : [];
@@ -72,7 +73,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     const index = attendanceYear * 12 + attendanceMonth - 1 + offset;
     setPeriodChoice({ entryKey, year: Math.floor(index / 12), month: index % 12 + 1 });
   }
-  const [dayStatus, setDayStatus] = useState<DataRecord | null>(null);
+  const [dayStatus, setDayStatus] = useState<{ studentId: string; data: DataRecord | null; error?: string } | null>(null);
   const [attendance, setAttendance] = useState<DataRecord | null>(null);
   const [finances, setFinances] = useState<DataRecord | null>(null);
   const [medicineRequests, setMedicineRequests] = useState<DataRecord[]>([]);
@@ -140,15 +141,35 @@ export function ParentPortalPage({ view }: { view: View }) {
   }, [view]);
 
   useEffect(() => {
+    setDayStatus(null);
+    if (!isTimelineView || !canReadDailyReport || !selectedId) return;
+    const controller = new AbortController();
+    api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`, { signal: controller.signal })
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        const data = unwrap(response);
+        if (data?.student_id !== selectedId || !parseDateOnly(data.date)) {
+          setDayStatus({ studentId: selectedId, data: null, error: "Bugünkü durum öğrenci ve tarih için doğrulanamadı." });
+          return;
+        }
+        setDayStatus({ studentId: selectedId, data });
+      })
+      .catch((reason) => {
+        if (!controller.signal.aborted) setDayStatus({ studentId: selectedId, data: null, error: apiMessage(reason) });
+      });
+    return () => controller.abort();
+  }, [isTimelineView, canReadDailyReport, selectedId]);
+
+  useEffect(() => {
     if (!selectedId) return;
     let cancelled = false;
     const controller = new AbortController();
     setLoading(true); setError("");
-    setDayStatus(null); setAttendance(null); setFinances(null); setMedicineRequests([]);
+    setAttendance(null); setFinances(null); setMedicineRequests([]);
     setGrades([]); setSchedule([]); setHomework([]); setMaterials([]); setCommunications([]);
     setAnnouncements([]); setActivities([]); setWeeklyReports([]); setTeachers([]);
     setChatTeacherId(""); setAiRecommendations(null);
-    const requests: Promise<unknown>[] = [api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/today-status`, { signal: controller.signal })];
+    const requests: Promise<unknown>[] = [];
     if (view === "attendance" && canReadAttendance) requests.push(api.get<ApiResponse<DataRecord>>(`/parent/child/${selectedId}/attendance`, {
       params: { year: attendanceYear, month: attendanceMonth }, signal: controller.signal,
     }));
@@ -176,21 +197,20 @@ export function ParentPortalPage({ view }: { view: View }) {
     
     Promise.all(requests).then((responses) => {
       if (cancelled) return;
-      setDayStatus(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
-      if (view === "attendance" && canReadAttendance) setAttendance(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
-      if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[1] as { data: ApiResponse<DataRecord> }));
-      if (view === "health") setMedicineRequests(((unwrap(responses[1] as { data: ApiResponse<DataRecord> }).medicine_requests as DataRecord[]) || []));
-      if (view === "academic") setGrades(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "schedule") setSchedule(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "homework") setHomework(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "materials") setMaterials(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "announcements") setAnnouncements(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "activities") setActivities(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "reports") setWeeklyReports(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-      if (view === "chat") setTeachers(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "attendance" && canReadAttendance) setAttendance(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
+      if (view === "finances" || view === "dashboard") setFinances(unwrap(responses[0] as { data: ApiResponse<DataRecord> }));
+      if (view === "health") setMedicineRequests(((unwrap(responses[0] as { data: ApiResponse<DataRecord> }).medicine_requests as DataRecord[]) || []));
+      if (view === "academic") setGrades(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "schedule") setSchedule(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "homework") setHomework(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "materials") setMaterials(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "announcements") setAnnouncements(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "activities") setActivities(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "reports") setWeeklyReports(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+      if (view === "chat") setTeachers(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
       if (view === "communication") {
-        setCommunications(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
-        setTeachers(unwrap(responses[2] as { data: ApiResponse<DataRecord[]> }) || []);
+        setCommunications(unwrap(responses[0] as { data: ApiResponse<DataRecord[]> }) || []);
+        setTeachers(unwrap(responses[1] as { data: ApiResponse<DataRecord[]> }) || []);
       }
       // Hata durumunda istek ``null`` döner. Null üzerinde ``.data`` okumak
       // Promise.all akışını bozuyordu ve AI kartı hiç gösterilmiyordu.
@@ -289,7 +309,9 @@ export function ParentPortalPage({ view }: { view: View }) {
   if (error && !children.length) return <div className="card"><ErrorState message={error} /></div>;
   if (!children.length) return <div className="card"><ErrorState message="Bu veli hesabına bağlı öğrenci bulunamadı." /></div>;
 
-  const status = dayStatus?.student_id === selectedId ? dayStatus : null;
+  const showDayStatus = isTimelineView && canReadDailyReport && Boolean(selectedId);
+  const currentDayStatus = showDayStatus && dayStatus?.studentId === selectedId ? dayStatus : null;
+  const status = currentDayStatus?.data ?? null;
   const daily = status?.daily_report as DataRecord | undefined;
   const currentAttendance = status?.attendance as DataRecord | null | undefined;
   const showCurrentAttendance = canReadAttendance && status !== null && Object.hasOwn(status, "attendance");
@@ -351,6 +373,8 @@ export function ParentPortalPage({ view }: { view: View }) {
     </div>
 
     {error && <div className="card" style={{ marginBottom: 24 }}><ErrorState message={error} /></div>}
+    {showDayStatus && !currentDayStatus && <LoadingState label="Bugünkü durum yükleniyor" />}
+    {currentDayStatus?.error && <ErrorState message={currentDayStatus.error} />}
     {isTimelineView && selectedId && status?.date &&
       <ParentDayTimeline
         key={`${selectedId}-${String(status.date)}`}
@@ -440,8 +464,8 @@ export function ParentPortalPage({ view }: { view: View }) {
           </div>
         </div>}
 
-        <div className="card parent-stat-card parent-animate-in" style={{ 
-          background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 
+        {status && <div className="card parent-stat-card parent-animate-in" style={{
+          background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
           color: "white",
           padding: "16px",
           position: "relative",
@@ -462,9 +486,9 @@ export function ParentPortalPage({ view }: { view: View }) {
               {String(daily?.meal_status || "Yemek bilgisi yok")}
             </div>
           </div>
-        </div>
+        </div>}
 
-        {canReadFinances && (
+        {canReadFinances && finances && (
         <div className="card parent-stat-card parent-animate-in" style={{ 
           background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)", 
           color: "white",
@@ -621,7 +645,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     )}
 
     {/* Children View */}
-    {view === "children" && (
+    {view === "children" && status && (
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
         <div className="card parent-animate-in" style={{ 
           padding: "24px", 

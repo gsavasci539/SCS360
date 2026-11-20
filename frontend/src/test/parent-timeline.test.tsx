@@ -9,9 +9,9 @@ import { useAuthStore } from "../stores/auth";
 vi.mock("../lib/api", () => ({ api: { get: vi.fn() }, apiMessage: () => "Akış yüklenemedi" }));
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 
-function parentWithAttendanceAccess() {
+function parentWithAttendanceAccess(additionalPermissions: string[] = []) {
   useAuthStore.getState().setUser({ id: "parent", organization_id: "school", first_name: "Veli", last_name: "Test",
-    email: "parent@test.invalid", roles: [], branch_ids: [], is_super_admin: false, permissions: ["parent.view_attendance"] });
+    email: "parent@test.invalid", roles: [], branch_ids: [], is_super_admin: false, permissions: ["parent.view_attendance", ...additionalPermissions] });
 }
 
 const attendanceEvent = { id: "attendance-1", type: "ATTENDANCE", title: "Yoklama kaydı", status: "PRESENT",
@@ -69,6 +69,7 @@ it("gerçek etkinlik saatini ve detay bağlantısını gösterir, tarihi değiş
 it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve sonraki ay eski ayrıntıyı temizler", async () => {
   parentWithAttendanceAccess();
   vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path.endsWith("/today-status")) throw new Error("Günlük özet erişimi yok");
     if (path.endsWith("/timeline")) return { data: { data: { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] } } };
     if (path === "/parent/my-children") return { data: { data: children } };
     if (path === "/parent/child/child-2/attendance") {
@@ -95,6 +96,7 @@ it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve 
   expect(api.get).toHaveBeenCalledWith("/parent/child/child-2/attendance", expect.objectContaining({
     params: { year: 2025, month: 10 },
   }));
+  expect(api.get).not.toHaveBeenCalledWith(expect.stringMatching(/\/today-status$/), expect.anything());
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/parent/child/child-1/attendance")).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "2025-10-08 · Kayıt yok" }));
   expect(screen.getByText("2025-10-08 · Kayıt yok")).toBeInTheDocument();
@@ -120,7 +122,7 @@ it("yoklama izni yoksa akışta kaydı göstermez ve takvim isteği yapmaz", asy
 });
 
 it("yoklama ile günlük akış arasında geri ve ileri giderken seçimi doğrular", async () => {
-  parentWithAttendanceAccess();
+  parentWithAttendanceAccess(["parent.view_children"]);
   const today = "2026-11-20";
   const historicDay = "2025-10-07";
   let linkedChildren = children;

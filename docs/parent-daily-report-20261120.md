@@ -15,3 +15,5 @@ Web günlük akışı, seçilen çocuğu ve günü tarayıcının ilgili geçmi�
 Web günlük akışı ilaç, doz, revir uygulaması ve teslim alan bilgisini ilgili kayıtta gösteriyor. Servis biniş ve inişleri sunucudan gelen saat ve durumla okunuyor. Bu kayıtların ayrıntıları seçili çocuk ve gün üzerinde kalıyor. Dokuz günlük akış testi, TypeScript ve hedefli ESLint geçti.
 
 Bugünkü özet ve günlük akış, yoklama alanlarını yalnız `parent.view_attendance` izniyle döndürüyor. Bugünkü özette izin yoksa alan yanıtın dışında kalıyor. İzin varsa ve kayıt bulunamadıysa alanın değeri `null` oluyor. Karne okuma izni olan veli iki durumda da kayıtlı karneyi görebiliyor. Geçici SQLite testleri 6/6 ve hedefli web testleri 21/21 geçti. PostgreSQL varyantı ortam bulunamadığı için çalışmadı.
+
+Web günlük özeti yalnız günlük akışı kullanan ve yetkisi olan ekranlarda istiyor. Yoklama takvimi, finans ve sağlık ekranları kendi çağrılarını kullanıyor. Panoda finans veya günlük özet isteği başarısız olduğunda diğer kart kendi yanıtını gösterebiliyor. Başarısız finans isteği sıfır borç olarak gösterilmiyor. Hedefli 23 web testi, TypeScript ve ESLint geçti.

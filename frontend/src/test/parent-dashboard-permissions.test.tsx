@@ -13,8 +13,9 @@ it("finans izni olmayan velinin panosu finans isteği yapmaz ve ödeme kartı g�
     is_super_admin: false, roles: [], branch_ids: [], permissions: ["parent.view_children"] } });
   vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data:
     path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz", last_name: "Test" }]
+      : path.endsWith("/today-status") ? { student_id: "child", date: "2026-11-03", daily_report: null }
       : String(path).endsWith("/insights") ? { title: "Kayıt özeti", metrics: [{ label: "Not ortalaması", value: "Henüz değerlendirme kaydı yok" }] }
-      : String(path).endsWith("/timeline") ? { events: [] } : {} } }));
+      : String(path).endsWith("/timeline") ? { student_id: "child", date: "2026-11-03", events: [] } : {} } }));
   render(<MemoryRouter><ParentPortalPage view="dashboard" /></MemoryRouter>);
   await screen.findByText("Henüz değerlendirme kaydı yok", { exact: false });
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/parent/child/child/insights", expect.anything()));
@@ -49,7 +50,34 @@ it.each([false, true])("yoklama kartını yalnız izinli veliye gösterir (%s)",
   }
 });
 
+it.each(["today-status", "financial-invoices"] as const)("panelde %s hatası diğer kartın verisini engellemez", async (failedEndpoint) => {
+  useAuthStore.setState({ user: { id: "parent", organization_id: "school", email: "parent@test.invalid",
+    first_name: "Veli", last_name: "Test", is_super_admin: false, roles: [], branch_ids: [],
+    permissions: ["parent.view_children", "parent.view_finances"] } });
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path.endsWith(`/${failedEndpoint}`)) throw new Error("Bölüm isteği başarısız");
+    if (path === "/parent/my-children") return { data: { data: [{ student_id: "child", first_name: "Deniz" }] } };
+    if (path.endsWith("/today-status")) return { data: { data: { student_id: "child", date: "2026-11-03", daily_report: { mood: "Sakin" } } } };
+    if (path.endsWith("/financial-invoices")) return { data: { data: { total_remaining: 250, invoices: [] } } };
+    if (path.endsWith("/timeline")) return { data: { data: { student_id: "child", date: "2026-11-03", events: [] } } };
+    return { data: { data: null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="dashboard" /></MemoryRouter>);
+  expect(await screen.findByText("İstek tamamlanamadı")).toBeInTheDocument();
+  if (failedEndpoint === "today-status") {
+    expect(await screen.findByText("₺250")).toBeInTheDocument();
+    expect(screen.queryByText("Günlük Durum")).not.toBeInTheDocument();
+  } else {
+    expect(await screen.findByText("Sakin")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Günün akışı" })).toBeInTheDocument();
+    expect(screen.queryByText("Kalan Ödeme")).not.toBeInTheDocument();
+  }
+});
+
 it("çocuk değiştiğinde yalnız yeni çocuğun karne etkinliklerini gösterir", async () => {
+  useAuthStore.setState({ user: { id: "parent", organization_id: "school", email: "parent@test.invalid",
+    first_name: "Veli", last_name: "Test", is_super_admin: false, roles: [], branch_ids: [],
+    permissions: ["parent.view_children"] } });
   let finishOldChild!: (value: unknown) => void;
   vi.mocked(api.get).mockImplementation(async (path) => {
     if (path === "/parent/my-children") return { data: { data: [
