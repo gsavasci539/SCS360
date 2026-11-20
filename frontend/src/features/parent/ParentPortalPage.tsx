@@ -17,7 +17,7 @@ import { ParentReportCards } from "./ParentReportCards";
 import { ParentConsents } from "./ParentConsents";
 import { ParentSurveys } from "./ParentSurveys";
 import { useAuthStore } from "../../stores/auth";
-import { checkoutAttemptKey, checkoutIdentifier, checkoutScope, readSchoolCheckout, type SchoolCheckoutAttempt } from "../payment/schoolCheckoutAttempt";
+import { checkoutAmount, checkoutAttemptKey, checkoutIdentifier, checkoutScope, readSchoolCheckout, type SchoolCheckoutReference } from "../payment/schoolCheckoutAttempt";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 type ChildDate = { studentId?: unknown; date?: unknown };
@@ -139,7 +139,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [chatTeacherId, setChatTeacherId] = useState("");
   const [chatTeacherName, setChatTeacherName] = useState("");
   const [paymentModal, setPaymentModal] = useState<{
-    scope: string; debtId: string; childName: string; saved?: { scope: string; attempt: SchoolCheckoutAttempt };
+    scope: string; debtId: string; childName: string; saved?: { scope: string; attempt: SchoolCheckoutReference };
   } | null>(null);
   const [receiptModal, setReceiptModal] = useState<{ debtId: string; studentId: string; sessionVersion: number } | null>(null);
   const closeReceiptModal = useCallback(() => setReceiptModal(null), []);
@@ -338,8 +338,12 @@ export function ParentPortalPage({ view }: { view: View }) {
   }
 
   function canPayInvoice(invoice: DataRecord) {
-    return canMakePayment && finances?.online_payment_available === true &&
-      ["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) && Number(invoice.remaining_amount) > 0;
+    if (!canMakePayment || finances?.online_payment_available !== true ||
+      !["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) || !(Number(invoice.remaining_amount) > 0)) return false;
+    if (invoice.open_checkout == null) return true;
+    const open = savedCheckoutFor(invoice);
+    const local = open && readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, open.debt_id)).attempt;
+    return Boolean(open && local?.request_id === open.request_id && local.amount === open.amount);
   }
 
   function initializePayment(invoice: DataRecord) {
@@ -348,10 +352,19 @@ export function ParentPortalPage({ view }: { view: View }) {
       childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
   }
 
-  function savedCheckoutFor(invoice: DataRecord): SchoolCheckoutAttempt | null {
+  function savedCheckoutFor(invoice: DataRecord): SchoolCheckoutReference | null {
     const debtId = checkoutIdentifier(invoice.debt_id);
-    return parentCheckoutScope && debtId
-      ? readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, debtId)).attempt : null;
+    if (!parentCheckoutScope || !debtId) return null;
+    const openCheckout: unknown = invoice.open_checkout;
+    if (openCheckout != null) {
+      if (typeof openCheckout !== "object" || Array.isArray(openCheckout)) return null;
+      const reference = openCheckout as Record<string, unknown>;
+      const requestId = checkoutIdentifier(reference.request_id);
+      const amount = checkoutAmount(reference.amount);
+      return requestId && amount && reference.debt_id === debtId
+        ? { request_id: requestId, debt_id: debtId, amount } : null;
+    }
+    return readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, debtId)).attempt;
   }
 
   function openSavedPayment(invoice: DataRecord) {
@@ -1103,7 +1116,7 @@ export function ParentPortalPage({ view }: { view: View }) {
                             onClick={() => initializePayment(invoice)}
                           >
                             <Wallet size={16} style={{ marginRight: 8 }} />
-                            Öde
+                            {invoice.open_checkout == null ? "Öde" : "Ödeme işlemine dön"}
                           </button>
                         )}
                         {!canPayInvoice(invoice) && savedCheckoutFor(invoice) &&

@@ -105,11 +105,12 @@ it("finans izni yoksa borç isteği yapmaz ve bakiye göstermez", async () => {
 });
 
 it.each([
-  { online: false, debtStatus: "UNPAID", remaining: "25.00" },
-  { online: true, debtStatus: "PAID", remaining: "0.00" },
-])("kayıtlı sonuç sağlayıcı ve borç durumundan bağımsız olarak salt okunur açılır ($debtStatus)", async ({ online, debtStatus, remaining }) => {
+  { fromServer: false, online: false, debtStatus: "UNPAID", remaining: "25.00" },
+  { fromServer: false, online: true, debtStatus: "PAID", remaining: "0.00" },
+  { fromServer: true, online: true, debtStatus: "UNPAID", remaining: "25.00" },
+])("ödeme sonucu salt okunur açılır (sunucudan: $fromServer, borç durumu: $debtStatus)", async ({ fromServer, online, debtStatus, remaining }) => {
   const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
-  saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
+  if (!fromServer) saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
   const invoicePath = "/parent/child/child/financial-invoices";
   const statusPath = `/parent/payments/checkouts/${checkoutId}`;
   let statusCalls = 0;
@@ -117,13 +118,15 @@ it.each([
     if (path === statusPath) return { data: { data: ++statusCalls === 1 ? { ...metadata, status: "REVIEW", can_resume: true } :
       { ...metadata, status: "COMPLETED", payment_id: "00000000-0000-4000-8000-000000000010" } } };
     if (path === invoicePath) return { data: { data: { student_id: "child", total_remaining: remaining, online_payment_available: online, invoices: [
-      { debt_id: debtId, status: debtStatus, remaining_amount: remaining },
+      { debt_id: debtId, status: debtStatus, remaining_amount: remaining,
+        open_checkout: fromServer ? { debt_id: debtId, request_id: checkoutId, amount: "25.00" } : null },
       { debt_id: "00000000-0000-4000-8000-000000000011", status: "CANCELLED", remaining_amount: "0.00" },
     ] } } };
     return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
   });
   render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+  expect(screen.queryByRole("button", { name: "Öde" })).not.toBeInTheDocument();
   expect(screen.getByRole("dialog", { name: "Kayıtlı ödeme sonucu" })).toBeInTheDocument();
   expect(await screen.findByText(/Ödeme incelemede/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Mevcut ödeme sayfasını getir" })).not.toBeInTheDocument();
@@ -132,6 +135,24 @@ it.each([
   expect(await screen.findByText("Ödemeniz doğrulandı ve borcunuza işlendi.")).toBeInTheDocument();
   await waitFor(() => expect(vi.mocked(api.get).mock.calls.filter(([path]) => path === invoicePath)).toHaveLength(2));
   expect(statusCalls).toBe(2);
+  expect(api.post).not.toHaveBeenCalled();
+  if (fromServer) expect(window.sessionStorage.getItem(storageKey!)).toBeNull();
+});
+
+it("aynı tarayıcı sunucudaki açık ödeme ile eşleşen kayıtlı işleme döner", async () => {
+  const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
+  saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path.endsWith("/financial-invoices")) return { data: { data: { student_id: "child", total_remaining: 25, online_payment_available: true,
+      invoices: [{ debt_id: debtId, remaining_amount: 25, status: "UNPAID",
+        open_checkout: { request_id: checkoutId, debt_id: debtId, amount: "25.00" } }] } } };
+    if (path === `/parent/payments/checkouts/${checkoutId}`) return { data: { data: { ...metadata, status: "PENDING", can_resume: true } } };
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ödeme işlemine dön" }));
+  expect(await screen.findByRole("button", { name: "Mevcut ödeme sayfasını getir" })).toBeInTheDocument();
+  expect(screen.queryByRole("form")).not.toBeInTheDocument();
   expect(api.post).not.toHaveBeenCalled();
 });
 

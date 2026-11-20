@@ -1,5 +1,5 @@
 from app.core.dates import school_today
-from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form, Request, Body
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form, Request, Response, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, and_, or_
 from typing import Optional, List, Literal
@@ -252,26 +252,44 @@ async def list_excuse_requests(
 @router.get("/child/{student_id}/financial-invoices")
 async def get_child_financial_invoices(
     student_id: UUID,
+    response: Response,
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("parent.view_finances"))
 ):
     """Get financial invoices for a specific child"""
-    from app.infrastructure.models.models import StudentParent, Debt, Parent
+    from app.application.services.school_checkout_service import OPEN
+    from app.infrastructure.models.models import Debt, PaymentCheckout
     
-    # Convert string to UUID
-    try:
-        student_uuid = UUID(str(student_id))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Geçersiz öğrenci ID formatı")
-    
-    await require_parent_child_access(db, current_user.id, student_uuid)
-
-    # Get debts for this student
-    debt_result = await db.execute(
-        select(Debt).where(Debt.student_id == student_uuid, Debt.deleted_at.is_(None))
+    await require_parent_child_access(db, current_user.id, student_id)
+    debt_scope = (
+        Debt.student_id == student_id,
+        Debt.organization_id == current_user.organization_id,
+        Debt.deleted_at.is_(None),
     )
+    debt_result = await db.execute(select(Debt).where(*debt_scope))
     debts = debt_result.scalars().all()
+    active_checkouts = {}
+    if debts and tenant.has_permission("parent.make_payment"):
+        result = await db.execute(
+            select(PaymentCheckout.id, PaymentCheckout.debt_id, PaymentCheckout.amount, Debt.branch_id)
+            .join(Debt, Debt.id == PaymentCheckout.debt_id)
+            .where(
+                *debt_scope,
+                PaymentCheckout.organization_id == current_user.organization_id,
+                PaymentCheckout.created_by == current_user.id,
+                PaymentCheckout.status.in_(OPEN),
+            )
+            .order_by(PaymentCheckout.created_at.desc(), PaymentCheckout.id.desc())
+        )
+        for checkout_id, debt_id, amount, branch_id in result:
+            if not tenant.can_access_branch(branch_id):
+                continue
+            active_checkouts.setdefault(debt_id, {
+                "request_id": str(checkout_id),
+                "debt_id": str(debt_id),
+                "amount": format(amount, ".2f"),
+            })
     
     invoices_data = []
     for debt in debts:
@@ -283,12 +301,14 @@ async def get_child_financial_invoices(
             "paid_amount": float(debt.paid_amount),
             "remaining_amount": float(debt.remaining_amount),
             "status": debt.status,
+            "open_checkout": active_checkouts.get(debt.id),
             "due_date": debt.due_date.isoformat() if debt.due_date else None
         })
     
     total_remaining = sum(d["remaining_amount"] for d in invoices_data)
     from app.application.services.online_payment_service import available_for
     
+    response.headers["Cache-Control"] = "private, no-store"
     return success_response({
         "student_id": str(student_id),
         "total_remaining": total_remaining,

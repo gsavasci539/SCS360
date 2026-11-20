@@ -25,6 +25,78 @@ async def grant_attendance_read(db):
     role.permissions.append(Permission(code=code, name=code, module="parent"))
 
 
+async def test_parent_financial_invoices_discover_only_owned_open_checkouts(materials_client):  # noqa: F811
+    from decimal import Decimal
+    from app.infrastructure.models.models import Debt, DebtType, Parent, PaymentCheckout, StudentParent, User, UserRole
+
+    client, sessions, data = materials_client
+    first, sibling = data["children"]
+    foreign = data["stranger"]
+    owner = data["user"]
+
+    async with sessions() as db:
+        role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+        role.permissions.append(Permission(code="parent.view_finances", name="Parent finance", module="parent"))
+        other = User(email="guardian2@test.invalid", password_hash="unused", first_name="Other",
+            last_name="Guardian", organization_id=first.organization_id)
+        db.add(other)
+        await db.flush()
+        other_parent = Parent(user_id=other.id, organization_id=first.organization_id, first_name="Other", last_name="Guardian")
+        db.add_all([other_parent, UserRole(user_id=other.id, role_id=role.id)])
+        await db.flush()
+        db.add(StudentParent(student_id=first.id, parent_id=other_parent.id))
+
+        debts = [Debt(student_id=child.id, organization_id=child.organization_id, branch_id=child.branch_id,
+            debt_type=DebtType.EDUCATION, amount=Decimal("50.00"), paid_amount=Decimal("0.00"),
+            due_date=date(2026, 11, 20)) for child in (first, first, sibling, foreign)]
+        first_debt, second_debt, sibling_debt, foreign_debt = debts
+        db.add_all(debts)
+        await db.flush()
+        own_checkout = PaymentCheckout(debt_id=first_debt.id, created_by=owner.id, organization_id=first.organization_id,
+            amount=Decimal("25.10"), status="REVIEW")
+        other_checkout = PaymentCheckout(debt_id=second_debt.id, created_by=other.id, organization_id=first.organization_id,
+            amount=Decimal("10.00"), status="PENDING")
+        db.add_all([own_checkout, other_checkout, *[
+            PaymentCheckout(debt_id=debt.id, created_by=owner.id, organization_id=organization_id,
+                amount=Decimal("50.00"), status=status)
+            for debt, organization_id, status in (
+                (second_debt, first.organization_id, "FAILED"),
+                (second_debt, foreign.organization_id, "PENDING"),
+                (sibling_debt, first.organization_id, "PENDING"),
+            )
+        ]])
+        await db.commit()
+
+    def invoice_url(student):
+        return f"/api/parent/child/{student.id}/financial-invoices"
+
+    def checkout_url(checkout):
+        return f"/api/parent/payments/checkouts/{checkout.id}"
+
+    response = await client.get(invoice_url(first), headers=auth(owner))
+    assert response.status_code == 200, response.text
+    assert response.headers["cache-control"] == "private, no-store"
+    invoices = {row["debt_id"]: row["open_checkout"] for row in response.json()["data"]["invoices"]}
+    assert invoices == {str(first_debt.id): {
+        "debt_id": str(first_debt.id), "request_id": str(own_checkout.id), "amount": "25.10",
+    }, str(second_debt.id): None}
+    status = await client.get(checkout_url(own_checkout), headers=auth(owner))
+    assert status.status_code == 200 and status.json()["data"]["status"] == "REVIEW"
+    assert (await client.get(checkout_url(other_checkout), headers=auth(owner))).status_code == 403
+    assert (await client.get(checkout_url(own_checkout), headers=auth(other))).status_code == 403
+    assert (await client.get(invoice_url(foreign), headers=auth(owner))).status_code == 403
+    assert str(foreign_debt.id) not in invoices
+
+    async with sessions() as db:
+        role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+        role.permissions = [permission for permission in role.permissions if permission.code != "parent.make_payment"]
+        await db.commit()
+
+    finance_only = await client.get(invoice_url(first), headers=auth(owner))
+    assert finance_only.status_code == 200 and all(row["open_checkout"] is None for row in finance_only.json()["data"]["invoices"])
+    assert (await client.get(checkout_url(own_checkout), headers=auth(owner))).status_code == 403
+
+
 async def test_parent_receipts_require_a_matching_student_debt_and_institution(materials_client):  # noqa: F811
     from decimal import Decimal
 
