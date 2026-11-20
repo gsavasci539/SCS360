@@ -39,11 +39,11 @@ it("başarısız yetki oluşturma tekrarında aynı UUID ve taslak korunur", asy
   expect(within(form).getByLabelText("Yetkili yetişkin adı")).toHaveValue("Korunacak yetişkin");
   fireEvent.click(within(form).getByRole("button", { name: "Teslim yetkisini kaydet" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
-  expect(vi.mocked(api.post).mock.calls[0]).toEqual(vi.mocked(api.post).mock.calls[1]);
+  expect(vi.mocked(api.post).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.post).mock.calls[1].slice(0, 2));
 });
 
 it("kimlik numarasını otomatik doldurmaz, eşleşmeyen teslimi başarıya çevirmez", async () => {
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { authorized: false, message: "Kimlik eşleşmedi" } } }); open("/dismissal?student=child");
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { authorized: false, student_id: "child", message: "Kimlik eşleşmedi" } } }); open("/dismissal?student=child");
   const form = screen.getByRole("form", { name: "Öğrenci teslimini kaydet" });
   await waitFor(() => expect(within(form).getByRole("button", { name: "Kimliği doğrula ve teslimi kaydet" })).toBeEnabled());
   expect(within(form).getByLabelText("Teslim alanın kimlik belgesi numarası")).toHaveValue("");
@@ -64,5 +64,21 @@ it("yetki düzenlemede fotoğraf ve kimlik bilgisi korunur, kaydetme doğru kayd
   expect(within(form).getByLabelText("Yetkili fotoğraf bağlantısı")).toHaveValue("/private/preserved.svg");
   fireEvent.change(within(form).getByLabelText("Yetkili telefonu"), { target: { value: "05000000000" } });
   fireEvent.click(within(form).getByRole("button", { name: "Yetki değişikliğini kaydet" }));
-  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/dismissal/authorizations/grant", expect.objectContaining({ student_id: "child", authorized_person_id: "TEST-DOC-001", photo_url: "/private/preserved.svg", phone: "05000000000" })));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/dismissal/authorizations/grant", expect.objectContaining({ student_id: "child", authorized_person_id: "TEST-DOC-001", photo_url: "/private/preserved.svg", phone: "05000000000" }), expect.objectContaining({ signal: expect.any(AbortSignal) })));
+});
+
+it("eşleşme cevabı gelse bile kalıcı teslim geçmişi bulunmadan başarı göstermez", async () => {
+  vi.mocked(api.post).mockImplementation(async (_path, body) => ({ data: { data: {
+    authorized: true, student_id: "child", authorization_id: "grant", pickup_log_id: (body as { request_id: string }).request_id,
+  } } }));
+  open("/dismissal?student=child");
+  const form = screen.getByRole("form", { name: "Öğrenci teslimini kaydet" });
+  await waitFor(() => expect(within(form).getByRole("button", { name: "Kimliği doğrula ve teslimi kaydet" })).toBeEnabled());
+  fireEvent.change(within(form).getByLabelText("Teslim alanın kimlik belgesi numarası"), { target: { value: "TEST-DOC-001" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Kimliği doğrula ve teslimi kaydet" }));
+  expect(await screen.findByText("Teslim tamamlanamadı")).toBeInTheDocument();
+  expect(screen.queryByText(/Teslim kaydedildi/)).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/dismissal/logs", expect.objectContaining({
+    params: expect.objectContaining({ student_id: "child", record_id: expect.any(String), limit: 1 }),
+  }));
 });

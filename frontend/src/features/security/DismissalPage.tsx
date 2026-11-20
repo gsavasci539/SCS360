@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader, Badge, ErrorState, LoadingState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
@@ -6,6 +6,7 @@ import { api, apiMessage } from "../../lib/api";
 import { newRequestId } from "../../lib/requestId";
 import { shortDate } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { DataRecord } from "../../types/api";
 
 interface Choice { id: string; name: string; active?: boolean }
@@ -14,6 +15,16 @@ const mask = (value: unknown) => value ? `•••• ${text(value).slice(-4)}`
 const firstPages = { authorizations: 1, logs: 1 };
 
 export function DismissalPage() {
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const canRead = useAuthStore((state) => state.can("dismissal.read"));
+  const institution = user?.is_super_admin ? workspace?.operatorId === user.id ? workspace.id : null : user?.organization_id;
+  if (!user || !institution || !canRead) return <p>Teslim kayıtları için yetkili kurum çalışma alanını açın.</p>;
+  return <DismissalWorkspace key={JSON.stringify([session, user.id, institution, user.branch_ids])} />;
+}
+
+function DismissalWorkspace() {
   const canWrite = useAuthStore((state) => state.can("dismissal.write")), canSecurity = useAuthStore((state) => state.can("security.read"));
   const [params, setParams] = useSearchParams(); const studentId = params.get("student") || "";
   const [students, setStudents] = useState<Choice[]>([]), [search, setSearch] = useState(""), [more, setMore] = useState(false);
@@ -23,7 +34,9 @@ export function DismissalPage() {
   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [optionsLoading, setOptionsLoading] = useState(true), [optionsError, setOptionsError] = useState("");
   const [busy, setBusy] = useState(false), [result, setResult] = useState<DataRecord | null>(null);
   const [grantId, setGrantId] = useState(() => newRequestId()), [deliveryId, setDeliveryId] = useState(() => newRequestId());
+  const pending = useRef<AbortController | null>(null);
   const { showToast } = useToast(); const refresh = () => setRevision((value) => value + 1);
+  useLayoutEffect(() => () => pending.current?.abort(), [studentId, canWrite]);
   useEffect(() => {
     setGrantId(newRequestId()); setDeliveryId(newRequestId()); setResult(null);
     setEditing((row) => row && row.student_id === studentId ? row : null);
@@ -48,24 +61,80 @@ export function DismissalPage() {
   }, [studentId, day, pages, revision]);
   function scope(id: string) { setParams(id ? { student: id } : {}); setPages(firstPages); setDeliveryId(newRequestId()); setGrantId(newRequestId()); setResult(null); }
   function payload(form: HTMLFormElement) { return Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, value === "" ? null : value])); }
-  async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; const form = event.currentTarget; setBusy(true);
-    const body = { ...payload(form), student_id: studentId, request_id: grantId };
+  async function change(failureTitle: string, action: (signal: AbortSignal) => Promise<void>) {
+    if (!canWrite || pending.current) return;
+    const controller = new AbortController();
+    pending.current = controller;
+    setBusy(true);
     try {
-      if (editing) await api.put(`/dismissal/authorizations/${editing.id}`, body); else await api.post("/dismissal/authorizations", body);
+      await action(controller.signal);
+    } catch (reason) {
+      if (!controller.signal.aborted) showToast(failureTitle, apiMessage(reason), "error");
+    } finally {
+      if (pending.current === controller) {
+        pending.current = null;
+        setBusy(false);
+      }
+    }
+  }
+  async function readGrant(id: string, student: string, signal: AbortSignal) {
+    const read = await api.get("/dismissal/authorizations", { params: { student_id: student, record_id: id, limit: 1 }, signal });
+    const rows = read.data.data;
+    if (signal.aborted) return;
+    if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id || rows[0].student_id !== student) {
+      throw new Error("Teslim yetkisi sunucudan doğrulanamadı.");
+    }
+    return rows[0] as DataRecord;
+  }
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!ready) return; const form = event.currentTarget;
+    const body = { ...payload(form), student_id: studentId, request_id: grantId };
+    await change("Teslim yetkisi kaydedilemedi", async (signal) => {
+      const response = editing
+        ? await api.put(`/dismissal/authorizations/${encodeURIComponent(editing.id)}`, body, { signal })
+        : await api.post("/dismissal/authorizations", body, { signal });
+      if (signal.aborted) return;
+      const id = editing?.id ?? grantId;
+      if (response.data.data?.id !== id) throw new Error("Sunucu yetkinin kimliğini doğrulamadı.");
+      const row = await readGrant(id, studentId, signal);
+      if (signal.aborted) return;
+      if (!row || ["authorized_person_name", "authorized_person_id", "relationship", "photo_url", "phone", "valid_from", "valid_until", "notes"]
+        .some((field) => text(row[field]).trim() !== text((body as Record<string, unknown>)[field]).trim())) {
+        throw new Error("Sunucudaki teslim yetkisi form ile eşleşmedi.");
+      }
       form.reset(); setEditing(null); setGrantId(newRequestId()); setPages(firstPages); refresh(); showToast("Teslim yetkisi kaydedildi");
-    } catch (reason) { showToast("Teslim yetkisi kaydedilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
+    });
   }
   async function verify(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; const form = event.currentTarget; setBusy(true);
-    try {
-      const response = await api.post("/dismissal/verify-pickup", { ...payload(form), student_id: studentId, request_id: deliveryId }); const data = response.data.data;
-      setResult(data); if (data.authorized) { form.reset(); setDeliveryId(newRequestId()); setPages((value) => ({ ...value, logs: 1 })); refresh(); }
-    } catch (reason) { showToast("Teslim tamamlanamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
+    event.preventDefault(); if (!ready) return; const form = event.currentTarget;
+    await change("Teslim tamamlanamadı", async (signal) => {
+      setResult(null);
+      const response = await api.post("/dismissal/verify-pickup", { ...payload(form), student_id: studentId, request_id: deliveryId }, { signal });
+      if (signal.aborted) return;
+      const data = response.data.data;
+      if (data?.student_id !== studentId || typeof data.authorized !== "boolean") throw new Error("Teslim yanıtı seçili öğrenciyle eşleşmedi.");
+      if (!data.authorized) { setResult(data); return; }
+      if (data.pickup_log_id !== deliveryId || !data.authorization_id) throw new Error("Sunucu teslim kaydını doğrulamadı.");
+      const read = await api.get("/dismissal/logs", { params: { student_id: studentId, record_id: deliveryId, limit: 1 }, signal });
+      if (signal.aborted) return;
+      const rows = read.data.data;
+      if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== deliveryId || rows[0].student_id !== studentId) {
+        throw new Error("Kaydedilen öğrenci teslimi sunucuda bulunamadı.");
+      }
+      setResult(data); form.reset(); setDeliveryId(newRequestId()); setPages((value) => ({ ...value, logs: 1 })); refresh();
+    });
   }
   async function revoke(row: DataRecord) {
-    setBusy(true); try { await api.delete(`/dismissal/authorizations/${row.id}`); if (editing?.id === row.id) setEditing(null); refresh(); showToast("Teslim yetkisi iptal edildi"); }
-    catch (reason) { showToast("Yetki iptal edilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
+    await change("Yetki iptal edilemedi", async (signal) => {
+      const response = await api.delete(`/dismissal/authorizations/${encodeURIComponent(row.id)}`, { signal });
+      if (signal.aborted) return;
+      if (response.data.data?.id !== row.id || response.data.data?.status !== "REVOKED") throw new Error("Yetki iptali doğrulanamadı.");
+      const stored = await readGrant(row.id, text(row.student_id), signal);
+      if (signal.aborted) return;
+      if (stored?.status !== "REVOKED") throw new Error("Sunucudaki yetki iptal edilmiş görünmüyor.");
+      if (editing?.id === row.id) setEditing(null);
+      refresh(); showToast("Teslim yetkisi iptal edildi");
+    });
   }
   function edit(row: DataRecord) { scope(text(row.student_id)); setEditing(row); document.getElementById("pickup-grant-form")?.scrollIntoView?.({ behavior: "smooth", block: "start" }); }
   function field(label: string, name: string, length: number, required = false) { return <label>{label}<input className="filter-select" name={name} maxLength={length} required={required} defaultValue={text(editing?.[name])} /></label>; }
