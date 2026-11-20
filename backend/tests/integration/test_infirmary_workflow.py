@@ -205,3 +205,13 @@ async def test_teacher_medication_reader_includes_direct_student_assignment_with
     response = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]))
     assert response.status_code == 200, response.text
     assert {row["medicine_name"] for row in response.json()["data"]} == {"Direct clinic"}, response.text
+    branch = str(data["branch"].id)
+    page = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]),
+        params={"branch_id": branch, "limit": 1, "offset": 0})
+    assert page.status_code == 200 and page.json()["data"][0]["branch_id"] == branch
+    end = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]),
+        params={"branch_id": branch, "limit": 1, "offset": 1})
+    assert end.status_code == 200 and end.json()["data"] == []
+    foreign = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]),
+        params={"branch_id": str(data["other_branch"].id)})
+    assert foreign.status_code == 200 and foreign.json()["data"] == []

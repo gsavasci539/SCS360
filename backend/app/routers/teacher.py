@@ -55,6 +55,9 @@ async def get_teacher_pending_tasks(
 
 @router.get("/medicine-requests")
 async def get_teacher_medicine_requests(
+    branch_id: UUID | None = None,
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("health.read", "teacher.view_medicine_requests")),
@@ -64,15 +67,16 @@ async def get_teacher_medicine_requests(
     from app.infrastructure.models.models import ClassRoom, Student, StudentTeacherAssignment
     class_result = await db.execute(teacher_classes_query(current_user.id))
     class_ids = [cls.id for cls in class_result.scalars().all() if cls is not None]
-    result = await db.execute(
-        select(MedicationSchedule, Student, ClassRoom)
+    query = (select(MedicationSchedule, Student, ClassRoom)
         .select_from(MedicationSchedule)
         .join(Student, MedicationSchedule.student_id == Student.id)
         .outerjoin(ClassRoom, Student.class_id == ClassRoom.id)
         .where(Student.organization_id == current_user.organization_id, Student.deleted_at.is_(None), or_(Student.class_id.in_(class_ids),
             Student.id.in_(select(StudentTeacherAssignment.__table__.c.student_id).where(StudentTeacherAssignment.__table__.c.teacher_id == current_user.id))))
-        .order_by(MedicationSchedule.created_at.desc(), MedicationSchedule.id)
     )
+    if branch_id is not None:
+        query = query.where(Student.branch_id == branch_id)
+    result = await db.execute(query.order_by(MedicationSchedule.created_at.desc(), MedicationSchedule.id).limit(limit).offset(offset))
     requests = []
     from app.application.services.infirmary_service import medicine_request_status, instructions
     for schedule, student, cls in result:
@@ -81,6 +85,7 @@ async def get_teacher_medicine_requests(
             "id": str(schedule.id),
             "student_id": str(student.id),
             "student_name": f"{student.first_name} {student.last_name}",
+            "branch_id": str(student.branch_id) if student.branch_id else None,
             "class_name": cls.name if cls else "Bireysel öğrenci",
             "medicine_name": schedule.medication_name,
             "dosage": schedule.dosage,
