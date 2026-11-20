@@ -291,7 +291,8 @@ export function ParentPortalPage({ view }: { view: View }) {
 
   const status = dayStatus?.student_id === selectedId ? dayStatus : null;
   const daily = status?.daily_report as DataRecord | undefined;
-  const currentAttendance = status?.attendance as DataRecord | undefined;
+  const currentAttendance = status?.attendance as DataRecord | null | undefined;
+  const showCurrentAttendance = canReadAttendance && status !== null && Object.hasOwn(status, "attendance");
   const verifiedAttendance = attendance?.student_id === selectedId && attendance?.year === attendanceYear && attendance?.month === attendanceMonth
     ? attendance : null;
   const summary = verifiedAttendance?.summary as DataRecord | undefined;
@@ -415,8 +416,8 @@ export function ParentPortalPage({ view }: { view: View }) {
           </div>
         </div>
 
-        <div className="card parent-stat-card parent-animate-in" style={{ 
-          background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", 
+        {showCurrentAttendance && <div className="card parent-stat-card parent-animate-in" style={{
+          background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
           color: "white",
           padding: "16px",
           position: "relative",
@@ -437,7 +438,7 @@ export function ParentPortalPage({ view }: { view: View }) {
               {currentAttendance?.check_in_time ? `Giriş: ${currentAttendance.check_in_time}` : ""}
             </div>
           </div>
-        </div>
+        </div>}
 
         <div className="card parent-stat-card parent-animate-in" style={{ 
           background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", 

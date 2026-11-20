@@ -13,11 +13,13 @@ def event(kind, row, title, status, detail_url, *, clock=None, instant=None, det
         "timestamp": local.isoformat() if local else None, "details": details or {}, "detail_url": detail_url}
 
 
-async def day_records(db, user, student_id, target_date):
+async def day_records(db, user, student_id, target_date, *, can_read_attendance: bool):
     _, student = await child(db, user, student_id)
-    attendance = (await db.execute(select(AttendanceRecord).where(AttendanceRecord.student_id == student.id,
-        AttendanceRecord.organization_id == student.organization_id, AttendanceRecord.attendance_date == target_date,
-        AttendanceRecord.deleted_at.is_(None)))).scalar_one_or_none()
+    attendance = None
+    if can_read_attendance:
+        attendance = (await db.execute(select(AttendanceRecord).where(AttendanceRecord.student_id == student.id,
+            AttendanceRecord.organization_id == student.organization_id, AttendanceRecord.attendance_date == target_date,
+            AttendanceRecord.deleted_at.is_(None)))).scalar_one_or_none()
     report = (await db.execute(select(DailyDevelopmentReport).where(DailyDevelopmentReport.student_id == student.id,
         DailyDevelopmentReport.date == target_date))).scalar_one_or_none()
     return student, attendance, report
@@ -31,25 +33,30 @@ def weekday_matches(value, day):
     return normalized in {names[index], turkish[index], turkish[index].translate(str.maketrans("İŞÇ", "ISC")), str(index + 1)}
 
 
-async def today_status(db, user, student_id):
+async def today_status(db, user, student_id, *, can_read_attendance: bool):
     target_date = school_today()
-    student, attendance, report = await day_records(db, user, student_id, target_date)
+    student, attendance, report = await day_records(db, user, student_id, target_date,
+        can_read_attendance=can_read_attendance)
     days = await schedule(db, user, student_id)
     lessons = [lesson for day in days if weekday_matches(day.get("day_of_week"), target_date) for lesson in day.get("lessons", [])]
-    return {"student_id": str(student.id), "student_name": f"{student.first_name} {student.last_name}",
-        "date": target_date.isoformat(), "attendance": {"status": enum_value(attendance.status),
-            "check_in_time": attendance.check_in_time.strftime("%H:%M") if attendance.check_in_time else None} if attendance else None,
+    result = {"student_id": str(student.id), "student_name": f"{student.first_name} {student.last_name}",
+        "date": target_date.isoformat(),
         "daily_report": {"meal_status": report.meal_status, "sleep_status": report.sleep_status, "mood": report.mood,
             "activities": report.activities, "teacher_notes": report.teacher_notes} if report else None,
         "today_schedule": lessons}
+    if can_read_attendance:
+        result["attendance"] = {"status": enum_value(attendance.status),
+            "check_in_time": attendance.check_in_time.strftime("%H:%M") if attendance.check_in_time else None} if attendance else None
+    return result
 
 
-async def timeline(db, user, student_id, target_date=None):
+async def timeline(db, user, student_id, target_date=None, *, can_read_attendance: bool):
     from app.domain.entities.health import MedicationLog, MedicationSchedule, InfirmaryVisit
     from app.domain.entities.bus import BusAttendance
     from app.domain.entities.pickup import PickupLog
     target_date = target_date or school_today()
-    student, attendance, report = await day_records(db, user, student_id, target_date)
+    student, attendance, report = await day_records(db, user, student_id, target_date,
+        can_read_attendance=can_read_attendance)
     events = []
     if attendance:
         events.append(event("ATTENDANCE", attendance, "Yoklama kaydı", attendance.status, "/parent/attendance",

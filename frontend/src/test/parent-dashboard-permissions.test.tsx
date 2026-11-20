@@ -23,6 +23,32 @@ it("finans izni olmayan velinin panosu finans isteği yapmaz ve ödeme kartı g�
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
 
+it.each([false, true])("yoklama kartını yalnız izinli veliye gösterir (%s)", async (canReadAttendance) => {
+  useAuthStore.setState({ user: { id: "parent", organization_id: "school", email: "parent@test.invalid",
+    first_name: "Veli", last_name: "Test", is_super_admin: false, roles: [], branch_ids: [],
+    permissions: canReadAttendance ? ["parent.view_children", "parent.view_attendance"] : ["parent.view_children"] } });
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === "/parent/my-children") return { data: { data: [{ student_id: "child", first_name: "Deniz", last_name: "Test" }] } };
+    if (path.endsWith("/today-status")) return { data: { data: { student_id: "child", date: "2026-11-03",
+      attendance: { status: "PRESENT", check_in_time: "08:45" }, daily_report: { teacher_notes: "Kayıtlı karne notu" } } } };
+    if (path.endsWith("/timeline")) return { data: { data: { student_id: "child", date: "2026-11-03", events: [{
+      id: "report", type: "DAILY_REPORT", title: "Öğretmen günlük raporu", status: "RECORDED",
+      time: null, details: { teacher_notes: "Kayıtlı karne notu" }, detail_url: "/parent/reports",
+    }] } } };
+    return { data: { data: null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="dashboard" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Karne ayrıntısını aç" }));
+  expect(screen.getByText("Öğretmen notu · Kayıtlı karne notu")).toBeInTheDocument();
+  if (canReadAttendance) {
+    expect(screen.getByText("Bugünkü Yoklama")).toBeInTheDocument();
+    expect(screen.getByText("Giriş: 08:45")).toBeInTheDocument();
+  } else {
+    expect(screen.queryByText("Bugünkü Yoklama")).not.toBeInTheDocument();
+    expect(screen.queryByText("Giriş: 08:45")).not.toBeInTheDocument();
+  }
+});
+
 it("çocuk değiştiğinde yalnız yeni çocuğun karne etkinliklerini gösterir", async () => {
   let finishOldChild!: (value: unknown) => void;
   vi.mocked(api.get).mockImplementation(async (path) => {

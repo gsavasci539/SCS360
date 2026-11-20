@@ -184,7 +184,8 @@ async def get_child_today_status(
     tenant: TenantContext = Depends(PermissionChecker("parent.view_daily_report")),
 ):
     from app.application.services import parent_day_service
-    return success_response(await parent_day_service.today_status(db, current_user, student_id))
+    return success_response(await parent_day_service.today_status(db, current_user, student_id,
+        can_read_attendance=tenant.has_permission("parent.view_attendance")))
 
 
 @router.get("/child/{student_id}/timeline")
@@ -194,7 +195,8 @@ async def get_child_timeline(
     tenant: TenantContext = Depends(PermissionChecker("parent.view_daily_report")),
 ):
     from app.application.services import parent_day_service
-    return success_response(await parent_day_service.timeline(db, current_user, student_id, date))
+    return success_response(await parent_day_service.timeline(db, current_user, student_id, date,
+        can_read_attendance=tenant.has_permission("parent.view_attendance")))
 
 
 @router.post("/child/{student_id}/excuse-request")

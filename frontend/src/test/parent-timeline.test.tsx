@@ -105,12 +105,13 @@ it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve 
   expect(screen.queryByRole("button", { name: "2025-10-07 · Mevcut" })).not.toBeInTheDocument();
 });
 
-it("yoklama izni yoksa akışta geçiş sunmaz ve takvim isteği yapmaz", async () => {
+it("yoklama izni yoksa akışta kaydı göstermez ve takvim isteği yapmaz", async () => {
   vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path.endsWith("/timeline")
     ? { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] }
     : path === "/parent/my-children" ? children : null } }));
   const { unmount } = render(<MemoryRouter><ParentDayTimeline studentId="child-2" initialDate="2025-10-07" /></MemoryRouter>);
-  expect(await screen.findByText("08:30 · Yoklama kaydı")).toBeInTheDocument();
+  expect(await screen.findByText("Bu gün için kayıtlı etkinlik yok.")).toBeInTheDocument();
+  expect(screen.queryByText("08:30 · Yoklama kaydı")).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "İlgili sayfayı aç" })).not.toBeInTheDocument();
   unmount();
   render(<MemoryRouter><ParentPortalPage view="attendance" /></MemoryRouter>);

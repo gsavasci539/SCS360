@@ -77,7 +77,9 @@ export function ParentDayTimeline({ studentId, initialDate, selectedDate, onDayC
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [studentId, day, retry]);
-  const events = result?.studentId === studentId && result.day === day ? result.events : [];
+  const events = result?.studentId === studentId && result.day === day
+    ? result.events.filter((event) => canReadAttendance || event.type !== "ATTENDANCE")
+    : [];
   return <section className="card card-pad" aria-label="Çocuğun günlük akışı" style={{ margin: "20px 0" }}>
     <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
       <h2>Günün akışı</h2>
@@ -92,8 +94,8 @@ export function ParentDayTimeline({ studentId, initialDate, selectedDate, onDayC
             {event.type === "DAILY_REPORT" && <DailyReportDetails details={event.details} />}
             {event.type === "ATTENDANCE" && <>
               {event.details.notes && <p style={{ overflowWrap: "anywhere" }}>{event.details.notes}</p>}
-              {canReadAttendance && <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}
-                state={{ parentAttendance: { studentId, date: day } }}>İlgili sayfayı aç</Link>}
+              <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}
+                state={{ parentAttendance: { studentId, date: day } }}>İlgili sayfayı aç</Link>
             </>}
             {recordFields[event.type]?.map(([field, label]) => {
               const value = event.details[field];

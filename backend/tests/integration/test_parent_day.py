@@ -19,12 +19,19 @@ def auth(user):
     return {"Authorization": "Bearer " + create_access_token(user.id)}
 
 
+async def grant_attendance_read(db):
+    role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+    code = "parent.view_attendance"
+    role.permissions.append(Permission(code=code, name=code, module="parent"))
+
+
 async def test_parent_timeline_reads_real_child_events_and_school_day_boundaries(materials_client, monkeypatch):
     client, sessions, data = materials_client
     monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")
     day = date(2026, 11, 3)
     student = data["children"][0]
     async with sessions() as db:
+        await grant_attendance_read(db)
         db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
             student_id=student.id, attendance_date=day, status=AttendanceStatus.PRESENT, check_in_time=time(8, 30), recorded_by=data["teacher"].id))
         db.add(DailyDevelopmentReport(student_id=student.id, class_id=student.class_id, date=day, meal_status="ALL",
@@ -69,6 +76,7 @@ async def test_today_status_uses_school_date_and_saved_class_schedule(materials_
     monkeypatch.setattr(parent_day_service, "school_today", lambda: day)
     student = data["children"][0]
     async with sessions() as db:
+        await grant_attendance_read(db)
         db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
             student_id=student.id, attendance_date=day, status=AttendanceStatus.PRESENT, check_in_time=time(8), recorded_by=data["teacher"].id))
         db.add(OperationalRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
@@ -89,6 +97,7 @@ async def test_date_only_records_do_not_invent_an_event_time(materials_client):
     day = date(2026, 11, 3)
     student = data["children"][0]
     async with sessions() as db:
+        await grant_attendance_read(db)
         db.add(AttendanceRecord(organization_id=data["org"].id, branch_id=data["branch"].id, class_id=student.class_id,
             student_id=student.id, attendance_date=day, status=AttendanceStatus.ABSENT, recorded_by=data["teacher"].id))
         await db.commit()
@@ -126,24 +135,46 @@ async def test_created_daily_report_is_visible_only_for_the_linked_child_and_dat
     assert forbidden.status_code == 403
 
 
-async def test_parent_attendance_requires_permission_and_returns_the_requested_child_month(materials_client):
+async def test_parent_attendance_requires_permission_in_all_daily_views(materials_client, monkeypatch):
     client, sessions, data = materials_client
     sibling, child = data["children"]
     parent = auth(data["user"])
-    path = f"/api/parent/child/{child.id}/attendance"
-    period = {"year": 2025, "month": 10}
-    assert (await client.get(path, headers=parent, params=period)).status_code == 403
+    day = date(2025, 10, 7)
+    monkeypatch.setattr(parent_day_service, "school_today", lambda: day)
+    child_path = f"/api/parent/child/{child.id}"
+    path = f"{child_path}/attendance"
+    period = {"year": day.year, "month": day.month}
 
     async with sessions() as db:
-        role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
-        code = "parent.view_attendance"
-        role.permissions.append(Permission(code=code, name=code, module="parent"))
+        db.add(DailyDevelopmentReport(student_id=child.id, class_id=child.class_id, date=day,
+            teacher_notes="Kayıtlı gözlem", recorded_by=data["teacher"].id))
         db.add_all([AttendanceRecord(student_id=student.id, class_id=student.class_id,
-            organization_id=student.organization_id, branch_id=student.branch_id, attendance_date=day,
+            organization_id=student.organization_id, branch_id=student.branch_id, attendance_date=record_day,
             status=AttendanceStatus.PRESENT, recorded_by=data["teacher"].id, notes=note)
-            for student, day, note in [(child, date(2025, 10, 7), "Seçilen çocuk"),
+            for student, record_day, note in [(child, day, "Seçilen çocuk"),
                 (child, date(2025, 11, 7), "Farklı ay"), (sibling, date(2025, 10, 8), "Kardeş")]])
         await db.commit()
+
+    assert (await client.get(path, headers=parent, params=period)).status_code == 403
+    today = await client.get(f"{child_path}/today-status", headers=parent)
+    assert today.status_code == 200, today.text
+    assert "attendance" not in today.json()["data"]
+    assert today.json()["data"]["daily_report"]["teacher_notes"] == "Kayıtlı gözlem"
+    timeline = await client.get(f"{child_path}/timeline", headers=parent, params={"date": str(day)})
+    assert timeline.status_code == 200, timeline.text
+    assert [event["type"] for event in timeline.json()["data"]["events"]] == ["DAILY_REPORT"]
+
+    async with sessions() as db:
+        await grant_attendance_read(db)
+        await db.commit()
+
+    today = await client.get(f"{child_path}/today-status", headers=parent)
+    assert today.json()["data"]["attendance"]["status"] == "PRESENT"
+    no_record = await client.get(f"/api/parent/child/{sibling.id}/today-status", headers=parent)
+    assert no_record.json()["data"]["attendance"] is None
+    timeline = await client.get(f"{child_path}/timeline", headers=parent, params={"date": str(day)})
+    entry = next(event for event in timeline.json()["data"]["events"] if event["type"] == "ATTENDANCE")
+    assert entry["details"]["notes"] == "Seçilen çocuk"
 
     response = await client.get(path, headers=parent, params=period)
     assert response.status_code == 200, response.text
