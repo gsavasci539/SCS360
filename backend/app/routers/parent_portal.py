@@ -1,7 +1,7 @@
 from app.core.dates import school_today
 from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form, Request, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import func, select, and_, or_
 from typing import Optional, List, Literal
 from uuid import UUID
 from datetime import datetime, date, timedelta
@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
+from app.core.exceptions import NotFoundException
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
@@ -294,6 +295,63 @@ async def get_child_financial_invoices(
         "online_payment_available": await available_for(db, current_user.organization_id),
         "invoices": invoices_data
     })
+
+
+async def parent_debt_receipt_query(db: AsyncSession, current_user: User, student_id: UUID, debt_id: UUID):
+    from app.infrastructure.models.models import Branch, Debt, Payment, Receipt
+
+    await require_parent_child_access(db, current_user.id, student_id)
+    organization_id = current_user.organization_id
+    branch_id = await db.scalar(select(Debt.branch_id).join(Branch, Branch.id == Debt.branch_id).where(
+        Debt.id == debt_id, Debt.student_id == student_id, Debt.organization_id == organization_id,
+        Debt.deleted_at.is_(None), Branch.organization_id == organization_id,
+    ))
+    if branch_id is None:
+        raise NotFoundException("Öğrenciye ait borç bulunamadı")
+    return select(Receipt, Payment.amount).join(Payment, Payment.id == Receipt.payment_id).where(
+        Payment.debt_id == debt_id, Payment.student_id == student_id, Payment.organization_id == organization_id,
+        Payment.branch_id == branch_id, Receipt.student_id == student_id, Receipt.organization_id == organization_id,
+        Receipt.branch_id == branch_id,
+    )
+
+
+@router.get("/child/{student_id}/debts/{debt_id}/receipts")
+async def list_child_debt_receipts(
+    student_id: UUID, debt_id: UUID,
+    page: int = Query(1, ge=1), page_size: int = Query(100, ge=1, le=100),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(PermissionChecker("parent.view_finances")),
+):
+    from app.infrastructure.models.models import Receipt
+
+    query = await parent_debt_receipt_query(db, current_user, student_id, debt_id)
+    total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = (await db.execute(query.order_by(Receipt.issued_at.desc(), Receipt.id.desc())
+        .offset((page - 1) * page_size).limit(page_size))).all()
+    return success_response({"student_id": str(student_id), "debt_id": str(debt_id), "total": total, "items": [
+        {"id": str(receipt.id), "payment_id": str(receipt.payment_id), "receipt_number": receipt.receipt_number,
+            "issued_at": receipt.issued_at.isoformat(), "status": receipt.status.value,
+            "amount": str(amount), "remaining_debt": str(receipt.remaining_debt)}
+        for receipt, amount in rows
+    ]})
+
+
+@router.get("/child/{student_id}/debts/{debt_id}/receipts/{receipt_id}/pdf")
+async def download_child_debt_receipt(
+    student_id: UUID, debt_id: UUID, receipt_id: UUID,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(PermissionChecker("parent.view_finances")),
+):
+    from app.infrastructure.models.models import Receipt
+    from app.routers.files_receipts import receipt_pdf_response
+
+    query = await parent_debt_receipt_query(db, current_user, student_id, debt_id)
+    receipt = (await db.execute(query.where(Receipt.id == receipt_id))).scalar_one_or_none()
+    if receipt is None:
+        raise NotFoundException("Öğrenciye ait makbuz bulunamadı")
+    return await receipt_pdf_response(db, receipt, include_parent=False)
 
 
 @router.post("/payments/initialize")

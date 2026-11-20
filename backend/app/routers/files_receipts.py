@@ -64,7 +64,7 @@ def _validate_upload(file: UploadFile, content: bytes) -> None:
             raise ValidationException("Geçersiz DOCX dosyası")
 
 
-async def _build_receipt_context(db: AsyncSession, receipt: Receipt) -> dict:
+async def _build_receipt_context(db: AsyncSession, receipt: Receipt, *, include_parent: bool = True) -> dict:
     payment = (
         await db.execute(select(Payment).where(Payment.id == receipt.payment_id))
     ).scalar_one_or_none()
@@ -103,7 +103,7 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt) -> dict:
         ).scalar_one_or_none()
 
     parent_name = ""
-    if student:
+    if student and include_parent:
         parent_result = await db.execute(
             select(Parent)
             .join(StudentParent, StudentParent.parent_id == Parent.id)
@@ -348,8 +348,12 @@ async def download_receipt_pdf(
     
     if not receipt:
         raise NotFoundException("Makbuz bulunamadı")
-    
-    context = await _build_receipt_context(db, receipt)
+
+    return await receipt_pdf_response(db, receipt)
+
+
+async def receipt_pdf_response(db: AsyncSession, receipt: Receipt, *, include_parent: bool = True) -> Response:
+    context = await _build_receipt_context(db, receipt, include_parent=include_parent)
     pdf_bytes = generate_receipt_pdf(context)
     return Response(
         content=pdf_bytes,

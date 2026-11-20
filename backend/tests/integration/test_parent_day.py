@@ -25,6 +25,93 @@ async def grant_attendance_read(db):
     role.permissions.append(Permission(code=code, name=code, module="parent"))
 
 
+async def test_parent_receipts_require_a_matching_student_debt_and_institution(materials_client):  # noqa: F811
+    from decimal import Decimal
+
+    from app.infrastructure.models.models import (
+        Debt,
+        DebtType,
+        Parent,
+        Payment,
+        PaymentMethod,
+        Receipt,
+        User,
+        UserRole,
+    )
+
+    client, sessions, data = materials_client
+    first, sibling = data["children"]
+    foreign = data["stranger"]
+    parent = auth(data["user"])
+
+    async with sessions() as db:
+        def make_debt(student):
+            return Debt(student_id=student.id, organization_id=student.organization_id, branch_id=student.branch_id,
+                debt_type=DebtType.EDUCATION, amount=Decimal("100.25"), paid_amount=Decimal("50.25"),
+                due_date=date(2026, 11, 20))
+
+        first_debt, sibling_debt, foreign_debt = [make_debt(child) for child in (first, sibling, foreign)]
+        db.add_all([first_debt, sibling_debt, foreign_debt])
+        await db.flush()
+
+        async def make_receipt(debt, number, issued_day, branch_id=None):
+            payment = Payment(debt_id=debt.id, student_id=debt.student_id, organization_id=debt.organization_id,
+                branch_id=debt.branch_id, amount=Decimal("25.10"), payment_method=PaymentMethod.CASH,
+                received_by=data["teacher"].id)
+            db.add(payment)
+            await db.flush()
+            receipt = Receipt(student_id=debt.student_id, organization_id=debt.organization_id,
+                payment_id=payment.id, branch_id=branch_id or debt.branch_id, receipt_number=number,
+                issued_at=datetime(2026, 11, issued_day, tzinfo=UTC), remaining_debt=Decimal("50.00"),
+                issued_by=data["teacher"].id)
+            db.add(receipt)
+            return receipt
+
+        first_receipt = await make_receipt(first_debt, "TEST-01", 20)
+        older_receipt = await make_receipt(first_debt, "TEST-02", 19)
+        sibling_receipt = await make_receipt(sibling_debt, "TEST-03", 20)
+        foreign_receipt = await make_receipt(foreign_debt, "TEST-04", 20)
+        wrong_branch = await make_receipt(first_debt, "TEST-05", 20, data["other_branch"].id)
+        other_actor = User(email="other-guardian@test.invalid", first_name="Other", last_name="Guardian",
+            password_hash="unused", organization_id=first.organization_id)
+        db.add(other_actor)
+        await db.flush()
+        role_id = await db.scalar(select(Role.id).where(Role.slug == "parent"))
+        db.add_all([UserRole(user_id=other_actor.id, role_id=role_id),
+            Parent(user_id=other_actor.id, organization_id=first.organization_id, first_name="Other", last_name="Guardian")])
+        await db.commit()
+
+    def path(student, debt):
+        return f"/api/parent/child/{student.id}/debts/{debt.id}/receipts"
+
+    own = path(first, first_debt)
+    assert (await client.get(own, headers=parent)).status_code == 403
+    async with sessions() as db:
+        role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+        role.permissions = [Permission(code="parent.view_finances", name="Parent finance", module="parent")]
+        await db.commit()
+
+    response = await client.get(own, headers=parent, params={"page_size": 1})
+    assert response.status_code == 200, response.text
+    payload = response.json()["data"]
+    assert payload["student_id"] == str(first.id) and payload["debt_id"] == str(first_debt.id)
+    assert payload["total"] == 2
+    assert payload["items"][0]["id"] == str(first_receipt.id) and payload["items"][0]["amount"] == "25.10"
+    page_two = await client.get(own, headers=parent, params={"page": 2, "page_size": 1})
+    assert page_two.json()["data"]["items"][0]["id"] == str(older_receipt.id)
+
+    pdf = await client.get(f"{own}/{first_receipt.id}/pdf", headers=parent)
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF-")
+    assert pdf.headers["content-type"] == "application/pdf" and pdf.headers["cache-control"] == "private, no-store"
+    assert (await client.get(path(sibling, first_debt), headers=parent)).status_code == 404
+    for receipt in (sibling_receipt, wrong_branch):
+        assert (await client.get(f"{own}/{receipt.id}/pdf", headers=parent)).status_code == 404
+    assert (await client.get(f"{path(foreign, foreign_debt)}/{foreign_receipt.id}/pdf", headers=parent)).status_code == 403
+    assert (await client.get(own, headers=auth(other_actor))).status_code == 403
+    assert (await client.get(f"{own}/{first_receipt.id}/pdf", headers=auth(other_actor))).status_code == 403
+    assert (await client.get(f"/api/receipts/{first_receipt.id}", headers=parent)).status_code == 403
+
+
 async def test_child_options_follow_module_permissions_and_relationships(materials_client):  # noqa: F811
     client, sessions, data = materials_client
     parent = auth(data["user"])
