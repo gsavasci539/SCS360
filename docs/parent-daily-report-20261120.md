@@ -11,3 +11,5 @@ Yoklama bağlantısı günün çocuğunu ve tarihini sayfa geçişinde taşıyor
 Web aylık takvimi sunucudan gelen günleri gösteriyor. Tarihli akıştan gelen gün seçili açılıyor. Giriş, çıkış ve not yalnız kayıtta varsa gösteriliyor. Kayıtsız günler belirtiliyor ve ay değişiminde eski ayrıntı kapanıyor. On yedi hedefli web testi, TypeScript ve hedefli ESLint geçti.
 
 Web günlük akışı, seçilen çocuğu ve günü tarayıcının ilgili geçmiş kaydında saklıyor. Yoklamaya gidip geri dönünce seçim korunuyor. Sayfa geçişinde veli ilişki listesi yeniden yükleniyor. Kaydedilen çocuk artık veliye bağlı değilse ilişkili ilk çocuk ve sunucunun bildirdiği gün açılıyor. Geri ve ileri gezinme ile ilişki kaldırma dahil 18 hedefli web testi, TypeScript ve hedefli ESLint geçti.
+
+Web günlük akışı ilaç, doz, revir uygulaması ve teslim alan bilgisini ilgili kayıtta gösteriyor. Servis biniş ve inişleri sunucudan gelen saat ve durumla okunuyor. Bu kayıtların ayrıntıları seçili çocuk ve gün üzerinde kalıyor. Dokuz günlük akış testi, TypeScript ve hedefli ESLint geçti.

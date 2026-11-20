@@ -20,6 +20,40 @@ const attendanceEvent = { id: "attendance-1", type: "ATTENDANCE", title: "Yoklam
 const children = [{ student_id: "child-1", first_name: "Deniz", last_name: "Test" },
   { student_id: "child-2", first_name: "Ada", last_name: "Test" }];
 
+it("ilaç, revir, servis ve teslim kayıtlarını seçili günde kendi ayrıntılarıyla gösterir", async () => {
+  const dateWithRecords = "2025-10-07";
+  const events = [
+    { id: "med-1", type: "MEDICATION", title: "İlaç takip kaydı", status: "GIVEN", time: "10:00",
+      details: { medicine_name: "Kayıtlı ilaç", dosage: "5 mL", notes: "Yemekten sonra" }, detail_url: "/parent/health" },
+    { id: "visit-1", type: "INFIRMARY", title: "Revir ziyareti", status: "LOW", time: "11:00",
+      details: { complaint: "Baş ağrısı", treatment_given: "Dinlenme" }, detail_url: "/parent/health" },
+    { id: "bus-1", type: "BUS_PICKUP", title: "Servise biniş", status: "PRESENT", time: "08:00",
+      details: {}, detail_url: "/parent/children" },
+    { id: "bus-2", type: "BUS_DROPOFF", title: "Servisten iniş", status: "PRESENT", time: "09:00",
+      details: {}, detail_url: "/parent/children" },
+    { id: "pickup-1", type: "PICKUP", title: "Okuldan teslim", status: "RECORDED", time: "17:00",
+      details: { pickup_person_name: "Yetkili kişi" }, detail_url: "/parent/children" },
+  ];
+  vi.mocked(api.get).mockImplementation(async (_path, config) => {
+    const { date } = config?.params as { date: string };
+    return { data: { data: { student_id: "child-2", date, events: date === dateWithRecords ? events : [] } } };
+  });
+  render(<MemoryRouter><ParentDayTimeline studentId="child-2" initialDate={dateWithRecords} /></MemoryRouter>);
+  expect(await screen.findByText("Uygulama · Dinlenme")).toBeInTheDocument();
+  expect(screen.getByText("Şikâyet · Baş ağrısı")).toBeInTheDocument();
+  expect(screen.getByText("İlaç · Kayıtlı ilaç")).toBeInTheDocument();
+  expect(screen.getByText("Doz · 5 mL")).toBeInTheDocument();
+  expect(screen.getByText("Not · Yemekten sonra")).toBeInTheDocument();
+  expect(screen.getByText("08:00 · Servise biniş")).toBeInTheDocument();
+  expect(screen.getByText("09:00 · Servisten iniş")).toBeInTheDocument();
+  expect(screen.getByText("Teslim alan · Yetkili kişi")).toBeInTheDocument();
+  expect(screen.queryByRole("link")).not.toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText("Akış tarihi"), { target: { value: "2025-10-08" } });
+  expect(await screen.findByText("Bu gün için kayıtlı etkinlik yok.")).toBeInTheDocument();
+  expect(screen.queryByText("Uygulama · Dinlenme")).not.toBeInTheDocument();
+});
+
 it("gerçek etkinlik saatini ve detay bağlantısını gösterir, tarihi değişince doğru günü ister", async () => {
   parentWithAttendanceAccess();
   vi.mocked(api.get).mockImplementation(async (_path, config) => ({ data: { data: { student_id: "child-1",

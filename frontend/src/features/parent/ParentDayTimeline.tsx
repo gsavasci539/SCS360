@@ -14,8 +14,14 @@ interface DayEvent {
   detail_url: string;
   details: { notes?: string; teacher_notes?: string; medicine_name?: string; dosage?: string; activities?: unknown;
     meal_status?: string; sleep_status?: string; mood?: string;
-    complaint?: string; pickup_person_name?: string };
+    complaint?: string; treatment_given?: string; pickup_person_name?: string };
 }
+
+const recordFields: Partial<Record<string, [keyof DayEvent["details"], string][]>> = {
+  MEDICATION: [["medicine_name", "İlaç"], ["dosage", "Doz"], ["notes", "Not"]],
+  INFIRMARY: [["complaint", "Şikâyet"], ["treatment_given", "Uygulama"]],
+  PICKUP: [["pickup_person_name", "Teslim alan"]],
+};
 
 export function formatDayActivities(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -83,14 +89,18 @@ export function ParentDayTimeline({ studentId, initialDate, selectedDate, onDayC
             <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
               <strong>{event.time || "Saat belirtilmedi"} · {event.title}</strong><Badge value={event.status} />
             </div>
-            {event.type === "DAILY_REPORT" ? <DailyReportDetails details={event.details} /> : <>
-              {(event.details.teacher_notes || event.details.notes || event.details.complaint || event.details.medicine_name || event.details.pickup_person_name) &&
-                <p style={{ overflowWrap: "anywhere" }}>{[event.details.medicine_name, event.details.dosage,
-                  event.details.teacher_notes || event.details.notes || event.details.complaint || event.details.pickup_person_name].filter(Boolean).join(" · ")}</p>}
-              {(event.type !== "ATTENDANCE" || canReadAttendance) &&
-                <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}
-                  state={event.type === "ATTENDANCE" ? { parentAttendance: { studentId, date: day } } : undefined}>İlgili sayfayı aç</Link>}
+            {event.type === "DAILY_REPORT" && <DailyReportDetails details={event.details} />}
+            {event.type === "ATTENDANCE" && <>
+              {event.details.notes && <p style={{ overflowWrap: "anywhere" }}>{event.details.notes}</p>}
+              {canReadAttendance && <Link to={event.detail_url} className="btn btn-ghost" style={{ marginTop: 8 }}
+                state={{ parentAttendance: { studentId, date: day } }}>İlgili sayfayı aç</Link>}
             </>}
+            {recordFields[event.type]?.map(([field, label]) => {
+              const value = event.details[field];
+              return typeof value === "string" && value.trim()
+                ? <p key={field} style={{ overflowWrap: "anywhere" }}>{label} · {value}</p>
+                : null;
+            })}
           </li>)}
       </ol>}
   </section>;
