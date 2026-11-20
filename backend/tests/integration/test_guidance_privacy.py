@@ -20,12 +20,19 @@ async def test_guidance_confidential_records_are_private_and_counselor_cannot_be
             db.add(GuidanceSession(student_id=data["children"][0].id, counselor_id=actor.id,
                 session_date=date(2026, 11, 3), confidentiality_level=level, summary=text))
             db.add(GuidanceNote(student_id=data["children"][0].id, counselor_id=actor.id, content=text, confidentiality_level=level))
+        db.add(GuidanceNote(student_id=data["stranger"].id, counselor_id=foreign.id,
+            content="Foreign institution record", confidentiality_level="STANDARD"))
         await db.commit()
     for path in ("/api/guidance/sessions", "/api/guidance/notes", f'/api/guidance/students/{data["children"][0].id}/timeline'):
         response = await client.get(path, headers=headers(counselor))
         assert response.status_code == 200, response.text
         assert "Private own record" in response.text and "Shared record" in response.text
         assert "Private other record" not in response.text
+    outsider_id = data["stranger"].id
+    outsider_timeline = await client.get(f"/api/guidance/students/{outsider_id}/timeline", headers=headers(counselor))
+    assert outsider_timeline.status_code == 200 and outsider_timeline.json()["data"] == []
+    outsider_summary = await client.get("/api/guidance/summary", params={"student_id": str(outsider_id)}, headers=headers(counselor))
+    assert outsider_summary.status_code == 200 and outsider_summary.json()["data"]["total_notes"] == 0
     for path, payload in (("sessions", {"session_date": "2026-11-03"}), ("notes", {"content": "Own observation"})):
         own = await client.post("/api/guidance/" + path, headers=headers(counselor), json={"student_id": str(data["children"][0].id), **payload})
         assert own.status_code == 200, own.text
@@ -76,6 +83,16 @@ async def test_guidance_options_actual_counters_and_json_resolution_are_persiste
     stats = (await client.get("/api/guidance/summary", headers=auth)).json()["data"]
     assert stats == {"total_sessions": 1, "total_notes": 1, "total_incidents": 1, "active_cases": 1, "resolution_rate": 0}
     assert (await client.get("/api/ai/guidance-analysis", headers=auth)).json()["data"] == stats
+    scoped = await client.get("/api/guidance/summary", params={"student_id": student_id}, headers=auth)
+    assert scoped.status_code == 200 and scoped.json()["data"] == {**stats, "student_id": student_id}
+    timeline = await client.get(f"/api/guidance/students/{student_id}/timeline", headers=auth)
+    assert timeline.status_code == 200, timeline.text
+    entries = {entry["type"]: entry for entry in timeline.json()["data"]}
+    assert {kind: entry["id"] for kind, entry in entries.items()} == {
+        "SESSION": saved["id"], "NOTE": note.json()["data"]["id"], "INCIDENT": identifier,
+    }
+    assert {entry["student_id"] for entry in entries.values()} == {student_id}
+    assert entries["INCIDENT"]["category"] == incident.json()["data"]["severity"]
     for text in ("Recorded solution", "Retry must preserve solution"):
         response = await client.put(f"/api/guidance/incidents/{identifier}/resolve", headers=auth, json={"resolution_notes": text})
         assert response.status_code == 200 and response.json()["data"]["resolved"] is True, response.text

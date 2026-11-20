@@ -134,7 +134,10 @@ async def guidance_options(student_id: Optional[UUID] = None, search: str = Quer
 async def guidance_summary(student_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db, scope="function"),
                             tenant: TenantContext = Depends(PermissionChecker("guidance.read"))):
     from app.application.services.guidance_service import summary
-    return success_response(await summary(db, student_id))
+    data = await summary(db, student_id)
+    if student_id is not None:
+        data["student_id"] = str(student_id)
+    return success_response(data)
 
 
 # ==================== Guidance Sessions Endpoints ====================
@@ -335,7 +338,10 @@ async def get_student_guidance_timeline(
         counselor_name = f"{counselor.first_name} {counselor.last_name}" if counselor else None
         
         timeline.append({
+            "id": str(session.id),
+            "student_id": str(session.student_id),
             "type": "SESSION",
+            "category": session.session_type,
             "date": session.session_date.isoformat(),
             "title": f"{session.session_type} Session",
             "description": session.summary,
@@ -351,7 +357,10 @@ async def get_student_guidance_timeline(
         reporter_name = f"{reporter.first_name} {reporter.last_name}" if reporter else None
         
         timeline.append({
+            "id": str(incident.id),
+            "student_id": str(incident.student_id),
             "type": "INCIDENT",
+            "category": incident.severity,
             "date": incident.incident_date.isoformat(),
             "title": f"Behavioral Incident - {incident.severity}",
             "description": incident.description,
@@ -367,7 +376,10 @@ async def get_student_guidance_timeline(
         counselor_name = f"{counselor.first_name} {counselor.last_name}" if counselor else None
         
         timeline.append({
+            "id": str(note.id),
+            "student_id": str(note.student_id),
             "type": "NOTE",
+            "category": note.note_type,
             "date": note.created_at.isoformat(),
             "title": f"{note.note_type} Note",
             "description": note.content,
