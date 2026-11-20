@@ -127,7 +127,10 @@ async def options(student_id: UUID | None = None, search: str = Query("", max_le
 @router.get("/summary")
 async def summary(student_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("health.read"))):
-    return success_response(await service.summary(db, student_id))
+    stats = await service.summary(db, student_id)
+    if student_id is not None:
+        stats["student_id"] = str(student_id)
+    return success_response(stats)
 
 
 @router.get("/health-records")

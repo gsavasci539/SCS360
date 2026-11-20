@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import type { AxiosRequestConfig } from "axios";
 import { ToastProvider } from "../components/Toast";
 import { HealthPage } from "../features/health/HealthPage";
 import { ParentPortalPage } from "../features/parent/ParentPortalPage";
@@ -11,10 +12,23 @@ import type { AuthUser } from "../types/api";
 vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn() }, apiMessage: () => "Sağlık kaydı başarısız" }));
 const user: AuthUser = { id: "nurse", first_name: "Clinic", last_name: "User", email: "clinic@example.com", organization_id: "org", is_super_admin: false, roles: [], permissions: ["health.read", "health.write"], branch_ids: [] };
 const record = { id: "record", student_id: "child", student_name: "Deniz Kabul", blood_type: "A+", allergies: "Alerji bilgisi", emergency_contact_phone: "05000000000" };
+const summary = { total_records: 231, recent_visits: 40, follow_up_visits: 2, active_schedules: 3, pending_requests: 1 };
+const scope = (config?: AxiosRequestConfig) => (config?.params as { student_id?: string } | undefined)?.student_id;
+const scopedRequest = expect.objectContaining({ signal: expect.any(AbortSignal) });
 let programStatus = "PENDING";
 beforeEach(() => {
   programStatus = "PENDING"; useAuthStore.setState({ user });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/infirmary/options" ? { students: [{ id: "child", name: "Deniz Kabul" }], today: "2026-11-03", time: "10:30" } : path === "/infirmary/summary" ? { total_records: 231, recent_visits: 40 } : path === "/infirmary/health-records" ? [record] : path === "/infirmary/medicine-requests" ? [{ id: "program", student_id: "child", student_name: "Deniz Kabul", medicine_name: "Kabul talimatı", status: programStatus }] : [] } }));
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    const student = scope(config);
+    const canSeeRecord = !student || student === "child";
+    return { data: { data: path === "/infirmary/options" ? {
+      students: [{ id: "child", name: "Deniz Kabul" }, { id: "sibling", name: "İkinci öğrenci" }],
+      today: "2026-11-03", time: "10:30", more_students: false,
+    } : path === "/infirmary/summary" ? { ...summary, student_id: student } :
+      path === "/infirmary/health-records" && canSeeRecord ? [record] :
+      path === "/infirmary/medicine-requests" && canSeeRecord ? [{ id: "program", student_id: "child", student_name: "Deniz Kabul",
+        medicine_name: "Kabul talimatı", status: programStatus }] : [] } };
+  });
   vi.mocked(api.post).mockResolvedValue({ data: { data: {} } }); vi.mocked(api.put).mockResolvedValue({ data: { data: {} } });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
@@ -37,33 +51,92 @@ it("mevcut sağlık dosyasını doldurur, başarısız güncellemede taslağı v
   expect(within(form).getByLabelText("Alerji bilgisi")).toHaveValue("Alerji bilgisi");
   fireEvent.change(within(form).getByLabelText("Alerji bilgisi"), { target: { value: "Korunacak güncelleme" } });
   fireEvent.click(within(form).getByRole("button", { name: "Sağlık dosyasını kaydet" }));
-  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/infirmary/health-records/child", expect.objectContaining({ student_id: "child", allergies: "Korunacak güncelleme" })));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/infirmary/health-records/child", { student_id: "child", allergies: "Korunacak güncelleme" }, scopedRequest));
   expect(vi.mocked(api.put).mock.calls[0][1]).not.toHaveProperty("insurance_info");
   expect(await screen.findByText("Sağlık kaydı başarısız")).toBeInTheDocument();
   expect(within(form).getByLabelText("Alerji bilgisi")).toHaveValue("Korunacak güncelleme");
 });
 
 it("onaylı program için öğrencisine bağlı günlük doz kaydeder", async () => {
-  programStatus = "APPROVED"; open();
+  programStatus = "APPROVED";
+  const read = vi.mocked(api.get).getMockImplementation()!;
+  let stored: Record<string, unknown> | undefined;
+  vi.mocked(api.post).mockImplementation(async (_path, body) => {
+    stored = { ...body as Record<string, unknown>, id: "dose", given_by: "nurse", medication_name: "Kabul talimatı" };
+    return { data: { data: stored } };
+  });
+  vi.mocked(api.get).mockImplementation((path, config) => path === "/infirmary/medication-logs" && stored ?
+    Promise.resolve({ data: { data: [stored] } }) : read(path, config));
+  open();
   const table = screen.getByRole("region", { name: "İlaç programları ve talepler" });
   await within(table).findByText("Kaydı aç"); fireEvent.click(within(table).getByText("Kaydı aç"));
   const form = within(table).getByRole("form", { name: "Doz kaydı Kabul talimatı" });
   fireEvent.change(within(form).getByLabelText("Planlanan doz saati"), { target: { value: "10:00" } });
   fireEvent.change(within(form).getByLabelText("Doz sonucu"), { target: { value: "SKIPPED" } });
   fireEvent.click(within(form).getByRole("button", { name: "Doz sonucunu kaydet" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/infirmary/medication/mark-given", expect.objectContaining({ schedule_id: "program", student_id: "child", scheduled_date: "2026-11-03", scheduled_time: "10:00", status: "SKIPPED" })));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/infirmary/medication/mark-given", expect.objectContaining({ schedule_id: "program", student_id: "child", scheduled_date: "2026-11-03", scheduled_time: "10:00", status: "SKIPPED" }), scopedRequest));
   expect(vi.mocked(api.post).mock.calls[0][1]).not.toHaveProperty("given_by");
+  expect(await screen.findByText("Doz sonucu kaydedildi")).toBeInTheDocument();
+  expect(await within(screen.getByRole("region", { name: "Günlük doz kayıtları" })).findByText(/Plan saati: 10:00/)).toBeInTheDocument();
 });
 
 it("onay ve ret gerçek talep yoluna gider, ziyaret ve doz tarihi liste sorgularına uygulanır", async () => {
   open(); const table = screen.getByRole("region", { name: "İlaç programları ve talepler" });
   await within(table).findByText("Kaydı aç"); fireEvent.click(within(table).getByText("Kaydı aç"));
   fireEvent.click(within(table).getByRole("button", { name: "İlaç talebini reddet" }));
-  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/infirmary/medicine-requests/program", { status: "REJECTED" }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/infirmary/medicine-requests/program", { status: "REJECTED" }, scopedRequest));
   await waitFor(() => expect(screen.getByLabelText("Ziyaret ve doz günü")).toBeEnabled());
   fireEvent.change(screen.getByLabelText("Ziyaret ve doz günü"), { target: { value: "2026-11-02" } });
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/infirmary/medication-logs", expect.objectContaining({ params: expect.objectContaining({ date: "2026-11-02" }) })));
   expect(api.get).toHaveBeenCalledWith("/infirmary/infirmary-visits", expect.objectContaining({ params: expect.objectContaining({ start_date: "2026-11-02", end_date: "2026-11-02" }) }));
+});
+
+it("öğrenci değişince eski dosya ve sayaçları gizler, yanlış öğrenci özetini reddeder", async () => {
+  const get = vi.mocked(api.get).getMockImplementation()!;
+  let respond = () => {};
+  vi.mocked(api.get).mockImplementation((path, config) => {
+    if (path !== "/infirmary/summary" || scope(config) !== "sibling") return get(path, config);
+    return new Promise((resolve) => {
+      respond = () => resolve({ data: { data: { ...summary, student_id: "child" } } });
+    });
+  });
+  open("/health?student=child");
+  const panel = within(screen.getByRole("region", { name: "Revir özeti" }));
+  expect(panel.queryByText(/Sağlık dosyası:/)).not.toBeInTheDocument();
+  await screen.findByText(/Alerji: Alerji bilgisi/);
+  await panel.findByText(/Sağlık dosyası: 231/);
+  fireEvent.change(screen.getByLabelText("Sağlık öğrencisi"), { target: { value: "sibling" } });
+  expect(screen.queryByText(/Alerji: Alerji bilgisi/)).not.toBeInTheDocument();
+  expect(panel.queryByText(/Sağlık dosyası:/)).not.toBeInTheDocument();
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/infirmary/summary", expect.objectContaining({ params: { student_id: "sibling" } })));
+  await act(async () => respond());
+  expect(panel.getByText("Revir özeti doğrulanamadı.")).toBeInTheDocument();
+  expect(panel.queryByText(/Sağlık dosyası:/)).not.toBeInTheDocument();
+});
+
+it("dosya kimliği uyuşmadığında taslağı korur ve eski oturumdan gelen başarıyı göstermez", async () => {
+  let respond = () => {};
+  const confirmed = { ...record, updated_by: "nurse", allergies: "Bekleyen taslak" };
+  vi.mocked(api.put).mockResolvedValueOnce({ data: { data: { ...confirmed, id: "other-record" } } })
+    .mockImplementationOnce(() => new Promise((resolve) => {
+      respond = () => resolve({ data: { data: confirmed } });
+    }));
+  open("/health?student=child");
+  await screen.findByText(/Alerji: Alerji bilgisi/);
+  const form = screen.getByRole("form", { name: "Sağlık dosyasını düzenle" });
+  const save = () => within(form).getByRole("button", { name: "Sağlık dosyasını kaydet" });
+  await waitFor(() => expect(save()).toBeEnabled());
+  fireEvent.change(within(form).getByLabelText("Alerji bilgisi"), { target: { value: "Bekleyen taslak" } });
+  fireEvent.click(save());
+  await screen.findByText("Kayıt doğrulanamadı");
+  expect(within(form).getByLabelText("Alerji bilgisi")).toHaveValue("Bekleyen taslak");
+  fireEvent.click(save());
+  await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
+  const signal = vi.mocked(api.put).mock.calls[1][2]?.signal;
+  act(() => useAuthStore.setState((state) => ({ user: { ...user, id: "next" }, sessionVersion: state.sessionVersion + 1 })));
+  expect(signal?.aborted).toBe(true);
+  await act(async () => respond());
+  expect(screen.queryByText("Sağlık dosyası kaydedildi")).not.toBeInTheDocument();
 });
 
 it("veli ilaç yazma yetkisi olmadan talimat formu göstermez", async () => {

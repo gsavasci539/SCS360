@@ -145,6 +145,8 @@ async def test_visits_derive_student_branch_examiner_and_summary_uses_real_rows(
     result = await client.get("/api/infirmary/summary", headers=auth)
     assert result.status_code == 200 and result.json()["data"]["recent_visits"] == 1, result.text
     assert result.json()["data"]["follow_up_visits"] == 1
+    scoped = await client.get("/api/infirmary/summary", headers=auth, params={"student_id": student_id})
+    assert scoped.status_code == 200 and scoped.json()["data"] == {**result.json()["data"], "student_id": student_id}
     for note in ("Initial result", "Retry"):
         completed = await client.post(f'/api/infirmary/infirmary-visits/{saved["id"]}/follow-up',
             headers=auth, json={"follow_up_notes": note})
