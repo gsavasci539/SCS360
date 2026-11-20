@@ -33,10 +33,15 @@ export function ParentPortalPage({ view }: { view: View }) {
   const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
+  const canReadChildren = useAuthStore((state) => state.can("parent.view_children"));
   const canReadDailyReport = useAuthStore((state) => state.can("parent.view_daily_report"));
   const [medicineSubmitting, setMedicineSubmitting] = useState(false);
-  const [childList, setChildList] = useState<{ view: View; records: DataRecord[] } | null>(null);
-  const children = childList?.view === view ? childList.records : [];
+  let childrenPath = "/parent/my-children";
+  if (!canReadChildren && ((view === "attendance" && canReadAttendance) || (view === "finances" && canReadFinances))) {
+    childrenPath = `/parent/my-children/options?module=${view}`;
+  }
+  const [childList, setChildList] = useState<{ view: View; path: string; records: DataRecord[] } | null>(null);
+  const children = childList?.view === view && childList.path === childrenPath ? childList.records : [];
   const location = useLocation();
   const navigate = useNavigate();
   const isTimelineView = view === "dashboard" || view === "children";
@@ -131,14 +136,14 @@ export function ParentPortalPage({ view }: { view: View }) {
     setChildList(null);
     setError("");
     setLoading(true);
-    api.get<ApiResponse<DataRecord[]>>("/parent/my-children", { signal: controller.signal })
+    api.get<ApiResponse<DataRecord[]>>(childrenPath, { signal: controller.signal })
       .then((response) => {
-        if (!controller.signal.aborted) setChildList({ view, records: response.data.data || [] });
+        if (!controller.signal.aborted) setChildList({ view, path: childrenPath, records: response.data.data || [] });
       })
       .catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [view]);
+  }, [view, childrenPath]);
 
   useEffect(() => {
     setDayStatus(null);

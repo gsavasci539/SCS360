@@ -71,7 +71,7 @@ it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve 
   vi.mocked(api.get).mockImplementation(async (path, config) => {
     if (path.endsWith("/today-status")) throw new Error("Günlük özet erişimi yok");
     if (path.endsWith("/timeline")) return { data: { data: { student_id: "child-2", date: "2025-10-07", events: [attendanceEvent] } } };
-    if (path === "/parent/my-children") return { data: { data: children } };
+    if (path === "/parent/my-children/options?module=attendance") return { data: { data: children } };
     if (path === "/parent/child/child-2/attendance") {
       const month = (config?.params as { month: number }).month;
       return { data: { data: { student_id: "child-2", year: 2025, month,
@@ -97,6 +97,8 @@ it("yoklama bağlantısı doğrulanmış çocuğun kayıtlı gününü açar ve 
     params: { year: 2025, month: 10 },
   }));
   expect(api.get).not.toHaveBeenCalledWith(expect.stringMatching(/\/today-status$/), expect.anything());
+  expect(api.get).toHaveBeenCalledWith("/parent/my-children/options?module=attendance", expect.anything());
+  expect(api.get).not.toHaveBeenCalledWith("/parent/my-children", expect.anything());
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path === "/parent/child/child-1/attendance")).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "2025-10-08 · Kayıt yok" }));
   expect(screen.getByText("2025-10-08 · Kayıt yok")).toBeInTheDocument();
@@ -180,7 +182,7 @@ it("yoklama ile günlük akış arasında geri ve ileri giderken seçimi doğrul
 
 it("bağlı olmayan çocukla gelen yoklama adresinden yetkisiz istek göndermez", async () => {
   parentWithAttendanceAccess();
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/parent/my-children" ? children : null } }));
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/parent/my-children/options?module=attendance" ? children : null } }));
   render(<MemoryRouter initialEntries={[{ pathname: "/parent/attendance", state: {
     parentAttendance: { studentId: "outside", date: "2025-10-07" },
   } }]}><ParentPortalPage view="attendance" /></MemoryRouter>);

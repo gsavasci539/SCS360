@@ -13,7 +13,7 @@ from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
-from app.core.student_access import require_parent_child_access, require_teacher_for_student
+from app.core.student_access import parent_student_ids, require_parent_child_access, require_teacher_for_student
 from app.core.parent_purpose import activate_parent_scope
 from app.routers.payments import IyzicoPaymentRequest
 
@@ -175,6 +175,31 @@ async def get_parent_children(
         })
     
     return success_response(children_data)
+
+
+@router.get("/my-children/options")
+async def get_parent_child_options(
+    module: Literal["attendance", "finances"],
+    db: AsyncSession = Depends(get_db, scope="function"),
+    current_user: User = Depends(get_current_user),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    from app.infrastructure.models.models import Student
+
+    permission = {"attendance": "parent.view_attendance", "finances": "parent.view_finances"}[module]
+    if not tenant.has_permission(permission):
+        raise HTTPException(403, "Bu modülde öğrenci seçme yetkiniz yok.")
+    student_ids = await parent_student_ids(db, current_user.id, current_user.organization_id)
+    if not student_ids:
+        return success_response([])
+    rows = (await db.execute(select(Student.id, Student.first_name, Student.last_name).where(
+        Student.id.in_(student_ids), Student.organization_id == current_user.organization_id,
+        Student.deleted_at.is_(None),
+    ).order_by(Student.first_name, Student.last_name, Student.id))).all()
+    return success_response([
+        {"student_id": str(student_id), "first_name": first_name, "last_name": last_name}
+        for student_id, first_name, last_name in rows
+    ])
 
 
 @router.get("/child/{student_id}/today-status")

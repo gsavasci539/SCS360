@@ -25,6 +25,38 @@ async def grant_attendance_read(db):
     role.permissions.append(Permission(code=code, name=code, module="parent"))
 
 
+async def test_child_options_follow_module_permissions_and_relationships(materials_client):  # noqa: F811
+    client, sessions, data = materials_client
+    parent = auth(data["user"])
+    children_path = "/api/parent/my-children"
+    options_path = f"{children_path}/options"
+    assert (await client.get(children_path, headers=parent)).status_code == 200
+    assert (await client.get(options_path, headers=parent, params={"module": "attendance"})).status_code == 403
+    assert (await client.get(options_path, headers=parent, params={"module": "profile"})).status_code == 422
+
+    for module, code, detail, params in (
+        ("attendance", "parent.view_attendance", "attendance", {"year": 2026, "month": 11}),
+        ("finances", "parent.view_finances", "financial-invoices", {}),
+    ):
+        async with sessions() as db:
+            role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.slug == "parent"))).scalar_one()
+            role.permissions = [Permission(code=code, name=code, module="parent")]
+            await db.commit()
+        assert (await client.get(children_path, headers=parent)).status_code == 403
+        response = await client.get(options_path, headers=parent, params={"module": module})
+        assert response.status_code == 200, response.text
+        assert response.json()["data"] == [
+            {"student_id": str(child.id), "first_name": child.first_name, "last_name": child.last_name}
+            for child in data["children"]
+        ]
+        other_module = "finances" if module == "attendance" else "attendance"
+        assert (await client.get(options_path, headers=parent, params={"module": other_module})).status_code == 403
+        for key, status in (("children", 200), ("stranger", 403)):
+            child = data[key][0] if key == "children" else data[key]
+            result = await client.get(f"/api/parent/child/{child.id}/{detail}", headers=parent, params=params)
+            assert result.status_code == status, result.text
+
+
 async def test_parent_timeline_reads_real_child_events_and_school_day_boundaries(materials_client, monkeypatch):
     client, sessions, data = materials_client
     monkeypatch.setattr(get_settings(), "BUSINESS_TIMEZONE", "Europe/Istanbul")

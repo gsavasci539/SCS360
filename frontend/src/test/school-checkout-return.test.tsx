@@ -13,7 +13,7 @@ beforeEach(() => {
   useAuthStore.setState({ user: { id: "actor", organization_id: "school", first_name: "Test", last_name: "User", email: "actor@example.invalid", is_super_admin: false, roles: [], permissions: ["parent.view_children", "parent.view_finances", "parent.make_payment", "finance.write"], branch_ids: [] }, sessionVersion: 1 });
   usePlatformWorkspace.setState({ workspace: null }); sessionStorage.clear();
   vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: String(path).includes("/checkouts/") ? metadata
-    : path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz", last_name: "Test" }]
+    : path === "/parent/my-children" || path === "/parent/my-children/options?module=finances" ? [{ student_id: "child", first_name: "Deniz", last_name: "Test" }]
       : String(path).endsWith("/financial-invoices") ? { invoices: [{ debt_id: debtId, remaining_amount: "25.00", amount: "25.00", status: "UNPAID", debt_type: "EDUCATION" }], online_payment_available: true }
         : String(path).endsWith("/insights") ? { recommendations: [] } : {} } }));
 });
@@ -44,7 +44,8 @@ it("the real parent invoice modal initializes with the persisted nonce and hides
   fireEvent.click(await screen.findByRole("button", { name: "Öde" }));
   fireEvent.submit(screen.getByRole("form", { name: "Öğrenci ödeme bilgileri" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/parent/payments/initialize", expect.objectContaining({ debt_id: debtId, amount: "25.00", request_id: expect.any(String) }), expect.anything()));
-  view.unmount(); useAuthStore.setState({ user: { ...useAuthStore.getState().user!, permissions: ["parent.view_children", "parent.view_finances"] } });
+  view.unmount(); useAuthStore.setState({ user: { ...useAuthStore.getState().user!, permissions: ["parent.view_finances"] } });
   render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
   await screen.findByText("Ödenmedi", { exact: true }); expect(screen.queryByRole("button", { name: "Öde" })).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/parent/my-children/options?module=finances", expect.anything());
 });
