@@ -66,15 +66,21 @@ async def test_guidance_options_actual_counters_and_json_resolution_are_persiste
     assert listed[0]["id"] == saved["id"] and listed[0]["student_id"] == student_id
     note = await client.post("/api/guidance/notes", headers=auth, json={"student_id": student_id, "content": "Actual observation", "confidentiality_level": "RESTRICTED"})
     assert note.status_code == 200, note.text
+    assert note.json()["data"]["student_id"] == student_id
+    assert note.json()["data"]["counselor_id"] == str(actor.id)
     incident = await client.post("/api/guidance/incidents", headers=auth, json={"student_id": student_id, "incident_date": "2026-11-03", "description": "Actual incident"})
     assert incident.status_code == 200, incident.text
-    identifier = incident.json()["data"]["id"]
+    created_incident = incident.json()["data"]
+    assert created_incident["student_id"] == student_id and created_incident["reported_by"] == str(actor.id)
+    identifier = created_incident["id"]
     stats = (await client.get("/api/guidance/summary", headers=auth)).json()["data"]
     assert stats == {"total_sessions": 1, "total_notes": 1, "total_incidents": 1, "active_cases": 1, "resolution_rate": 0}
     assert (await client.get("/api/ai/guidance-analysis", headers=auth)).json()["data"] == stats
     for text in ("Recorded solution", "Retry must preserve solution"):
         response = await client.put(f"/api/guidance/incidents/{identifier}/resolve", headers=auth, json={"resolution_notes": text})
         assert response.status_code == 200 and response.json()["data"]["resolved"] is True, response.text
+        assert response.json()["data"]["student_id"] == student_id
+        assert response.json()["data"]["resolution_notes"] == "Recorded solution"
     records = (await client.get("/api/guidance/incidents", headers=auth)).json()["data"]
     assert records[0]["reported_by"] == str(actor.id) and records[0]["resolution_notes"] == "Recorded solution"
     assert (await client.get("/api/guidance/summary", headers=auth)).json()["data"]["active_cases"] == 0

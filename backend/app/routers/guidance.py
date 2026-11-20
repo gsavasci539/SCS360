@@ -498,6 +498,8 @@ async def create_behavioral_incident(
     
     return success_response({
         "id": str(new_incident.id),
+        "student_id": str(new_incident.student_id),
+        "reported_by": str(new_incident.reported_by),
         "severity": new_incident.severity,
         "incident_date": new_incident.incident_date.isoformat(),
         "created_at": new_incident.created_at.isoformat()
@@ -537,8 +539,10 @@ async def resolve_behavioral_incident(
     
     return success_response({
         "id": str(incident.id),
+        "student_id": str(incident.student_id),
         "resolved": True,
-        "resolution_date": incident.resolution_date.isoformat() if incident.resolution_date else None
+        "resolution_date": incident.resolution_date.isoformat() if incident.resolution_date else None,
+        "resolution_notes": incident.resolution_notes,
     })
 
 
@@ -641,6 +645,8 @@ async def create_guidance_note(
     
     return success_response({
         "id": str(new_note.id),
+        "student_id": str(new_note.student_id),
+        "counselor_id": str(new_note.counselor_id),
         "note_type": new_note.note_type,
         "confidentiality_level": new_note.confidentiality_level,
         "created_at": new_note.created_at.isoformat()
