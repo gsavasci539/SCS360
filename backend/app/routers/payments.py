@@ -88,6 +88,7 @@ class IyzicoPaymentRequest(BaseModel):
     request_id: Optional[UUID] = None
     debt_id: UUID
     amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
+    expected_remaining_amount: Decimal | None = Field(None, gt=0, max_digits=12, decimal_places=2)
     currency: Literal["TRY"] = "TRY"
     payment_channel: Literal["WEB", "MOBILE"] = "WEB"
     basket_items: list[dict] = Field(default_factory=list)

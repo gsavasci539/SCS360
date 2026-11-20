@@ -157,6 +157,13 @@ async def initialize(db, tenant, user, body, ip):
     if debt.status == DebtStatus.CANCELLED:
         raise ConflictException("İptal edilen borca ödeme yapılamaz")
     principal, paid = state(debt)
+    expected_remaining = getattr(body, "expected_remaining_amount", None)
+    if expected_remaining is not None and expected_remaining != principal - paid:
+        raise AppException(
+            "Kalan borç değişti. Güncel tutarı kontrol edin.",
+            status_code=409,
+            errors=[{"code": "SCHOOL_CHECKOUT_BALANCE_CHANGED"}],
+        )
     try: DebtCalculator.validate_payment(principal, paid, body.amount)
     except ValueError as exc: raise ValidationException(str(exc)) from exc
     context = await merchants.resolve_gateway(db, debt.organization_id)

@@ -206,6 +206,41 @@ it.each([true, false])("açık işlem çakışmasında borçları yeniler (kendi
   expect(window.sessionStorage.getItem(key!)).toBeNull();
 });
 
+it("eski bakiye reddedildiğinde borcu yeniler ve yeni tutarı ancak tekrar gönderimde kullanır", async () => {
+  let remaining = 100;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path.endsWith("/financial-invoices")) return { data: { data: {
+      student_id: "child", total_remaining: remaining, online_payment_available: true,
+      invoices: [{ debt_id: debtId, remaining_amount: remaining, status: "PARTIALLY_PAID" }],
+    } } };
+    if (path.includes("/checkouts/")) return { data: { data: { ...metadata, conversation_id: path.split("/").at(-1),
+      amount: "75.00", status: "PENDING" } } };
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  vi.mocked(api.post).mockImplementationOnce(async () => {
+    remaining = 75;
+    throw { response: { status: 409, data: { errors: [{ code: "SCHOOL_CHECKOUT_BALANCE_CHANGED" }] } } };
+  }).mockImplementation(async (_path, body) => {
+    const request = body as { request_id: string; amount: string };
+    return { data: { data: { ...metadata, conversation_id: request.request_id, amount: request.amount, status: "PENDING" } } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Öde" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Öğrenci ödeme bilgileri" }));
+  expect(await screen.findByText("Kalan borç değişti. Güncel tutarı kontrol edin.")).toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(api.post).toHaveBeenCalledTimes(1);
+  fireEvent.click(await screen.findByRole("button", { name: "Öde" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Öğrenci ödeme bilgileri" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+  const [first, second] = vi.mocked(api.post).mock.calls.map(([, body]) => body) as Array<{
+    request_id: string; amount: string; expected_remaining_amount: string;
+  }>;
+  expect(first).toMatchObject({ amount: "100.00", expected_remaining_amount: "100.00" });
+  expect(second).toMatchObject({ amount: "75.00", expected_remaining_amount: "75.00" });
+  expect(second.request_id).not.toBe(first.request_id);
+});
+
 it("kısmi tahsilatın kalan tutarı yeni işlem kimliğiyle gönderilir", async () => {
   const key = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
   saveSchoolCheckout(key, { version: 1, request_id: checkoutId, debt_id: debtId, amount: "25.00", status: "PENDING" });

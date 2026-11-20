@@ -9,7 +9,7 @@ import { checkoutAmount, checkoutAttemptKey, checkoutResult, checkoutScope, clea
 
 type Props = {
   debtId: string; amount: unknown; purpose?: CheckoutPurpose; available: boolean;
-  onComplete?: () => void; onOpenConflict?: () => void;
+  onComplete?: () => void; onOpenConflict?: (balanceChanged: boolean) => void;
 };
 type Request = { debt_id: string; amount: string; request_id: string; buyer: Record<string, string> };
 export function SchoolCheckoutForm(props: Props) {
@@ -53,7 +53,8 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
       if (recovery.error || recovery.attempt?.request_id !== request.request_id) {
         setStorageError(true); throw new Error("Önceki ödeme kimliği saklanamadı veya değişti. Yeni ödeme başlatmadan sonucu kontrol edin.");
       }
-      const response = await api.post(purpose === "parent" ? "/parent/payments/initialize" : "/payments/iyzico/initialize", request, { signal: controller.current.signal });
+      const body = purpose === "parent" ? { ...request, expected_remaining_amount: request.amount } : request;
+      const response = await api.post(purpose === "parent" ? "/parent/payments/initialize" : "/payments/iyzico/initialize", body, { signal: controller.current.signal });
       if (controller.current.signal.aborted) return;
       const result = checkoutResult(response.data.data, request.request_id);
       if (result.debt_id !== request.debt_id || checkoutAmount(result.amount) !== request.amount) throw new Error("Ödeme sonucu seçilen borç ve tutarla eşleşmiyor.");
@@ -63,11 +64,13 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
     } catch (reason) {
       if (controller.current.signal.aborted) return;
       const response = (reason as { response?: { status?: number; data?: { errors?: Array<{ code?: string }> } } })?.response;
+      const codes = Array.isArray(response?.data?.errors) ? response.data.errors.map((entry) => entry?.code) : [];
+      const balanceChanged = codes.includes("SCHOOL_CHECKOUT_BALANCE_CHANGED");
       if (purpose === "parent" && onOpenConflict && response?.status === 409 &&
-          Array.isArray(response.data?.errors) && response.data.errors.some((entry) => entry?.code === "SCHOOL_CHECKOUT_IN_PROGRESS")) {
+          (balanceChanged || codes.includes("SCHOOL_CHECKOUT_IN_PROGRESS"))) {
         try { clearSchoolCheckout(storageKey, request.request_id); }
         catch { /* Keep the saved identity if storage changed or is unavailable. */ }
-        onOpenConflict();
+        onOpenConflict(balanceChanged);
       } else {
         setError(apiMessage(reason));
       }

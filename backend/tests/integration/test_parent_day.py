@@ -25,6 +25,37 @@ async def grant_attendance_read(db):
     role.permissions.append(Permission(code=code, name=code, module="parent"))
 
 
+async def test_parent_checkout_rejects_balance_changes_before_reserving(materials_client, monkeypatch):  # noqa: F811
+    from decimal import Decimal
+    from uuid import uuid4
+    from app.application.services import school_payment_merchant
+    from app.infrastructure.models.models import Debt, DebtType, PaymentCheckout
+
+    client, sessions, data = materials_client
+    child = data["children"][0]
+    async with sessions() as db:
+        debt = Debt(student_id=child.id, organization_id=child.organization_id, branch_id=child.branch_id,
+            debt_type=DebtType.EDUCATION, amount=Decimal("100.00"), paid_amount=Decimal("50.00"), due_date=date(2026, 11, 20))
+        db.add(debt)
+        await db.commit()
+
+    async def unexpected_provider(*args, **kwargs):
+        raise AssertionError("A stale balance must be rejected before provider lookup")
+
+    monkeypatch.setattr(school_payment_merchant, "resolve_gateway", unexpected_provider)
+    for amount in ("40.00", "75.00"):
+        request_id = uuid4()
+        response = await client.post("/api/parent/payments/initialize", headers=auth(data["user"]), json={
+            "debt_id": str(debt.id), "request_id": str(request_id), "amount": amount, "expected_remaining_amount": amount,
+            "buyer": {"identityNumber": "TEST-001", "registrationAddress": "Synthetic address", "city": "Test", "country": "TR"},
+        })
+        assert response.status_code == 409, response.text
+        assert response.json()["errors"] == [{"code": "SCHOOL_CHECKOUT_BALANCE_CHANGED"}]
+        async with sessions() as db:
+            assert await db.get(PaymentCheckout, request_id) is None
+            assert (await db.get(Debt, debt.id)).remaining_amount == Decimal("50.00")
+
+
 async def test_parent_financial_invoices_discover_only_owned_open_checkouts(materials_client):  # noqa: F811
     from decimal import Decimal
     from uuid import uuid4

@@ -142,6 +142,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     scope: string; debtId: string; childName: string; saved?: { scope: string; attempt: SchoolCheckoutReference };
   } | null>(null);
   const [receiptModal, setReceiptModal] = useState<{ debtId: string; studentId: string; sessionVersion: number } | null>(null);
+  const [balanceNoticeScope, setBalanceNoticeScope] = useState("");
   const closeReceiptModal = useCallback(() => setReceiptModal(null), []);
   const [paymentSearch, setPaymentSearch] = useSearchParams();
   const financeController = useRef<AbortController | null>(null);
@@ -150,7 +151,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     activeFinanceScope.current = financeScope;
     return () => { activeFinanceScope.current = ""; financeController.current?.abort(); };
   }, [financeScope]);
-  useEffect(() => { setPaymentModal(null); }, [financeScope, parentCheckoutScope, canMakePayment]);
+  useEffect(() => { setPaymentModal(null); setBalanceNoticeScope(""); }, [financeScope, parentCheckoutScope, canMakePayment]);
   useEffect(closeReceiptModal, [closeReceiptModal, view, selectedId, sessionVersion, canReadFinances]);
 
   const refreshPaymentFinances = useCallback(() => {
@@ -348,6 +349,7 @@ export function ParentPortalPage({ view }: { view: View }) {
 
   function initializePayment(invoice: DataRecord) {
     if (!canPayInvoice(invoice) || financeScope !== activeFinanceScope.current) return;
+    setBalanceNoticeScope("");
     setPaymentModal({ scope: financeScope, debtId: String(invoice.debt_id),
       childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
   }
@@ -403,6 +405,7 @@ export function ParentPortalPage({ view }: { view: View }) {
         </button>}
     </PageHeader>
     {currentFinance?.error && <ErrorState message={currentFinance.error} retry={refreshPaymentFinances} />}
+    {balanceNoticeScope && balanceNoticeScope === financeScope && <p role="status">Kalan borç değişti. Güncel tutarı kontrol edin.</p>}
     {view === "finances" && canMakePayment && paymentSearch.has("checkout") && <ParentCheckoutReturn
       checkoutId={paymentSearch.get("checkout") || ""} onComplete={refreshPaymentFinances}
       onClose={() => { const next = new URLSearchParams(paymentSearch); next.delete("checkout"); setPaymentSearch(next, { replace: true }); }} />}
@@ -2097,7 +2100,12 @@ export function ParentPortalPage({ view }: { view: View }) {
         <ParentSavedCheckout attempt={paymentModal.saved.attempt} childName={paymentModal.childName}
           onClose={closePaymentModal} onComplete={refreshPaymentFinances} /> :
         <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentInvoice?.remaining_amount} childName={paymentModal.childName}
-          available={Boolean(paymentInvoice && canPayInvoice(paymentInvoice))} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />)}
+          available={Boolean(paymentInvoice && canPayInvoice(paymentInvoice))} onClose={closePaymentModal} onComplete={refreshPaymentFinances}
+          onOpenConflict={(balanceChanged) => {
+            if (financeScope !== activeFinanceScope.current) return;
+            if (balanceChanged) setBalanceNoticeScope(financeScope);
+            closePaymentModal();
+          }} />)}
     {view === "finances" && canReadFinances && receiptModal?.studentId === selectedId &&
       receiptModal.sessionVersion === sessionVersion &&
       <ParentDebtReceipts key={`${receiptModal.studentId}:${receiptModal.debtId}`} studentId={receiptModal.studentId}

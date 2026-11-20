@@ -124,7 +124,7 @@ class IyzicoGateway:
 async def initialize(db, tenant, user, body, ip, gateway=None):
     if gateway is None:
         from app.application.services import school_checkout_service, school_payment_merchant
-        if getattr(body, "request_id", None):
+        if getattr(body, "request_id", None) or getattr(body, "expected_remaining_amount", None) is not None:
             return await school_checkout_service.initialize(db, tenant, user, body, ip)
         selected_debt = await BaseRepository(db, tenant).get_by_id(body.debt_id, Debt)
         context = await school_payment_merchant.resolve_gateway(db, selected_debt.organization_id)

@@ -4,12 +4,13 @@ import { SchoolCheckoutForm } from "../payment/SchoolCheckoutForm";
 import { SchoolCheckoutStatus } from "../payment/SchoolCheckoutStatus";
 import { checkoutIdentifier, type SchoolCheckoutReference } from "../payment/schoolCheckoutAttempt";
 
-export function ParentSchoolCheckout({ debtId, amount, childName, available, onClose, onComplete }: {
+export function ParentSchoolCheckout({ debtId, amount, childName, available, onClose, onComplete, onOpenConflict }: {
   debtId: string; amount: unknown; childName: string; available: boolean; onClose: () => void; onComplete: () => void;
+  onOpenConflict: (balanceChanged: boolean) => void;
 }) {
   return <Modal open title="Öğrenci ödemesi" description={amount == null ? childName : `${childName} · ${money(amount)}`} onClose={onClose}>
     <SchoolCheckoutForm purpose="parent" debtId={debtId} amount={amount} available={available}
-      onComplete={onComplete} onOpenConflict={onClose} />
+      onComplete={onComplete} onOpenConflict={onOpenConflict} />
   </Modal>;
 }
 
