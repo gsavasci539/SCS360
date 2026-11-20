@@ -65,7 +65,7 @@ async def check_overlap(db, body, exclude=None):
         raise HTTPException(409, "Aynı öğrenci ve kimlik için çakışan etkin teslim yetkisi var")
 
 
-async def summary(db, day=None, student_id=None):
+async def summary(db, day=None, student_id=None, branch_id=None):
     day = day or school_today(); today = school_today(); start, end = school_day_bounds(day)
     total = select(func.count(PickupAuthorization.id))
     current = select(PickupAuthorization).join(Student, Student.id == PickupAuthorization.student_id).where(
@@ -76,6 +76,11 @@ async def summary(db, day=None, student_id=None):
     if student_id:
         total = total.where(PickupAuthorization.student_id == student_id); current = current.where(PickupAuthorization.student_id == student_id)
         logs = logs.where(PickupLog.student_id == student_id)
+    if branch_id:
+        students = select(Student.id).where(Student.branch_id == branch_id)
+        total = total.where(PickupAuthorization.student_id.in_(students))
+        current = current.where(Student.branch_id == branch_id)
+        logs = logs.where(PickupLog.student_id.in_(students))
     count, unique = (await db.execute(logs)).one()
     groups = (await db.execute(current.with_only_columns(PickupAuthorization.student_id, PickupAuthorization.authorized_person_id)
         .group_by(PickupAuthorization.student_id, PickupAuthorization.authorized_person_id).having(func.count(PickupAuthorization.id) > 1))).all()

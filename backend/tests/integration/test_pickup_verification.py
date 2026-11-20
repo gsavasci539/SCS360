@@ -24,8 +24,12 @@ async def test_pickup_checks_identity_actor_scope_dates_and_retry_without_duplic
     created = await client.post("/api/dismissal/authorizations", headers=auth, json=body)
     assert created.status_code == 200, created.text
     identifier = created.json()["data"]["id"]
-    rows = (await client.get("/api/dismissal/authorizations", headers=auth)).json()["data"]
-    assert rows[0]["created_by"] == str(actor.id)
+    branch = str(data["branch"].id)
+    options = await client.get("/api/dismissal/options", headers=auth, params={"branch_id": branch})
+    assert options.status_code == 200 and child in [row["id"] for row in options.json()["data"]["students"]]
+    rows = (await client.get("/api/dismissal/authorizations", headers=auth,
+        params={"branch_id": branch, "record_id": identifier, "student_id": child})).json()["data"]
+    assert len(rows) == 1 and rows[0]["id"] == identifier and rows[0]["created_by"] == str(actor.id)
     spoof = await client.post("/api/dismissal/verify-pickup", headers=auth, json={"student_id": child, "pickup_person_name": "Authorized Adult", "pickup_person_id": "WRONG-ID"})
     assert spoof.status_code == 200 and spoof.json()["data"]["authorized"] is False, spoof.text
     payload = {"student_id": child, "pickup_person_name": "Client cannot change registered name", "pickup_person_id": "TEST-ID-1", "request_id": str(uuid4()), "verified_by": str(data["teacher"].id)}
@@ -36,8 +40,15 @@ async def test_pickup_checks_identity_actor_scope_dates_and_retry_without_duplic
     async with sessions() as db:
         logs = (await db.execute(select(PickupLog))).scalars().all()
         assert len(logs) == 1 and logs[0].verified_by == actor.id and logs[0].pickup_person_name == "Authorized Adult"
-    bounded = await client.get("/api/dismissal/logs", headers=auth, params={"start_date": str(school_today()), "end_date": str(school_today())})
+    bounded = await client.get("/api/dismissal/logs", headers=auth, params={"start_date": str(school_today()),
+        "end_date": str(school_today()), "branch_id": branch, "record_id": payload["request_id"]})
     assert bounded.status_code == 200 and len(bounded.json()["data"]) == 1, bounded.text
+    assert bounded.json()["data"][0]["id"] == payload["request_id"]
+    stats = await client.get("/api/dismissal/summary", headers=auth, params={"branch_id": branch})
+    assert stats.status_code == 200 and stats.json()["data"]["total_pickups"] == 1, stats.text
+    for path in ("options", "logs", "authorizations", "summary"):
+        other = await client.get(f"/api/dismissal/{path}", headers=auth, params={"branch_id": str(data["other_branch"].id)})
+        assert other.status_code in {403, 404}, other.text
     denied = await client.post("/api/dismissal/authorizations", headers=auth, json={**body, "student_id": str(data["stranger"].id)})
     assert denied.status_code in {403, 404}, denied.text
     assert (await client.delete("/api/dismissal/authorizations/" + identifier, headers=auth)).status_code == 200

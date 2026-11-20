@@ -22,6 +22,8 @@ from app.domain.entities import Student, User
 from app.core.exceptions import ConflictException, NotFoundException
 from app.application.services.consent_service import utc_iso
 from app.application.services import pickup_service as service
+from app.infrastructure.models.models import Branch
+from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/dismissal", tags=["Dismissal"])
 
@@ -75,20 +77,28 @@ class PickupVerificationRequest(BaseModel):
 # ==================== Pickup Authorizations Endpoints ====================
 
 @router.get("/options")
-async def options(student_id: Optional[UUID] = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"),
+async def options(student_id: Optional[UUID] = None, branch_id: Optional[UUID] = None, search: str = Query("", max_length=100),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.read"))):
     from app.application.services.student_choices import options as choices
-    return success_response(await choices(db, student_id, search.strip()))
+    if branch_id:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+    return success_response(await choices(db, student_id, search.strip(), branch_id=branch_id))
 
 
 @router.get("/summary")
-async def summary(student_id: Optional[UUID] = None, day: Optional[date] = Query(None, alias="date"), db: AsyncSession = Depends(get_db, scope="function"),
+async def summary(student_id: Optional[UUID] = None, branch_id: Optional[UUID] = None,
+    day: Optional[date] = Query(None, alias="date"), db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.read"))):
-    return success_response(await service.summary(db, day, student_id))
+    if branch_id:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+    return success_response(await service.summary(db, day, student_id, branch_id))
 
 @router.get("/authorizations")
 async def get_pickup_authorizations(
     student_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = None,
+    record_id: Optional[UUID] = None,
     status: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -103,6 +113,11 @@ async def get_pickup_authorizations(
     conditions = []
     if student_id:
         conditions.append(PickupAuthorization.student_id == student_id)
+    if branch_id:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+        conditions.append(PickupAuthorization.student_id.in_(select(Student.id).where(Student.branch_id == branch_id)))
+    if record_id:
+        conditions.append(PickupAuthorization.id == record_id)
     if status:
         conditions.append(PickupAuthorization.status == status.upper())
     
@@ -347,6 +362,8 @@ async def verify_pickup(
 @router.get("/logs")
 async def get_pickup_logs(
     student_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = None,
+    record_id: Optional[UUID] = None,
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -364,6 +381,11 @@ async def get_pickup_logs(
     conditions = []
     if student_id:
         conditions.append(PickupLog.student_id == student_id)
+    if branch_id:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+        conditions.append(PickupLog.student_id.in_(select(Student.id).where(Student.branch_id == branch_id)))
+    if record_id:
+        conditions.append(PickupLog.id == record_id)
     if start_date:
         conditions.append(PickupLog.pickup_time >= school_day_bounds(start_date)[0])
     if end_date:
