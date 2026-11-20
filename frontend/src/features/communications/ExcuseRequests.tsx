@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { isAxiosError } from "axios";
 import { Badge, ErrorState, LoadingState } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { shortDate } from "../../lib/format";
-import { useAuthStore } from "../../stores/auth";
+import { hasPermission, useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { ApiResponse, DataRecord } from "../../types/api";
 
 export function ParentExcuseRequests({ studentId }: { studentId: string }) {
@@ -51,47 +53,125 @@ export function ParentExcuseRequests({ studentId }: { studentId: string }) {
 }
 
 export function ExcuseReviewPanel() {
-  const sequence = useRef(0);
-  const [branches, setBranches] = useState<DataRecord[]>([]);
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const institution = user?.is_super_admin ? (workspace?.operatorId === user.id ? workspace.id : null) : user?.organization_id;
+  if (!user || user.is_super_admin && !institution || !["students.write", "branch.read", "dashboard.view"].every((code) => hasPermission(user, code))) return null;
+  return <ScopedExcuseReviewPanel key={JSON.stringify([session, user.id, institution, user.branch_ids])} actorId={user.id} />;
+}
+
+type PendingExcuses = { count: number; items: DataRecord[] };
+type ReviewResult = { key: string; data: PendingExcuses } | { key: string; error: string };
+
+function ScopedExcuseReviewPanel({ actorId }: { actorId: string }) {
+  const [branches, setBranches] = useState<DataRecord[] | null>(null);
+  const [branchError, setBranchError] = useState("");
+  const [branchAttempt, setBranchAttempt] = useState(0);
   const [branchId, setBranchId] = useState("");
-  const [rows, setRows] = useState<DataRecord[]>([]);
-  const [count, setCount] = useState(0);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState("");
-  const load = useCallback(async () => {
-    const request = ++sequence.current;
-    if (!branchId) return;
-    try {
-      const result = await api.get("/dashboard/pending-actions", { params: { branch_id: branchId } });
-      if (request !== sequence.current) return;
-      setRows(result.data.data.excuse_requests.items);
-      setCount(result.data.data.excuse_requests.count);
-      setError("");
-    } catch (err) { if (request === sequence.current) setError(apiMessage(err)); }
+  const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<ReviewResult | null>(null);
+  const pending = useRef<AbortController | null>(null);
+  const [reviewing, setReviewing] = useState<{ branchId: string; controller: AbortController } | null>(null);
+  const [feedback, setFeedback] = useState<{ branchId: string; text: string; error: boolean } | null>(null);
+  const busy = reviewing?.branchId === branchId && !reviewing.controller.signal.aborted;
+  const key = JSON.stringify([branchId, attempt]);
+  const current = result?.key === key ? result : null;
+  const data = current && "data" in current ? current.data : null;
+  useLayoutEffect(() => () => {
+    pending.current?.abort();
+    pending.current = null;
   }, [branchId]);
   useEffect(() => {
-    let active = true;
-    api.get("/branches", { params: { page: 1, page_size: 100 } }).then((response) => {
-      if (!active) return;
-      const value = response.data.data;
-      const items = Array.isArray(value) ? value : value?.items || [];
+    const controller = new AbortController();
+    api.get("/branches", { params: { page: 1, page_size: 100 }, signal: controller.signal }).then((response) => {
+      if (controller.signal.aborted) return;
+      const items: DataRecord[] | undefined = Array.isArray(response.data.data) ? response.data.data : response.data.data?.items;
+      if (!Array.isArray(items)) {
+        setBranchError("Şube listesi doğrulanamadı.");
+        return;
+      }
       setBranches(items);
       setBranchId(items[0]?.id || "");
-    }).catch((err) => { if (active) setError(apiMessage(err)); });
-    return () => { active = false; };
-  }, []);
-  useEffect(() => { setRows([]); setCount(0); void load(); return () => { ++sequence.current; }; }, [load]);
-  async function review(id: string, status: "APPROVED" | "REJECTED") {
-    setBusy(id);
+    }).catch((err) => { if (!controller.signal.aborted) setBranchError(apiMessage(err)); });
+    return () => controller.abort();
+  }, [branchAttempt]);
+  useEffect(() => {
+    if (!branchId) return;
+    const controller = new AbortController();
+    api.get<ApiResponse<{ branch_id: string; excuse_requests: PendingExcuses }>>("/dashboard/pending-actions", {
+      params: { branch_id: branchId }, signal: controller.signal,
+    }).then(({ data: { data: response } }) => {
+      if (controller.signal.aborted) return;
+      const rows = response?.excuse_requests;
+      if (response?.branch_id !== branchId || !rows || !Array.isArray(rows.items) || !Number.isInteger(rows.count) ||
+        rows.count < rows.items.length || rows.items.some((row) => !row?.id || !row.student_id || row.status !== "PENDING")) {
+        setResult({ key, error: "Bekleyen mazeretler seçili şubeyle eşleşmiyor." });
+        return;
+      }
+      setResult({ key, data: rows });
+    }).catch((err) => { if (!controller.signal.aborted) setResult({ key, error: apiMessage(err) }); });
+    return () => controller.abort();
+  }, [branchId, key]);
+  async function review(event: FormEvent<HTMLFormElement>, row: DataRecord, status: "APPROVED" | "REJECTED") {
+    event.preventDefault();
+    if (pending.current) return;
+    const comment = String(new FormData(event.currentTarget).get("comment") ?? "").trim() || null;
+    const controller = new AbortController();
+    pending.current = controller;
+    setReviewing({ branchId, controller });
+    setFeedback(null);
     try {
-      await api.put(`/dashboard/excuse-requests/${id}`, { status });
-      await load();
-    } catch (err) { setError(apiMessage(err)); }
-    finally { setBusy(""); }
+      const response = await api.put<ApiResponse<DataRecord>>(`/dashboard/excuse-requests/${encodeURIComponent(row.id)}`,
+        { status, comment }, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      const saved = response.data.data;
+      if (saved?.id !== row.id || saved.student_id !== row.student_id || saved.status !== status ||
+        saved.reviewed_by !== actorId || saved.review_comment !== comment) {
+        setFeedback({ branchId, text: "Sunucu yanıtı seçili mazeret veya karar bilgileriyle eşleşmiyor.", error: true });
+        return;
+      }
+      setFeedback({ branchId, text: "Mazeret kararı kaydedildi.", error: false });
+      setAttempt((value) => value + 1);
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        if (isAxiosError(err) && err.response?.status === 409) {
+          setFeedback({ branchId, text: "Talep daha önce değerlendirilmiş. Liste yeniden okunuyor.", error: true });
+          setAttempt((value) => value + 1);
+        } else {
+          setFeedback({ branchId, text: apiMessage(err), error: true });
+        }
+      }
+    } finally {
+      if (pending.current === controller) {
+        pending.current = null;
+        setReviewing(null);
+      }
+    }
   }
   return <section className="card card-pad" style={{ marginBottom: 20 }} aria-label="Bekleyen mazeret talepleri">
-    <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: "wrap" }}><h2>Bekleyen mazeret talepleri ({count})</h2><select aria-label="Mazeret şubesi" className="filter-select" value={branchId} disabled={Boolean(busy)} onChange={(event) => setBranchId(event.target.value)}><option value="">Şube seçin</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{String(branch.name)}</option>)}</select></div>
-    {error && <ErrorState message={error} retry={load} />}
-    {!rows.length ? <p>Bekleyen mazeret talebi bulunmuyor.</p> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Öğrenci</th><th>Tarih</th><th>Açıklama</th><th>İşlem</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{String(row.student_name)}</td><td>{shortDate(row.start_date)} – {shortDate(row.end_date)}</td><td>{String(row.description)}</td><td><div className="table-actions"><button className="btn btn-primary" disabled={Boolean(busy)} onClick={() => review(row.id, "APPROVED")}>Onayla</button><button className="btn btn-secondary" disabled={Boolean(busy)} onClick={() => review(row.id, "REJECTED")}>Reddet</button></div></td></tr>)}</tbody></table></div>}
+    <div className="toolbar" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+      <h2>Bekleyen mazeret talepleri{data ? ` (${data.count})` : ""}</h2>
+      <select aria-label="Mazeret şubesi" className="filter-select" value={branchId} disabled={!branches || busy} onChange={(event) => {
+        setFeedback(null);
+        setBranchId(event.target.value);
+      }}><option value="">Şube seçin</option>{branches?.map((branch) => <option key={branch.id} value={branch.id}>{String(branch.name)}</option>)}</select>
+    </div>
+    {feedback?.branchId === branchId && <p role={feedback.error ? "alert" : "status"}>{feedback.text}</p>}
+    {branchError ? <ErrorState message={branchError} retry={() => { setBranchError(""); setBranchAttempt((value) => value + 1); }} /> :
+      !branches ? <LoadingState label="Şubeler yükleniyor" /> : !branchId ? <p>Mazeretleri görmek için bir şube seçin.</p> :
+        current && "error" in current ? <ErrorState message={current.error} retry={() => setAttempt((value) => value + 1)} /> :
+          !data ? <LoadingState label="Mazeret talepleri yükleniyor" /> : data.items.length === 0 ? <p>Bekleyen mazeret talebi bulunmuyor.</p> :
+            <div className="table-wrap"><table className="data-table"><thead><tr><th>Öğrenci</th><th>Tarih</th><th>Açıklama</th><th>İşlem</th></tr></thead>
+              <tbody>{data.items.map((row) => <tr key={row.id}><td>{String(row.student_name)}</td><td>{shortDate(row.start_date)} – {shortDate(row.end_date)}</td><td>{String(row.description)}</td>
+                <td><form aria-label={`Mazeret kararı ${row.student_name}`} onSubmit={(event) => {
+                  const choice = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value");
+                  if (choice === "APPROVED" || choice === "REJECTED") void review(event, row, choice);
+                  else event.preventDefault();
+                }}><fieldset disabled={busy} style={{ border: 0, padding: 0 }}>
+                  <label>Değerlendirme notu<textarea className="filter-select" name="comment" maxLength={2000} /></label>
+                  <div className="table-actions"><button className="btn btn-primary" value="APPROVED">Onayla</button><button className="btn btn-secondary" value="REJECTED">Reddet</button></div>
+                </fieldset></form></td></tr>)}</tbody>
+            </table></div>}
   </section>;
 }
