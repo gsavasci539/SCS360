@@ -8,7 +8,8 @@ export function ParentSchoolCheckout({ debtId, amount, childName, available, onC
   debtId: string; amount: unknown; childName: string; available: boolean; onClose: () => void; onComplete: () => void;
 }) {
   return <Modal open title="Öğrenci ödemesi" description={amount == null ? childName : `${childName} · ${money(amount)}`} onClose={onClose}>
-    <SchoolCheckoutForm purpose="parent" debtId={debtId} amount={amount} available={available} onComplete={onComplete} />
+    <SchoolCheckoutForm purpose="parent" debtId={debtId} amount={amount} available={available}
+      onComplete={onComplete} onOpenConflict={onClose} />
   </Modal>;
 }
 

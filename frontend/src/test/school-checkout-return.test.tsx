@@ -139,6 +139,42 @@ it.each([
   if (fromServer) expect(window.sessionStorage.getItem(storageKey!)).toBeNull();
 });
 
+it.each([true, false])("açık işlem çakışmasında borçları yeniler (kendi işlemi: %s)", async (ownCheckout) => {
+  const key = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
+  let conflict = false;
+  const invoicesPath = "/parent/child/child/financial-invoices";
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === invoicesPath) return { data: { data: { student_id: "child", total_remaining: 25, online_payment_available: true,
+      invoices: [{ debt_id: debtId, remaining_amount: 25, status: "UNPAID", description: "Test borcu",
+        payment_in_progress: conflict, open_checkout: conflict && ownCheckout
+          ? { request_id: checkoutId, debt_id: debtId, amount: "25.00" } : null }] } } };
+    if (path === `/parent/payments/checkouts/${checkoutId}`) return { data: { data: metadata } };
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  vi.mocked(api.post).mockImplementation(async () => {
+    conflict = true;
+    throw { response: { status: 409, data: { errors: [{ code: "SCHOOL_CHECKOUT_IN_PROGRESS" }] } } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Öde" }));
+  fireEvent.submit(screen.getByRole("form", { name: "Öğrenci ödeme bilgileri" }));
+  if (ownCheckout) {
+    fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+    expect(await screen.findByText(/Ödeme incelemede/)).toBeInTheDocument();
+  } else {
+    expect(await screen.findByText("Bu borç için açık bir ödeme işlemi var.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ödeme sonucunu kontrol et" })).not.toBeInTheDocument();
+  }
+  expect(screen.getByText("Test borcu")).toBeInTheDocument();
+  expect(screen.queryByRole("form")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Öde" })).not.toBeInTheDocument();
+  expect(vi.mocked(api.get).mock.calls.filter(([path]) => path === invoicesPath)).toHaveLength(2);
+  expect(vi.mocked(api.get).mock.calls.filter(([path]) => path.includes("/checkouts/")).map(([path]) => path))
+    .toEqual(ownCheckout ? [`/parent/payments/checkouts/${checkoutId}`] : []);
+  expect(api.post).toHaveBeenCalledTimes(1);
+  expect(window.sessionStorage.getItem(key!)).toBeNull();
+});
+
 it("aynı tarayıcı sunucudaki açık ödeme ile eşleşen kayıtlı işleme döner", async () => {
   const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
   saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });

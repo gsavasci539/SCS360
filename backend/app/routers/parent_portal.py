@@ -270,20 +270,23 @@ async def get_child_financial_invoices(
     debt_result = await db.execute(select(Debt).where(*debt_scope))
     debts = debt_result.scalars().all()
     active_checkouts = {}
+    debts_with_open_checkout = set()
     if debts and tenant.has_permission("parent.make_payment"):
         result = await db.execute(
-            select(PaymentCheckout.id, PaymentCheckout.debt_id, PaymentCheckout.amount, Debt.branch_id)
+            select(PaymentCheckout.id, PaymentCheckout.debt_id, PaymentCheckout.amount, PaymentCheckout.created_by, Debt.branch_id)
             .join(Debt, Debt.id == PaymentCheckout.debt_id)
             .where(
                 *debt_scope,
                 PaymentCheckout.organization_id == current_user.organization_id,
-                PaymentCheckout.created_by == current_user.id,
                 PaymentCheckout.status.in_(OPEN),
             )
             .order_by(PaymentCheckout.created_at.desc(), PaymentCheckout.id.desc())
         )
-        for checkout_id, debt_id, amount, branch_id in result:
+        for checkout_id, debt_id, amount, actor_id, branch_id in result:
             if not tenant.can_access_branch(branch_id):
+                continue
+            debts_with_open_checkout.add(debt_id)
+            if actor_id != current_user.id:
                 continue
             active_checkouts.setdefault(debt_id, {
                 "request_id": str(checkout_id),
@@ -302,6 +305,7 @@ async def get_child_financial_invoices(
             "remaining_amount": float(debt.remaining_amount),
             "status": debt.status,
             "open_checkout": active_checkouts.get(debt.id),
+            "payment_in_progress": debt.id in debts_with_open_checkout,
             "due_date": debt.due_date.isoformat() if debt.due_date else None
         })
     

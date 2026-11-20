@@ -149,7 +149,11 @@ async def initialize(db, tenant, user, body, ip):
     if active:
         if not body.request_id and len(active) == 1 and active[0].created_by == tenant.user_id and active[0].request_digest == request_digest:
             return view(active[0], tenant, True)
-        raise ConflictException("Bu borç için açık ödeme oturumu bulunuyor; önce önceki işlemin sonucunu kontrol edin")
+        raise AppException(
+            "Bu borç için açık bir ödeme işlemi var.",
+            status_code=409,
+            errors=[{"code": "SCHOOL_CHECKOUT_IN_PROGRESS"}],
+        )
     if debt.status == DebtStatus.CANCELLED:
         raise ConflictException("İptal edilen borca ödeme yapılamaz")
     principal, paid = state(debt)

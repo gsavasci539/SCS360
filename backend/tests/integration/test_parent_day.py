@@ -27,6 +27,7 @@ async def grant_attendance_read(db):
 
 async def test_parent_financial_invoices_discover_only_owned_open_checkouts(materials_client):  # noqa: F811
     from decimal import Decimal
+    from uuid import uuid4
     from app.infrastructure.models.models import Debt, DebtType, Parent, PaymentCheckout, StudentParent, User, UserRole
 
     client, sessions, data = materials_client
@@ -80,6 +81,21 @@ async def test_parent_financial_invoices_discover_only_owned_open_checkouts(mate
     assert invoices == {str(first_debt.id): {
         "debt_id": str(first_debt.id), "request_id": str(own_checkout.id), "amount": "25.10",
     }, str(second_debt.id): None}
+    assert all(row["payment_in_progress"] for row in response.json()["data"]["invoices"])
+    for debt in (first_debt, second_debt):
+        rejected_id = uuid4()
+        rejected = await client.post("/api/parent/payments/initialize", headers=auth(owner), json={
+            "debt_id": str(debt.id), "request_id": str(rejected_id), "amount": "25.10",
+            "buyer": {"identityNumber": "TEST-001", "registrationAddress": "Synthetic address", "city": "Test", "country": "TR"},
+        })
+        assert rejected.status_code == 409, rejected.text
+        assert rejected.json()["errors"] == [{"code": "SCHOOL_CHECKOUT_IN_PROGRESS"}]
+        assert str(own_checkout.id) not in rejected.text and str(other_checkout.id) not in rejected.text
+        async with sessions() as db:
+            assert await db.get(PaymentCheckout, rejected_id) is None
+
+    refreshed = await client.get(invoice_url(first), headers=auth(owner))
+    assert refreshed.json()["data"] == response.json()["data"]
     status = await client.get(checkout_url(own_checkout), headers=auth(owner))
     assert status.status_code == 200 and status.json()["data"]["status"] == "REVIEW"
     assert (await client.get(checkout_url(other_checkout), headers=auth(owner))).status_code == 403
@@ -93,7 +109,8 @@ async def test_parent_financial_invoices_discover_only_owned_open_checkouts(mate
         await db.commit()
 
     finance_only = await client.get(invoice_url(first), headers=auth(owner))
-    assert finance_only.status_code == 200 and all(row["open_checkout"] is None for row in finance_only.json()["data"]["invoices"])
+    assert finance_only.status_code == 200
+    assert all(row["open_checkout"] is None and not row["payment_in_progress"] for row in finance_only.json()["data"]["invoices"])
     assert (await client.get(checkout_url(own_checkout), headers=auth(owner))).status_code == 403
 
 

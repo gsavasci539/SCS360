@@ -7,7 +7,10 @@ import { SchoolCheckoutStatus } from "./SchoolCheckoutStatus";
 import { checkoutAmount, checkoutAttemptKey, checkoutResult, checkoutScope, clearSchoolCheckout, readSchoolCheckout, saveSchoolCheckout,
   type CheckoutPurpose, type SchoolCheckoutAttempt, type SchoolCheckoutResult } from "./schoolCheckoutAttempt";
 
-type Props = { debtId: string; amount: unknown; purpose?: CheckoutPurpose; available: boolean; onComplete?: () => void };
+type Props = {
+  debtId: string; amount: unknown; purpose?: CheckoutPurpose; available: boolean;
+  onComplete?: () => void; onOpenConflict?: () => void;
+};
 type Request = { debt_id: string; amount: string; request_id: string; buyer: Record<string, string> };
 export function SchoolCheckoutForm(props: Props) {
   const user = useAuthStore((state) => state.user), sessionVersion = useAuthStore((state) => state.sessionVersion);
@@ -17,7 +20,7 @@ export function SchoolCheckoutForm(props: Props) {
   return <ScopedCheckout key={JSON.stringify([storageKey, sessionVersion, [...(user?.permissions || [])].sort()])} {...props}
     available={props.available && allowed} purpose={purpose} storageKey={storageKey} />;
 }
-function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComplete, storageKey }: Props & { storageKey: string | null }) {
+function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComplete, onOpenConflict, storageKey }: Props & { storageKey: string | null }) {
   const [saved] = useState(() => readSchoolCheckout(storageKey));
   const [attempt, setAttempt] = useState<SchoolCheckoutAttempt | null>(saved.attempt), [error, setError] = useState(saved.error);
   const [storageError, setStorageError] = useState(Boolean(saved.error)), [missing, setMissing] = useState(false), [busy, setBusy] = useState(false);
@@ -57,7 +60,18 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
       const next: SchoolCheckoutAttempt = { version: 1, request_id: request.request_id, debt_id: request.debt_id, amount: request.amount, status: result.status };
       saveSchoolCheckout(storageKey, next); setOriginal(null); setAttempt(next); setInitialized(result);
       setVerifiedTerminal(["FAILED", "REFUNDED"].includes(result.status));
-    } catch (reason) { if (!controller.current.signal.aborted) setError(apiMessage(reason)); }
+    } catch (reason) {
+      if (controller.current.signal.aborted) return;
+      const response = (reason as { response?: { status?: number; data?: { errors?: Array<{ code?: string }> } } })?.response;
+      if (purpose === "parent" && onOpenConflict && response?.status === 409 &&
+          Array.isArray(response.data?.errors) && response.data.errors.some((entry) => entry?.code === "SCHOOL_CHECKOUT_IN_PROGRESS")) {
+        try { clearSchoolCheckout(storageKey, request.request_id); }
+        catch { /* Keep the saved identity if storage changed or is unavailable. */ }
+        onOpenConflict();
+      } else {
+        setError(apiMessage(reason));
+      }
+    }
     finally { if (!controller.current.signal.aborted) { setBusy(false); inFlight.current = false; setRevision((value) => value + 1); } }
   }
   async function submit(event: FormEvent<HTMLFormElement>) {

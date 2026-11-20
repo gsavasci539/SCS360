@@ -340,7 +340,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   function canPayInvoice(invoice: DataRecord) {
     if (!canMakePayment || finances?.online_payment_available !== true ||
       !["UNPAID", "PARTIALLY_PAID", "OVERDUE"].includes(String(invoice.status)) || !(Number(invoice.remaining_amount) > 0)) return false;
-    if (invoice.open_checkout == null) return true;
+    if (invoice.open_checkout == null) return invoice.payment_in_progress !== true;
     const open = savedCheckoutFor(invoice);
     const local = open && readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, open.debt_id)).attempt;
     return Boolean(open && local?.request_id === open.request_id && local.amount === open.amount);
@@ -364,7 +364,7 @@ export function ParentPortalPage({ view }: { view: View }) {
       return requestId && amount && reference.debt_id === debtId
         ? { request_id: requestId, debt_id: debtId, amount } : null;
     }
-    return readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, debtId)).attempt;
+    return invoice.payment_in_progress === true ? null : readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, debtId)).attempt;
   }
 
   function openSavedPayment(invoice: DataRecord) {
@@ -1123,6 +1123,8 @@ export function ParentPortalPage({ view }: { view: View }) {
                           <button type="button" className="btn btn-secondary" onClick={() => openSavedPayment(invoice)}>
                             Ödeme sonucunu kontrol et
                           </button>}
+                        {canMakePayment && invoice.payment_in_progress === true && invoice.open_checkout == null &&
+                          <span>Bu borç için açık bir ödeme işlemi var.</span>}
                         {canReadFinances && finances?.student_id === selectedId && checkoutIdentifier(selectedId) &&
                           checkoutIdentifier(invoice.debt_id) && (invoice.status === "PAID" || Number(invoice.paid_amount) > 0) &&
                           <button type="button" className="btn btn-secondary" onClick={() => setReceiptModal({
