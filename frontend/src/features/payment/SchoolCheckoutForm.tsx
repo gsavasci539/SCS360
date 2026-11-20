@@ -37,7 +37,7 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
     }
     setMissing(false);
     setOriginal(null);
-    setVerifiedTerminal(["FAILED", "REFUNDED"].includes(result.status));
+    setVerifiedTerminal(["FAILED", "REFUNDED"].includes(result.status) || purpose === "parent" && result.status === "COMPLETED");
     const current = readSchoolCheckout(storageKey);
     if (current.error || current.attempt?.request_id !== attempt.request_id) {
       setStorageError(true); setError("Önceki ödeme bilgisi değişti. Yeni işlem açmadan sonucu kontrol edin."); return;
@@ -86,8 +86,9 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
     const request = { debt_id: next.debt_id, amount: next.amount, request_id: next.request_id, buyer };
     setOriginal(request); setAttempt(next); await send(request);
   }
+  const canStartNew = attempt && verifiedTerminal && available && currentAmount && !storageError;
   function newAttempt() {
-    if (!attempt || !verifiedTerminal || !["FAILED", "REFUNDED"].includes(attempt.status) || busy) return;
+    if (!attempt || !canStartNew || busy) return;
     try { clearSchoolCheckout(storageKey, attempt.request_id); setOriginal(null); setAttempt(null); setInitialized(null); setMissing(false); setError(""); setVerifiedTerminal(false); }
     catch (reason) { setError(apiMessage(reason)); setStorageError(true); }
   }
@@ -114,8 +115,8 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
       <button className="btn btn-primary">{attempt ? "Aynı işlem kimliğiyle tekrar gönder" : "Ödeme sayfasını hazırla"}</button>
     </fieldset></form>}
     {!attempt && !storageError && (!available || !currentAmount) && <p>Bu borç için yeni online ödeme açılamıyor. Kurumunuzla iletişime geçin.</p>}
-    {attempt && verifiedTerminal && ["FAILED", "REFUNDED"].includes(attempt.status) && available && currentAmount && !storageError && <p>
-      <button className="btn btn-secondary" disabled={busy} onClick={newAttempt}>Yeni ödeme işlemi oluştur</button>
+    {canStartNew && <p>
+      <button className="btn btn-secondary" disabled={busy} onClick={newAttempt}>{attempt.status === "COMPLETED" ? "Kalan borç için yeni ödeme" : "Yeni ödeme işlemi oluştur"}</button>
     </p>}
   </section>;
 }

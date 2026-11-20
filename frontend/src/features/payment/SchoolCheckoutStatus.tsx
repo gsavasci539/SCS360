@@ -32,7 +32,7 @@ export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff"
     activeKey.current = accessKey;
     handlers.current = { onComplete, onUpdate, onMissing };
   }, [accessKey, onComplete, onUpdate, onMissing]);
-  const [record, setRecord] = useState<{ key: string; result: SchoolCheckoutResult | null }>({ key: accessKey, result: readOnly ? null : initialResult || null });
+  const [record, setRecord] = useState<{ key: string; result: SchoolCheckoutResult | null }>({ key: accessKey, result: null });
   const [error, setError] = useState(""), [busy, setBusy] = useState(false), [missing, setMissing] = useState(false), [revision, setRevision] = useState(0);
   const [pageUrl, setPageUrl] = useState<{ key: string; value: string } | null>(null);
   const controller = useRef<AbortController | null>(null), completed = useRef(new Set<string>()), inFlight = useRef(false);
@@ -40,7 +40,7 @@ export function SchoolCheckoutStatus({ checkoutId, onComplete, purpose = "staff"
   function accept(value: unknown, key: string, allowUrl: boolean) {
     const data = checkoutResult(value, checkoutId);
     if (expectedDebtId && data.debt_id !== expectedDebtId || expectedAmount && data.amount !== expectedAmount) throw new Error("Ödeme sonucu seçilen borç ve tutarla eşleşmiyor.");
-    if (readOnly && data.status === "COMPLETED" && !checkoutIdentifier(data.payment_id)) throw new Error("Tahsilat kaydı doğrulanamadı.");
+    if ((readOnly || purpose === "parent") && data.status === "COMPLETED" && !checkoutIdentifier(data.payment_id)) throw new Error("Tahsilat kaydı doğrulanamadı.");
     if (activeKey.current !== key) return;
     setRecord({ key, result: data }); setMissing(false); setError("");
     if (!readOnly && allowUrl && (data.checkout_url || data.payment_page_url)) {

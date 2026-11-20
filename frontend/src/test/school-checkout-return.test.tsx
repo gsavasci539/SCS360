@@ -206,6 +206,35 @@ it.each([true, false])("açık işlem çakışmasında borçları yeniler (kendi
   expect(window.sessionStorage.getItem(key!)).toBeNull();
 });
 
+it("kısmi tahsilatın kalan tutarı yeni işlem kimliğiyle gönderilir", async () => {
+  const key = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
+  saveSchoolCheckout(key, { version: 1, request_id: checkoutId, debt_id: debtId, amount: "25.00", status: "PENDING" });
+  let invoiceReads = 0;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === `/parent/payments/checkouts/${checkoutId}`) return { data: { data: { ...metadata,
+      status: "COMPLETED", payment_id: "00000000-0000-4000-8000-000000000010" } } };
+    if (path.endsWith("/financial-invoices")) {
+      const remaining = ++invoiceReads === 1 ? 100 : 75;
+      return { data: { data: { student_id: "child", total_remaining: remaining, online_payment_available: true,
+        invoices: [{ debt_id: debtId, remaining_amount: remaining, status: "PARTIALLY_PAID" }] } } };
+    }
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  vi.mocked(api.post).mockImplementation(async (_path, body) => {
+    const request = body as { request_id: string; amount: string };
+    return { data: { data: { ...metadata, conversation_id: request.request_id, amount: request.amount, status: "PENDING" } } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Öde" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Kalan borç için yeni ödeme" }));
+  expect(api.post).not.toHaveBeenCalled();
+  fireEvent.submit(screen.getByRole("form", { name: "Öğrenci ödeme bilgileri" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  const request = vi.mocked(api.post).mock.calls[0][1] as { request_id: string; amount: string };
+  expect(request.amount).toBe("75.00");
+  expect(request.request_id).not.toBe(checkoutId);
+});
+
 it("aynı tarayıcı sunucudaki açık ödeme ile eşleşen kayıtlı işleme döner", async () => {
   const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
   saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
