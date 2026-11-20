@@ -123,15 +123,36 @@ async def test_parent_requests_need_review_and_rejection_persists_across_portals
 async def test_visits_derive_student_branch_examiner_and_summary_uses_real_rows(infirmary_client):
     client, _, data = infirmary_client
     auth = headers(data["nurse"])
-    created = await client.post("/api/infirmary/infirmary-visits", headers=auth, json={"student_id": str(data["children"][0].id),
+    student_id = str(data["children"][0].id)
+    branch_id = str(data["branch"].id)
+    options = await client.get("/api/infirmary/options", headers=auth, params={"branch_id": branch_id})
+    assert options.status_code == 200 and any(row["id"] == student_id and row["branch_id"] == branch_id
+        for row in options.json()["data"]["students"])
+    foreign_options = await client.get("/api/infirmary/options", headers=auth,
+        params={"branch_id": str(data["other_branch"].id), "student_id": student_id})
+    assert foreign_options.status_code == 200 and foreign_options.json()["data"]["students"] == []
+    created = await client.post("/api/infirmary/infirmary-visits", headers=auth, json={"student_id": student_id,
         "complaint": "Acceptance visit", "examined_by": str(data["teacher"].id), "follow_up_required": True})
     assert created.status_code == 200, created.text
-    visits = await client.get("/api/infirmary/infirmary-visits", headers=auth)
+    saved = created.json()["data"]
+    assert saved["student_id"] == student_id and saved["branch_id"] == branch_id
+    assert saved["parent_notified"] is False and saved["notification_method"] is None
+    filters = {"student_id": student_id, "branch_id": branch_id, "start_date": saved["visit_date"], "end_date": saved["visit_date"]}
+    visits = await client.get("/api/infirmary/infirmary-visits", headers=auth, params=filters)
+    assert visits.json()["data"][0]["id"] == saved["id"]
     assert visits.json()["data"][0]["examined_by"] == str(data["nurse"].id)
     assert visits.json()["data"][0]["branch_id"] == str(data["branch"].id)
     result = await client.get("/api/infirmary/summary", headers=auth)
     assert result.status_code == 200 and result.json()["data"]["recent_visits"] == 1, result.text
     assert result.json()["data"]["follow_up_visits"] == 1
+    for note in ("Initial result", "Retry"):
+        completed = await client.post(f'/api/infirmary/infirmary-visits/{saved["id"]}/follow-up',
+            headers=auth, json={"follow_up_notes": note})
+        assert completed.status_code == 200, completed.text
+        assert completed.json()["data"]["id"] == saved["id"]
+        assert completed.json()["data"]["follow_up_notes"] == "Initial result"
+    refreshed = await client.get("/api/infirmary/infirmary-visits", headers=auth, params=filters)
+    assert refreshed.json()["data"][0]["follow_up_required"] is False
     readonly = await client.post("/api/infirmary/infirmary-visits", headers=headers(data["teacher"]), json={"student_id": str(data["children"][0].id)})
     assert readonly.status_code == 403
 

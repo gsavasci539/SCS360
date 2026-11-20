@@ -118,9 +118,10 @@ class VisitFollowUp(Input):
 
 
 @router.get("/options")
-async def options(student_id: UUID | None = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"),
+async def options(student_id: UUID | None = None, search: str = Query("", max_length=100), branch_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("health.read"))):
-    return success_response(await service.options(db, student_id, search.strip()))
+    return success_response(await service.options(db, student_id, search.strip(), branch_id))
 
 
 @router.get("/summary")

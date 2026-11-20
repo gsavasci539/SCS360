@@ -93,15 +93,18 @@ def audit(db, tenant, child, row, action, changes):
         action=AuditAction.UPDATE, entity_type=action, entity_id=row.id, new_values=changes))
 
 
-async def options(db, student_id=None, search=""):
+async def options(db, student_id=None, search="", branch_id=None):
     query = select(Student).where(Student.deleted_at.is_(None))
+    if branch_id is not None:
+        query = query.where(Student.branch_id == branch_id)
     filtered = query.where(or_(Student.first_name.ilike(f"%{search}%"), Student.last_name.ilike(f"%{search}%"))) if search else query
     rows = (await db.execute(filtered.order_by(Student.first_name, Student.id).limit(101))).scalars().all()
     choices = rows[:100]
     selected = (await db.execute(query.where(Student.id == student_id))).scalar_one_or_none() if student_id else None
     if selected and not any(row.id == selected.id for row in choices):
         choices = [*choices, selected]
-    return {"students": [{"id": str(row.id), "name": f"{row.first_name} {row.last_name}"} for row in choices],
+    return {"students": [{"id": str(row.id), "name": f"{row.first_name} {row.last_name}",
+        "branch_id": str(row.branch_id) if row.branch_id else None} for row in choices],
         "more_students": len(rows) > 100, "today": school_today().isoformat(), "time": school_time().strftime("%H:%M")}
 
 
