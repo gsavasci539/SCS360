@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 import { ParentDayTimeline } from "../features/parent/ParentDayTimeline";
 import { ParentPortalPage } from "../features/parent/ParentPortalPage";
@@ -82,6 +82,63 @@ it("yoklama izni yoksa akışta geçiş sunmaz ve takvim isteği yapmaz", async 
   render(<MemoryRouter><ParentPortalPage view="attendance" /></MemoryRouter>);
   expect(await screen.findByText("Yoklama kayıtlarını görüntüleme yetkiniz yok.")).toBeInTheDocument();
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path.endsWith("/attendance"))).toBe(false);
+});
+
+it("yoklama ile günlük akış arasında geri ve ileri giderken seçimi doğrular", async () => {
+  parentWithAttendanceAccess();
+  const today = "2026-11-20";
+  const historicDay = "2025-10-07";
+  let linkedChildren = children;
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path === "/parent/my-children") return { data: { data: linkedChildren } };
+    const student_id = path.split("/")[3];
+    if (path.endsWith("/today-status")) return { data: { data: { student_id, date: today } } };
+    if (path.endsWith("/timeline")) {
+      const { date } = config?.params as { date: string };
+      return { data: { data: { student_id, date, events: date === historicDay ? [attendanceEvent] : [] } } };
+    }
+    if (path.endsWith("/attendance")) {
+      const { year, month } = config?.params as { year: number; month: number };
+      return { data: { data: { student_id, year, month, summary: { present: 0, late: 0, absent: 0 }, calendar: {} } } };
+    }
+    return { data: { data: null } };
+  });
+
+  function HistoryControls() {
+    const navigate = useNavigate();
+    return <><button onClick={() => navigate(-1)}>Geri</button><button onClick={() => navigate(1)}>İleri</button></>;
+  }
+
+  render(<MemoryRouter initialEntries={["/parent/children"]}>
+    <HistoryControls />
+    <Routes>
+      <Route path="/parent/children" element={<ParentPortalPage view="children" />} />
+      <Route path="/parent/attendance" element={<ParentPortalPage view="attendance" />} />
+    </Routes>
+  </MemoryRouter>);
+  const childSelector = () => screen.getByRole("combobox", { name: "Öğrenci Seçin" });
+  await screen.findByLabelText("Akış tarihi");
+  fireEvent.change(childSelector(), { target: { value: "child-2" } });
+  fireEvent.change(await screen.findByLabelText("Akış tarihi"), { target: { value: historicDay } });
+  fireEvent.click(await screen.findByRole("link", { name: "İlgili sayfayı aç" }));
+  expect(await screen.findByText("Yoklama dönemi · 10/2025")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Geri" }));
+  expect(await screen.findByLabelText("Akış tarihi")).toHaveValue(historicDay);
+  expect(childSelector()).toHaveValue("child-2");
+  expect(await screen.findByText("08:30 · Yoklama kaydı")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "İleri" }));
+  expect(await screen.findByText("Yoklama dönemi · 10/2025")).toBeInTheDocument();
+  expect(childSelector()).toHaveValue("child-2");
+
+  linkedChildren = [children[0]];
+  vi.mocked(api.get).mockClear();
+  fireEvent.click(screen.getByRole("button", { name: "Geri" }));
+  expect(await screen.findByLabelText("Akış tarihi")).toHaveValue(today);
+  expect(childSelector()).toHaveValue("child-1");
+  expect(api.get).toHaveBeenCalledWith("/parent/child/child-1/timeline", expect.objectContaining({ params: { date: today } }));
+  expect(vi.mocked(api.get).mock.calls.some(([path]) => path.includes("/child-2/"))).toBe(false);
 });
 
 it("bağlı olmayan çocukla gelen yoklama adresinden yetkisiz istek göndermez", async () => {

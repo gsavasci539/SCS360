@@ -1,5 +1,5 @@
 import { ParentSchoolCheckout, ParentCheckoutReturn } from "./ParentSchoolCheckout";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck2, CreditCard, FileHeart, GraduationCap, HeartPulse, UsersRound, Activity, Clock, CheckCircle, XCircle, Wallet, MessageCircle, Bell, BookOpen, Brain, Lightbulb } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui";
@@ -18,10 +18,11 @@ import { ParentSurveys } from "./ParentSurveys";
 import { useAuthStore } from "../../stores/auth";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
+type ChildDate = { studentId?: unknown; date?: unknown };
 
 const unwrap = <T,>(response: { data: ApiResponse<T> }) => response.data.data;
 
-function attendanceLinkDate(value: unknown): Date | null {
+function parseDateOnly(value: unknown): Date | null {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const date = new Date(`${value}T00:00:00Z`);
   return date.getUTCFullYear() > 0 && date.toISOString().slice(0, 10) === value ? date : null;
@@ -33,18 +34,34 @@ export function ParentPortalPage({ view }: { view: View }) {
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
   const [medicineSubmitting, setMedicineSubmitting] = useState(false);
-  const [children, setChildren] = useState<DataRecord[]>([]);
+  const [childList, setChildList] = useState<{ view: View; records: DataRecord[] } | null>(null);
+  const children = childList?.view === view ? childList.records : [];
   const location = useLocation();
-  const attendanceLink = view === "attendance" ? (location.state as { parentAttendance?: { studentId?: unknown; date?: unknown } } | null)?.parentAttendance : undefined;
+  const navigate = useNavigate();
+  const isTimelineView = view === "dashboard" || view === "children";
+  const routeState = location.state as { parentAttendance?: ChildDate; parentTimeline?: ChildDate } | null;
+  const attendanceLink = view === "attendance" ? routeState?.parentAttendance : undefined;
+  const timelineHistory = isTimelineView ? routeState?.parentTimeline : undefined;
+  const timelineChild = typeof timelineHistory?.studentId === "string"
+    ? children.find((child) => child.student_id === timelineHistory.studentId) : undefined;
   const linkedChild = typeof attendanceLink?.studentId === "string"
     ? children.find((child) => child.student_id === attendanceLink.studentId) : undefined;
-  const linkedDate = linkedChild ? attendanceLinkDate(attendanceLink?.date) : null;
+  const linkedDate = linkedChild ? parseDateOnly(attendanceLink?.date) : null;
   const entryKey = attendanceLink ? location.key : null;
   const [childChoice, setChildChoice] = useState<{ entryKey: string | null; id: string } | null>(null);
   const [periodChoice, setPeriodChoice] = useState<{ entryKey: string | null; year: number; month: number } | null>(null);
-  const selected = (childChoice && childChoice.entryKey === entryKey
-    ? children.find((child) => child.student_id === childChoice.id) : linkedChild) ?? children[0];
+  const currentChild = childChoice && childChoice.entryKey === entryKey
+    ? children.find((child) => child.student_id === childChoice.id) : linkedChild;
+  const selected = (isTimelineView ? timelineChild : currentChild) ?? children[0];
   const selectedId = selected?.student_id ? String(selected.student_id) : "";
+  const savedTimelineDate = timelineChild ? timelineHistory?.date : undefined;
+  const timelineDate = savedTimelineDate === "" ? "" : parseDateOnly(savedTimelineDate)?.toISOString().slice(0, 10);
+  const saveTimelineSelection = (studentId: string, date?: string) => {
+    navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, {
+      replace: true,
+      state: { ...routeState, parentTimeline: { studentId, date } },
+    });
+  };
   const today = new Date();
   const period = periodChoice?.entryKey === entryKey ? periodChoice : null;
   const attendanceYear = period?.year ?? linkedDate?.getUTCFullYear() ?? today.getFullYear();
@@ -109,14 +126,18 @@ export function ParentPortalPage({ view }: { view: View }) {
   
 
   useEffect(() => {
-    api.get<ApiResponse<DataRecord[]>>("/parent/my-children")
+    const controller = new AbortController();
+    setChildList(null);
+    setError("");
+    setLoading(true);
+    api.get<ApiResponse<DataRecord[]>>("/parent/my-children", { signal: controller.signal })
       .then((response) => {
-        const records = response.data.data || [];
-        setChildren(records);
+        if (!controller.signal.aborted) setChildList({ view, records: response.data.data || [] });
       })
-      .catch((reason) => setError(apiMessage(reason)))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [view]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -291,7 +312,11 @@ export function ParentPortalPage({ view }: { view: View }) {
             id="parent-child" 
             value={selectedId} 
             disabled={medicineSubmitting}
-            onChange={(event) => setChildChoice({ entryKey, id: event.target.value })}
+            onChange={(event) => {
+              const studentId = event.target.value;
+              if (isTimelineView) saveTimelineSelection(studentId);
+              else setChildChoice({ entryKey, id: studentId });
+            }}
             className="parent-input-glass"
             style={{ 
               width: "100%", 
@@ -325,8 +350,14 @@ export function ParentPortalPage({ view }: { view: View }) {
     </div>
 
     {error && <div className="card" style={{ marginBottom: 24 }}><ErrorState message={error} /></div>}
-    {(view === "dashboard" || view === "children") && selectedId && status?.date &&
-      <ParentDayTimeline key={`${selectedId}-${String(status.date)}`} studentId={selectedId} initialDate={String(status.date)} />}
+    {isTimelineView && selectedId && status?.date &&
+      <ParentDayTimeline
+        key={`${selectedId}-${String(status.date)}`}
+        studentId={selectedId}
+        initialDate={String(status.date)}
+        selectedDate={timelineDate ?? String(status.date)}
+        onDayChange={(date) => saveTimelineSelection(selectedId, date)}
+      />}
     {view === "activities" && selectedId && <ParentCertificates key={selectedId} studentId={selectedId} />}
     {view === "academic" && selectedId && <ParentReportCards key={selectedId} studentId={selectedId} />}
     {view === "consents" && selectedId && <ParentConsents key={selectedId} studentId={selectedId} />}

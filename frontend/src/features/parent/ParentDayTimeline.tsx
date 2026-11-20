@@ -39,9 +39,16 @@ function DailyReportDetails({ details }: { details: DayEvent["details"] }) {
   </>;
 }
 
-export function ParentDayTimeline({ studentId, initialDate }: { studentId: string; initialDate: string }) {
+export function ParentDayTimeline({ studentId, initialDate, selectedDate, onDayChange }: {
+  studentId: string;
+  initialDate: string;
+  selectedDate?: string;
+  onDayChange?: (date: string) => void;
+}) {
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
-  const [day, setDay] = useState(initialDate);
+  const [localDay, setLocalDay] = useState(initialDate);
+  const day = selectedDate ?? localDay;
+  const setDay = onDayChange ?? setLocalDay;
   const [result, setResult] = useState<{ studentId: string; day: string; events: DayEvent[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

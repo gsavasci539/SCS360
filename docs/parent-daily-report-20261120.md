@@ -9,3 +9,5 @@ Günlük karne ayrıntısı artık aynı zaman çizelgesinde açılıyor ve seç
 Yoklama bağlantısı günün çocuğunu ve tarihini sayfa geçişinde taşıyor. Çocuk, sunucudan gelen veli ilişki listesinde doğrulanıyor. Takvim yalnız yoklama okuma yetkisiyle çağrılıyor ve seçilen ay açıkça gösteriliyor. On yedi hedefli web testi ve bir geçici SQLite API testi geçti. TypeScript, hedefli ESLint ve Ruff geçti.
 
 Web aylık takvimi sunucudan gelen günleri gösteriyor. Tarihli akıştan gelen gün seçili açılıyor. Giriş, çıkış ve not yalnız kayıtta varsa gösteriliyor. Kayıtsız günler belirtiliyor ve ay değişiminde eski ayrıntı kapanıyor. On yedi hedefli web testi, TypeScript ve hedefli ESLint geçti.
+
+Web günlük akışı, seçilen çocuğu ve günü tarayıcının ilgili geçmiş kaydında saklıyor. Yoklamaya gidip geri dönünce seçim korunuyor. Sayfa geçişinde veli ilişki listesi yeniden yükleniyor. Kaydedilen çocuk artık veliye bağlı değilse ilişkili ilk çocuk ve sunucunun bildirdiği gün açılıyor. Geri ve ileri gezinme ile ilişki kaldırma dahil 18 hedefli web testi, TypeScript ve hedefli ESLint geçti.
