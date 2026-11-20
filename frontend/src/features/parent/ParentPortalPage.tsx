@@ -1,7 +1,8 @@
 import { ParentSchoolCheckout, ParentCheckoutReturn } from "./ParentSchoolCheckout";
+import { ParentDebtReceipts } from "./ParentDebtReceipts";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck2, CreditCard, FileHeart, GraduationCap, HeartPulse, UsersRound, Activity, Clock, CheckCircle, XCircle, Wallet, MessageCircle, Bell, BookOpen, Brain, Lightbulb } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ErrorState, LoadingState, PageHeader, Badge } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import type { ApiResponse, DataRecord } from "../../types/api";
@@ -16,6 +17,7 @@ import { ParentReportCards } from "./ParentReportCards";
 import { ParentConsents } from "./ParentConsents";
 import { ParentSurveys } from "./ParentSurveys";
 import { useAuthStore } from "../../stores/auth";
+import { checkoutIdentifier } from "../payment/schoolCheckoutAttempt";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 type ChildDate = { studentId?: unknown; date?: unknown };
@@ -32,6 +34,7 @@ export function ParentPortalPage({ view }: { view: View }) {
   const canMakePayment = useAuthStore((state) => state.can("parent.make_payment"));
   const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
+  const sessionVersion = useAuthStore((state) => state.sessionVersion);
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
   const canReadChildren = useAuthStore((state) => state.can("parent.view_children"));
   const canReadDailyReport = useAuthStore((state) => state.can("parent.view_daily_report"));
@@ -124,10 +127,13 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [chatTeacherId, setChatTeacherId] = useState("");
   const [chatTeacherName, setChatTeacherName] = useState("");
   const [paymentModal, setPaymentModal] = useState<{ debtId: string; amount: number; childName: string } | null>(null);
+  const [receiptModal, setReceiptModal] = useState<{ debtId: string; studentId: string; sessionVersion: number } | null>(null);
+  const closeReceiptModal = useCallback(() => setReceiptModal(null), []);
   const [paymentSearch, setPaymentSearch] = useSearchParams();
   const paymentController = useRef<AbortController | null>(null), paymentChild = useRef(selectedId);
   useLayoutEffect(() => { paymentChild.current = selectedId; paymentController.current?.abort(); }, [selectedId]);
   useEffect(() => { setPaymentModal(null); return () => paymentController.current?.abort(); }, [selectedId]);
+  useEffect(closeReceiptModal, [closeReceiptModal, view, selectedId, sessionVersion, canReadFinances]);
   
   
 
@@ -1046,6 +1052,11 @@ export function ParentPortalPage({ view }: { view: View }) {
                             Öde
                           </button>
                         )}
+                        {canReadFinances && finances?.student_id === selectedId && checkoutIdentifier(selectedId) &&
+                          checkoutIdentifier(invoice.debt_id) && (invoice.status === "PAID" || Number(invoice.paid_amount) > 0) &&
+                          <button type="button" className="btn btn-secondary" onClick={() => setReceiptModal({
+                            debtId: String(invoice.debt_id), studentId: selectedId, sessionVersion,
+                          })}>Makbuz incele</button>}
                       </td>
                     </tr>
                   ))}
@@ -2005,6 +2016,10 @@ export function ParentPortalPage({ view }: { view: View }) {
     {/* Payment Modal */}
     {paymentModal && <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentModal.amount} childName={paymentModal.childName}
       available={Boolean(finances?.online_payment_available) && canMakePayment} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />}
+    {view === "finances" && canReadFinances && receiptModal?.studentId === selectedId &&
+      receiptModal.sessionVersion === sessionVersion &&
+      <ParentDebtReceipts key={`${receiptModal.studentId}:${receiptModal.debtId}`} studentId={receiptModal.studentId}
+        debtId={receiptModal.debtId} onClose={closeReceiptModal} />}
 
   </>;
 }

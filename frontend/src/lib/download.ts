@@ -7,11 +7,15 @@ export async function downloadFile(path: string, filename: string, options: {
   params?: AxiosRequestConfig["params"];
   signal?: AbortSignal;
   expectedSha256?: string;
+  expectedContentType?: string;
 } = {}) {
-  const { expectedSha256, ...request } = options;
+  const { expectedSha256, expectedContentType, ...request } = options;
   if (request.signal?.aborted) return;
   const response = await api.get<Blob>(path, { ...request, responseType: "blob" });
   if (request.signal?.aborted) return;
+  if (expectedContentType && response.data.type !== expectedContentType) {
+    throw new Error("Sunucudan beklenen dosya türü alınamadı.");
+  }
   if (expectedSha256 !== undefined && await fileSha256(response.data, request.signal) !== expectedSha256) {
     throw new Error("İndirilen dosya, kayıttaki SHA-256 özetiyle eşleşmiyor.");
   }
