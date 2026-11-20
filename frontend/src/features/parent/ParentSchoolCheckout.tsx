@@ -2,7 +2,7 @@ import { Modal } from "../../components/ui";
 import { money } from "../../lib/format";
 import { SchoolCheckoutForm } from "../payment/SchoolCheckoutForm";
 import { SchoolCheckoutStatus } from "../payment/SchoolCheckoutStatus";
-import { checkoutIdentifier } from "../payment/schoolCheckoutAttempt";
+import { checkoutIdentifier, type SchoolCheckoutAttempt } from "../payment/schoolCheckoutAttempt";
 
 export function ParentSchoolCheckout({ debtId, amount, childName, available, onClose, onComplete }: {
   debtId: string; amount: unknown; childName: string; available: boolean; onClose: () => void; onComplete: () => void;
@@ -20,4 +20,13 @@ export function ParentCheckoutReturn({ checkoutId, onComplete, onClose }: { chec
     {identifier ? <SchoolCheckoutStatus purpose="parent" checkoutId={identifier} onComplete={onComplete} /> : <p role="alert">Ödeme işlem kimliği geçersiz.</p>}
     <button className="btn btn-secondary" onClick={onClose}>Sonuç bölümünü kapat</button>
   </section>;
+}
+
+export function ParentSavedCheckout({ attempt, childName, onComplete, onClose }: {
+  attempt: SchoolCheckoutAttempt; childName: string; onComplete: () => void; onClose: () => void;
+}) {
+  return <Modal open title="Kayıtlı ödeme sonucu" description={childName} onClose={onClose}>
+    <SchoolCheckoutStatus purpose="parent" readOnly checkoutId={attempt.request_id}
+      expectedDebtId={attempt.debt_id} expectedAmount={attempt.amount} onComplete={onComplete} />
+  </Modal>;
 }

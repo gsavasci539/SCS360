@@ -2,11 +2,11 @@ import type { AuthUser } from "../../types/api";
 import type { PlatformWorkspace } from "../../stores/platformWorkspace";
 
 export type CheckoutPurpose = "staff" | "parent";
-export type CheckoutState = "INITIALIZING" | "PENDING" | "FRAUD_REVIEW" | "PAID_REVIEW" | "COMPLETED" | "FAILED" | "REFUNDED";
+export type CheckoutState = "INITIALIZING" | "PENDING" | "PROCESSING" | "REVIEW" | "FRAUD_REVIEW" | "PAID_REVIEW" | "COMPLETED" | "FAILED" | "REFUNDED";
 export type SchoolCheckoutAttempt = { version: 1; request_id: string; debt_id: string; amount: string; status: CheckoutState };
 export type SchoolCheckoutResult = { conversation_id: string; status: CheckoutState; debt_id?: string; amount?: string;
   checkout_url?: string; payment_page_url?: string; message?: string; payment_id?: string; can_resume?: boolean; can_refresh?: boolean };
-const states = new Set<CheckoutState>(["INITIALIZING", "PENDING", "FRAUD_REVIEW", "PAID_REVIEW", "COMPLETED", "FAILED", "REFUNDED"]);
+const states = new Set<CheckoutState>(["INITIALIZING", "PENDING", "PROCESSING", "REVIEW", "FRAUD_REVIEW", "PAID_REVIEW", "COMPLETED", "FAILED", "REFUNDED"]);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function checkoutIdentifier(value: unknown): string | null {

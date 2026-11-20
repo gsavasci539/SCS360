@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { PaymentPage } from "../features/payment/PaymentPage";
+import { checkoutAttemptKey, checkoutScope, saveSchoolCheckout } from "../features/payment/schoolCheckoutAttempt";
 import { ParentPortalPage } from "../features/parent/ParentPortalPage";
 import { useAuthStore } from "../stores/auth";
 import { usePlatformWorkspace } from "../stores/platformWorkspace";
@@ -101,4 +102,52 @@ it("finans izni yoksa borç isteği yapmaz ve bakiye göstermez", async () => {
   expect(screen.queryByText("Kalan toplam:")).not.toBeInTheDocument();
   expect(screen.queryByText("Bekleyen ödeme bulunmuyor.")).not.toBeInTheDocument();
   expect(vi.mocked(api.get).mock.calls.some(([path]) => path.endsWith("/financial-invoices"))).toBe(false);
+});
+
+it.each([
+  { online: false, debtStatus: "UNPAID", remaining: "25.00" },
+  { online: true, debtStatus: "PAID", remaining: "0.00" },
+])("kayıtlı sonuç sağlayıcı ve borç durumundan bağımsız olarak salt okunur açılır ($debtStatus)", async ({ online, debtStatus, remaining }) => {
+  const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
+  saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
+  const invoicePath = "/parent/child/child/financial-invoices";
+  const statusPath = `/parent/payments/checkouts/${checkoutId}`;
+  let statusCalls = 0;
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path === statusPath) return { data: { data: ++statusCalls === 1 ? { ...metadata, status: "REVIEW", can_resume: true } :
+      { ...metadata, status: "COMPLETED", payment_id: "00000000-0000-4000-8000-000000000010" } } };
+    if (path === invoicePath) return { data: { data: { student_id: "child", total_remaining: remaining, online_payment_available: online, invoices: [
+      { debt_id: debtId, status: debtStatus, remaining_amount: remaining },
+      { debt_id: "00000000-0000-4000-8000-000000000011", status: "CANCELLED", remaining_amount: "0.00" },
+    ] } } };
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+  expect(screen.getByRole("dialog", { name: "Kayıtlı ödeme sonucu" })).toBeInTheDocument();
+  expect(await screen.findByText(/Ödeme incelemede/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Mevcut ödeme sayfasını getir" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("form", { name: "Öğrenci ödeme bilgileri" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Kaydı yeniden yükle" }));
+  expect(await screen.findByText("Ödemeniz doğrulandı ve borcunuza işlendi.")).toBeInTheDocument();
+  await waitFor(() => expect(vi.mocked(api.get).mock.calls.filter(([path]) => path === invoicePath)).toHaveLength(2));
+  expect(statusCalls).toBe(2);
+  expect(api.post).not.toHaveBeenCalled();
+});
+
+it("kayıtlı sonuç farklı borçla veya tutarla eşleşirse tahsilat göstermez", async () => {
+  const storageKey = checkoutAttemptKey(checkoutScope(useAuthStore.getState().user, null, "parent"), debtId);
+  saveSchoolCheckout(storageKey, { version: 1, debt_id: debtId, request_id: checkoutId, amount: "25.00", status: "PENDING" });
+  vi.mocked(api.get).mockImplementation(async (path) => {
+    if (path.endsWith("/financial-invoices")) return { data: { data: { student_id: "child", total_remaining: 25, online_payment_available: false,
+      invoices: [{ debt_id: debtId, remaining_amount: 25, status: "UNPAID" }] } } };
+    if (path === `/parent/payments/checkouts/${checkoutId}`) return { data: { data: { ...metadata,
+      amount: "50.00", status: "COMPLETED", payment_id: "00000000-0000-4000-8000-000000000010" } } };
+    return { data: { data: path === "/parent/my-children" ? [{ student_id: "child", first_name: "Deniz" }] : null } };
+  });
+  render(<MemoryRouter><ParentPortalPage view="finances" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("İstek tamamlanamadı");
+  expect(screen.queryByText("Ödemeniz doğrulandı ve borcunuza işlendi.")).not.toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
 });

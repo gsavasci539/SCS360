@@ -1,4 +1,4 @@
-import { ParentSchoolCheckout, ParentCheckoutReturn } from "./ParentSchoolCheckout";
+import { ParentSchoolCheckout, ParentCheckoutReturn, ParentSavedCheckout } from "./ParentSchoolCheckout";
 import { ParentDebtReceipts } from "./ParentDebtReceipts";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarCheck2, CreditCard, FileHeart, GraduationCap, HeartPulse, UsersRound, Activity, Clock, CheckCircle, XCircle, Wallet, MessageCircle, Bell, BookOpen, Brain, Lightbulb } from "lucide-react";
@@ -17,7 +17,7 @@ import { ParentReportCards } from "./ParentReportCards";
 import { ParentConsents } from "./ParentConsents";
 import { ParentSurveys } from "./ParentSurveys";
 import { useAuthStore } from "../../stores/auth";
-import { checkoutIdentifier } from "../payment/schoolCheckoutAttempt";
+import { checkoutAttemptKey, checkoutIdentifier, checkoutScope, readSchoolCheckout, type SchoolCheckoutAttempt } from "../payment/schoolCheckoutAttempt";
 
 type View = "dashboard" | "children" | "attendance" | "finances" | "health" | "academic" | "schedule" | "homework" | "materials" | "communication" | "announcements" | "activities" | "reports" | "chat" | "consents" | "surveys";
 type ChildDate = { studentId?: unknown; date?: unknown };
@@ -41,6 +41,8 @@ export function ParentPortalPage({ view }: { view: View }) {
   const canSendMedicine = useAuthStore((state) => state.can("parent.medicine_request"));
   const canReadFinances = useAuthStore((state) => state.can("parent.view_finances"));
   const sessionVersion = useAuthStore((state) => state.sessionVersion);
+  const user = useAuthStore((state) => state.user);
+  const parentCheckoutScope = canMakePayment ? checkoutScope(user, null, "parent") : null;
   const canReadAttendance = useAuthStore((state) => state.can("parent.view_attendance"));
   const canReadChildren = useAuthStore((state) => state.can("parent.view_children"));
   const canReadDailyReport = useAuthStore((state) => state.can("parent.view_daily_report"));
@@ -136,7 +138,9 @@ export function ParentPortalPage({ view }: { view: View }) {
   const [teachers, setTeachers] = useState<DataRecord[]>([]);
   const [chatTeacherId, setChatTeacherId] = useState("");
   const [chatTeacherName, setChatTeacherName] = useState("");
-  const [paymentModal, setPaymentModal] = useState<{ scope: string; debtId: string; childName: string } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{
+    scope: string; debtId: string; childName: string; saved?: { scope: string; attempt: SchoolCheckoutAttempt };
+  } | null>(null);
   const [receiptModal, setReceiptModal] = useState<{ debtId: string; studentId: string; sessionVersion: number } | null>(null);
   const closeReceiptModal = useCallback(() => setReceiptModal(null), []);
   const [paymentSearch, setPaymentSearch] = useSearchParams();
@@ -146,7 +150,7 @@ export function ParentPortalPage({ view }: { view: View }) {
     activeFinanceScope.current = financeScope;
     return () => { activeFinanceScope.current = ""; financeController.current?.abort(); };
   }, [financeScope]);
-  useEffect(() => { setPaymentModal(null); }, [financeScope, canMakePayment]);
+  useEffect(() => { setPaymentModal(null); }, [financeScope, parentCheckoutScope, canMakePayment]);
   useEffect(closeReceiptModal, [closeReceiptModal, view, selectedId, sessionVersion, canReadFinances]);
 
   const refreshPaymentFinances = useCallback(() => {
@@ -342,6 +346,21 @@ export function ParentPortalPage({ view }: { view: View }) {
     if (!canPayInvoice(invoice) || financeScope !== activeFinanceScope.current) return;
     setPaymentModal({ scope: financeScope, debtId: String(invoice.debt_id),
       childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" ") });
+  }
+
+  function savedCheckoutFor(invoice: DataRecord): SchoolCheckoutAttempt | null {
+    const debtId = checkoutIdentifier(invoice.debt_id);
+    return parentCheckoutScope && debtId
+      ? readSchoolCheckout(checkoutAttemptKey(parentCheckoutScope, debtId)).attempt : null;
+  }
+
+  function openSavedPayment(invoice: DataRecord) {
+    if (!parentCheckoutScope || financeScope !== activeFinanceScope.current) return;
+    const attempt = savedCheckoutFor(invoice);
+    if (!attempt) return;
+    setPaymentModal({ scope: financeScope, debtId: attempt.debt_id,
+      childName: [selected?.first_name, selected?.last_name].filter(Boolean).join(" "),
+      saved: { scope: parentCheckoutScope, attempt } });
   }
   function closePaymentModal() { setPaymentModal(null); refreshPaymentFinances(); }
 
@@ -1087,6 +1106,10 @@ export function ParentPortalPage({ view }: { view: View }) {
                             Öde
                           </button>
                         )}
+                        {!canPayInvoice(invoice) && savedCheckoutFor(invoice) &&
+                          <button type="button" className="btn btn-secondary" onClick={() => openSavedPayment(invoice)}>
+                            Ödeme sonucunu kontrol et
+                          </button>}
                         {canReadFinances && finances?.student_id === selectedId && checkoutIdentifier(selectedId) &&
                           checkoutIdentifier(invoice.debt_id) && (invoice.status === "PAID" || Number(invoice.paid_amount) > 0) &&
                           <button type="button" className="btn btn-secondary" onClick={() => setReceiptModal({
@@ -2050,8 +2073,11 @@ export function ParentPortalPage({ view }: { view: View }) {
 
     {/* Payment Modal */}
     {paymentModal && canMakePayment && paymentModal.scope === financeScope &&
-      <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentInvoice?.remaining_amount} childName={paymentModal.childName}
-        available={Boolean(paymentInvoice && canPayInvoice(paymentInvoice))} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />}
+      (paymentModal.saved ? paymentModal.saved.scope === parentCheckoutScope &&
+        <ParentSavedCheckout attempt={paymentModal.saved.attempt} childName={paymentModal.childName}
+          onClose={closePaymentModal} onComplete={refreshPaymentFinances} /> :
+        <ParentSchoolCheckout debtId={paymentModal.debtId} amount={paymentInvoice?.remaining_amount} childName={paymentModal.childName}
+          available={Boolean(paymentInvoice && canPayInvoice(paymentInvoice))} onClose={closePaymentModal} onComplete={refreshPaymentFinances} />)}
     {view === "finances" && canReadFinances && receiptModal?.studentId === selectedId &&
       receiptModal.sessionVersion === sessionVersion &&
       <ParentDebtReceipts key={`${receiptModal.studentId}:${receiptModal.debtId}`} studentId={receiptModal.studentId}
