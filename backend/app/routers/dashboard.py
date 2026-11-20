@@ -731,33 +731,36 @@ async def get_pending_actions(
     if branch is None:
         raise HTTPException(status_code=404, detail="Şube bulunamadı")
     today = school_today()
-    medicine_query = select(MedicationSchedule, Student).join(Student, MedicationSchedule.student_id == Student.id).where(
-        Student.branch_id == branch_id, Student.deleted_at.is_(None), MedicationSchedule.is_active.is_(True),
-        MedicationSchedule.updated_by.is_(None), MedicationSchedule.start_date <= today,
-        or_(MedicationSchedule.end_date.is_(None), MedicationSchedule.end_date >= today))
-    from app.application.services.infirmary_service import status_expression
-    medicine_query = medicine_query.where(status_expression() == "PENDING")
-    if not tenant.has_permission("health.read"):
-        medicine_query = medicine_query.where(False)
-    medicine_count = (await db.execute(medicine_query.with_only_columns(func.count()).order_by(None))).scalar_one()
-    medicine_rows = (await db.execute(medicine_query.order_by(MedicationSchedule.created_at.desc()).limit(10))).all()
-    medicine = [{"id": str(row.id), "student_id": str(row.student_id),
-        "student_name": f"{student.first_name} {student.last_name}", "medicine_name": row.medication_name,
-        "dosage": row.dosage, "time_to_give": row.frequency, "created_at": row.created_at.isoformat()}
-        for row, student in medicine_rows]
-    excuse_query = select(OperationalRecord).where(OperationalRecord.kind == "STUDENT_EXCUSE",
-        OperationalRecord.branch_id == branch_id, OperationalRecord.status == "PENDING")
-    excuse_count = (await db.execute(excuse_query.with_only_columns(func.count()).select_from(OperationalRecord))).scalar_one()
-    excuses = [serialize(row) for row in (await db.execute(excuse_query.order_by(
-        OperationalRecord.created_at.desc()).limit(10))).scalars()]
-    debt_query = select(Debt).where(Debt.branch_id == branch_id, Debt.deleted_at.is_(None),
-        Debt.due_date < today, Debt.amount > Debt.paid_amount)
-    debt_count = (await db.execute(debt_query.with_only_columns(func.count()).select_from(Debt))).scalar_one()
-    debt_items = debt_query.with_only_columns(cast(Debt.id, String).label("id"),
-        cast(Debt.student_id, String).label("student_id"), (Debt.amount - Debt.paid_amount).label("remaining_amount"), Debt.due_date)
-    debts = [{"id": str(row.id), "student_id": str(row.student_id), "amount": float(row.remaining_amount),
-        "due_date": row.due_date.isoformat(), "days_overdue": (today - row.due_date).days}
-        for row in (await db.execute(debt_items.order_by(Debt.due_date).limit(10))).all()]
+    medicine_count, medicine = 0, []
+    if tenant.has_permission("health.read"):
+        from app.application.services.infirmary_service import status_expression
+        medicine_query = select(MedicationSchedule, Student).join(Student, MedicationSchedule.student_id == Student.id).where(
+            Student.branch_id == branch_id, Student.deleted_at.is_(None), MedicationSchedule.is_active.is_(True),
+            MedicationSchedule.updated_by.is_(None), MedicationSchedule.start_date <= today,
+            or_(MedicationSchedule.end_date.is_(None), MedicationSchedule.end_date >= today), status_expression() == "PENDING")
+        medicine_count = (await db.execute(medicine_query.with_only_columns(func.count()).order_by(None))).scalar_one()
+        medicine_rows = (await db.execute(medicine_query.order_by(MedicationSchedule.created_at.desc()).limit(10))).all()
+        medicine = [{"id": str(row.id), "student_id": str(row.student_id),
+            "student_name": f"{student.first_name} {student.last_name}", "medicine_name": row.medication_name,
+            "dosage": row.dosage, "time_to_give": row.frequency, "created_at": row.created_at.isoformat()}
+            for row, student in medicine_rows]
+    excuse_count, excuses = 0, []
+    if tenant.has_permission("students.write"):
+        excuse_query = select(OperationalRecord).where(OperationalRecord.kind == "STUDENT_EXCUSE",
+            OperationalRecord.branch_id == branch_id, OperationalRecord.status == "PENDING")
+        excuse_count = (await db.execute(excuse_query.with_only_columns(func.count()).select_from(OperationalRecord))).scalar_one()
+        excuses = [serialize(row) for row in (await db.execute(excuse_query.order_by(
+            OperationalRecord.created_at.desc()).limit(10))).scalars()]
+    debt_count, debts = 0, []
+    if tenant.has_permission("finance.read"):
+        debt_query = select(Debt).where(Debt.branch_id == branch_id, Debt.deleted_at.is_(None),
+            Debt.due_date < today, Debt.amount > Debt.paid_amount)
+        debt_count = (await db.execute(debt_query.with_only_columns(func.count()).select_from(Debt))).scalar_one()
+        debt_items = debt_query.with_only_columns(cast(Debt.id, String).label("id"),
+            cast(Debt.student_id, String).label("student_id"), (Debt.amount - Debt.paid_amount).label("remaining_amount"), Debt.due_date)
+        debts = [{"id": str(row.id), "student_id": str(row.student_id), "amount": float(row.remaining_amount),
+            "due_date": row.due_date.isoformat(), "days_overdue": (today - row.due_date).days}
+            for row in (await db.execute(debt_items.order_by(Debt.due_date).limit(10))).all()]
     return success_response({"branch_id": str(branch_id),
         "medicine_requests": {"count": medicine_count, "items": medicine},
         "excuse_requests": {"count": excuse_count, "items": excuses},

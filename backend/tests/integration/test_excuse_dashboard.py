@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.infrastructure.models.models import (AttendanceRecord, AttendanceStatus, Branch, ClassRoom,
-    DailyDevelopmentReport, Debt, DebtStatus, DebtType, Student, User)
+    DailyDevelopmentReport, Debt, DebtStatus, DebtType, Permission, Role, Student, User)
 from app.core.security import create_access_token
 
 
@@ -19,7 +19,11 @@ async def test_excuse_is_persisted_reviewed_and_limited_to_the_child_and_branch(
     async with sessions() as db:
         admin = User(organization_id=data["org"].id, email="admin@test.invalid", first_name="Admin",
             last_name="Acceptance", password_hash="unused", is_super_admin=True)
-        db.add(admin)
+        dashboard_permission = Permission(code="dashboard.view", name="Dashboard view", module="dashboard")
+        viewer = User(organization_id=data["org"].id, email="pending-viewer@test.invalid", first_name="Dashboard",
+            last_name="Viewer", password_hash="unused", branches=[data["branch"]],
+            roles=[Role(organization_id=data["org"].id, name="Dashboard viewer", slug="staff", permissions=[dashboard_permission])])
+        db.add_all([admin, viewer])
         await db.commit()
     child = data["children"][0]
     path = f"/api/parent/child/{child.id}/excuse-request"
@@ -39,6 +43,10 @@ async def test_excuse_is_persisted_reviewed_and_limited_to_the_child_and_branch(
     assert pending.status_code == 200, pending.text
     assert pending.json()["data"]["excuse_requests"]["count"] == 1
     assert pending.json()["data"]["excuse_requests"]["items"][0]["id"] == request_id
+    restricted = await client.get(pending_path, headers=auth(viewer))
+    assert restricted.status_code == 200, restricted.text
+    assert restricted.json()["data"]["excuse_requests"] == {"count": 0, "items": []}
+    assert restricted.json()["data"]["total_pending"] == 0
     review_path = f"/api/dashboard/excuse-requests/{request_id}"
     assert (await client.put(review_path, headers=auth(data["user"]), json={"status": "APPROVED"})).status_code == 403
     assert (await client.put(review_path, headers=auth(admin), json={"status": "APPROVED", "comment": "Geçmiş olsun"})).status_code == 200
@@ -54,8 +62,12 @@ async def test_daily_stats_and_pending_counts_use_real_records_in_requested_bran
     async with sessions() as db:
         admin = User(organization_id=data["org"].id, email="stats@test.invalid", first_name="Admin",
             last_name="Acceptance", password_hash="unused", is_super_admin=True)
+        dashboard_permission = Permission(code="dashboard.view", name="Dashboard view", module="dashboard")
+        viewer = User(organization_id=data["org"].id, email="debt-viewer@test.invalid", first_name="Dashboard",
+            last_name="Viewer", password_hash="unused", branches=[data["branch"]],
+            roles=[Role(organization_id=data["org"].id, name="Dashboard viewer", slug="staff", permissions=[dashboard_permission])])
         other_branch = Branch(organization_id=data["org"].id, name="Second branch")
-        db.add_all([admin, other_branch])
+        db.add_all([admin, other_branch, viewer])
         await db.flush()
         classroom = ClassRoom(organization_id=data["org"].id, branch_id=other_branch.id, name="Second")
         db.add(classroom)
@@ -86,3 +98,7 @@ async def test_daily_stats_and_pending_counts_use_real_records_in_requested_bran
     assert response.status_code == 200, response.text
     debts = response.json()["data"]["overdue_debts"]
     assert debts["count"] == 12 and len(debts["items"]) == 10
+    restricted = await client.get(f'/api/dashboard/pending-actions?branch_id={data["branch"].id}', headers=auth(viewer))
+    assert restricted.status_code == 200, restricted.text
+    assert restricted.json()["data"]["overdue_debts"] == {"count": 0, "items": []}
+    assert restricted.json()["data"]["total_pending"] == 0
