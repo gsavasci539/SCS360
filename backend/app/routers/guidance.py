@@ -251,6 +251,8 @@ async def create_guidance_session(
     
     return success_response({
         "id": str(new_session.id),
+        "student_id": str(new_session.student_id),
+        "counselor_id": str(new_session.counselor_id),
         "session_type": new_session.session_type,
         "session_date": new_session.session_date.isoformat(),
         "created_at": new_session.created_at.isoformat()

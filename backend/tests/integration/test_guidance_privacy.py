@@ -60,6 +60,10 @@ async def test_guidance_options_actual_counters_and_json_resolution_are_persiste
     assert str(data["stranger"].id) not in [row["id"] for row in choices["students"]]
     session = await client.post("/api/guidance/sessions", headers=auth, json={"student_id": student_id, "session_date": "2026-11-03", "summary": "Actual session", "confidentiality_level": "CONFIDENTIAL"})
     assert session.status_code == 200, session.text
+    saved = session.json()["data"]
+    assert saved["student_id"] == student_id and saved["counselor_id"] == str(actor.id)
+    listed = (await client.get("/api/guidance/sessions", params={"student_id": student_id}, headers=auth)).json()["data"]
+    assert listed[0]["id"] == saved["id"] and listed[0]["student_id"] == student_id
     note = await client.post("/api/guidance/notes", headers=auth, json={"student_id": student_id, "content": "Actual observation", "confidentiality_level": "RESTRICTED"})
     assert note.status_code == 200, note.text
     incident = await client.post("/api/guidance/incidents", headers=auth, json={"student_id": student_id, "incident_date": "2026-11-03", "description": "Actual incident"})
