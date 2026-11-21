@@ -10,7 +10,7 @@ from uuid import uuid4
 import asyncio
 import os
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import homework_service
@@ -34,6 +34,7 @@ class HomeworkCreate(BaseModel):
     description: str | None = None
     attachment_url: str | None = None
     status: Literal["ACTIVE", "CLOSED", "DRAFT"] = "ACTIVE"
+    request_id: UUID | None = None
 
     @field_validator("class_id", "due_date", mode="before")
     @classmethod
@@ -71,32 +72,38 @@ def attachment_url(record):
 @router.get("")
 @router.get("/")
 async def list_homework(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=1000),
-    search: str | None = None, class_id: UUID | None = None,
+    search: str | None = None, class_id: UUID | None = None, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.read")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    rows = await homework_service.list_records(db, tenant, class_id, search)
+    rows = await homework_service.list_records(db, tenant, class_id, search, branch_id=branch_id)
     return success_response(paginate(rows[(page - 1) * page_size:page * page_size], len(rows), page, page_size))
 
 
 @router.get("/classes")
-async def homework_classes(tenant: TenantContext = Depends(PermissionChecker("homework.read", "homework.write")),
+async def homework_classes(branch_id: UUID | None = None, tenant: TenantContext = Depends(PermissionChecker("homework.read", "homework.write")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    rows = (await db.execute(select(ClassRoom).where(ClassRoom.id.in_(homework_service.class_scope(tenant))))).scalars()
-    return success_response([{"id": str(row.id), "name": row.name} for row in rows])
+    rows = (await db.execute(select(ClassRoom).where(ClassRoom.id.in_(homework_service.class_scope(tenant, branch_id)))
+        .order_by(ClassRoom.name, ClassRoom.id))).scalars()
+    return success_response([{"id": str(row.id), "name": row.name,
+        "branch_id": str(row.branch_id) if row.branch_id else None} for row in rows])
 
 
 @router.get("/submissions")
-async def list_submissions(homework_id: UUID | None = None,
+async def list_submissions(homework_id: UUID | None = None, branch_id: UUID | None = None, record_id: UUID | None = None,
+    limit: int | None = Query(None, ge=1, le=1000), offset: int = Query(0, ge=0),
     tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    permitted = (await homework_service.scoped_query(db, tenant)).with_only_columns(Homework.id)
+    permitted = (await homework_service.scoped_query(db, tenant, branch_id)).with_only_columns(Homework.id)
     query = select(HomeworkSubmission, Student).join(Student, Student.id == HomeworkSubmission.student_id).where(HomeworkSubmission.homework_id.in_(permitted))
     if homework_id:
         query = query.where(HomeworkSubmission.homework_id == homework_id)
+    if record_id:
+        query = query.where(HomeworkSubmission.id == record_id)
     ids = await accessible_student_ids(db, tenant)
     if ids is not None:
         query = query.where(Student.id.in_(ids))
-    rows = (await db.execute(query.order_by(HomeworkSubmission.submitted_at.desc()))).all()
+    query = query.order_by(HomeworkSubmission.submitted_at.desc(), HomeworkSubmission.id).limit(limit).offset(offset)
+    rows = (await db.execute(query)).all()
     return success_response([{
         "id": str(row.id), "homework_id": str(row.homework_id), "student_id": str(student.id),
         "student_name": f"{student.first_name} {student.last_name}", "student_number": student.student_number,
@@ -110,48 +117,61 @@ async def list_submissions(homework_id: UUID | None = None,
 
 @router.post("")
 @router.post("/")
-async def create_homework(body: HomeworkCreate,
+async def create_homework(body: HomeworkCreate, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.write")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    return success_response(await homework_service.save(db, tenant, body), "Ödev oluşturuldu")
+    return success_response(await homework_service.save(db, tenant, body, branch_id=branch_id), "Ödev oluşturuldu")
 
 
 @router.get("/{homework_id}")
-async def get_homework(homework_id: UUID, tenant: TenantContext = Depends(PermissionChecker("homework.read")),
+async def get_homework(homework_id: UUID, branch_id: UUID | None = None, tenant: TenantContext = Depends(PermissionChecker("homework.read")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    record = await homework_service.get(db, tenant, homework_id)
+    record = await homework_service.get(db, tenant, homework_id, branch_id)
     name = (await db.execute(select(ClassRoom.name).where(ClassRoom.id == record.class_id))).scalar_one_or_none() if record.class_id else None
     return success_response(homework_service.serialize(record, name))
 
 
 @router.put("/{homework_id}")
-async def update_homework(homework_id: UUID, body: HomeworkUpdate,
+async def update_homework(homework_id: UUID, body: HomeworkUpdate, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.write")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    record = await homework_service.get(db, tenant, homework_id)
+    record = await homework_service.get(db, tenant, homework_id, branch_id)
     if "title" in body.model_fields_set and body.title is None:
         raise ValidationException("Ödev adı zorunludur")
-    return success_response(await homework_service.save(db, tenant, body, record))
+    return success_response(await homework_service.save(db, tenant, body, record, branch_id=branch_id))
 
 
 @router.delete("/{homework_id}")
-async def delete_homework(homework_id: UUID,
+async def delete_homework(homework_id: UUID, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.write")),
     db: AsyncSession = Depends(get_db, scope="function")):
-    record = await homework_service.get(db, tenant, homework_id)
+    record = await homework_service.get(db, tenant, homework_id, branch_id)
     record.deleted_at = datetime.now(UTC)
     return success_response(message="Ödev silindi")
 
 
+@router.get("/{homework_id}/students")
+async def homework_students(homework_id: UUID, branch_id: UUID | None = None, search: str = Query("", max_length=100),
+    tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
+    db: AsyncSession = Depends(get_db, scope="function")):
+    from app.application.services.student_choices import options
+    homework = await homework_service.get(db, tenant, homework_id, branch_id)
+    if homework.class_id is None or homework.status != "ACTIVE":
+        return success_response({"students": [], "more_students": False})
+    return success_response(await options(db, search=search.strip(), branch_id=branch_id, class_id=homework.class_id))
+
+
 @router.post("/{homework_id}/submit")
-async def submit_homework(homework_id: UUID, body: SubmissionCreate,
+async def submit_homework(homework_id: UUID, body: SubmissionCreate, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
     db: AsyncSession = Depends(get_db, scope="function")):
     if body.file_name or body.file_size_mb:
         raise ValidationException("Dosya içeriğini submit-file adresine yükleyin")
     if not body.submission_text or not body.submission_text.strip():
         raise ValidationException("Teslim metni veya dosya gerekli")
-    record = await submission_record(db, tenant, homework_id, body.student_id)
+    if body.homework_id is not None and body.homework_id != homework_id:
+        raise ValidationException("Teslim ödev kimliğiyle eşleşmiyor")
+    record = await submission_record(db, tenant, homework_id, body.student_id, branch_id)
     record.submission_text = body.submission_text.strip()
     record.submitted_at = datetime.now(UTC)
     record.status = "SUBMITTED"
@@ -159,16 +179,19 @@ async def submit_homework(homework_id: UUID, body: SubmissionCreate,
     return success_response({"id": str(record.id), "status": record.status})
 
 
-async def submission_record(db, tenant, homework_id, student_id):
-    homework = await homework_service.get(db, tenant, homework_id)
+async def submission_record(db, tenant, homework_id, student_id, branch_id=None):
+    homework = await homework_service.get(db, tenant, homework_id, branch_id)
+    await db.execute(update(Homework).where(Homework.id == homework_id).values(updated_at=Homework.updated_at))
+    await db.refresh(homework)
     if homework.status != "ACTIVE":
         raise ConflictException("Yalnızca aktif ödevlere teslim yapılabilir")
-    await db.execute(select(Homework.id).where(Homework.id == homework_id).with_for_update())
     await require_student_access(db, tenant, student_id)
     student = (await db.execute(select(Student).where(Student.id == student_id,
         Student.organization_id == homework.organization_id, Student.deleted_at.is_(None)))).scalar_one_or_none()
     if student is None or student.class_id != homework.class_id:
         raise ValidationException("Bu ödev seçilen öğrencinin sınıfına ait değil")
+    if branch_id is not None and student.branch_id != branch_id:
+        raise ValidationException("Öğrenci seçili şubede bulunamadı")
     record = (await db.execute(select(HomeworkSubmission).where(
         HomeworkSubmission.homework_id == homework_id, HomeworkSubmission.student_id == student.id).with_for_update())).scalar_one_or_none()
     if record is not None and record.status == "GRADED":
@@ -182,7 +205,7 @@ async def submission_record(db, tenant, homework_id, student_id):
 
 @router.post("/{homework_id}/submit-file")
 async def submit_homework_file(homework_id: UUID, student_id: UUID = Form(...),
-    submission_text: str = Form(""), file: UploadFile = File(...),
+    submission_text: str = Form(""), file: UploadFile = File(...), branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
     db: AsyncSession = Depends(get_db, scope="function")):
     settings = get_settings()
@@ -196,7 +219,7 @@ async def submit_homework_file(homework_id: UUID, student_id: UUID = Form(...),
         raise ValidationException("Boş dosya yüklenemez")
     if len(content) > settings.max_upload_size_bytes:
         raise HTTPException(status_code=413, detail="Dosya boyutu izin verilen sınırı aşıyor")
-    record = await submission_record(db, tenant, homework_id, student_id)
+    record = await submission_record(db, tenant, homework_id, student_id, branch_id)
     target = attachment_path(record.id)
     temporary = target.with_name(f"{target.name}.{uuid4().hex}.tmp")
     def persist():
@@ -217,14 +240,14 @@ async def submit_homework_file(homework_id: UUID, student_id: UUID = Form(...),
 
 
 @router.get("/submissions/{submission_id}/attachment")
-async def download_homework_attachment(submission_id: UUID,
+async def download_homework_attachment(submission_id: UUID, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
     db: AsyncSession = Depends(get_db, scope="function")):
     from app.core.exceptions import NotFoundException
     record = (await db.execute(select(HomeworkSubmission).where(HomeworkSubmission.id == submission_id))).scalar_one_or_none()
     if record is None:
         raise NotFoundException("Teslim bulunamadı")
-    await homework_service.get(db, tenant, record.homework_id)
+    await homework_service.get(db, tenant, record.homework_id, branch_id)
     await require_student_access(db, tenant, record.student_id)
     if not attachment_url(record):
         raise NotFoundException("Dosya bulunamadı")
@@ -233,13 +256,13 @@ async def download_homework_attachment(submission_id: UUID,
 
 
 @router.put("/submissions/{submission_id}/grade")
-async def grade_submission(submission_id: UUID, body: SubmissionGrade,
+async def grade_submission(submission_id: UUID, body: SubmissionGrade, branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("homework.write")),
     db: AsyncSession = Depends(get_db, scope="function")):
     record = (await db.execute(select(HomeworkSubmission).where(HomeworkSubmission.id == submission_id).with_for_update())).scalar_one_or_none()
     if record is None:
         from app.core.exceptions import NotFoundException
         raise NotFoundException("Teslim bulunamadı")
-    await homework_service.get(db, tenant, record.homework_id)
+    await homework_service.get(db, tenant, record.homework_id, branch_id)
     record.score, record.teacher_feedback, record.status = body.score, body.teacher_feedback, "GRADED"
     return success_response({"id": str(record.id), "status": record.status, "score": body.score})

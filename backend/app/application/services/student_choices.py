@@ -5,10 +5,12 @@ from app.core.dates import school_today
 from app.infrastructure.models.models import Student
 
 
-async def options(db, student_id=None, search="", *, branch_id=None):
+async def options(db, student_id=None, search="", *, branch_id=None, class_id=None):
     base = select(Student).where(Student.deleted_at.is_(None))
     if branch_id:
         base = base.where(Student.branch_id == branch_id)
+    if class_id:
+        base = base.where(Student.class_id == class_id)
     query = base.where(Student.status == "ACTIVE")
     filtered = query.where(or_(Student.first_name.ilike(f"%{search}%"), Student.last_name.ilike(f"%{search}%"), Student.student_number.ilike(f"%{search}%"))) if search else query
     rows = (await db.execute(filtered.order_by(Student.first_name, Student.id).limit(101))).scalars().all()

@@ -8,6 +8,22 @@ interface Submission {
   attachment_file_name?: string; attachment_url?: string;
 }
 
+type SubmissionReceipt = Pick<Submission, "id" | "status">;
+
+function attachmentPath(id: string) {
+  return `/homework/submissions/${encodeURIComponent(id)}/attachment`;
+}
+
+async function confirmSubmission(homeworkId: string, receipt: SubmissionReceipt | undefined, status: string, signal: AbortSignal) {
+  if (!receipt?.id || receipt.status !== status) throw new Error("Sunucu teslim kaydını doğrulamadı.");
+  const response = await api.get<ApiResponse<Submission[]>>("/homework/submissions", {
+    params: { homework_id: homeworkId, record_id: receipt.id, limit: 1 }, signal,
+  });
+  const row = response.data.data[0];
+  if (row?.id !== receipt.id || row.status !== status) throw new Error("Teslim kaydı yeniden okunamadı.");
+  return row;
+}
+
 export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }: {
   homeworkId: string; studentId?: string; canGrade?: boolean;
 }) {
@@ -20,6 +36,7 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
   const fileInput = useRef<HTMLInputElement>(null);
   const sequence = useRef(0);
   const draftEdited = useRef(false);
+  const [scopeSignal, setScopeSignal] = useState<AbortSignal>();
   const load = useCallback(async (signal?: AbortSignal) => {
     const request = ++sequence.current;
     setError("");
@@ -34,38 +51,53 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
   }, [homeworkId, studentId]);
   useEffect(() => {
     const controller = new AbortController();
+    setScopeSignal(controller.signal);
     draftEdited.current = false;
-    setText(""); setRows([]); setMessage(""); setLoading(true);
+    setText(""); setRows([]); setMessage(""); setLoading(true); setBusy(false);
     void load(controller.signal);
     return () => { controller.abort(); sequence.current++; };
   }, [load]);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!studentId || busy) return;
+    const signal = scopeSignal;
+    if (!studentId || !signal || busy) return;
     setBusy(true); setError(""); setMessage("");
     try {
       const file = fileInput.current?.files?.[0];
+      const trimmed = text.trim();
+      let receipt: SubmissionReceipt;
       if (file) {
         const form = new FormData();
-        form.append("student_id", studentId); form.append("submission_text", text); form.append("file", file);
-        await api.post(`/homework/${homeworkId}/submit-file`, form);
+        form.append("student_id", studentId); form.append("submission_text", trimmed); form.append("file", file);
+        receipt = (await api.post<ApiResponse<SubmissionReceipt>>(`/homework/${homeworkId}/submit-file`, form, { signal })).data.data;
       } else {
-        await api.post(`/homework/${homeworkId}/submit`, { student_id: studentId, submission_text: text });
+        receipt = (await api.post<ApiResponse<SubmissionReceipt>>(`/homework/${homeworkId}/submit`,
+          { student_id: studentId, homework_id: homeworkId, submission_text: trimmed }, { signal })).data.data;
+      }
+      if (signal.aborted) return;
+      const stored = await confirmSubmission(homeworkId, receipt, "SUBMITTED", signal);
+      if (signal.aborted) return;
+      if (stored.student_id !== studentId || (stored.submission_text ?? "") !== trimmed ||
+          (file && (stored.attachment_file_name !== file.name || stored.attachment_url !== attachmentPath(stored.id)))) {
+        throw new Error("Teslim içeriği sunucudan doğrulanamadı.");
       }
       if (fileInput.current) fileInput.current.value = "";
       draftEdited.current = false;
-      await load(); setMessage("Ödev teslimi kaydedildi.");
-    } catch (reason) { setError(apiMessage(reason)); }
-    finally { setBusy(false); }
+      setRows([stored]);
+      setMessage("Ödev teslimi kaydedildi.");
+    } catch (reason) { if (!signal.aborted) setError(apiMessage(reason)); }
+    finally { if (!signal.aborted) setBusy(false); }
   }
   async function download(row: Submission) {
+    const signal = scopeSignal;
     try {
-      const result = await api.get(row.attachment_url!, { responseType: "blob" });
+      const result = await api.get(attachmentPath(row.id), { responseType: "blob", signal });
+      if (signal?.aborted) return;
       const url = URL.createObjectURL(result.data);
       const link = document.createElement("a");
       link.href = url; link.download = row.attachment_file_name || "odev"; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (reason) { setError(apiMessage(reason)); }
+    } catch (reason) { if (!signal?.aborted) setError(apiMessage(reason)); }
   }
   if (loading) return <p>Ödev teslimleri yükleniyor…</p>;
   return <section aria-label="Ödev teslimi" style={{ marginTop: 16 }}>
@@ -76,8 +108,9 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
       <p>{row.status === "GRADED" ? `Puan: ${row.score} / 100` : "Teslim alındı"}</p>
       {row.submission_text && <p>{row.submission_text}</p>}
       {row.teacher_feedback && <p>Öğretmen geri bildirimi: {row.teacher_feedback}</p>}
-      {row.attachment_url && <button type="button" className="btn btn-secondary" onClick={() => download(row)}>Dosyayı indir: {row.attachment_file_name}</button>}
-      {canGrade && <GradeSubmission row={row} onSave={load} />}
+      {row.attachment_url === attachmentPath(row.id) && <button type="button" className="btn btn-secondary" onClick={() => download(row)}>Dosyayı indir: {row.attachment_file_name}</button>}
+      {canGrade && <GradeSubmission row={row} homeworkId={homeworkId} signal={scopeSignal}
+        onSave={(stored) => setRows((previous) => previous.map((item) => item.id === stored.id ? stored : item))} />}
     </div>)}
     {studentId && rows[0]?.status !== "GRADED" && <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
       <label>Teslim metni<textarea className="input" aria-label="Teslim metni" maxLength={10000} value={text} disabled={busy} onChange={(event) => { draftEdited.current = true; setText(event.target.value); }} /></label>
@@ -88,18 +121,32 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
   </section>;
 }
 
-function GradeSubmission({ row, onSave }: { row: Submission; onSave: () => Promise<void> }) {
+function GradeSubmission({ row, homeworkId, signal, onSave }: {
+  row: Submission; homeworkId: string; signal?: AbortSignal; onSave: (stored: Submission) => void;
+}) {
   const [score, setScore] = useState(String(row.score ?? ""));
   const [feedback, setFeedback] = useState(row.teacher_feedback || "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function grade(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError("");
+    event.preventDefault();
+    if (!signal || busy) return;
+    setBusy(true); setError("");
     try {
-      await api.put(`/homework/submissions/${row.id}/grade`, { score: Number(score), teacher_feedback: feedback });
-      await onSave();
-    } catch (reason) { setError(apiMessage(reason)); }
-    finally { setBusy(false); }
+      const points = Number(score);
+      const remarks = feedback.trim();
+      const response = await api.put<ApiResponse<SubmissionReceipt>>(`/homework/submissions/${row.id}/grade`,
+        { score: points, teacher_feedback: remarks }, { signal });
+      if (signal.aborted) return;
+      if (response.data.data.id !== row.id) throw new Error("Sunucu farklı bir teslim kaydı döndürdü.");
+      const stored = await confirmSubmission(homeworkId, response.data.data, "GRADED", signal);
+      if (signal.aborted) return;
+      if (stored.student_id !== row.student_id || Number(stored.score) !== points || (stored.teacher_feedback ?? "") !== remarks) {
+        throw new Error("Puan ve geri bildirim sunucudan doğrulanamadı.");
+      }
+      onSave(stored);
+    } catch (reason) { if (!signal.aborted) setError(apiMessage(reason)); }
+    finally { if (!signal.aborted) setBusy(false); }
   }
   return <form onSubmit={grade} style={{ display: "grid", gap: 8, marginTop: 12 }}>
     <label>Puan<input className="input" type="number" min={0} max={100} step="any" required value={score} onChange={(event) => setScore(event.target.value)} /></label>
