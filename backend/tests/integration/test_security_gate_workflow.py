@@ -118,6 +118,15 @@ async def test_gate_branch_selection_fences_writes_and_record_lookup(security_cl
         assert outside.status_code == 200 and outside.json()["data"] == []
     stats = await client.get("/api/security/gate-logs/stats", headers=auth, params={"branch_id": wrong})
     assert stats.status_code == 200 and stats.json()["data"]["currently_in_school"] == 0
+    audit = await client.get("/api/security/audit-logs", headers=auth, params={"branch_id": branch})
+    assert audit.status_code == 200, audit.text
+    events = audit.json()["data"]
+    assert {row["module"] for row in events} >= {"STUDENT_ID_ISSUED", "STUDENT_GATE_VERIFIED"}
+    assert all(row["branch_id"] == branch and "new_values" not in row and "old_values" not in row for row in events)
+    outside = await client.get("/api/security/audit-logs", headers=auth, params={"branch_id": wrong})
+    assert outside.status_code == 200 and outside.json()["data"] == []
+    limited = await client.get("/api/security/audit-logs", headers=headers(data["writer"]))
+    assert limited.status_code == 403
 
 
 async def test_gate_day_validation_latest_presence_and_unattributable_legacy_scope(security_client):

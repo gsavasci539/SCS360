@@ -12,13 +12,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import security_service as service
+from app.application.services.consent_service import utc_iso
 from app.core.database import get_db
 from app.core.dates import school_day_bounds, school_today
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
 from app.domain.entities.security import DigitalIdToken, GateLog
-from app.infrastructure.models.models import Branch, Student
+from app.infrastructure.models.models import AuditLog, Branch, Student, User
 from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/security", tags=["Security"])
@@ -229,6 +230,25 @@ async def get_gate_stats(day: date | None = Query(None, alias="date"), student_i
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
     await check_branch(db, tenant, branch_id)
     return success_response(await service.stats(db, tenant, day or school_today(), student_id, branch_id=branch_id))
+
+
+@router.get("/audit-logs")
+async def get_security_audit_log(branch_id: UUID | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("audit.read"))):
+    if tenant.organization_id is None:
+        raise HTTPException(400, "Denetim kayıtları için kurum seçin")
+    await check_branch(db, tenant, branch_id)
+    query = select(AuditLog).where(AuditLog.organization_id == tenant.organization_id)
+    if branch_id:
+        query = query.where(AuditLog.branch_id == branch_id)
+    rows = (await db.execute(query.order_by(AuditLog.created_at.desc(), AuditLog.id).limit(limit).offset(offset))).scalars().all()
+    ids = {row.user_id for row in rows if row.user_id is not None}
+    actors = {user.id: f"{user.first_name} {user.last_name}" for user in (
+        await db.execute(select(User).where(User.id.in_(ids)))
+    ).scalars()} if ids else {}
+    return success_response([{"id": str(row.id), "timestamp": utc_iso(row.created_at), "user_name": actors.get(row.user_id),
+        "action": row.action.value, "module": row.entity_type, "entity_id": str(row.entity_id) if row.entity_id else None,
+        "branch_id": str(row.branch_id) if row.branch_id else None} for row in rows])
 
 
 def generate_barcode_number():
