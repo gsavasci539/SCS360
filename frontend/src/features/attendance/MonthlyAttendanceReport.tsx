@@ -1,6 +1,6 @@
 import { Calendar, CalendarCheck2, Download } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ErrorState, LoadingState, PageHeader, StatCard, Badge } from "../../components/ui";
+import { ErrorState, LoadingState, PageHeader, StatCard } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { toArray } from "../../lib/data";
 import { monthInputValue } from "../../lib/format";
@@ -9,61 +9,79 @@ import type { ApiResponse, Paginated } from "../../types/api";
 
 interface MonthlyAttendanceData {
   date: string;
-  class_name: string;
+  class_id: string;
+  class_name: string | null;
   total_students: number;
   present: number;
   absent: number;
   excused: number;
   late: number;
   half_day: number;
-  attendance_rate: number;
 }
+
+interface MonthlyAttendanceResponse {
+  year: number;
+  month: number;
+  class_id: string | null;
+  total: number;
+  rows: MonthlyAttendanceData[];
+}
+
+const presentRate = (count: number, total: number) => total ? `${Math.round((count / total) * 100)}%` : "—";
 
 export function MonthlyAttendanceReport() {
   const [month, setMonth] = useState(monthInputValue());
   const [classId, setClassId] = useState("");
   const [classes, setClasses] = useState<Array<{ id: string; name: string }>>([]);
   const [data, setData] = useState<MonthlyAttendanceData[]>([]);
-  const [summary, setSummary] = useState({ totalDays: 0, avgRate: 0, totalPresent: 0, totalAbsent: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
 
-  async function load() {
+  useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
+    setData([]);
     setError("");
-    try {
-      const [classesRes, dataRes] = await Promise.allSettled([
-        api.get<ApiResponse<Array<{ id: string; name: string }> | Paginated<{ id: string; name: string }>>>("/classes", { params: { limit: 100, page_size: 100 } }),
-        api.get<ApiResponse<MonthlyAttendanceData[] | Paginated<MonthlyAttendanceData>>>("/attendance/reports/monthly", {
-          params: { year: Number(month.slice(0, 4)), month: Number(month.slice(5, 7)), class_id: classId || undefined }
-        })
-      ]);
-
-      if (classesRes.status === "fulfilled") {
-        setClasses(toArray(classesRes.value.data.data));
+    const year = Number(month.slice(0, 4));
+    const monthNumber = Number(month.slice(5, 7));
+    (async () => {
+      try {
+        if (!/^\d{4}-\d{2}$/.test(month)) throw new Error("Rapor ayını seçin.");
+        const [classesRes, dataRes] = await Promise.allSettled([
+          api.get<ApiResponse<Array<{ id: string; name: string }> | Paginated<{ id: string; name: string }>>>("/classes", {
+            params: { page_size: 100 }, signal: controller.signal,
+          }),
+          api.get<ApiResponse<MonthlyAttendanceResponse>>("/attendance/reports/monthly", {
+            params: { year, month: monthNumber, class_id: classId || undefined }, signal: controller.signal,
+          }),
+        ]);
+        if (controller.signal.aborted) return;
+        if (classesRes.status === "fulfilled") setClasses(toArray(classesRes.value.data.data));
+        if (dataRes.status === "rejected") throw dataRes.reason;
+        const report = dataRes.value.data.data;
+        if (dataRes.value.data.success !== true || report?.year !== year || report.month !== monthNumber ||
+          report.class_id !== (classId || null) || !Array.isArray(report.rows) ||
+          report.rows.some((row) => !row?.class_id || (classId && row.class_id !== classId) || !row.date?.startsWith(`${month}-`) ||
+            [row.present, row.absent, row.excused, row.late, row.half_day].some((value) => !Number.isInteger(value) || value < 0) ||
+            row.total_students !== row.present + row.absent + row.excused + row.late + row.half_day) ||
+          report.total !== report.rows.reduce((sum, row) => sum + row.total_students, 0)) {
+          throw new Error("Yoklama raporu doğrulanamadı.");
+        }
+        setData(report.rows);
+      } catch (reason) {
+        if (!controller.signal.aborted) setError(apiMessage(reason));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
+    })();
+    return () => controller.abort();
+  }, [month, classId, revision]);
 
-      if (dataRes.status === "fulfilled") {
-        const reportData = toArray(dataRes.value.data.data);
-        setData(reportData);
-        const totalDays = reportData.length;
-        const avgRate = totalDays > 0
-          ? Math.round(reportData.reduce((sum, item) => sum + Number(item.attendance_rate), 0) / totalDays)
-          : 0;
-        const totalPresent = reportData.reduce((sum, item) => sum + Number(item.present), 0);
-        const totalAbsent = reportData.reduce((sum, item) => sum + Number(item.absent), 0);
-        setSummary({ totalDays, avgRate, totalPresent, totalAbsent });
-      } else {
-        throw new Error(apiMessage(dataRes.reason));
-      }
-    } catch (err) {
-      setError(apiMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [month, classId]);
+  const total = data.reduce((sum, row) => sum + row.total_students, 0);
+  const totalPresent = data.reduce((sum, row) => sum + row.present, 0);
+  const totalAbsent = data.reduce((sum, row) => sum + row.absent, 0);
+  const totalDays = new Set(data.map((row) => row.date)).size;
 
   return (
     <>
@@ -106,14 +124,14 @@ export function MonthlyAttendanceReport() {
         {loading ? (
           <LoadingState />
         ) : error ? (
-          <ErrorState message={error} retry={load} />
+          <ErrorState message={error} retry={() => setRevision((value) => value + 1)} />
         ) : (
           <>
             <div className="grid stats-grid" style={{ marginBottom: 18 }}>
-              <StatCard icon={<Calendar size={19} />} label="Rapor günü" value={summary.totalDays} color="blue" />
-              <StatCard icon={<CalendarCheck2 size={19} />} label="Ortalama katılım" value={`${summary.avgRate}%`} color="green" />
-              <StatCard icon={<CalendarCheck2 size={19} />} label="Toplam geldi" value={summary.totalPresent} color="green" />
-              <StatCard icon={<Calendar size={19} />} label="Toplam gelmedi" value={summary.totalAbsent} color="red" />
+              <StatCard icon={<Calendar size={19} />} label="Kayıt bulunan gün" value={totalDays} color="blue" />
+              <StatCard icon={<CalendarCheck2 size={19} />} label="Geldi oranı" value={presentRate(totalPresent, total)} color="green" />
+              <StatCard icon={<CalendarCheck2 size={19} />} label="Toplam geldi" value={totalPresent} color="green" />
+              <StatCard icon={<Calendar size={19} />} label="Toplam gelmedi" value={totalAbsent} color="red" />
             </div>
 
             {data.length === 0 ? (
@@ -133,24 +151,21 @@ export function MonthlyAttendanceReport() {
                       <th>İzinli</th>
                       <th>Geç</th>
                       <th>Yarım</th>
-                      <th>Oran</th>
+                      <th>Geldi oranı</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.map((item, index) => (
-                      <tr key={index}>
+                    {data.map((item) => (
+                      <tr key={`${item.date}-${item.class_id}`}>
                         <td>{item.date}</td>
-                        <td>{item.class_name}</td>
+                        <td>{item.class_name || "Sınıf adı bulunamadı"}</td>
                         <td>{item.total_students}</td>
                         <td>{item.present}</td>
                         <td>{item.absent}</td>
                         <td>{item.excused}</td>
                         <td>{item.late}</td>
                         <td>{item.half_day}</td>
-                        <td>
-                          <Badge value={item.attendance_rate >= 80 ? "GOOD" : item.attendance_rate >= 60 ? "WARNING" : "CRITICAL"} />
-                          <span style={{ marginLeft: 8 }}>{item.attendance_rate}%</span>
-                        </td>
+                        <td>{presentRate(item.present, item.total_students)}</td>
                       </tr>
                     ))}
                   </tbody>

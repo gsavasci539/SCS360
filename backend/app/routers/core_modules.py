@@ -950,7 +950,7 @@ async def delete_attendance(
 
 @router.get("/api/attendance/reports/monthly")
 async def monthly_attendance_report(
-    year: int = Query(...),
+    year: int = Query(..., ge=1, le=9998),
     month: int = Query(..., ge=1, le=12),
     class_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("attendance.read")),
@@ -964,17 +964,32 @@ async def monthly_attendance_report(
         AttendanceRecord.deleted_at.is_(None),
     )
     repo = BaseRepository(db, tenant)
-    query = repo._org_filter(query, AttendanceRecord)
+    query = repo._branch_filter(repo._org_filter(query, AttendanceRecord), AttendanceRecord)
     if class_id:
+        await repo.get_by_id(class_id, ClassRoom)
         query = query.where(AttendanceRecord.class_id == class_id)
     result = await db.execute(query)
     records = result.scalars().all()
+    class_names = {}
+    if records:
+        classes = select(ClassRoom).where(ClassRoom.id.in_({row.class_id for row in records}))
+        classes = repo._branch_filter(repo._org_filter(classes, ClassRoom), ClassRoom)
+        class_names = {(row.id, row.organization_id, row.branch_id): row.name for row in (await db.execute(classes)).scalars()}
     summary = {}
+    groups = {}
     for r in records:
         key = r.status.value
         summary[key] = summary.get(key, 0) + 1
+        group_key = (r.attendance_date, r.class_id)
+        if group_key not in groups:
+            groups[group_key] = {"date": r.attendance_date.isoformat(), "class_id": str(r.class_id),
+                "class_name": class_names.get((r.class_id, r.organization_id, r.branch_id)), "total_students": 0,
+                **{status.value.lower(): 0 for status in AttendanceStatus}}
+        groups[group_key][key.lower()] += 1
+        groups[group_key]["total_students"] += 1
     return success_response(
-        {"year": year, "month": month, "summary": summary, "total": len(records)}
+        {"year": year, "month": month, "class_id": str(class_id) if class_id else None,
+            "summary": summary, "total": len(records), "rows": [groups[key] for key in sorted(groups)]}
     )
 
 

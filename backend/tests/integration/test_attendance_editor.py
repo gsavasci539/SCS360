@@ -153,6 +153,20 @@ async def test_legacy_teacher_roster_and_editor_follow_class_assignments(materia
     assert reply.status_code == 200, reply.text
     rows = reply.json()["data"]["items"]
     assert [row["id"] for row in rows] == [str(own_id)]
+    report_path = "/api/attendance/reports/monthly"
+    report_params = {"year": DAY.year, "month": DAY.month}
+    report = await client.get(report_path, headers=teacher, params=report_params)
+    assert report.status_code == 200, report.text
+    saved_report = report.json()["data"]
+    assert saved_report["summary"] == {"ABSENT": 1} and saved_report["total"] == 1
+    assert saved_report["class_id"] is None
+    assert saved_report["rows"] == [{
+        "date": DAY.isoformat(), "class_id": str(data["classroom"].id), "class_name": data["classroom"].name,
+        "total_students": 1, "present": 0, "absent": 1, "excused": 0, "late": 0, "half_day": 0,
+    }]
+    denied = await client.get(report_path, headers=teacher, params={**report_params, "class_id": str(other_class.id)})
+    assert denied.status_code in (403, 404), denied.text
+    assert (await client.get(report_path, headers=teacher, params={**report_params, "year": 9999})).status_code == 422
 
     body = {"class_id": str(data["classroom"].id), "attendance_date": DAY.isoformat(), "request_id": str(uuid4()),
         "records": [{"student_id": rows[0]["student_id"], "status": "LATE", "expected_version": rows[0]["version"]}]}
@@ -175,3 +189,6 @@ async def test_legacy_teacher_roster_and_editor_follow_class_assignments(materia
     reply = await client.get("/api/attendance", headers=teacher, params=params)
     assert reply.status_code == 200, reply.text
     assert {row["id"] for row in reply.json()["data"]["items"]} == {str(own_id), other_id}
+    report = await client.get(report_path, headers=teacher, params=report_params)
+    assert report.status_code == 200, report.text
+    assert {row["class_id"] for row in report.json()["data"]["rows"]} == {str(data["classroom"].id), str(other_class.id)}
