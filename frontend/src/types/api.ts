@@ -30,7 +30,7 @@ export interface AuthUser {
   email: string;
   first_name: string;
   last_name: string;
-  phone?: string;
+  phone?: string | null;
   status?: string;
   is_super_admin: boolean;
   organization_id: string | null;

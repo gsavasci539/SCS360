@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
+    ProfileUpdate,
     RefreshRequest,
     ResetPasswordRequest,
 )
@@ -52,6 +54,26 @@ async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(
     service = AuthService(db)
     data = await service.get_me(user)
     return success_response(data)
+
+
+@router.put("/me")
+@limiter.limit("10/minute")
+async def update_me(
+    request: Request, body: ProfileUpdate, user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    email = await AuthService(db).update_profile(user.id, body)
+    return success_response({"id": str(user.id), "email": email}, "Profil güncellendi")
+
+
+@router.post("/change-password")
+@limiter.limit("5/minute")
+async def change_password(
+    request: Request, body: ChangePasswordRequest, user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    await AuthService(db).change_password(user.id, body.current_password, body.new_password)
+    return success_response({"id": str(user.id)}, "Şifre güncellendi")
 
 
 @router.post("/forgot-password")

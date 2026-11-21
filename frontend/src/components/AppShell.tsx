@@ -1,5 +1,5 @@
-import { Bell, Building2, ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, Search, ShieldCheck, GraduationCap, MessageSquareQuote, Bus, WalletCards, ChartNoAxesCombined, Settings } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Bell, Building2, ChevronDown, ChevronRight, KeyRound, LogOut, Menu, PanelLeftClose, Search, ShieldCheck, GraduationCap, MessageSquareQuote, Bus, WalletCards, ChartNoAxesCombined, Settings, UserRound, type LucideIcon } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { navigation } from "../config/navigation";
 import { api } from "../lib/api";
@@ -10,10 +10,12 @@ import { Chatbot } from "./Chatbot";
 import { Brand } from "./Brand";
 import { LoadingState } from "./ui";
 import { usePlatformWorkspace } from "../stores/platformWorkspace";
+import { AccountDialog } from "./AccountDialog";
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [accountDialog, setAccountDialog] = useState<"profile" | "password" | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const user = useAuthStore((state) => state.user);
@@ -23,6 +25,7 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const closeAccountDialog = useCallback(() => setAccountDialog(null), []);
   const workspace = usePlatformWorkspace((state) => state.workspace);
   const activeWorkspace = user?.is_super_admin && workspace?.operatorId === user.id ? workspace : null;
   const platformView = Boolean(user?.is_super_admin && (!activeWorkspace || location.pathname.startsWith("/platform")));
@@ -80,7 +83,7 @@ export function AppShell() {
     clearSession(); showToast("Oturum kapatıldı", "Güvenli biçimde çıkış yaptınız."); navigate("/login", { replace: true });
   }
 
-  const sectionIcons: Record<string, any> = {
+  const sectionIcons: Record<string, LucideIcon> = {
     "Yönetim": ShieldCheck,
     "Eğitim": GraduationCap,
     "İletişim": MessageSquareQuote,
@@ -147,11 +150,24 @@ export function AppShell() {
       <header className="topbar">
         <div className="topbar-left"><button className="topbar-button menu-button" onClick={() => setSidebarOpen(true)} aria-label="Menüyü aç"><Menu size={19} /></button><div className="breadcrumb">SCS360 <span> / </span> <strong>{current?.label || "Yönetim"}</strong></div></div>
         <div className="topbar-actions">{!platformView && can("students.read") && <button className="topbar-button" aria-label="Öğrenci aramasına git" onClick={() => navigate("/students")}><Search size={17} /></button>}{!platformView && can("notification.read") && <button className="topbar-button" aria-label="Bildirimler" onClick={() => navigate("/notifications")}><Bell size={17} /></button>}<div ref={profileRef} className="user-menu" style={{ position: "relative" }}><div className="avatar" aria-hidden="true">{initials(user?.first_name, user?.last_name)}</div><button className="btn btn-ghost" style={{ padding: 0 }} onClick={() => setProfileOpen((value) => !value)} aria-label="Kullanıcı menüsü" aria-expanded={profileOpen} aria-haspopup="menu"><div className="user-copy"><strong>{user?.first_name} {user?.last_name}</strong><small>{user?.roles[0]?.name || "Kullanıcı"}</small></div><ChevronDown size={14} /></button>
-          {profileOpen && <div className="card" role="menu" style={{ position: "absolute", right: 0, top: 49, width: 210, padding: 8, boxShadow: "var(--shadow)" }}>{!platformView && can("settings.read") && <button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start" }} onClick={() => { setProfileOpen(false); navigate("/settings"); }}><PanelLeftClose size={15} />Hesap ayarları</button>}<button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start", color: "#a84141" }} onClick={logout}><LogOut size={15} />Çıkış yap</button></div>}
+          {profileOpen && <div className="card" role="menu" style={{ position: "absolute", right: 0, top: 49, width: 210, padding: 8, boxShadow: "var(--shadow)" }}>
+            <button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start" }} onClick={() => { setProfileOpen(false); setAccountDialog("profile"); }}><UserRound size={15} />Profil bilgileri</button>
+            <button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start" }} onClick={() => { setProfileOpen(false); setAccountDialog("password"); }}><KeyRound size={15} />Şifre değiştir</button>
+            {!platformView && can("settings.read") && <button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start" }} onClick={() => { setProfileOpen(false); navigate("/settings"); }}><PanelLeftClose size={15} />Kurum ayarları</button>}
+            <button role="menuitem" className="btn btn-ghost" style={{ width: "100%", justifyContent: "flex-start", color: "#a84141" }} onClick={logout}><LogOut size={15} />Çıkış yap</button>
+          </div>}
         </div></div>
       </header>
       <main className="main">{activeWorkspace && !platformView && <section className="card card-pad" aria-label="Seçilen kurum çalışma alanı" style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><strong>{activeWorkspace.name}</strong><button className="btn btn-secondary" onClick={() => { usePlatformWorkspace.getState().select(null); navigate("/platform"); }}>Platform yönetimine dön</button></section>}{!user?.is_super_admin && user?.organization_access?.status === "GRACE" && <section className="card card-pad" role="alert" style={{ marginBottom: 18 }}><p>{user.organization_access.warning}</p><Link className="btn btn-primary" to="/subscription">Üyelik ve ödeme</Link></section>}<Suspense key={activeWorkspace?.id || "platform"} fallback={<LoadingState label="Sayfa yükleniyor" />}><Outlet /></Suspense></main>
     </div>
     {!platformView && <Chatbot />}
+    {user && accountDialog && <AccountDialog key={`${user.id}:${accountDialog}`} user={user} mode={accountDialog} onClose={closeAccountDialog}
+      onSaved={(mode) => {
+        closeAccountDialog();
+        if (mode === "password") {
+          showToast("Şifre güncellendi", "Yeni şifrenizle giriş yapın.");
+          navigate("/login", { replace: true });
+        } else showToast("Profil güncellendi");
+      }} />}
   </div>;
 }

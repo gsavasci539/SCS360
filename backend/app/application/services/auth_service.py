@@ -2,13 +2,15 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
-from app.core.exceptions import UnauthorizedException, ValidationException
+from app.core.exceptions import ConflictException, UnauthorizedException, ValidationException
 from app.core.tenant import effective_branches, effective_roles
 from app.application.services.subscription_access import for_user
+from app.application.schemas.auth import ProfileUpdate
 from app.core.security import (
     create_access_token,
     create_password_reset_token_value,
@@ -34,6 +36,59 @@ settings = get_settings()
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _lock_account(self, user_id: UUID):
+        account = User.__table__
+        identity = (account.c.id == user_id, account.c.deleted_at.is_(None), account.c.status == UserStatus.ACTIVE)
+        if self.db.get_bind().dialect.name == "sqlite":
+            # SQLite lacks SELECT FOR UPDATE. Acquire its write lock before changing credentials.
+            await self.db.execute(update(account).where(*identity).values(id=account.c.id))
+        row = (await self.db.execute(
+            select(account.c.email, account.c.password_hash).where(*identity).with_for_update()
+        )).one_or_none()
+        if row is None:
+            raise UnauthorizedException("Hesap aktif değil")
+        return row
+
+    async def update_profile(self, user_id: UUID, body: ProfileUpdate) -> str:
+        saved = await self._lock_account(user_id)
+        email = body.email.lower()
+        if email != saved.email and (
+            not body.current_password or not verify_password(body.current_password, saved.password_hash)
+        ):
+            raise ValidationException("E-posta değişikliği için mevcut şifrenizi doğrulayın")
+        account = User.__table__
+        try:
+            await self.db.execute(update(account).where(account.c.id == user_id).values(
+                first_name=body.first_name, last_name=body.last_name, email=email, phone=body.phone or None,
+            ))
+        except IntegrityError as exc:
+            raise ConflictException("Bu e-posta adresi kullanılıyor") from exc
+        if email != saved.email:
+            await self._invalidate_reset_tokens(user_id, datetime.now(UTC))
+        return email
+
+    async def change_password(self, user_id: UUID, current_password: str, new_password: str) -> None:
+        saved = await self._lock_account(user_id)
+        if not verify_password(current_password, saved.password_hash):
+            raise ValidationException("Mevcut şifre hatalı")
+        if current_password == new_password:
+            raise ValidationException("Yeni şifre mevcut şifreden farklı olmalıdır")
+        await self._write_password(user_id, new_password)
+
+    async def _invalidate_reset_tokens(self, user_id: UUID, now: datetime) -> None:
+        tokens = PasswordResetToken.__table__
+        await self.db.execute(update(tokens).where(tokens.c.user_id == user_id, tokens.c.used_at.is_(None))
+            .values(used_at=now))
+
+    async def _write_password(self, user_id: UUID, password: str) -> None:
+        account = User.__table__
+        now = datetime.now(UTC)
+        await self.db.execute(update(account).where(account.c.id == user_id).values(password_hash=hash_password(password)))
+        await self._invalidate_reset_tokens(user_id, now)
+        tokens = RefreshToken.__table__
+        await self.db.execute(update(tokens).where(tokens.c.user_id == user_id, tokens.c.revoked_at.is_(None))
+            .values(revoked_at=now))
 
     async def login(
         self, email: str, password: str, ip: str | None, user_agent: str | None
@@ -68,6 +123,9 @@ class AuthService:
         # user.last_login_at = datetime.now(UTC)
         self.db.add(LoginAttempt(email=email, ip_address=ip, user_agent=user_agent, success=True))
 
+        saved = await self._lock_account(user.id)
+        if saved.email != email.lower() or saved.password_hash != user.password_hash:
+            raise UnauthorizedException("E-posta veya şifre hatalı")
         permissions = set()
         roles = []
         for role in effective_roles(user):
@@ -140,6 +198,12 @@ class AuthService:
 
     async def refresh(self, refresh_token: str, ip: str | None, user_agent: str | None) -> dict:
         token_hash = hash_token(refresh_token)
+        target = await self.db.scalar(
+            select(RefreshToken.user_id).where(RefreshToken.token_hash == token_hash)
+        )
+        if target is None:
+            raise UnauthorizedException("Geçersiz refresh token")
+        await self._lock_account(target)
         result = await self.db.execute(
             select(RefreshToken).where(RefreshToken.token_hash == token_hash).with_for_update()
         )
@@ -253,6 +317,12 @@ class AuthService:
         user = result.scalar_one_or_none()
         if not user:
             return "reset_sent"
+        try:
+            saved = await self._lock_account(user.id)
+        except UnauthorizedException:
+            return "reset_sent"
+        if saved.email != email.lower():
+            return "reset_sent"
         token_value = create_password_reset_token_value()
         self.db.add(
             PasswordResetToken(
@@ -280,6 +350,13 @@ class AuthService:
         if not 8 <= len(new_password) <= 4096:
             raise ValidationException("Şifre 8 ile 4096 karakter arasında olmalıdır")
         token_hash = hash_token(token)
+        target = await self.db.scalar(select(PasswordResetToken.user_id).where(PasswordResetToken.token_hash == token_hash))
+        if target is None:
+            raise ValidationException("Geçersiz veya süresi dolmuş token")
+        try:
+            await self._lock_account(target)
+        except UnauthorizedException as exc:
+            raise ValidationException("Geçersiz veya süresi dolmuş token") from exc
         result = await self.db.execute(
             select(PasswordResetToken)
             .where(
@@ -292,19 +369,7 @@ class AuthService:
         reset_token = result.scalar_one_or_none()
         if not reset_token:
             raise ValidationException("Geçersiz veya süresi dolmuş token")
-        user_result = await self.db.execute(select(User).where(User.id == reset_token.user_id))
-        user = user_result.scalar_one()
-        user.password_hash = hash_password(new_password)
-        now = datetime.now(UTC)
-        reset_token.used_at = now
-        await self.db.execute(
-            update(RefreshToken)
-            .where(
-                RefreshToken.user_id == user.id,
-                RefreshToken.revoked_at.is_(None),
-            )
-            .values(revoked_at=now)
-        )
+        await self._write_password(target, new_password)
 
     async def get_me(self, user: User) -> dict:
         permissions = set()

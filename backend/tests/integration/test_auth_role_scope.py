@@ -9,7 +9,7 @@ from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.application.services.auth_service import AuthService
 from app.core.exceptions import UnauthorizedException
 from app.core.security import hash_password, hash_token, verify_access_token
-from app.infrastructure.models.models import Branch, Permission, RefreshToken, Role, User, UserBranch, UserRole
+from app.infrastructure.models.models import Branch, PasswordResetToken, Permission, RefreshToken, Role, User, UserBranch, UserRole
 
 
 async def test_login_refresh_and_me_ignore_deleted_roles_and_foreign_branch_links(materials_client):
@@ -49,6 +49,56 @@ async def test_login_refresh_and_me_ignore_deleted_roles_and_foreign_branch_link
     async with sessions() as db:
         teacher = (await db.execute(select(User).where(User.id == data["teacher"].id))).scalar_one()
         assert teacher.email == "teacher@auth.example.com"
+
+
+async def test_own_profile_and_password_save_without_changing_scope(materials_client):
+    from app.core.security import create_access_token, verify_password
+
+    client, sessions, data = materials_client
+    actor = data["teacher"]
+    old_password, new_password = "temporary current", "temporary new"
+    old_reset, new_reset, refresh = (str(uuid4()) for _ in range(3))
+    canonical_email = "profile@auth.example.com"
+    expires_at = datetime.now(UTC) + timedelta(hours=1)
+    async with sessions() as db:
+        user = await db.get(User, actor.id)
+        user.password_hash = hash_password(old_password)
+        db.add(UserBranch(user_id=actor.id, branch_id=data["branch"].id))
+        db.add(PasswordResetToken(user_id=actor.id, token_hash=hash_token(old_reset), expires_at=expires_at))
+        db.add(RefreshToken(user_id=actor.id, token_hash=hash_token(refresh), family_id=uuid4(), expires_at=expires_at))
+        await db.commit()
+
+    headers = {"Authorization": "Bearer " + create_access_token(actor.id)}
+    before = (await client.get("/api/auth/me", headers=headers)).json()["data"]
+    profile = {"first_name": " Sample ", "last_name": " Person ", "email": canonical_email.upper(), "phone": " "}
+    assert (await client.put("/api/auth/me", headers=headers, json={**profile, "organization_id": str(uuid4())})).status_code == 422
+    assert (await client.put("/api/auth/me", headers=headers, json=profile)).status_code == 422
+    saved = await client.put("/api/auth/me", headers=headers, json={**profile, "current_password": old_password})
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["data"] == {"id": str(actor.id), "email": canonical_email}
+    current = (await client.get("/api/auth/me", headers=headers)).json()["data"]
+    assert (current["first_name"], current["last_name"], current["email"], current["phone"]) == ("Sample", "Person", canonical_email, None)
+    for key in ("id", "organization_id", "branch_ids", "roles", "permissions"):
+        assert current[key] == before[key]
+    assert (await client.post("/api/auth/reset-password", json={"token": old_reset, "new_password": new_password})).status_code == 422
+
+    async with sessions() as db:
+        db.add(PasswordResetToken(user_id=actor.id, token_hash=hash_token(new_reset), expires_at=expires_at))
+        await db.commit()
+    assert (await client.post("/api/auth/change-password", headers=headers, json={
+        "current_password": "incorrect", "new_password": new_password,
+    })).status_code == 422
+    changed = await client.post("/api/auth/change-password", headers=headers, json={
+        "current_password": old_password, "new_password": new_password,
+    })
+    assert changed.status_code == 200, changed.text
+    assert changed.json()["data"] == {"id": str(actor.id)}
+    assert (await client.post("/api/auth/reset-password", json={"token": new_reset, "new_password": old_password})).status_code == 422
+    assert (await client.post("/api/auth/refresh", json={"refresh_token": refresh})).status_code == 401
+    async with sessions() as db:
+        user = await db.get(User, actor.id)
+        assert verify_password(new_password, user.password_hash)
+        assert not verify_password(old_password, user.password_hash)
 
 
 async def test_parallel_refresh_does_not_fork_a_token_family(portal_db):
