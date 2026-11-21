@@ -1,6 +1,6 @@
 import asyncio
 from datetime import date
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import select
@@ -176,3 +176,35 @@ async def test_club_options_and_statistics_match_scoped_database_records(clubs_c
     assert result["total_clubs"] == 1 and result["active_clubs"] == 1
     assert result["total_members"] == 2 and result["upcoming_events"] == 1
     assert result["source"] == "DATABASE_AND_RULES"
+
+
+async def test_club_creates_are_replayable_and_receipts_use_branch(clubs_client):
+    client, _, data = clubs_client
+    headers = auth(data["manager"])
+    branch = str(data["branch"].id)
+    child = str(data["children"][0].id)
+    club_id = str(uuid4())
+    club = {"branch_id": branch, "club_name": "İzole kulüp", "request_id": club_id}
+
+    async def create(path, body):
+        response = await client.post("/api/clubs" + path, headers=headers, json=body)
+        assert response.status_code == 200, response.text
+        assert response.json()["data"]["id"] == body["request_id"]
+
+    await create("/clubs", club)
+    await create("/clubs", club)
+    assert (await client.post("/api/clubs/clubs", headers=headers,
+        json={**club, "club_name": "Başka kulüp"})).status_code == 409
+    assert (await enroll(client, data, club_id, data["children"][0])).status_code == 200
+    event = {"club_id": club_id, "event_name": "İzole etkinlik", "event_date": "2027-02-01", "request_id": str(uuid4())}
+    award = {"student_id": child, "title": "İzole kayıt", "certificate_type": "PARTICIPATION",
+        "event_id": event["request_id"], "request_id": str(uuid4())}
+    for write, read, payload in (("/events", "/events", event), ("/certificates", "/certificates", award)):
+        await create(write, payload)
+        await create(write, payload)
+        params = {"branch_id": branch, "record_id": payload["request_id"], "limit": 1}
+        rows = await client.get("/api/clubs" + read, headers=headers, params=params)
+        assert [row["id"] for row in rows.json()["data"]] == [payload["request_id"]]
+        hidden = await client.get("/api/clubs" + read, headers=headers,
+            params={**params, "branch_id": str(data["other_branch"].id)})
+        assert hidden.json()["data"] == []

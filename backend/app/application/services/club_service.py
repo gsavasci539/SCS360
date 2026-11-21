@@ -2,7 +2,7 @@
 from sqlalchemy import func, select, update
 
 from app.core.dates import school_today
-from app.core.exceptions import ConflictException, ValidationException
+from app.core.exceptions import ConflictException, ForbiddenException, ValidationException
 from app.domain.entities.clubs import ClubEvent, ClubMembership, SchoolClub, StudentCertificate
 from app.infrastructure.models.models import Branch, Organization, Role, Student, User, UserRole
 from app.infrastructure.repositories.base import BaseRepository
@@ -34,6 +34,31 @@ async def validate_club(db, tenant, body):
         raise ValidationException("Kulüp adı gerekli")
 
 
+async def create_once(db, tenant, model, body, *, defaults):
+    values = body.model_dump(exclude={"request_id"})
+    identifier = body.request_id
+    if identifier is not None:
+        if not tenant.organization_id:
+            raise ForbiddenException("İşlem için kurum seçin")
+        await db.execute(update(Organization).where(Organization.id == tenant.organization_id)
+            .values(updated_at=Organization.updated_at))
+        previous = await db.scalar(select(model).where(model.id == identifier))
+        if previous is not None:
+            if any(getattr(previous, key) != value for key, value in values.items()) or (
+                model is StudentCertificate and previous.issued_by != tenant.user_id
+            ):
+                raise ConflictException("İşlem kimliği başka kayıtta kullanıldı")
+            return previous
+        table = model.__table__
+        if (await db.execute(select(table.c.id).where(table.c.id == identifier))).first():
+            raise ConflictException("İşlem kimliği kullanılamıyor")
+        values["id"] = identifier
+    record = model(**values, **defaults)
+    db.add(record)
+    await db.flush()
+    return record
+
+
 async def save_club(db, tenant, body, club_id=None):
     await validate_club(db, tenant, body)
     if club_id:
@@ -48,11 +73,10 @@ async def save_club(db, tenant, body, club_id=None):
             if has_history or event_history:
                 raise ValidationException("Üyelik veya etkinlik kaydı bulunan kulüp başka şubeye taşınamaz")
         club.current_members = current
-        for key, value in body.model_dump().items():
+        for key, value in body.model_dump(exclude={"request_id"}).items():
             setattr(club, key, value)
     else:
-        club = SchoolClub(**body.model_dump(), current_members=0, is_active=True)
-        db.add(club)
+        club = await create_once(db, tenant, SchoolClub, body, defaults={"current_members": 0, "is_active": True})
     await db.flush()
     return {"id": str(club.id), "club_name": club.club_name, "max_members": club.max_members,
         "current_members": club.current_members, "created_at": club.created_at.isoformat()}
@@ -105,9 +129,7 @@ async def save_event(db, tenant, body):
     club = await BaseRepository(db, tenant).get_by_id(body.club_id, SchoolClub)
     if not club.is_active or not body.event_name.strip():
         raise ValidationException("Aktif kulüp ve etkinlik adı gerekli")
-    row = ClubEvent(**body.model_dump())
-    db.add(row)
-    await db.flush()
+    row = await create_once(db, tenant, ClubEvent, body, defaults={})
     return {"id": str(row.id), "event_name": row.event_name, "event_date": row.event_date.isoformat(),
         "created_at": row.created_at.isoformat()}
 
@@ -128,9 +150,8 @@ async def certificate(db, tenant, body):
             raise ValidationException("Etkinlik belgesi için öğrencinin kulüp üyeliği gerekli")
     if not body.title.strip() or not body.certificate_type.strip():
         raise ValidationException("Belge başlığı ve türü gerekli")
-    row = StudentCertificate(**body.model_dump(), issue_date=school_today(), issued_by=tenant.user_id)
-    db.add(row)
-    await db.flush()
+    row = await create_once(db, tenant, StudentCertificate, body,
+        defaults={"issue_date": school_today(), "issued_by": tenant.user_id})
     row.pdf_url = f"/api/clubs/certificates/{row.id}/pdf"
     await db.flush()
     return {"id": str(row.id), "title": row.title, "certificate_type": row.certificate_type,

@@ -43,6 +43,7 @@ class SchoolClubCreate(BaseModel):
     meeting_day: Optional[str] = Field(None, max_length=20)
     meeting_time: Optional[time] = None
     meeting_location: Optional[str] = Field(None, max_length=255)
+    request_id: Optional[UUID] = None
 
 class ClubMembershipCreate(BaseModel):
     club_id: UUID
@@ -58,6 +59,7 @@ class ClubEventCreate(BaseModel):
     location: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
     max_participants: Optional[int] = Field(None, ge=1)
+    request_id: Optional[UUID] = None
 
 class StudentCertificateCreate(BaseModel):
     student_id: UUID
@@ -66,6 +68,12 @@ class StudentCertificateCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=1200)
     event_id: Optional[UUID] = None
     template_id: Optional[str] = "scs360"
+    request_id: Optional[UUID] = None
+
+
+def clubs_in_scope(branch_id):
+    from app.domain.entities.clubs import SchoolClub
+    return select(SchoolClub.id).where(SchoolClub.branch_id == branch_id)
 
 
 # ==================== School Clubs Endpoints ====================
@@ -99,6 +107,7 @@ async def club_options(branch_id: Optional[UUID] = None, search: str = Query("",
 @router.get("/clubs")
 async def get_school_clubs(
     branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     is_active: Optional[bool] = Query(True),
     search: str = Query("", max_length=100),
     limit: int = Query(100, ge=1, le=1000),
@@ -114,6 +123,8 @@ async def get_school_clubs(
     conditions = []
     if branch_id:
         conditions.append(SchoolClub.branch_id == branch_id)
+    if record_id:
+        conditions.append(SchoolClub.id == record_id)
     if is_active is not None:
         conditions.append(SchoolClub.is_active == is_active)
     if search.strip():
@@ -174,6 +185,8 @@ async def update_school_club(club_id: UUID, club: SchoolClubCreate, db: AsyncSes
 @router.get("/memberships")
 async def get_club_memberships(
     club_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     student_id: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -189,6 +202,10 @@ async def get_club_memberships(
     conditions = []
     if club_id:
         conditions.append(ClubMembership.club_id == club_id)
+    if branch_id:
+        conditions.append(ClubMembership.club_id.in_(clubs_in_scope(branch_id)))
+    if record_id:
+        conditions.append(ClubMembership.id == record_id)
     if student_id:
         conditions.append(ClubMembership.student_id == student_id)
     if status:
@@ -237,6 +254,8 @@ async def leave_club(membership_id: UUID, db: AsyncSession = Depends(get_db, sco
 @router.get("/events")
 async def get_club_events(
     club_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     search: str = Query("", max_length=100),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -253,6 +272,10 @@ async def get_club_events(
     conditions = []
     if club_id:
         conditions.append(ClubEvent.club_id == club_id)
+    if branch_id:
+        conditions.append(ClubEvent.club_id.in_(clubs_in_scope(branch_id)))
+    if record_id:
+        conditions.append(ClubEvent.id == record_id)
     if search.strip():
         conditions.append(ClubEvent.event_name.ilike("%" + search.strip() + "%"))
     if start_date:
@@ -297,6 +320,8 @@ async def create_club_event(event: ClubEventCreate, db: AsyncSession = Depends(g
 @router.get("/certificates")
 async def get_student_certificates(
     student_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     certificate_type: Optional[str] = Query(None),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -313,6 +338,10 @@ async def get_student_certificates(
     conditions = []
     if student_id:
         conditions.append(StudentCertificate.student_id == student_id)
+    if branch_id:
+        conditions.append(StudentCertificate.student_id.in_(select(Student.id).where(Student.branch_id == branch_id)))
+    if record_id:
+        conditions.append(StudentCertificate.id == record_id)
     if certificate_type:
         conditions.append(StudentCertificate.certificate_type == certificate_type)
     if start_date:
