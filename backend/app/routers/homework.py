@@ -90,6 +90,7 @@ async def homework_classes(branch_id: UUID | None = None, tenant: TenantContext 
 
 @router.get("/submissions")
 async def list_submissions(homework_id: UUID | None = None, branch_id: UUID | None = None, record_id: UUID | None = None,
+    student_id: UUID | None = None,
     limit: int | None = Query(None, ge=1, le=1000), offset: int = Query(0, ge=0),
     tenant: TenantContext = Depends(PermissionChecker("homework.read", "parent.view_children")),
     db: AsyncSession = Depends(get_db, scope="function")):
@@ -99,6 +100,8 @@ async def list_submissions(homework_id: UUID | None = None, branch_id: UUID | No
         query = query.where(HomeworkSubmission.homework_id == homework_id)
     if record_id:
         query = query.where(HomeworkSubmission.id == record_id)
+    if student_id:
+        query = query.where(HomeworkSubmission.student_id == student_id)
     ids = await accessible_student_ids(db, tenant)
     if ids is not None:
         query = query.where(Student.id.in_(ids))

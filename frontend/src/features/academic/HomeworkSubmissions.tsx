@@ -14,10 +14,10 @@ function attachmentPath(id: string) {
   return `/homework/submissions/${encodeURIComponent(id)}/attachment`;
 }
 
-async function confirmSubmission(homeworkId: string, receipt: SubmissionReceipt | undefined, status: string, signal: AbortSignal) {
+async function confirmSubmission(homeworkId: string, studentId: string, receipt: SubmissionReceipt | undefined, status: string, signal: AbortSignal) {
   if (!receipt?.id || receipt.status !== status) throw new Error("Sunucu teslim kaydını doğrulamadı.");
   const response = await api.get<ApiResponse<Submission[]>>("/homework/submissions", {
-    params: { homework_id: homeworkId, record_id: receipt.id, limit: 1 }, signal,
+    params: { homework_id: homeworkId, student_id: studentId, record_id: receipt.id, limit: 1 }, signal,
   });
   const row = response.data.data[0];
   if (row?.id !== receipt.id || row.status !== status) throw new Error("Teslim kaydı yeniden okunamadı.");
@@ -41,7 +41,9 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
     const request = ++sequence.current;
     setError("");
     try {
-      const response = await api.get<ApiResponse<Submission[]>>("/homework/submissions", { params: { homework_id: homeworkId }, signal });
+      const response = await api.get<ApiResponse<Submission[]>>("/homework/submissions", {
+        params: { homework_id: homeworkId, ...(studentId ? { student_id: studentId } : {}) }, signal,
+      });
       if (signal?.aborted || request !== sequence.current) return;
       const submissions = response.data.data.filter((row) => !studentId || row.student_id === studentId);
       setRows(submissions);
@@ -75,7 +77,7 @@ export function HomeworkSubmissions({ homeworkId, studentId, canGrade = false }:
           { student_id: studentId, homework_id: homeworkId, submission_text: trimmed }, { signal })).data.data;
       }
       if (signal.aborted) return;
-      const stored = await confirmSubmission(homeworkId, receipt, "SUBMITTED", signal);
+      const stored = await confirmSubmission(homeworkId, studentId, receipt, "SUBMITTED", signal);
       if (signal.aborted) return;
       if (stored.student_id !== studentId || (stored.submission_text ?? "") !== trimmed ||
           (file && (stored.attachment_file_name !== file.name || stored.attachment_url !== attachmentPath(stored.id)))) {
@@ -139,7 +141,7 @@ function GradeSubmission({ row, homeworkId, signal, onSave }: {
         { score: points, teacher_feedback: remarks }, { signal });
       if (signal.aborted) return;
       if (response.data.data.id !== row.id) throw new Error("Sunucu farklı bir teslim kaydı döndürdü.");
-      const stored = await confirmSubmission(homeworkId, response.data.data, "GRADED", signal);
+      const stored = await confirmSubmission(homeworkId, row.student_id, response.data.data, "GRADED", signal);
       if (signal.aborted) return;
       if (stored.student_id !== row.student_id || Number(stored.score) !== points || (stored.teacher_feedback ?? "") !== remarks) {
         throw new Error("Puan ve geri bildirim sunucudan doğrulanamadı.");

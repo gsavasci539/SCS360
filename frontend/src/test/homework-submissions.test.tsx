@@ -30,7 +30,7 @@ it("geciken eski teslim yanıtı velinin yeni yazdığı metni silemez", async (
   expect((form as FormData).get("submission_text")).toBe("Kalıcı dosyalı teslim");
   expect(await screen.findByRole("status")).toHaveTextContent("Ödev teslimi kaydedildi.");
   expect(api.get).toHaveBeenLastCalledWith("/homework/submissions", expect.objectContaining({
-    params: { homework_id: "homework", record_id: "submission", limit: 1 },
+    params: { homework_id: "homework", student_id: "child", record_id: "submission", limit: 1 },
   }));
 });
 

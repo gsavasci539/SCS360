@@ -53,3 +53,32 @@ async def test_homework_scope_and_request_identity_are_preserved_through_grading
     rows = selected.json()["data"]
     assert len(rows) == 1 and rows[0]["student_id"] == child and rows[0]["score"] == 87.25
     assert rows[0]["status"] == "GRADED" and rows[0]["teacher_feedback"] == grade["teacher_feedback"]
+
+
+async def test_parent_homework_uses_only_the_selected_child_submission(materials_client):
+    client, _, data = materials_client
+    teacher = headers(data["teacher"])
+    parent = headers(data["user"])
+    created = await client.post("/api/homework", headers=teacher,
+        json={"title": "Veli kapsamı", "class_id": str(data["classroom"].id)})
+    assert created.status_code == 200, created.text
+    homework_id = created.json()["data"]["id"]
+    by_child = {}
+    for child in data["children"]:
+        child_id = str(child.id)
+        listing = await client.get(f"/api/parent/child/{child_id}/homework", headers=parent)
+        assert [row["id"] for row in listing.json()["data"]] == [homework_id]
+        saved = await client.post(f"/api/homework/{homework_id}/submit", headers=parent,
+            json={"student_id": child_id, "homework_id": homework_id, "submission_text": child.first_name})
+        assert saved.status_code == 200, saved.text
+        by_child[child_id] = saved.json()["data"]["id"]
+    child_a, child_b = by_child
+    path = "/api/homework/submissions"
+    response = await client.get(path, headers=parent, params={"homework_id": homework_id, "student_id": child_b})
+    assert [row["id"] for row in response.json()["data"]] == [by_child[child_b]]
+    mismatched = await client.get(path, headers=parent,
+        params={"homework_id": homework_id, "student_id": child_b, "record_id": by_child[child_a]})
+    assert mismatched.json()["data"] == []
+    outsider = await client.get(path, headers=parent,
+        params={"homework_id": homework_id, "student_id": str(data["stranger"].id)})
+    assert outsider.json()["data"] == []
