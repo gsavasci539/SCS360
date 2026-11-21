@@ -10,6 +10,31 @@ import type { DataRecord } from "../../types/api";
 type Kind = "records" | "timesheets" | "additional-hours";
 interface Choice { id: string; name: string; organization_name: string }
 const firstPages = { records: 1, timesheets: 1, "additional-hours": 1 };
+const payrollNumbers = new Set(["base_salary", "additional_course_payment", "bonus", "advance_payment", "deductions",
+  "net_salary", "work_hours", "total_hours", "hourly_rate", "total_amount"]);
+
+function samePayrollValue(key: string, stored: unknown, expected: unknown) {
+  if (stored == null || expected == null) return stored == null && expected == null;
+  if (key === "check_in_time" || key === "check_out_time") {
+    return Number.isFinite(Date.parse(String(expected))) && Date.parse(String(stored)) === Date.parse(String(expected));
+  }
+  if (payrollNumbers.has(key)) {
+    const toCents = (value: unknown) => {
+      const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));
+      return match ? BigInt(match[1] + match[2] + (match[3] ?? "").padEnd(2, "0")) : null;
+    };
+    const cents = toCents(expected);
+    return cents !== null && toCents(stored) === cents;
+  }
+  return String(stored) === String(expected);
+}
+
+async function payrollRecord(kind: Kind, id: string) {
+  const response = await api.get(`/payroll/${kind}`, { params: { record_id: id, limit: 1 } });
+  const row = response.data.data?.[0] as DataRecord | undefined;
+  if (row?.id !== id) throw new Error("Personel kaydı sunucudan doğrulanamadı.");
+  return row;
+}
 
 export function PayrollPage() {
   const canWrite = useAuthStore((state) => state.can("payroll.write"));
@@ -53,17 +78,40 @@ export function PayrollPage() {
     return () => controller.abort();
   }, [year, month, period, staffId, pages, revision]);
   async function save(event: FormEvent<HTMLFormElement>, kind: Kind) {
-    event.preventDefault(); const form = event.currentTarget;
+    event.preventDefault();
+    if (!canWrite || busy || !staff.some((item) => item.id === staffId)) return;
+    const form = event.currentTarget;
     const data = Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, value === "" ? null : value]));
     const payload = { ...data, staff_id: staffId, ...(kind !== "timesheets" ? { year: Number(year), month: Number(month), period } : {}) };
     setBusy(true);
-    try { await api.post(`/payroll/${kind}`, payload); form.reset(); setPages(firstPages); setRevision((value) => value + 1); showToast("Personel kaydı kaydedildi"); }
+    try {
+      const result = await api.post(`/payroll/${kind}`, payload);
+      const id = result.data.data?.id;
+      if (!id) throw new Error("Personel kayıt kimliği doğrulanamadı.");
+      const saved = await payrollRecord(kind, id);
+      const amount = kind === "records" ? "net_salary" : kind === "additional-hours" ? "total_amount" : null;
+      if (Object.entries(payload).some(([key, value]) => !samePayrollValue(key, saved[key === "timesheet_date" ? "date" : key], value)) ||
+          (kind === "records" && saved.status !== "DRAFT") ||
+          (amount && !samePayrollValue(amount, saved[amount], result.data.data[amount]))) {
+        throw new Error("Personel kaydının alanları doğrulanamadı.");
+      }
+      form.reset(); setPages(firstPages); setRevision((value) => value + 1); showToast("Personel kaydı doğrulandı");
+    }
     catch (reason) { showToast("Kayıt tamamlanamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }
-  async function approve(id: string) {
+  async function approve(row: DataRecord) {
+    if (!canWrite || busy) return;
     setBusy(true);
-    try { await api.post(`/payroll/records/${id}/approve`); setRevision((value) => value + 1); showToast("Bordro onaylandı"); }
+    try {
+      const response = await api.post(`/payroll/records/${row.id}/approve`);
+      const receipt = response.data.data;
+      const saved = await payrollRecord("records", row.id);
+      if (receipt?.id !== row.id || saved.staff_id !== row.staff_id || saved.status !== "APPROVED" ||
+          !saved.approved_by || saved.approved_by !== receipt.approved_by || saved.approved_at !== receipt.approved_at ||
+          !samePayrollValue("net_salary", saved.net_salary, row.net_salary)) throw new Error("Bordro onayı doğrulanamadı.");
+      setRevision((value) => value + 1); showToast("Bordro onayı doğrulandı");
+    }
     catch (reason) { showToast("Bordro onaylanamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }
@@ -83,7 +131,7 @@ export function PayrollPage() {
         <td>{kind === "records" ? <Badge value={row.status} /> : kind === "timesheets" ? <Badge value={row.status} /> : row.approved_at ? "Onaylı" : "Kayıtlı"}</td>
         <td><details><summary>Kaydı aç</summary>{kind === "records" && <><p>Temel tutar: {money(row.base_salary)}</p><p>Ek ders: {money(row.additional_course_payment)} · Prim: {money(row.bonus)}</p><p>Avans: {money(row.advance_payment)} · Kesinti: {money(row.deductions)}</p>{row.approved_at && <p>Onay: {String(row.approved_by_name || "Kayıtlı yetkili")} · {shortDate(row.approved_at)}</p>}</>}
           {kind === "additional-hours" && <p>{String(row.total_hours)} saat × {money(row.hourly_rate)}</p>}{row.notes && <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{String(row.notes)}</p>}
-          {kind === "records" && canWrite && row.status === "DRAFT" && <button className="btn btn-primary" disabled={busy} onClick={() => approve(String(row.id))}>Bordroyu onayla</button>}
+          {kind === "records" && canWrite && row.status === "DRAFT" && <button className="btn btn-primary" disabled={busy} onClick={() => approve(row)}>Bordroyu onayla</button>}
         </details></td>
       </tr>)}</tbody></table></div>}
       <div className="toolbar" aria-label={`${title} sayfaları`}><button className="btn btn-secondary" disabled={loading || pages[kind] === 1} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] - 1 }))}>Önceki</button><span>Sayfa {pages[kind]}</span><button className="btn btn-secondary" disabled={loading || rows[kind].length <= 20} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] + 1 }))}>Sonraki</button></div>

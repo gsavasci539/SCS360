@@ -39,10 +39,17 @@ it("seçili personel ve dönemde bordro taslağı oluşturur, başarısız kayı
 });
 
 it("onay işlemi gerçek kayıt yolunu kullanır ve üç aylık aralık yıl sınırını geçer", async () => {
+  const approved = { id: "record", staff_id: "teacher", status: "APPROVED", net_salary: 50000,
+    approved_by: "manager", approved_at: "2026-11-03T08:00:00Z" };
+  const get = vi.mocked(api.get).getMockImplementation()!;
+  vi.mocked(api.get).mockImplementation((path, config) => config?.params?.record_id === "record"
+    ? Promise.resolve({ data: { data: [approved] } }) : get(path, config));
+  vi.mocked(api.post).mockResolvedValue({ data: { data: approved } });
   open(); const region = await screen.findByRole("region", { name: "Bordro kayıtları" });
   await within(region).findByText("Kaydı aç"); fireEvent.click(within(region).getByText("Kaydı aç"));
   fireEvent.click(within(region).getByRole("button", { name: "Bordroyu onayla" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/payroll/records/record/approve"));
+  expect(await screen.findByText("Bordro onayı doğrulandı")).toBeInTheDocument();
   await waitFor(() => expect(screen.getByLabelText("Dönem türü")).toBeEnabled());
   fireEvent.change(screen.getByLabelText("Dönem türü"), { target: { value: "QUARTERLY" } });
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/payroll/timesheets", expect.objectContaining({ params: expect.objectContaining({ start_date: "2026-11-01", end_date: "2027-01-31" }) })));
