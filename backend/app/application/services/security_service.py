@@ -27,6 +27,7 @@ def token_data(token, child=None):
         status = "BLOCKED"
     return {"id": str(token.id) if token else None, "student_id": str(child.id if child else token.student_id),
         "student_name": f"{child.first_name} {child.last_name}" if child else None,
+        "branch_id": str(child.branch_id) if child and child.branch_id else None,
         "student_number": child.student_number if child else None, "token": token.token if token else None,
         "barcode_number": token.barcode_number if token else None, "status": status, "stored_status": token.status if token else None,
         "qr_code_url": f"/api/security/digital-ids/{token.id}/qr-code" if token and status == "ACTIVE" else None,
@@ -72,9 +73,9 @@ async def token_details(db, token, child):
     return result
 
 
-async def options(db, student_id=None, search=""):
+async def options(db, student_id=None, search="", *, branch_id=None):
     from app.application.services.student_choices import options as choices
-    return await choices(db, student_id, search)
+    return await choices(db, student_id, search, branch_id=branch_id)
 
 
 def same_issue(token, body):
@@ -135,11 +136,13 @@ async def logs_data(db, logs):
         "service_permission": row.service_permission, "notes": row.notes, "created_at": utc_iso(row.created_at)} for row in logs]
 
 
-async def stats(db, tenant, day, student_id=None):
+async def stats(db, tenant, day, student_id=None, *, branch_id=None):
     start, end = school_day_bounds(day)
     daily = select(GateLog).where(GateLog.created_at >= start, GateLog.created_at < end)
     if student_id:
         daily = daily.where(GateLog.student_id == student_id)
+    if branch_id:
+        daily = daily.where(GateLog.branch_id == branch_id)
     authorized = daily.where(GateLog.status == "AUTHORIZED")
     async def count(query):
         return (await db.execute(query.with_only_columns(func.count(GateLog.id)).order_by(None))).scalar() or 0
@@ -152,6 +155,8 @@ async def stats(db, tenant, day, student_id=None):
         table.c.student_id.is_not(None), table.c.created_at < end, table.c.status == "AUTHORIZED")
     if student_id:
         query = query.where(table.c.student_id == student_id)
+    if branch_id:
+        query = query.where(table.c.branch_id == branch_id)
     if not tenant.is_super_admin:
         # The window is a Core subquery. Apply scope explicitly rather than
         # assuming ORM loader criteria will survive the subquery boundary.

@@ -18,9 +18,20 @@ from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
 from app.domain.entities.security import DigitalIdToken, GateLog
-from app.infrastructure.models.models import Student
+from app.infrastructure.models.models import Branch, Student
+from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(prefix="/api/security", tags=["Security"])
+
+
+async def check_branch(db, tenant, branch_id):
+    if branch_id is not None:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+
+
+def check_student_branch(student, branch_id):
+    if branch_id is not None and student.branch_id != branch_id:
+        raise HTTPException(404, "Öğrenci seçili şubede bulunamadı")
 
 
 class GenerateTokenRequest(BaseModel):
@@ -40,17 +51,25 @@ class QRVerificationRequest(BaseModel):
 
 
 @router.get("/options")
-async def options(student_id: UUID | None = None, search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"),
+async def options(student_id: UUID | None = None, branch_id: UUID | None = None, search: str = Query("", max_length=100),
+    db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("security.read"))):
-    return success_response(await service.options(db, student_id, search.strip()))
+    await check_branch(db, tenant, branch_id)
+    return success_response(await service.options(db, student_id, search.strip(), branch_id=branch_id))
 
 
 @router.get("/digital-ids")
-async def list_digital_ids(student_id: UUID | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+async def list_digital_ids(student_id: UUID | None = None, branch_id: UUID | None = None, record_id: UUID | None = None,
+    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+    await check_branch(db, tenant, branch_id)
     query = select(DigitalIdToken, Student).join(Student, Student.id == DigitalIdToken.student_id).where(Student.deleted_at.is_(None))
     if student_id:
         query = query.where(DigitalIdToken.student_id == student_id)
+    if branch_id:
+        query = query.where(Student.branch_id == branch_id)
+    if record_id:
+        query = query.where(DigitalIdToken.id == record_id)
     rows = (await db.execute(query.order_by(DigitalIdToken.issued_at.desc(), DigitalIdToken.id).limit(limit).offset(offset))).all()
     return success_response([service.token_data(token, child) for token, child in rows])
 
@@ -63,10 +82,12 @@ async def get_digital_id(student_id: UUID, db: AsyncSession = Depends(get_db, sc
 
 
 @router.post("/digital-id/generate")
-async def generate_digital_id(body: GenerateTokenRequest, db: AsyncSession = Depends(get_db, scope="function"),
+async def generate_digital_id(body: GenerateTokenRequest, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("security.write"))):
+    await check_branch(db, tenant, branch_id)
     child = await service.student(db, body.student_id)
     child = await service.lock_student(db, child.id)
+    check_student_branch(child, branch_id)
     previous = (await db.execute(select(DigitalIdToken).where(DigitalIdToken.id == body.request_id))).scalar_one_or_none()
     if previous:
         if not service.same_issue(previous, body):
@@ -102,13 +123,15 @@ async def generate_digital_id(body: GenerateTokenRequest, db: AsyncSession = Dep
 
 
 @router.post("/digital-ids/{token_id}/revoke")
-async def revoke_digital_id(token_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+async def revoke_digital_id(token_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("security.write"))):
+    await check_branch(db, tenant, branch_id)
     token = (await db.execute(select(DigitalIdToken).where(DigitalIdToken.id == token_id))).scalar_one_or_none()
     if token is None:
         raise HTTPException(404, "Kimlik bulunamadı veya erişim kapsamı dışında")
     child = await service.student(db, token.student_id)
-    await service.lock_student(db, child.id)
+    child = await service.lock_student(db, child.id)
+    check_student_branch(child, branch_id)
     await db.refresh(token)
     if token.status != "REVOKED":
         token.status = "REVOKED"
@@ -118,12 +141,14 @@ async def revoke_digital_id(token_id: UUID, db: AsyncSession = Depends(get_db, s
 
 
 @router.get("/digital-ids/{token_id}/qr-code")
-async def qr_code(token_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+async def qr_code(token_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+    await check_branch(db, tenant, branch_id)
     token = (await db.execute(select(DigitalIdToken).where(DigitalIdToken.id == token_id))).scalar_one_or_none()
     if token is None:
         raise HTTPException(404, "Kimlik bulunamadı veya erişim kapsamı dışında")
     child = await service.student(db, token.student_id)
+    check_student_branch(child, branch_id)
     if not service.active(token) or child.status != "ACTIVE":
         raise HTTPException(409, "Etkin kimlik için QR indirilebilir")
     from reportlab.graphics import renderSVG
@@ -138,14 +163,17 @@ async def qr_code(token_id: UUID, db: AsyncSession = Depends(get_db, scope="func
 
 
 @router.post("/gate-logs/verify-qr")
-async def verify_qr_code(body: QRVerificationRequest, db: AsyncSession = Depends(get_db, scope="function"),
+async def verify_qr_code(body: QRVerificationRequest, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("security.write"))):
+    await check_branch(db, tenant, branch_id)
     column = DigitalIdToken.barcode_number if body.verification_method == "BARCODE" else DigitalIdToken.token
     token = (await db.execute(select(DigitalIdToken).where(column == body.token))).scalar_one_or_none()
     if token is None:
         return success_response(service.unauthorized())
     child = await service.student(db, token.student_id)
     child = await service.lock_student(db, child.id)
+    if branch_id is not None and child.branch_id != branch_id:
+        return success_response(service.unauthorized())
     await db.refresh(token)
     previous = await service.replay(db, tenant, child, token, body)
     if previous:
@@ -180,12 +208,14 @@ async def verify_qr_code(body: QRVerificationRequest, db: AsyncSession = Depends
 
 @router.get("/gate-logs")
 async def get_gate_logs(start_date: date | None = None, end_date: date | None = None, student_id: UUID | None = None,
-    branch_id: UUID | None = None, direction: Literal["IN", "OUT"] | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    branch_id: UUID | None = None, record_id: UUID | None = None, direction: Literal["IN", "OUT"] | None = None,
+    limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
+    await check_branch(db, tenant, branch_id)
     if start_date and end_date and end_date < start_date:
         raise HTTPException(422, "Bitiş tarihi başlangıçtan önce olamaz")
     query = select(GateLog)
-    for value, condition in ((student_id, GateLog.student_id == student_id), (branch_id, GateLog.branch_id == branch_id),
+    for value, condition in ((student_id, GateLog.student_id == student_id), (branch_id, GateLog.branch_id == branch_id), (record_id, GateLog.id == record_id),
         (direction, GateLog.direction == direction), (start_date, GateLog.created_at >= school_day_bounds(start_date)[0] if start_date else True),
         (end_date, GateLog.created_at < school_day_bounds(end_date)[1] if end_date else True)):
         if value is not None:
@@ -195,9 +225,10 @@ async def get_gate_logs(start_date: date | None = None, end_date: date | None = 
 
 
 @router.get("/gate-logs/stats")
-async def get_gate_stats(day: date | None = Query(None, alias="date"), student_id: UUID | None = None,
+async def get_gate_stats(day: date | None = Query(None, alias="date"), student_id: UUID | None = None, branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("security.read"))):
-    return success_response(await service.stats(db, tenant, day or school_today(), student_id))
+    await check_branch(db, tenant, branch_id)
+    return success_response(await service.stats(db, tenant, day or school_today(), student_id, branch_id=branch_id))
 
 
 def generate_barcode_number():

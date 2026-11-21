@@ -9,7 +9,7 @@ from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.dates import school_today, school_day_bounds
 from app.domain.entities.security import DigitalIdToken, GateLog
-from app.infrastructure.models.models import Permission, Role, User
+from app.infrastructure.models.models import Branch, Permission, Role, User
 
 
 @pytest.fixture
@@ -85,6 +85,39 @@ async def test_gate_verification_has_real_actor_branch_and_retry_without_invente
     assert rotated.status_code == 200
     old = await client.post("/api/security/gate-logs/verify-qr", headers=auth, json={**body, "request_id": str(uuid4())})
     assert old.status_code == 200 and old.json()["data"]["authorized"] is False
+
+
+async def test_gate_branch_selection_fences_writes_and_record_lookup(security_client):
+    client, sessions, data = security_client
+    async with sessions() as db:
+        alternate = Branch(organization_id=data["org"].id, name="Other local gate")
+        root = User(organization_id=data["org"].id, is_super_admin=True, email="isolated-gate-root@test.invalid",
+            first_name="Gate", last_name="Root", password_hash="unused")
+        db.add_all([alternate, root])
+        await db.commit()
+    auth = {**headers(root), "X-SCS360-Organization-Id": str(data["org"].id)}
+    branch = str(data["branch"].id)
+    wrong = str(alternate.id)
+    child = str(data["children"][0].id)
+    issue = {"student_id": child, "request_id": str(uuid4())}
+    rejected = await client.post("/api/security/digital-id/generate", headers=auth, params={"branch_id": wrong}, json=issue)
+    assert rejected.status_code == 404
+    issued = await client.post("/api/security/digital-id/generate", headers=auth, params={"branch_id": branch}, json=issue)
+    assert issued.status_code == 200, issued.text
+    token = issued.json()["data"]
+    assert token["branch_id"] == branch
+    body = {"token": token["token"], "direction": "IN", "request_id": str(uuid4())}
+    denied = await client.post("/api/security/gate-logs/verify-qr", headers=auth, params={"branch_id": wrong}, json=body)
+    assert denied.status_code == 200 and not denied.json()["data"]["authorized"]
+    saved = await client.post("/api/security/gate-logs/verify-qr", headers=auth, params={"branch_id": branch}, json=body)
+    assert saved.status_code == 200 and saved.json()["data"]["gate_log_id"] == body["request_id"]
+    for path, record_id in (("digital-ids", token["id"]), ("gate-logs", body["request_id"])):
+        actual = await client.get(f"/api/security/{path}", headers=auth, params={"branch_id": branch, "record_id": record_id})
+        assert actual.status_code == 200 and [row["id"] for row in actual.json()["data"]] == [record_id]
+        outside = await client.get(f"/api/security/{path}", headers=auth, params={"branch_id": wrong, "record_id": record_id})
+        assert outside.status_code == 200 and outside.json()["data"] == []
+    stats = await client.get("/api/security/gate-logs/stats", headers=auth, params={"branch_id": wrong})
+    assert stats.status_code == 200 and stats.json()["data"]["currently_in_school"] == 0
 
 
 async def test_gate_day_validation_latest_presence_and_unattributable_legacy_scope(security_client):
