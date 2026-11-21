@@ -16,7 +16,7 @@ const saved = new Map<string, Record<string, unknown>>();
 beforeEach(() => {
   requests = [request]; sessions = []; saved.clear(); useAuthStore.setState({ user: manager });
   vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { data: (config?.params as { record_id?: string } | undefined)?.record_id
-    ? [saved.get((config?.params as { record_id?: string } | undefined)?.record_id)].filter(Boolean)
+    ? [saved.get((config?.params as { record_id?: string } | undefined)?.record_id ?? "")].filter(Boolean)
     : path === "/tutoring/options" ? choices : path === "/tutoring/summary" ? { total_sessions: 214, pending_requests: 45 }
       : path === "/tutoring/requests" ? requests : path === "/tutoring/sessions" ? sessions : [] } }));
   const write = async (path: string, raw?: unknown) => {
