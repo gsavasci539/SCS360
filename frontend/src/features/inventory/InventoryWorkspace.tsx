@@ -1,8 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ErrorState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
+import { newRequestId } from "../../lib/requestId";
 import { verifyInventoryRecord } from "./inventoryRecords";
 
 interface Choice { id: string; name: string; code?: string; is_assigned?: boolean }
@@ -20,6 +22,10 @@ export function InventoryWorkspace({ revision, onChange }: { revision: number; o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const pending = useRef(new Map<string, string>());
+  const actor = useAuthStore((state) => state.user?.id);
+  const organization = useAuthStore((state) => state.user?.organization_id);
+  const workspace = usePlatformWorkspace((state) => state.workspace?.id);
   const { showToast } = useToast();
   useEffect(() => {
     if (!canWrite) return;
@@ -47,9 +53,15 @@ export function InventoryWorkspace({ revision, onChange }: { revision: number; o
         : kind === "item" ? ["/inventory/items", { ...data, branch_id: branch }, "ACTIVE"] as const
         : kind === "assignment" ? ["/inventory/assignments", { ...data, item_id: item, assigned_to: user }, "ASSIGNED"] as const
         : ["/inventory/maintenance-requests", { ...data, item_id: item }, "PENDING"] as const;
-      const result = await api.post(path, fields);
-      if (!result.data.success) throw new Error("Envanter kaydı onaylanmadı");
-      await verifyInventoryRecord(path, result.data.data.id, branch, { ...fields, ...(status ? { status } : {}) });
+      const signature = JSON.stringify([actor, organization, workspace, path, branch, fields]);
+      const requestId = pending.current.get(signature) ?? newRequestId();
+      pending.current.set(signature, requestId);
+      const result = await api.post(path, { ...fields, request_id: requestId });
+      if (!result.data.success || result.data.data?.id !== requestId) throw new Error("Envanter kaydı onaylanmadı");
+      await verifyInventoryRecord(path, requestId, branch, { ...fields, ...(status ? { status } : {}) });
+      const current = useAuthStore.getState().user;
+      if (current?.id !== actor || current?.organization_id !== organization || usePlatformWorkspace.getState().workspace?.id !== workspace) return;
+      pending.current.delete(signature);
       form.reset();
       await onChange();
       showToast("Envanter kaydı doğrulandı");

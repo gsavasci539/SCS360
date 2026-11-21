@@ -13,14 +13,14 @@ const open = () => render(<ToastProvider><InventoryPage /></ToastProvider>);
 beforeEach(() => {
   useAuthStore.setState({ user: manager });
   vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { success: true, data: config?.params?.record_id ? [{
-    id: "saved", branch_id: "branch", ...(path === "/inventory/items"
+    id: config.params.record_id, branch_id: "branch", ...(path === "/inventory/items"
       ? { item_code: "NEW-1", item_name: "Yeni tablet", location_id: null, status: "ACTIVE" }
       : { item_id: "item", assigned_to: "teacher", return_date: null, notes: null, status: "ASSIGNED" }),
   }] : path === "/inventory/options" ? {
     branches: [{ id: "branch", name: "Merkez" }], locations: [], items: [{ id: "item", name: "Tablet", code: "PC-1" }], users: [{ id: "teacher", name: "Işıl Öğretmen" }],
   } : path === "/ai/inventory-analysis" ? { total_items: 300, assigned_count: 20, available_count: 280, pending_maintenance: 0 } :
     path === "/inventory/items" ? Array.from({ length: 21 }, (_, index) => ({ id: "item-" + index, item_code: "PC-" + index, item_name: "Tablet " + index, status: "ACTIVE" })) : [] } }));
-  vi.mocked(api.post).mockResolvedValue({ data: { success: true, data: { id: "saved" } } });
+  vi.mocked(api.post).mockImplementation(async (_path, body) => ({ data: { success: true, data: { id: (body as { request_id: string }).request_id } } }));
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 
@@ -40,19 +40,21 @@ it("demirbaş ve zimmet formlarını izinli API yollarına kaydeder", async () =
   fireEvent.change(screen.getByLabelText("Demirbaş kodu"), { target: { value: "NEW-1" } });
   fireEvent.change(screen.getByLabelText("Demirbaş adı"), { target: { value: "Yeni tablet" } });
   fireEvent.click(screen.getByRole("button", { name: "Demirbaşı oluştur" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/inventory/items", { item_code: "NEW-1", item_name: "Yeni tablet", location_id: null, branch_id: "branch" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/inventory/items", { item_code: "NEW-1", item_name: "Yeni tablet", location_id: null, branch_id: "branch", request_id: expect.any(String) }));
   await waitFor(() => expect(screen.getByRole("button", { name: "Demirbaşı oluştur" })).toBeEnabled());
   fireEvent.change(screen.getByLabelText("İşlem demirbaşı"), { target: { value: "item" } });
   fireEvent.change(screen.getByLabelText("Zimmet sorumlusu"), { target: { value: "teacher" } });
   fireEvent.click(screen.getByRole("button", { name: "Zimmeti kaydet" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/inventory/assignments", { item_id: "item", assigned_to: "teacher", return_date: null, notes: null }));
-  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/inventory/assignments", { params: { branch_id: "branch", limit: 1, record_id: "saved" } }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/inventory/assignments", { item_id: "item", assigned_to: "teacher", return_date: null, notes: null, request_id: expect.any(String) }));
+  const assignment = vi.mocked(api.post).mock.calls.find(([path]) => path === "/inventory/assignments")?.[1] as { request_id: string };
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/inventory/assignments", { params: { branch_id: "branch", limit: 1, record_id: assignment.request_id } }));
   await waitFor(() => expect(screen.getAllByText("Envanter kaydı doğrulandı")).toHaveLength(2));
 });
 
 it("yanlış tekil kayıt döndüğünde demirbaş taslağını korur", async () => {
+  let wrongRecord = true;
   const original = vi.mocked(api.get).getMockImplementation()!;
-  vi.mocked(api.get).mockImplementation((path, config) => config?.params?.record_id
+  vi.mocked(api.get).mockImplementation((path, config) => wrongRecord && config?.params?.record_id
     ? Promise.resolve({ data: { success: true, data: [{ id: "other", branch_id: "branch" }] } })
     : original(path, config));
   open();
@@ -63,4 +65,9 @@ it("yanlış tekil kayıt döndüğünde demirbaş taslağını korur", async ()
   await screen.findByText("İşlem tamamlanamadı");
   expect(screen.getByLabelText("Demirbaş adı")).toHaveValue("Yeni tablet");
   expect(screen.queryByText("Envanter kaydı doğrulandı")).not.toBeInTheDocument();
+  wrongRecord = false;
+  fireEvent.click(screen.getByRole("button", { name: "Demirbaşı oluştur" }));
+  await screen.findByText("Envanter kaydı doğrulandı");
+  expect(api.post).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(api.post).mock.calls[0][1]).toEqual(vi.mocked(api.post).mock.calls[1][1]);
 });
