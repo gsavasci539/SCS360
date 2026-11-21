@@ -81,3 +81,37 @@ async def test_payroll_reader_and_writer_are_limited_to_their_actual_branch_staf
     assert clocks[0]["check_in_time"] == "2026-11-05T05:00:00+00:00" and clocks[0]["check_out_time"] == "2026-11-05T13:00:00+00:00"
     ambiguous = await client.post("/api/payroll/timesheets", headers=headers(manager), json={**clocking, "check_in_time": "2026-11-05T08:00:00"})
     assert ambiguous.status_code == 422, ambiguous.text
+
+
+async def test_payroll_selected_workspace_and_branch_verify_exact_upserts(materials_client):
+    client, sessions, data = materials_client
+    async with sessions() as db:
+        other = Branch(name="Payroll alternate", organization_id=data["org"].id)
+        actor = User(email="isolated-payroll-root@test.invalid", password_hash="unused", first_name="Test",
+            last_name="Operator", organization_id=data["org"].id, is_super_admin=True)
+        db.add_all([other, actor])
+        await db.commit()
+    auth = {**headers(actor), "X-SCS360-Organization-Id": str(data["org"].id)}
+    branch = {"branch_id": str(data["branch"].id)}
+    wrong = {"branch_id": str(other.id)}
+    staff = str(data["teacher"].id)
+    for kind, fields in (
+        ("records", {"year": 2026, "month": 11, "period": "MONTHLY", "base_salary": "50000.55"}),
+        ("timesheets", {"timesheet_date": "2026-11-05", "work_hours": "7.25"}),
+        ("additional-hours", {"year": 2026, "month": 11, "period": "MONTHLY", "total_hours": "1.50", "hourly_rate": "0"}),
+    ):
+        path = "/api/payroll/" + kind
+        body = {"staff_id": staff, **fields}
+        assert (await client.post(path, headers=auth, params=wrong, json=body)).status_code == 404
+        saved = await client.post(path, headers=auth, params=branch, json=body)
+        assert saved.status_code == 200, saved.text
+        prior = saved.json()["data"]["id"]
+        repeated = await client.post(path, headers=auth, params=branch, json=body)
+        assert repeated.json()["data"]["id"] == prior
+        receipt = await client.get(path, headers=auth, params={**branch, "record_id": prior, "limit": 1})
+        rows = receipt.json()["data"]
+        assert [row["id"] for row in rows] == [prior]
+        if kind == "additional-hours":
+            assert rows[0]["hourly_rate"] == 0
+        denied = await client.get(path, headers=auth, params={**wrong, "record_id": prior, "limit": 1})
+        assert denied.json()["data"] == []

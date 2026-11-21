@@ -19,18 +19,15 @@ from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
 from app.domain.entities import User
 from app.core.exceptions import ConflictException, NotFoundException, ValidationException
-from app.core.tenant_guard import scope_filters, staff_scope
 from app.application.services.consent_service import utc_iso
+from app.application.services.payroll_service import scoped_staff_ids
 
 router = APIRouter(prefix="/api/payroll", tags=["Payroll"])
 
 
-async def lock_staff(db, tenant, staff_id):
+async def lock_staff(db, tenant, staff_id, branch_id=None):
     table = User.__table__
-    allowed = select(table.c.id).where(table.c.id == staff_id)
-    if not tenant.is_super_admin:
-        branches, _, _, users = scope_filters(tenant, db.info.get("accessible_student_ids"))
-        allowed = staff_scope(tenant, branches, users).where(table.c.id == staff_id)
+    allowed = scoped_staff_ids(db, tenant, branch_id).where(table.c.id == staff_id)
     identifier = (await db.execute(allowed)).scalar_one_or_none()
     if identifier is None:
         raise NotFoundException("Bu kapsamda personel bulunamadı")
@@ -105,18 +102,21 @@ class PayrollRecordCreate(BaseModel):
 
 
 @router.get("/options")
-async def payroll_options(search: str = Query("", max_length=100), staff_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db, scope="function"),
+async def payroll_options(search: str = Query("", max_length=100), staff_id: Optional[UUID] = None, branch_id: UUID | None = None,
+                           db: AsyncSession = Depends(get_db, scope="function"),
                            tenant: TenantContext = Depends(PermissionChecker("payroll.read", "payroll.write"))):
     from app.application.services.payroll_service import options
-    return success_response(await options(db, tenant, search, staff_id))
+    return success_response(await options(db, tenant, search, staff_id, branch_id))
 
 
 @router.get("/summary")
 async def payroll_summary(year: Optional[int] = Query(None, ge=2020, le=2100), month: Optional[int] = Query(None, ge=1, le=12),
-                           period: Optional[str] = None, staff_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db, scope="function"),
+                           period: Optional[str] = None, staff_id: Optional[UUID] = None, branch_id: UUID | None = None,
+                           db: AsyncSession = Depends(get_db, scope="function"),
                            tenant: TenantContext = Depends(PermissionChecker("payroll.read"))):
     from app.application.services.payroll_service import summary
-    return success_response(await summary(db, year, month, period.upper() if period else None, staff_id))
+    scope = scoped_staff_ids(db, tenant, branch_id) if branch_id else None
+    return success_response(await summary(db, year, month, period.upper() if period else None, staff_id, staff_scope_ids=scope))
 
 
 # ==================== Staff Timesheets Endpoints ====================
@@ -124,6 +124,8 @@ async def payroll_summary(year: Optional[int] = Query(None, ge=2020, le=2100), m
 @router.get("/timesheets")
 async def get_staff_timesheets(
     staff_id: Optional[UUID] = Query(None),
+    branch_id: UUID | None = None,
+    record_id: UUID | None = None,
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     status: Optional[str] = Query(None),
@@ -138,6 +140,10 @@ async def get_staff_timesheets(
     query = select(StaffTimesheet)
     
     conditions = []
+    if branch_id:
+        conditions.append(StaffTimesheet.staff_id.in_(scoped_staff_ids(db, tenant, branch_id)))
+    if record_id:
+        conditions.append(StaffTimesheet.id == record_id)
     if staff_id:
         conditions.append(StaffTimesheet.staff_id == staff_id)
     if start_date:
@@ -150,7 +156,7 @@ async def get_staff_timesheets(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(StaffTimesheet.date.desc()).limit(limit).offset(offset)
+    query = query.order_by(StaffTimesheet.date.desc(), StaffTimesheet.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     timesheets = result.scalars().all()
@@ -186,12 +192,13 @@ async def get_staff_timesheets(
 @router.post("/timesheets")
 async def create_staff_timesheet(
     timesheet: StaffTimesheetCreate,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("payroll.write"))
 ):
     """Create or update a staff timesheet"""
     from app.domain.entities.payroll import StaffTimesheet
-    await lock_staff(db, tenant, timesheet.staff_id)
+    await lock_staff(db, tenant, timesheet.staff_id, branch_id)
     
     # Check if timesheet already exists for this staff and date
     existing_result = await db.execute(
@@ -221,11 +228,13 @@ async def create_staff_timesheet(
             notes=timesheet.notes
         )
         db.add(new_timesheet)
+        existing = new_timesheet
     
     await db.commit()
     
     return success_response({
         "message": "Timesheet saved successfully",
+        "id": str(existing.id),
         "staff_id": str(timesheet.staff_id),
         "date": timesheet.timesheet_date.isoformat(),
         "status": timesheet.status.upper()
@@ -282,6 +291,8 @@ async def get_monthly_timesheet_summary(
 @router.get("/additional-hours")
 async def get_additional_course_hours(
     staff_id: Optional[UUID] = Query(None),
+    branch_id: UUID | None = None,
+    record_id: UUID | None = None,
     period: Optional[str] = Query(None),
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
@@ -296,6 +307,10 @@ async def get_additional_course_hours(
     query = select(AdditionalCourseHours)
     
     conditions = []
+    if branch_id:
+        conditions.append(AdditionalCourseHours.staff_id.in_(scoped_staff_ids(db, tenant, branch_id)))
+    if record_id:
+        conditions.append(AdditionalCourseHours.id == record_id)
     if staff_id:
         conditions.append(AdditionalCourseHours.staff_id == staff_id)
     if period:
@@ -308,7 +323,7 @@ async def get_additional_course_hours(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(AdditionalCourseHours.year.desc(), AdditionalCourseHours.month.desc()).limit(limit).offset(offset)
+    query = query.order_by(AdditionalCourseHours.year.desc(), AdditionalCourseHours.month.desc(), AdditionalCourseHours.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     hours = result.scalars().all()
@@ -343,7 +358,7 @@ async def get_additional_course_hours(
             "year": hour.year,
             "month": hour.month,
             "total_hours": float(hour.total_hours),
-            "hourly_rate": float(hour.hourly_rate) if hour.hourly_rate else None,
+            "hourly_rate": float(hour.hourly_rate) if hour.hourly_rate is not None else None,
             "total_amount": float(hour.total_amount),
             "approved_by": str(hour.approved_by) if hour.approved_by else None,
             "approved_by_name": approved_by_name,
@@ -358,12 +373,13 @@ async def get_additional_course_hours(
 @router.post("/additional-hours")
 async def create_additional_course_hours(
     hours: AdditionalCourseHoursCreate,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("payroll.write"))
 ):
     """Create or update additional course hours"""
     from app.domain.entities.payroll import AdditionalCourseHours
-    await lock_staff(db, tenant, hours.staff_id)
+    await lock_staff(db, tenant, hours.staff_id, branch_id)
     
     # Calculate total amount
     total_amount = ((hours.total_hours * hours.hourly_rate) if hours.hourly_rate else Decimal("0")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -400,11 +416,13 @@ async def create_additional_course_hours(
             notes=hours.notes
         )
         db.add(new_hours)
+        existing = new_hours
     
     await db.commit()
     
     return success_response({
         "message": "Additional course hours saved successfully",
+        "id": str(existing.id),
         "staff_id": str(hours.staff_id),
         "period": hours.period.upper(),
         "year": hours.year,
@@ -418,6 +436,8 @@ async def create_additional_course_hours(
 @router.get("/records")
 async def get_payroll_records(
     staff_id: Optional[UUID] = Query(None),
+    branch_id: UUID | None = None,
+    record_id: UUID | None = None,
     period: Optional[str] = Query(None),
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
@@ -433,6 +453,10 @@ async def get_payroll_records(
     query = select(PayrollRecord)
     
     conditions = []
+    if branch_id:
+        conditions.append(PayrollRecord.staff_id.in_(scoped_staff_ids(db, tenant, branch_id)))
+    if record_id:
+        conditions.append(PayrollRecord.id == record_id)
     if staff_id:
         conditions.append(PayrollRecord.staff_id == staff_id)
     if period:
@@ -447,7 +471,7 @@ async def get_payroll_records(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(PayrollRecord.year.desc(), PayrollRecord.month.desc()).limit(limit).offset(offset)
+    query = query.order_by(PayrollRecord.year.desc(), PayrollRecord.month.desc(), PayrollRecord.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     records = result.scalars().all()
@@ -504,12 +528,13 @@ async def get_payroll_records(
 @router.post("/records")
 async def create_payroll_record(
     record: PayrollRecordCreate,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("payroll.write"))
 ):
     """Create or update a payroll record"""
     from app.domain.entities.payroll import PayrollRecord
-    await lock_staff(db, tenant, record.staff_id)
+    await lock_staff(db, tenant, record.staff_id, branch_id)
     
     # Calculate net salary
     net_salary = (
@@ -567,11 +592,13 @@ async def create_payroll_record(
             notes=record.notes
         )
         db.add(new_record)
+        existing = new_record
     
     await db.commit()
     
     return success_response({
         "message": "Payroll record saved successfully",
+        "id": str(existing.id),
         "staff_id": str(record.staff_id),
         "period": record.period.upper(),
         "year": record.year,
@@ -583,6 +610,7 @@ async def create_payroll_record(
 @router.post("/records/{record_id}/approve")
 async def approve_payroll_record(
     record_id: UUID,
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("payroll.write"))
 ):
@@ -596,7 +624,7 @@ async def approve_payroll_record(
     
     if not record:
         raise HTTPException(status_code=404, detail="Payroll record not found")
-    await lock_staff(db, tenant, record.staff_id)
+    await lock_staff(db, tenant, record.staff_id, branch_id)
     record = (await db.execute(select(PayrollRecord).where(PayrollRecord.id == record_id)
         .execution_options(populate_existing=True))).scalar_one()
     if record.status not in {"DRAFT", "APPROVED"}:

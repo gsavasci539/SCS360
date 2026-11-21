@@ -1,4 +1,5 @@
 from calendar import monthrange
+from dataclasses import replace
 from datetime import date, timedelta
 
 from sqlalchemy import exists, func, or_, select
@@ -10,7 +11,20 @@ from app.domain.entities.payroll import StaffTimesheet, AdditionalCourseHours, P
 from app.infrastructure.models.models import User, Role, UserRole, UserStatus, Organization
 
 
-async def options(db, tenant, search="", staff_id=None):
+def scoped_staff_ids(db, tenant, branch_id=None):
+    if tenant.is_super_admin and tenant.organization_id is None and branch_id is None:
+        return select(User.__table__.c.id)
+    if tenant.organization_id is None:
+        raise ForbiddenException()
+    branches, _, _, users = scope_filters(tenant, db.info.get("accessible_student_ids"))
+    if branch_id is None:
+        return staff_scope(tenant, branches, users)
+    branch_key = branches.selected_columns[0]
+    selected = branches.where(branch_key == branch_id)
+    return staff_scope(replace(tenant, branch_ids=[branch_id]), selected, users).where(selected.exists())
+
+
+async def options(db, tenant, search="", staff_id=None, branch_id=None):
     users, roles, assignments, organizations = User.__table__, Role.__table__, UserRole.__table__, Organization.__table__
     assigned = select(assignments.c.user_id).join(roles, roles.c.id == assignments.c.role_id).where(assignments.c.user_id == users.c.id,
         roles.c.deleted_at.is_(None), or_(roles.c.organization_id.is_(None), roles.c.organization_id == users.c.organization_id)).correlate(users)
@@ -21,11 +35,7 @@ async def options(db, tenant, search="", staff_id=None):
     query = query.join(organizations, organizations.c.id == users.c.organization_id).where(users.c.status == UserStatus.ACTIVE,
         users.c.deleted_at.is_(None), organizations.c.deleted_at.is_(None), organizations.c.is_active.is_(True),
         or_(exists(staff_roles), ~exists(assigned)))
-    if not tenant.is_super_admin:
-        if tenant.organization_id is None:
-            raise ForbiddenException()
-        branches, _, _, allowed = scope_filters(tenant, db.info.get("accessible_student_ids"))
-        query = query.where(users.c.id.in_(staff_scope(tenant, branches, allowed)))
+    query = query.where(users.c.id.in_(scoped_staff_ids(db, tenant, branch_id)))
     filtered = query.where(or_(users.c.first_name.ilike(f"%{search}%"), users.c.last_name.ilike(f"%{search}%"))) if search else query
     rows = (await db.execute(filtered.order_by(users.c.first_name, users.c.id).limit(101))).all()
     choices = rows[:100]
@@ -37,13 +47,18 @@ async def options(db, tenant, search="", staff_id=None):
         "more_staff": len(rows) > 100, "today": school_today().isoformat()}
 
 
-async def summary(db, year=None, month=None, period=None, staff_id=None):
+async def summary(db, year=None, month=None, period=None, staff_id=None, *, staff_scope_ids=None):
     if month and year is None:
         year = school_today().year
     query = select(func.count(PayrollRecord.id), func.coalesce(func.sum(PayrollRecord.net_salary), 0))
     hours = select(func.count(StaffTimesheet.id), func.coalesce(func.avg(StaffTimesheet.work_hours), 0))
     extra = select(func.coalesce(func.sum(AdditionalCourseHours.total_amount), 0))
     drafts = select(func.count(PayrollRecord.id)).where(PayrollRecord.status == "DRAFT")
+    if staff_scope_ids is not None:
+        query = query.where(PayrollRecord.staff_id.in_(staff_scope_ids))
+        drafts = drafts.where(PayrollRecord.staff_id.in_(staff_scope_ids))
+        hours = hours.where(StaffTimesheet.staff_id.in_(staff_scope_ids))
+        extra = extra.where(AdditionalCourseHours.staff_id.in_(staff_scope_ids))
     if year:
         for model, key in ((PayrollRecord, "records"), (AdditionalCourseHours, "extra")):
             if key == "records":
