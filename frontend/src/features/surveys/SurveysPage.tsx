@@ -1,12 +1,18 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { shortDate, formatTime } from "../../lib/format";
+import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
 import { useWorkspaceUser } from "../../lib/workspaceUser";
 import type { DataRecord } from "../../types/api";
+
+type SurveyWrite = Record<string, string | number | boolean | string[] | null>;
+function sameFields(row: DataRecord, expected: SurveyWrite) {
+  return Object.entries(expected).every(([name, value]) => JSON.stringify(row[name] ?? null) === JSON.stringify(value));
+}
 
 function SurveyDetail({ id, canWrite, onChange }: { id: string; canWrite: boolean; onChange: () => void }) {
   const [row, setRow] = useState<DataRecord | null>(null);
@@ -17,6 +23,7 @@ function SurveyDetail({ id, canWrite, onChange }: { id: string; canWrite: boolea
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState("RATING");
   const [revision, setRevision] = useState(0);
+  const pending = useRef<{ signature: string; id: string } | null>(null);
   const { showToast } = useToast();
   useEffect(() => {
     const controller = new AbortController(); setLoading(true);
@@ -28,15 +35,40 @@ function SurveyDetail({ id, canWrite, onChange }: { id: string; canWrite: boolea
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [id, revision]);
-  async function action(path: string, method: "post" | "delete", payload?: unknown) {
+  async function action(path: string, method: "post" | "delete", payload?: SurveyWrite) {
+    if (!canWrite || busy) return;
     setBusy(true);
-    try { if (method === "delete") await api.delete(path); else await api.post(path, payload); setRevision((value) => value + 1); onChange(); showToast("Anket güncellendi"); }
+    try {
+      if (method === "delete") {
+        const questionId = path.split("/").at(-1);
+        const removed = await api.delete(path);
+        const response = await api.get("/surveys/questions", { params: { survey_id: id, limit: 100 } });
+        if (!questionId || removed.data.data?.id !== questionId ||
+            (response.data.data as DataRecord[]).some((question) => question.id === questionId)) throw new Error("Sorunun kaldırıldığı doğrulanamadı.");
+      } else if (payload) {
+        const signature = JSON.stringify(payload);
+        if (pending.current?.signature !== signature) pending.current = { signature, id: newRequestId() };
+        const requestId = pending.current.id;
+        const saved = await api.post(path, { ...payload, request_id: requestId });
+        const response = await api.get("/surveys/questions", { params: { survey_id: id, limit: 100 } });
+        const stored = (response.data.data as DataRecord[]).find((question) => question.id === requestId);
+        if (!stored || saved.data.data?.id !== requestId || !sameFields(stored, payload)) throw new Error("Soru kaydı doğrulanamadı.");
+        pending.current = null;
+      } else {
+        const expected = path.endsWith("/publish") ? "ACTIVE" : "CLOSED";
+        const saved = await api.post(path);
+        const response = await api.get(`/surveys/surveys/${id}`);
+        if (saved.data.data?.id !== id || response.data.data?.id !== id ||
+            response.data.data.status !== expected) throw new Error("Anket durumu doğrulanamadı.");
+      }
+      setRevision((value) => value + 1); onChange(); showToast("Anket kaydı doğrulandı");
+    }
     catch (reason) { showToast("İşlem tamamlanamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }
   async function addQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
-    await action("/surveys/questions", "post", { survey_id: id, question_text: String(data.get("question_text")), question_type: kind,
+    await action("/surveys/questions", "post", { survey_id: id, question_text: String(data.get("question_text")).trim(), question_type: kind,
       options: kind === "MULTIPLE_CHOICE" ? String(data.get("options") || "").split("\n").map((value) => value.trim()).filter(Boolean) : null,
       is_required: data.get("is_required") === "on", order_index: questions.length });
   }
@@ -84,6 +116,7 @@ export function SurveysPage() {
   const [organization, setOrganization] = useState(userOrg || "");
   const [optionsError, setOptionsError] = useState("");
   const [busy, setBusy] = useState(false);
+  const draft = useRef<{ signature: string; id: string } | null>(null);
   const { showToast } = useToast();
   useEffect(() => {
     const controller = new AbortController(); setLoading(true);
@@ -103,10 +136,23 @@ export function SurveysPage() {
     return () => controller.abort();
   }, [canWrite, revision]);
   async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); setBusy(true);
+    event.preventDefault();
+    if (!canWrite || busy || !organizations.some((item) => item.id === organization)) return;
+    const form = event.currentTarget; const data = new FormData(form); setBusy(true);
     try {
-      const response = await api.post("/surveys/surveys", { ...Object.fromEntries(data), organization_id: organization, is_anonymous: data.get("is_anonymous") === "on" });
-      form.reset(); setParams({ survey: response.data.data.id }); setPage(1); setResponsePage(1); setRevision((value) => value + 1); showToast("Anket taslağı oluşturuldu; soruları ekleyebilirsiniz");
+      const payload = { title: String(data.get("title") || "").trim(), description: String(data.get("description") || "").trim() || null,
+        organization_id: organization, target_audience: String(data.get("target_audience")), start_date: String(data.get("start_date")),
+        end_date: String(data.get("end_date")), is_anonymous: data.get("is_anonymous") === "on" };
+      const signature = JSON.stringify(payload);
+      if (draft.current?.signature !== signature) draft.current = { signature, id: newRequestId() };
+      const id = draft.current.id;
+      const response = await api.post("/surveys/surveys", { ...payload, request_id: id });
+      const verified = await api.get(`/surveys/surveys/${id}`);
+      const stored = verified.data.data as DataRecord | undefined;
+      if (response.data.data?.id !== id || stored?.id !== id || stored.status !== "DRAFT" ||
+          !sameFields(stored, payload)) throw new Error("Anket taslağı doğrulanamadı.");
+      draft.current = null;
+      form.reset(); setParams({ survey: id }); setPage(1); setResponsePage(1); setRevision((value) => value + 1); showToast("Anket taslağı doğrulandı");
     } catch (reason) { showToast("Anket oluşturulamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }

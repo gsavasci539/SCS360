@@ -118,6 +118,20 @@ async def parent_surveys(db, user, student_id, limit, offset):
     return await available(db, student.organization_id, user.id, "PARENTS", limit, offset)
 
 
+async def participation(db, organization_id, user_id, audience, survey_id):
+    survey = await get(db, survey_id)
+    if survey.organization_id != organization_id or survey.target_audience not in {audience, "ALL"} or survey.status == "DRAFT":
+        raise NotFoundException("Katılıma açık anket bulunamadı")
+    current = exists().where(SurveyParticipation.survey_id == survey.id, SurveyParticipation.user_id == user_id)
+    legacy = exists().where(SurveyResponse.survey_id == survey.id, SurveyResponse.respondent_id == user_id)
+    return {"survey_id": str(survey.id), "submitted": bool(await db.scalar(select(current | legacy)))}
+
+
+async def parent_participation(db, user, student_id, survey_id):
+    _, student = await child(db, user, student_id)
+    return await participation(db, student.organization_id, user.id, "PARENTS", survey_id)
+
+
 async def responses(db, survey_id, respondent_id, limit, offset):
     query = select(SurveyResponse).join(Survey, Survey.id == SurveyResponse.survey_id)
     if survey_id:

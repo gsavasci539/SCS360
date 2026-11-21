@@ -99,6 +99,14 @@ async def guardian_survey_response(student_id: UUID, survey_id: UUID, response: 
     return success_response(result)
 
 
+@router.get("/child/{student_id}/surveys/{survey_id}/participation")
+async def guardian_survey_participation(student_id: UUID, survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+                                        current_user: User = Depends(get_current_user),
+                                        tenant: TenantContext = Depends(PermissionChecker("parent.view_children"))):
+    from app.application.services.survey_service import parent_participation
+    return success_response(await parent_participation(db, current_user, student_id, survey_id))
+
+
 @router.get("/child/{student_id}/consents")
 async def guardian_documents(student_id: UUID, limit: int = Query(21, ge=1, le=100), offset: int = Query(0, ge=0),
                              db: AsyncSession = Depends(get_db, scope="function"), current_user: User = Depends(get_current_user),

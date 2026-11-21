@@ -1,4 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { isAxiosError } from "axios";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ErrorState, LoadingState, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
@@ -8,17 +9,40 @@ import type { DataRecord } from "../../types/api";
 function SurveyCard({ row, studentId, canRespond, onChange }: { row: DataRecord; studentId?: string; canRespond: boolean; onChange: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const request = useRef<AbortController | null>(null);
   const questions = (row.questions || []) as DataRecord[];
+  useEffect(() => () => request.current?.abort(), [row.id, studentId]);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const form = new FormData(event.currentTarget);
+    event.preventDefault();
+    if (!canRespond || request.current) return;
+    const form = new FormData(event.currentTarget);
     const answers = Object.fromEntries(questions.map((question) => {
       const value = String(form.get(String(question.id)) || "");
       return [question.id, question.question_type === "RATING" && value ? Number(value) : value];
     }));
+    const controller = new AbortController();
+    request.current = controller;
+    const signal = controller.signal;
+    const participation = studentId ? `/parent/child/${studentId}/surveys/${row.id}` : `/surveys/my-surveys/${row.id}`;
     setBusy(true); setError("");
-    try { await api.post(studentId ? `/parent/child/${studentId}/surveys/${row.id}/respond` : "/surveys/responses", { response_data: answers, ...(!studentId ? { survey_id: row.id } : {}) }); onChange(); }
-    catch (reason) { setError(apiMessage(reason)); }
-    finally { setBusy(false); }
+    try {
+      try {
+        const response = await api.post(studentId ? `${participation}/respond` : "/surveys/responses",
+          { response_data: answers, ...(!studentId ? { survey_id: row.id } : {}) }, { signal });
+        if (!response.data.data?.id) throw new Error("Anket yanıtı doğrulanamadı.");
+      } catch (reason) {
+        if (!isAxiosError(reason) || reason.response?.status !== 409) throw reason;
+      }
+      if (signal.aborted) return;
+      const stored = await api.get(`${participation}/participation`, { signal });
+      if (signal.aborted) return;
+      if (stored.data.data?.survey_id !== row.id || stored.data.data.submitted !== true) throw new Error("Anket katılımı doğrulanamadı.");
+      onChange();
+    } catch (reason) { if (!signal.aborted) setError(apiMessage(reason)); }
+    finally {
+      if (request.current === controller) request.current = null;
+      if (!signal.aborted) setBusy(false);
+    }
   }
   return <article style={{ border: "1px solid #dce6e0", borderRadius: 12, padding: 18, overflowWrap: "anywhere" }}>
     <h3>{String(row.title)}</h3>{row.description && <p style={{ whiteSpace: "pre-wrap" }}>{String(row.description)}</p>}
@@ -44,6 +68,7 @@ export function ParentSurveys({ studentId }: { studentId?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
+  const [verifiedChild, setVerifiedChild] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true);
@@ -54,7 +79,8 @@ export function ParentSurveys({ studentId }: { studentId?: string }) {
     return () => controller.abort();
   }, [studentId, page, revision]);
   return <section className="card card-pad" aria-label="Veli anketleri"><h2>Katılımınıza açık anketler</h2>
-    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={() => setRevision((value) => value + 1)} /> : rows.length === 0 ? <p>Şu anda katılımınıza açık bir anket yok.</p> : <div style={{ display: "grid", gap: 16 }}>{rows.slice(0, 20).map((row) => <SurveyCard key={`${row.id}-${row.submitted}`} row={row} studentId={studentId} canRespond={canRespond} onChange={() => setRevision((value) => value + 1)} />)}</div>}
+    {verifiedChild === (studentId ?? "") && <p role="status">Anket katılımı doğrulandı.</p>}
+    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={() => setRevision((value) => value + 1)} /> : rows.length === 0 ? <p>Şu anda katılımınıza açık bir anket yok.</p> : <div style={{ display: "grid", gap: 16 }}>{rows.slice(0, 20).map((row) => <SurveyCard key={`${studentId ?? ""}-${row.id}-${row.submitted}`} row={row} studentId={studentId} canRespond={canRespond} onChange={() => { setVerifiedChild(studentId ?? ""); setRevision((value) => value + 1); }} />)}</div>}
     {!loading && !error && (rows.length > 20 || page > 1) && <div className="toolbar" aria-label="Veli anket sayfaları"><button className="btn btn-secondary" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Önceki</button><span>Sayfa {page}</span><button className="btn btn-secondary" disabled={rows.length <= 20} onClick={() => setPage((value) => value + 1)}>Sonraki</button></div>}
   </section>;
 }

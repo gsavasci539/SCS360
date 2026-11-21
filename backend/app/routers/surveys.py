@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import delete, exists, func, select
+from sqlalchemy import delete, exists, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import survey_service as service
@@ -31,6 +31,7 @@ class SurveyCreate(BaseModel):
     start_date: date
     end_date: date
     is_anonymous: bool = False
+    request_id: UUID | None = None
 
     @model_validator(mode="after")
     def dates(self):
@@ -47,6 +48,7 @@ class SurveyQuestionCreate(BaseModel):
     options: list[str] | None = Field(default=None, max_length=25)
     is_required: bool = True
     order_index: int = Field(default=0, ge=0, le=100)
+    request_id: UUID | None = None
 
     @model_validator(mode="after")
     def choices(self):
@@ -91,6 +93,14 @@ async def own_surveys(limit: int = Query(21, ge=1, le=100), offset: int = Query(
     return success_response(await service.available(db, tenant.organization_id, tenant.user_id, "STAFF", limit, offset))
 
 
+@router.get("/my-surveys/{survey_id}/participation")
+async def own_participation(survey_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+                            tenant: TenantContext = Depends(PermissionChecker("surveys.respond"))):
+    if tenant.organization_id is None:
+        raise NotFoundException("Katılıma açık anket bulunamadı")
+    return success_response(await service.participation(db, tenant.organization_id, tenant.user_id, "STAFF", survey_id))
+
+
 @router.get("/surveys")
 async def list_surveys(status: str | None = None, target_audience: str | None = None, start_date: date | None = None, end_date: date | None = None,
                        limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db, scope="function"),
@@ -113,7 +123,22 @@ async def list_surveys(status: str | None = None, target_audience: str | None = 
 
 @router.post("/surveys")
 async def create_survey(survey: SurveyCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
-    row = Survey(**survey.model_dump(exclude={"organization_id"}), organization_id=await form_organization(db, tenant, survey.organization_id), created_by=tenant.user_id, status="DRAFT")
+    organization = await form_organization(db, tenant, survey.organization_id)
+    values = survey.model_dump(exclude={"organization_id", "request_id"})
+    if survey.request_id is not None:
+        await db.execute(update(Organization).where(Organization.id == organization)
+            .values(updated_at=Organization.updated_at))
+        prior = await db.scalar(select(Survey).where(Survey.id == survey.request_id, Survey.organization_id == organization,
+            Survey.created_by == tenant.user_id))
+        if prior is not None:
+            if any(getattr(prior, key) != value for key, value in values.items()):
+                raise ConflictException("İstek kimliği farklı bir ankete ait")
+            return success_response(service.survey_data(prior))
+        table = Survey.__table__
+        if await db.scalar(select(table.c.id).where(table.c.id == survey.request_id)) is not None:
+            raise ConflictException("Anket işlem kimliği kullanılamıyor")
+        values["id"] = survey.request_id
+    row = Survey(**values, organization_id=organization, created_by=tenant.user_id, status="DRAFT")
     db.add(row); await db.commit(); await db.refresh(row)
     return success_response(service.survey_data(row))
 
@@ -123,7 +148,7 @@ async def edit_survey(survey_id: UUID, survey: SurveyCreate, db: AsyncSession = 
     row = await service.lock(db, survey_id); await require_editable(db, row)
     if survey.organization_id and survey.organization_id != row.organization_id:
         raise ValidationException("Anketin kurumu değiştirilemez")
-    for field, value in survey.model_dump(exclude={"organization_id"}).items():
+    for field, value in survey.model_dump(exclude={"organization_id", "request_id"}).items():
         setattr(row, field, value)
     await db.commit(); await db.refresh(row)
     return success_response(service.survey_data(row))
@@ -175,10 +200,22 @@ async def questions(survey_id: UUID | None = None, limit: int = Query(100, ge=1,
 
 @router.post("/questions")
 async def create_question(question: SurveyQuestionCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("surveys.write"))):
-    survey = await service.lock(db, question.survey_id); await require_editable(db, survey)
+    survey = await service.lock(db, question.survey_id)
+    values = question.model_dump(exclude={"request_id"})
+    if question.request_id is not None:
+        prior = await db.scalar(select(SurveyQuestion).where(SurveyQuestion.id == question.request_id, SurveyQuestion.survey_id == survey.id))
+        if prior is not None:
+            if any(getattr(prior, key) != value for key, value in values.items()):
+                raise ConflictException("İstek kimliği farklı bir soruya ait")
+            return success_response(service.question_data(prior))
+        table = SurveyQuestion.__table__
+        if await db.scalar(select(table.c.id).where(table.c.id == question.request_id)) is not None:
+            raise ConflictException("Soru işlem kimliği kullanılamıyor")
+        values["id"] = question.request_id
+    await require_editable(db, survey)
     if len(await service.questions(db, survey.id)) >= 100:
         raise ValidationException("Bir ankette en fazla 100 soru bulunabilir")
-    row = SurveyQuestion(**question.model_dump()); db.add(row); await db.commit(); await db.refresh(row)
+    row = SurveyQuestion(**values); db.add(row); await db.commit(); await db.refresh(row)
     return success_response(service.question_data(row))
 
 

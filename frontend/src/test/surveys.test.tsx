@@ -30,12 +30,17 @@ it("salt okuma hesabı gerçek toplamı ve bağlantıyı görür, yazma seçenek
 
 it("veli sorulara uygun sayısal ve seçenekli yanıtı gönderir", async () => {
   useAuthStore.setState({ user: { ...manager, permissions: ["parent.respond_survey"] } });
+  const previous = vi.mocked(api.get).getMockImplementation()!;
+  vi.mocked(api.get).mockImplementation((path, config) =>
+    path.endsWith("/participation") ? Promise.resolve({ data: { data: { survey_id: "survey", submitted: true } } }) : previous(path, config));
   render(<ParentSurveys studentId="child" />);
   await screen.findByLabelText("Okul puanı");
   fireEvent.change(screen.getByLabelText("Okul puanı"), { target: { value: "5" } });
   fireEvent.change(screen.getByLabelText("Tekrar katılır mısınız?"), { target: { value: "Evet" } });
   fireEvent.click(screen.getByRole("button", { name: "Anketi yanıtla" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/parent/child/child/surveys/survey/respond", { response_data: { rating: 5, choice: "Evet" } }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/parent/child/child/surveys/survey/respond", { response_data: { rating: 5, choice: "Evet" } }, expect.any(Object)));
+  expect(await screen.findByText("Anket katılımı doğrulandı.")).toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/parent/child/child/surveys/survey/participation", expect.any(Object));
 });
 
 it("personel yanıt hakkıyla kendi yolunu kullanır ve başarısız gönderimde yanıtı korur", async () => {
@@ -48,10 +53,27 @@ it("personel yanıt hakkıyla kendi yolunu kullanır ve başarısız gönderimde
   fireEvent.click(screen.getByRole("button", { name: "Anketi yanıtla" }));
   expect(await screen.findByText("Yanıt kaydedilemedi")).toBeInTheDocument();
   expect(screen.getByLabelText("Okul puanı")).toHaveValue("4");
-  expect(api.post).toHaveBeenCalledWith("/surveys/responses", { survey_id: "survey", response_data: { rating: 4, choice: "Hayır" } });
+  expect(api.post).toHaveBeenCalledWith("/surveys/responses", { survey_id: "survey", response_data: { rating: 4, choice: "Hayır" } }, expect.any(Object));
 });
 
 it("taslak oluşturunca ayrıntı adresine geçer ve gerçek soru ekler", async () => {
+  let savedDraft: Record<string, unknown> | undefined;
+  let savedQuestion: Record<string, unknown> | undefined;
+  const original = vi.mocked(api.get).getMockImplementation()!;
+  vi.mocked(api.post).mockImplementation(async (path, raw) => {
+    const body = raw as Record<string, unknown>;
+    const row = { ...body, id: body.request_id, status: "DRAFT" };
+    if (path === "/surveys/surveys") savedDraft = row;
+    if (path === "/surveys/questions") savedQuestion = row;
+    return { data: { data: row } };
+  });
+  vi.mocked(api.get).mockImplementation((path, options) => {
+    if (path === `/surveys/surveys/${savedDraft?.id}`) return Promise.resolve({ data: { data: savedDraft } });
+    if (path === "/surveys/questions" && options?.params?.survey_id === savedDraft?.id) {
+      return Promise.resolve({ data: { data: savedQuestion ? [savedQuestion] : [] } });
+    }
+    return original(path, options);
+  });
   openManager(); await screen.findByRole("option", { name: "Okul" });
   fireEvent.change(screen.getByLabelText("Anket başlığı"), { target: { value: "Yeni geri bildirim" } });
   fireEvent.change(screen.getByLabelText("Başlangıç tarihi"), { target: { value: "2026-11-03" } });
@@ -60,7 +82,10 @@ it("taslak oluşturunca ayrıntı adresine geçer ve gerçek soru ekler", async 
   await screen.findByRole("region", { name: "Anket ayrıntısı" });
   fireEvent.change(screen.getByLabelText("Soru metni"), { target: { value: "Yeni soru" } });
   fireEvent.click(screen.getByRole("button", { name: "Soruyu ekle" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/surveys/questions", expect.objectContaining({ survey_id: "survey", question_type: "RATING", question_text: "Yeni soru" })));
+  expect(await screen.findByText("Anket kaydı doğrulandı")).toBeInTheDocument();
+  expect(api.post).toHaveBeenCalledWith("/surveys/questions", expect.objectContaining({
+    survey_id: savedDraft?.id, request_id: expect.any(String), question_type: "RATING", question_text: "Yeni soru",
+  }));
 });
 
 it("kurum seçenekleri gecikirse oluşturmayı hazır olana kadar kapalı tutar", async () => {

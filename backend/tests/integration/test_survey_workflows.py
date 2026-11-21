@@ -90,6 +90,36 @@ async def test_survey_answers_are_validated_and_simultaneous_participation_is_si
         assert (await db.execute(select(func.count(SurveyParticipation.id)))).scalar() == 1
     own = (await client.get(path.rsplit("/", 2)[0], headers=headers(data["user"]))).json()["data"]
     assert own[0]["submitted"] is True
+    closed = await client.post(f'/api/surveys/surveys/{survey["id"]}/close', headers=headers(manager))
+    assert closed.status_code == 200
+    participation = path.removesuffix("/respond") + "/participation"
+    verified = await client.get(participation, headers=headers(data["user"]))
+    assert verified.status_code == 200
+    assert verified.json()["data"] == {"survey_id": survey["id"], "submitted": True}
+    stranger = participation.replace(str(data["children"][0].id), str(data["stranger"].id))
+    assert (await client.get(stranger, headers=headers(data["user"]))).status_code == 403
+
+
+async def test_survey_draft_and_question_retry_preserve_one_record(materials_client):
+    client, sessions, data = materials_client
+    manager, _, _, payload = await setup(client, sessions, data)
+    actor = headers(manager)
+    survey_id = str(uuid4())
+    body = {**payload, "title": "Tekil taslak", "request_id": survey_id}
+    for _ in range(2):
+        written = await client.post("/api/surveys/surveys", headers=actor, json=body)
+        assert written.status_code == 200 and written.json()["data"]["id"] == survey_id, written.text
+    assert (await client.post("/api/surveys/surveys", headers=actor, json={**body, "title": "Farklı taslak"})).status_code == 409
+    question_id = str(uuid4())
+    question = {"request_id": question_id, "survey_id": survey_id, "question_type": "MULTIPLE_CHOICE",
+        "question_text": "Tekil soru", "options": ["Bir", "İki"]}
+    for _ in range(2):
+        written = await client.post("/api/surveys/questions", headers=actor, json=question)
+        assert written.status_code == 200 and written.json()["data"]["id"] == question_id, written.text
+    assert (await client.post("/api/surveys/questions", headers=actor,
+        json={**question, "question_text": "Farklı soru"})).status_code == 409
+    exact = await client.get("/api/surveys/questions", headers=actor, params={"survey_id": survey_id})
+    assert [row["id"] for row in exact.json()["data"]] == [question_id]
 
 
 async def test_parent_survey_permissions_audience_dates_and_child_scope(materials_client):
