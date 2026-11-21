@@ -182,4 +182,7 @@ async def set_membership(db, actor, org_id, body):
     member.period_start, member.period_end, member.admin_status = start, end, body.admin_status
     audit(db, actor, org, "MEMBERSHIP_CONFIGURED", {"plan_id": str(plan.id), "period_end": end.isoformat(), "admin_status": body.admin_status})
     await commit(db)
-    return {"organization_id": str(org.id), "access": evaluate(member, active=org.is_active), "usage": await usage(db, org.id)}
+    return {"organization_id": str(org.id), "access": evaluate(member, active=org.is_active), "usage": await usage(db, org.id),
+        "plan_id": str(member.plan_id), "admin_status": member.admin_status,
+        "owner_user_id": str(member.owner_user_id) if member.owner_user_id else None,
+        "period_start": start.isoformat(), "period_end": end.isoformat()}

@@ -12,7 +12,7 @@ import { PaymentReview } from "./PaymentReview";
 import { confirmPaymentStatus, confirmPlatformInvoice } from "./platformInvoiceConfirmation";
 import { PaymentReadinessPanel } from "./PaymentReadinessPanel";
 
-interface Tenant { id: string; name: string; is_active: boolean; access: OrganizationAccess; package: DataRecord | null; usage: Record<string, number>; owner_user_id: string | null; period_start: string | null }
+interface Tenant { id: string; name: string; is_active: boolean; access: OrganizationAccess; package: DataRecord | null; usage: Record<string, number>; admin_status: string | null; owner_user_id: string | null; period_start: string | null; period_end?: string | null }
 interface Person { id: string; name: string; email: string }
 const text = (value: unknown) => String(value ?? "");
 const stamp = (value: unknown) => value ? new Date(text(value)).toLocaleString("tr-TR") : "—";
@@ -21,6 +21,7 @@ const inputTime = (value: unknown) => {
   return new Date(instant.getTime() - instant.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 const group = { border: 0, padding: 0, display: "grid", gap: 12 };
+const sameInstant = (left: unknown, right: unknown) => Date.parse(text(left)) === Date.parse(text(right));
 
 export function PlatformPage() {
   const navigate = useNavigate();
@@ -55,36 +56,98 @@ export function PlatformPage() {
     return () => controller.abort();
   }, [selected?.id, selected?.owner_user_id, revision, showToast]);
 
+  async function savedTenant(id: string) {
+    if (!id) throw new Error("Kurum kimliği doğrulanamadı.");
+    const response = await api.get("/platform/tenants", { params: { record_id: id, limit: 1 } });
+    const rows = response.data.data;
+    if (response.data.success !== true || !Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id) {
+      throw new Error("Kurum kaydı yeniden okunamadı.");
+    }
+    return rows[0] as Tenant;
+  }
+
   async function savePlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return; const form = event.currentTarget, data = new FormData(form); setBusy(true);
-    const body = { code: data.get("code"), name: data.get("name"), branch_limit: Number(data.get("branch_limit")), student_limit: Number(data.get("student_limit")),
-      user_limit: Number(data.get("user_limit")), price: data.get("price"), currency: data.get("currency"), period_months: Number(data.get("period_months")), is_active: data.get("is_active") === "true" };
-    try { if (editingPlan) await api.put(`/platform/plans/${editingPlan.id}`, body); else await api.post("/platform/plans", body); setEditingPlan(null); form.reset(); refresh(); showToast("Paket kaydedildi"); }
+    const body = { code: text(data.get("code")).trim().toUpperCase(), name: text(data.get("name")).trim(),
+      branch_limit: Number(data.get("branch_limit")), student_limit: Number(data.get("student_limit")),
+      user_limit: Number(data.get("user_limit")), price: text(data.get("price")).trim(), currency: text(data.get("currency")),
+      period_months: Number(data.get("period_months")), is_active: data.get("is_active") === "true" };
+    const matches = (row: DataRecord | undefined) => row?.id && row.code === body.code && row.name === body.name &&
+      row.branch_limit === body.branch_limit && row.student_limit === body.student_limit && row.user_limit === body.user_limit &&
+      text(row.price).trim() && Number(row.price) === Number(body.price) && row.currency === body.currency &&
+      row.period_months === body.period_months && row.is_active === body.is_active;
+    try {
+      const response = editingPlan ? await api.put(`/platform/plans/${editingPlan.id}`, body) : await api.post("/platform/plans", body);
+      const written: DataRecord | undefined = response.data.data;
+      if (response.data.success !== true || !written || !matches(written) || (editingPlan && written.id !== editingPlan.id)) {
+        throw new Error("Paket kayıt yanıtı doğrulanamadı.");
+      }
+      const catalog = await api.get("/platform/plans");
+      const rows: DataRecord[] = Array.isArray(catalog.data.data) ? catalog.data.data : [];
+      const matching = rows.filter((row) => row.id === written.id);
+      if (catalog.data.success !== true || matching.length !== 1 || !matches(matching[0])) {
+        throw new Error("Sunucudan okunan paket kaydı doğrulanamadı.");
+      }
+      setPlans(rows); setEditingPlan(null); form.reset(); refresh(); showToast("Paket kaydedildi");
+    }
     catch (reason) { showToast("Paket kaydedilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function provision(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return; const form = event.currentTarget, data = new FormData(form); setBusy(true);
     const body: Record<string, unknown> = Object.fromEntries(data); body.request_id = requestId;
-    try { for (const key of ["period_start", "period_end"]) { const value = text(body[key]); if (value) body[key] = new Date(value).toISOString(); else delete body[key]; }
-      const response = await api.post("/platform/tenants", body); form.reset(); setRequestId(newRequestId()); setPage(1); refresh(); showToast("Kurum ve sahibi hesabı oluşturuldu", response.data.data.owner_email); }
+    try {
+      for (const key of ["period_start", "period_end"]) { const value = text(body[key]); if (value) body[key] = new Date(value).toISOString(); else delete body[key]; }
+      const response = await api.post("/platform/tenants", body);
+      const written = response.data.data;
+      if (response.data.success !== true || !written?.owner_user_id || text(written.owner_email).toLowerCase() !== text(body.owner_email).trim().toLowerCase()) {
+        throw new Error("Kurum sahibi hesap yanıtı doğrulanamadı.");
+      }
+      const saved = await savedTenant(text(written.organization_id));
+      if (saved.name !== body.name || saved.owner_user_id !== written.owner_user_id || saved.package?.id !== body.plan_id ||
+        !sameInstant(saved.period_end, written.period_end) ||
+        (body.period_start && !sameInstant(saved.period_start, body.period_start))) throw new Error("Kurum ve üyelik kaydı doğrulanamadı.");
+      form.reset(); setRequestId(newRequestId()); setPage(1); refresh(); showToast("Kurum ve sahibi hesabı oluşturuldu", written.owner_email);
+    }
     catch (reason) { showToast("Kurum oluşturulamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function membership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !selected) return; const data = new FormData(event.currentTarget); setBusy(true);
-    try { await api.put(`/platform/tenants/${selected.id}/subscription`, { plan_id: data.get("plan_id"),
-      period_start: new Date(text(data.get("period_start"))).toISOString(), period_end: new Date(text(data.get("period_end"))).toISOString(),
-      admin_status: data.get("admin_status"), owner_user_id: data.get("owner_user_id") || null }); refresh(); showToast("Kurum üyeliği güncellendi"); }
+    try {
+      const body = { plan_id: data.get("plan_id"), period_start: new Date(text(data.get("period_start"))).toISOString(),
+        period_end: new Date(text(data.get("period_end"))).toISOString(),
+        admin_status: data.get("admin_status"), owner_user_id: data.get("owner_user_id") || null };
+      const response = await api.put(`/platform/tenants/${selected.id}/subscription`, body);
+      const written = response.data.data;
+      if (response.data.success !== true || written?.organization_id !== selected.id || written.plan_id !== body.plan_id ||
+        written.admin_status !== body.admin_status || written.owner_user_id !== body.owner_user_id ||
+        !sameInstant(written.period_start, body.period_start) || !sameInstant(written.period_end, body.period_end)) {
+        throw new Error("Üyelik kayıt yanıtı doğrulanamadı.");
+      }
+      const saved = await savedTenant(selected.id);
+      if (saved.package?.id !== body.plan_id || saved.admin_status !== body.admin_status || saved.owner_user_id !== body.owner_user_id ||
+        !sameInstant(saved.period_start, body.period_start) || !sameInstant(saved.period_end, body.period_end)) {
+        throw new Error("Sunucudan okunan üyelik doğrulanamadı.");
+      }
+      setSelected(saved); refresh(); showToast("Kurum üyeliği güncellendi");
+    }
     catch (reason) { showToast("Üyelik güncellenemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function toggle(row: Tenant) {
     if (busy) return; setBusy(true);
-    try { await api.patch(`/platform/tenants/${row.id}/status`, { is_active: !row.is_active }); refresh(); showToast(row.is_active ? "Kurum hesabı kapatıldı" : "Kurum hesabı açıldı"); }
+    try {
+      const is_active = !row.is_active;
+      const response = await api.patch(`/platform/tenants/${row.id}/status`, { is_active });
+      if (response.data.success !== true || response.data.data?.id !== row.id || response.data.data?.is_active !== is_active ||
+        (await savedTenant(row.id)).is_active !== is_active) throw new Error("Kurum hesap durumu doğrulanamadı.");
+      refresh(); showToast(is_active ? "Kurum hesabı açıldı" : "Kurum hesabı kapatıldı");
+    }
     catch (reason) { showToast("Hesap durumu değiştirilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function openWorkspace(row: Tenant) {
     if (busy) return; setBusy(true);
     try { const response = await api.get(`/platform/tenants/${row.id}/workspace`); const operator = useAuthStore.getState().user;
-      if (!operator?.is_super_admin) throw new Error("Platform oturumu gerekli");
+      if (!operator?.is_super_admin || response.data.success !== true ||
+        response.data.data?.id !== row.id || !text(response.data.data?.name).trim()) throw new Error("Kurum çalışma alanı doğrulanamadı.");
       usePlatformWorkspace.getState().select({ ...response.data.data, operatorId: operator.id }); navigate("/dashboard");
     } catch (reason) { showToast("Kurum çalışma alanı açılamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
@@ -140,8 +203,8 @@ export function PlatformPage() {
       {!tenants.length ? <p>Bu kapsamda kurum yok.</p> : <div style={{ overflowX: "auto" }}><table className="data-table"><thead><tr><th>Kurum</th><th>Üyelik</th><th>Paket / kullanım</th><th>İşlem</th></tr></thead><tbody>{tenants.slice(0, 20).map((row) => <tr key={row.id}><td>{row.name}</td><td><Badge value={row.access.status} /><p>Bitiş: {stamp(row.access.period_end)}</p><p>Ek süre: {stamp(row.access.grace_end)}</p></td><td>{text(row.package?.name) || "Paket tanımlanmamış"}<p>Şube: {row.usage.branch_limit} / {text(row.package?.branch_limit) || "—"} · Öğrenci: {row.usage.student_limit} / {text(row.package?.student_limit) || "—"} · Kullanıcı: {row.usage.user_limit} / {text(row.package?.user_limit) || "—"}</p></td><td><button className="btn btn-primary" disabled={busy} onClick={() => openWorkspace(row)}>Kurum çalışma alanını aç</button><button className="btn btn-secondary" disabled={busy} onClick={() => setSelected(row)}>Üyeliği yönet</button><button className="btn btn-secondary" disabled={busy} onClick={() => toggle(row)}>{row.is_active ? "Kurum hesabını kapat" : "Kurum hesabını aç"}</button></td></tr>)}</tbody></table></div>}{pager("Kurum sayfaları", page, tenants.length, setPage)}</section>
     {selected && <section className="card card-pad" style={{ marginTop: 18 }}><h2>{selected.name} üyeliği</h2><form aria-label="Kurum üyeliğini düzenle" key={`${selected.id}-${selected.access.period_end}-${text(selected.package?.id)}`} onSubmit={membership}><fieldset disabled={busy} style={group}>
       <label>Üyelik paketi<select className="filter-select" name="plan_id" defaultValue={text(selected.package?.id)} required><option value="">Paket seçin</option>{plans.map((plan) => <option key={plan.id} value={plan.id}>{text(plan.name)} · {packagePrice(plan.price, plan.currency)}</option>)}</select></label>
-      <label>Üyelik başlangıcı<input className="filter-select" type="datetime-local" name="period_start" defaultValue={inputTime(selected.period_start) || clock} required /></label><label>Üyelik bitişi<input className="filter-select" type="datetime-local" name="period_end" defaultValue={inputTime(selected.access.period_end)} required /></label>
-      <label>Üyelik erişimi<select className="filter-select" name="admin_status" defaultValue={selected.access.status === "SUSPENDED" ? "SUSPENDED" : "ACTIVE"}><option value="ACTIVE">Açık</option><option value="SUSPENDED">Kapalı</option></select></label>
+      <label>Üyelik başlangıcı<input className="filter-select" type="datetime-local" name="period_start" defaultValue={inputTime(selected.period_start) || clock} required /></label><label>Üyelik bitişi<input className="filter-select" type="datetime-local" name="period_end" defaultValue={inputTime(selected.period_end ?? selected.access.period_end)} required /></label>
+      <label>Üyelik erişimi<select className="filter-select" name="admin_status" defaultValue={selected.admin_status === "SUSPENDED" ? "SUSPENDED" : "ACTIVE"}><option value="ACTIVE">Açık</option><option value="SUSPENDED">Kapalı</option></select></label>
       <label>Ödeme yetkilisi<select className="filter-select" name="owner_user_id" value={billingOwner} onChange={(event) => setBillingOwner(event.target.value)}><option value="">Atama yok</option>{billingOwner && !people.some((person) => person.id === billingOwner) && <option value={billingOwner}>Mevcut ödeme yetkilisi</option>}{people.map((person) => <option key={person.id} value={person.id}>{person.name} · {person.email}</option>)}</select></label><button className="btn btn-primary">Üyeliği kaydet</button>
     </fieldset></form></section>}
     <section className="card card-pad" style={{ marginTop: 18 }} aria-label="Kurum ödeme talepleri"><h2>Üyelik ödeme talepleri</h2>{!invoices.length ? <p>Henüz ödeme talebi yok.</p> : <div style={{ overflowX: "auto" }}><table className="data-table"><thead><tr><th>Kurum / paket</th><th>Tutar</th><th>Üyelik aralığı</th><th>Durum</th><th>İşlem</th></tr></thead><tbody>{invoices.slice(0, 20).map((row) => <tr key={row.id}><td>{text(row.organization_name) || text(row.organization_id)}<br />{text(row.package_name)}</td><td>{packagePrice(row.amount, row.currency)}</td><td>{stamp(row.period_start)} – {stamp(row.period_end)}</td><td><Badge value={row.status} /></td><td>{row.status === "PENDING" && row.can_cancel !== false && <button className="btn btn-secondary" disabled={busy} onClick={() => setReceipt(row)}>Ödemeyi doğrula</button>}{["INITIALIZING", "PENDING", "REVIEW"].includes(text(row.checkout_status)) && <button className="btn btn-secondary" disabled={busy} onClick={() => paymentStatus(row)}>Ödeme sonucunu kontrol et</button>}{row.status === "PAID_REVIEW" && <button className="btn btn-primary" disabled={busy} onClick={() => setReview(row)}>Ödemeyi uzlaştır</button>}</td></tr>)}</tbody></table></div>}{pager("Platform ödeme sayfaları", invoicePage, invoices.length, setInvoicePage)}</section>

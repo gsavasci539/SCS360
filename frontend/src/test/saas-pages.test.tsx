@@ -45,15 +45,61 @@ it("yenileme zaman aşımından sonra aynı istek kimliğiyle tekrar edilir, fiy
 });
 
 it("kurum sahibi seçeneği geç yüklenince mevcut ödeme yetkilisini silmez ve kapatma gerçek API'yi kullanır", async () => {
+  const fallback = vi.mocked(api.get).getMockImplementation()!;
+  let closed = false;
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path === "/platform/tenants" && config?.params && "record_id" in Object(config.params)) {
+      return { data: { success: true, data: [{ ...tenant, is_active: !closed, owner_user_id: "older-owner",
+        admin_status: closed ? "SUSPENDED" : "ACTIVE", period_end: access.period_end }] } };
+    }
+    return fallback(path, config);
+  });
+  vi.mocked(api.put).mockImplementation(async (_path, body) => ({
+    data: { success: true, data: { ...(body as Record<string, unknown>), organization_id: tenant.id } },
+  }));
+  vi.mocked(api.patch).mockImplementation(async () => {
+    closed = true;
+    return { data: { success: true, data: { id: tenant.id, is_active: false } } };
+  });
   useAuthStore.setState({ user: { ...user, is_super_admin: true } }); open("platform");
   await screen.findByText("Kabul Okulu"); fireEvent.click(screen.getByRole("button", { name: "Üyeliği yönet" }));
   await screen.findByRole("option", { name: /Okul Sahibi · owner/ });
   expect(screen.getByLabelText("Ödeme yetkilisi")).toHaveValue("owner");
   const form = screen.getByRole("form", { name: "Kurum üyeliğini düzenle" });
   fireEvent.submit(form); await waitFor(() => expect(api.put).toHaveBeenCalledWith("/platform/tenants/school/subscription", expect.objectContaining({ owner_user_id: "owner", plan_id: "plan" })));
+  await screen.findByText("Üyelik güncellenemedi");
+  expect(screen.getByLabelText("Ödeme yetkilisi")).toHaveValue("owner");
   await waitFor(() => expect(within(form).getByRole("button", { name: "Üyeliği kaydet" })).toBeEnabled());
   fireEvent.click(screen.getByRole("button", { name: "Kurum hesabını kapat" }));
   await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/platform/tenants/school/status", { is_active: false }));
+  await screen.findByText("Kurum hesabı kapatıldı");
+  expect(api.get).toHaveBeenCalledWith("/platform/tenants", { params: { record_id: "school", limit: 1 } });
+});
+
+it("paket fiyatı ve limitleri kalıcı katalogda eşleşene kadar formu korur", async () => {
+  const fallback = vi.mocked(api.get).getMockImplementation()!;
+  const written = { ...plan, id: "new-plan", code: "DENE", name: "Girilen paket", price: "12.34" };
+  let reads = 0;
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path === "/platform/plans" && !config) {
+      reads++;
+      return { data: { success: true, data: [reads === 1 ? { ...written, student_limit: 1 } : written] } };
+    }
+    return fallback(path, config);
+  });
+  vi.mocked(api.post).mockResolvedValue({ data: { success: true, data: written } });
+  useAuthStore.setState({ user: { ...user, is_super_admin: true } }); open("platform");
+  await screen.findByText("Kabul Okulu");
+  const form = screen.getByRole("form", { name: "Paket yönetimi" });
+  const edit = (label: RegExp, value: string) => fireEvent.change(within(form).getByLabelText(label), { target: { value } });
+  edit(/^Paket kodu$/, "dene"); edit(/^Paket adı$/, "Girilen paket"); edit(/^Paket fiyatı$/, "12.34");
+  edit(/^Şube sınırı$/, "2"); edit(/^Öğrenci sınırı$/, "50"); edit(/^Kullanıcı sınırı$/, "10");
+  fireEvent.submit(form);
+  await screen.findByText("Paket kaydedilemedi");
+  expect(within(form).getByLabelText("Paket fiyatı")).toHaveValue(12.34);
+  fireEvent.submit(form);
+  await screen.findByText("Paket kaydedildi");
+  expect(reads).toBe(2);
 });
 
 it("üyelik durumunu yalnız faturanın ve aynı ödeme oturumunun geri okumasıyla günceller", async () => {

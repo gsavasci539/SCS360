@@ -66,10 +66,20 @@ async def test_platform_summary_and_billing_delegate_are_tenant_scoped(platform_
     assert invalid.status_code == 422, invalid.text
     valid = await client.put(f"/api/platform/tenants/{org}/subscription", headers=root, json={**request, "owner_user_id": str(delegate.id)})
     assert valid.status_code == 200, valid.text
+    assert valid.json()["data"]["owner_user_id"] == str(delegate.id)
+    assert valid.json()["data"]["plan_id"] == plan["id"]
+    lookup = {"record_id": org, "limit": 1}
+    listing = await client.get("/api/platform/tenants", headers=root, params=lookup)
+    assert listing.status_code == 200, listing.text
+    [saved] = listing.json()["data"]
+    assert (saved["id"], saved["owner_user_id"], saved["admin_status"]) == (org, str(delegate.id), "ACTIVE")
+    assert saved["period_end"] == request["period_end"]
+    assert (await client.get("/api/platform/tenants", headers=root, params={**lookup, "record_id": str(uuid4())})).json()["data"] == []
     auth = headers(delegate)
     assert (await client.get("/api/subscription/access", headers=auth)).json()["data"]["can_manage"] is True
     assert (await client.get("/api/subscription/plans", headers=auth)).status_code == 200
     assert (await client.get("/api/platform/summary", headers=auth)).status_code == 403
+    assert (await client.get("/api/platform/tenants", headers=auth, params=lookup)).status_code == 403
     assert (await client.get(f"/api/platform/tenants/{org}/users", headers=headers(member_owner))).status_code == 403
 
 

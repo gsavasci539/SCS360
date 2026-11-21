@@ -52,9 +52,12 @@ async def update_plan(plan_id: UUID, body: PlanWrite, actor: User = Depends(requ
 
 
 @router.get("/api/platform/tenants")
-async def tenants(search: str = Query("", max_length=100), limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
+async def tenants(search: str = Query("", max_length=100), record_id: UUID | None = None,
+    limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
     actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db, scope="function")):
     query = select(Organization).where(Organization.deleted_at.is_(None))
+    if record_id:
+        query = query.where(Organization.id == record_id)
     if search.strip():
         query = query.where(Organization.name.ilike(f"%{search.strip()}%"))
     organizations = (await db.execute(query.order_by(Organization.name, Organization.id).limit(limit).offset(offset))).scalars().all()
@@ -65,8 +68,10 @@ async def tenants(search: str = Query("", max_length=100), limit: int = Query(20
         member = memberships.get(org.id)
         result.append({"id": str(org.id), "name": org.name, "is_active": org.is_active, "access": evaluate(member, active=org.is_active),
             "package": member.package_snapshot if member else None, "usage": await service.usage(db, org.id),
+            "admin_status": member.admin_status if member else None,
             "owner_user_id": str(member.owner_user_id) if member and member.owner_user_id else None,
-            "period_start": service.utc(member.period_start).isoformat() if member and member.period_start else None})
+            "period_start": service.utc(member.period_start).isoformat() if member and member.period_start else None,
+            "period_end": service.utc(member.period_end).isoformat() if member and member.period_end else None})
     return success_response(result)
 
 
