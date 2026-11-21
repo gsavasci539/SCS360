@@ -5,7 +5,7 @@ Handles POS checkout, dietary restrictions, and canteen management
 from datetime import datetime, date, time
 from decimal import Decimal
 from typing import Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
@@ -17,6 +17,7 @@ from app.core.dependencies import get_current_user
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
+from app.infrastructure.repositories.base import BaseRepository
 from app.domain.entities import (
     CanteenProduct, CanteenDietaryRestriction, CanteenOrder, Student, Branch
 )
@@ -74,6 +75,8 @@ class POSCheckoutRequest(BaseModel):
     payment_method: Optional[str] = Field(None, description="CASH, CARD, WALLET")
     branch_id: Optional[UUID] = None
     notes: Optional[str] = None
+    request_id: UUID = Field(default_factory=uuid4)
+    expected_unit_price: Optional[Decimal] = Field(None, gt=0, le=Decimal("99999999.99"), decimal_places=2)
 
 class POSCheckoutResponse(BaseModel):
     authorized: bool
@@ -118,9 +121,10 @@ class StudentWalletInfo(BaseModel):
 
 class WalletTopUpCreate(BaseModel):
     student_id: UUID
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: Decimal = Field(..., gt=0, le=Decimal("99999999.99"), decimal_places=2)
     payment_method: str = Field(..., description="CASH, CARD, BANK_TRANSFER")
-    reference_number: Optional[str] = None
+    reference_number: Optional[str] = Field(None, max_length=100)
+    request_id: UUID = Field(default_factory=uuid4)
 
 
 # ==================== Canteen Products Endpoints ====================
@@ -384,6 +388,15 @@ async def delete_dietary_restriction(
 
 # ==================== POS Checkout Endpoints ====================
 
+@router.get("/options")
+async def canteen_options(branch_id: Optional[UUID] = None, search: str = Query("", max_length=100),
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("canteen.read"))):
+    from app.application.services.student_choices import options
+    if branch_id:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+    return success_response(await options(db, search=search.strip(), branch_id=branch_id))
+
+
 @router.post("/pos/checkout")
 async def pos_checkout(
     request: POSCheckoutRequest,
@@ -391,31 +404,55 @@ async def pos_checkout(
     tenant: TenantContext = Depends(PermissionChecker("canteen.write"))
 ):
     from app.application.services import canteen_wallet_service as wallets
-    return success_response(await wallets.purchase(db, tenant, request.student_id,
-        product_id=request.product_id, quantity=request.quantity, payment_method=request.payment_method or "WALLET"))
+    method = (request.payment_method or "WALLET").upper()
+    async def record():
+        return await wallets.purchase(db, tenant, request.student_id, product_id=request.product_id,
+            quantity=request.quantity, payment_method=method, expected_unit_price=request.expected_unit_price)
+    return success_response(await wallets.record_command(db, tenant, request.student_id, request.branch_id, request.request_id,
+        "CANTEEN_POS_RECORDED", {"product_id": str(request.product_id), "quantity": request.quantity, "payment_method": method,
+            "expected_unit_price": str(request.expected_unit_price.quantize(Decimal("0.01"))) if request.expected_unit_price is not None else None}, record))
 
 
 @router.get("/student/{student_id}/wallet")
 async def get_student_wallet_info(
     student_id: UUID,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("canteen.read"))
 ):
     from app.application.services import canteen_wallet_service as wallets
-    return success_response(wallets.serialize(*(await wallets.wallet(db, tenant, student_id))))
+    return success_response(wallets.serialize(*(await wallets.wallet(db, tenant, student_id, read_only=True, branch_id=branch_id))))
+
+
+@router.get("/student/{student_id}/wallet/transactions")
+async def get_student_wallet_transactions(student_id: UUID, branch_id: Optional[UUID] = None,
+    record_id: Optional[UUID] = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("canteen.read"))):
+    from app.application.services import canteen_wallet_service as wallets
+    return success_response(await wallets.transactions(db, tenant, student_id, branch_id=branch_id,
+        record_id=record_id, limit=limit, offset=offset))
 
 
 @router.post("/student/{student_id}/wallet/top-up")
 async def wallet_top_up(
     student_id: UUID,
     top_up: WalletTopUpCreate,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.write"))
 ):
     from app.application.services import canteen_wallet_service as wallets
-    return success_response(await wallets.topup(db, tenant, student_id, top_up.amount,
-        top_up.payment_method, top_up.reference_number))
+    if student_id != top_up.student_id:
+        raise HTTPException(422, "Cüzdan öğrencisi işlemle eşleşmiyor")
+    method = top_up.payment_method.strip().upper()
+    if method not in {"CASH", "CARD", "CREDIT_CARD", "BANK_TRANSFER"}:
+        raise HTTPException(422, "Geçersiz bakiye kayıt yöntemi")
+    async def record():
+        return await wallets.topup(db, tenant, student_id, top_up.amount, method, top_up.reference_number)
+    return success_response(await wallets.record_command(db, tenant, student_id, branch_id, top_up.request_id,
+        "CANTEEN_TOPUP_RECORDED", {"amount": str(top_up.amount.quantize(Decimal("0.01"))), "payment_method": method,
+        "reference_number": top_up.reference_number}, record))
 
 
 # ==================== Canteen Orders Endpoints ====================
@@ -423,6 +460,7 @@ async def wallet_top_up(
 @router.get("/orders")
 async def get_canteen_orders(
     student_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = None,
     branch_id: Optional[UUID] = Query(None),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
@@ -438,6 +476,8 @@ async def get_canteen_orders(
     conditions = []
     if student_id:
         conditions.append(CanteenOrder.student_id == student_id)
+    if record_id:
+        conditions.append(CanteenOrder.id == record_id)
     if branch_id:
         conditions.append(CanteenOrder.branch_id == branch_id)
     if start_date:
