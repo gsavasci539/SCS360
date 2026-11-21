@@ -12,6 +12,8 @@ import { notificationPreferences, preferenceChanges, readPreferences, sectionFie
 const sections = [{ key: "general", label: "Genel", icon: Building2 }, { key: "integrations", label: "Entegrasyonlar", icon: CloudCog }, { key: "uploads", label: "Dosya yükleme", icon: Upload }, { key: "notifications", label: "Bildirimler", icon: BellRing }];
 
 interface IntegrationRecord {
+  id: string;
+  organization_id: string;
   provider: string;
   is_active: boolean;
   config: Record<string, unknown> | null;
@@ -89,7 +91,7 @@ export function SettingsPage({ initialSection = "general" }: { initialSection?: 
           ? <LoadingState label="Kurum tercihleri yükleniyor" />
           : <ErrorState message={failure} retry={() => { setLoading(true); setReload((value) => value + 1); }} />)}
         {section === "general" && ready && settings && <SettingsSection title="Genel kurum tercihleri" description="Kurum için kayıtlı ad, dönem ve para birimi."><Field label="Kurum adı"><input disabled={!canWrite || saving} value={settings.school_name} onChange={(event) => setSettings({ ...settings, school_name: event.target.value })} /></Field><Field label="Akademik yıl"><input disabled={!canWrite || saving} value={settings.academic_year ?? ""} onChange={(event) => setSettings({ ...settings, academic_year: event.target.value })} /></Field><Field label="Para birimi"><select disabled={!canWrite || saving} value={settings.default_currency} onChange={(event) => setSettings({ ...settings, default_currency: event.target.value })}><option value="TRY">Türk Lirası (TRY)</option><option value="EUR">Euro (EUR)</option><option value="USD">Dolar (USD)</option></select></Field></SettingsSection>}
-        <div hidden={section !== "integrations"}><IntegrationConnections canWrite={canWrite} /></div>
+        <div hidden={section !== "integrations"}>{organization && <IntegrationConnections key={organization} organization={organization} canWrite={canWrite} />}</div>
         {section === "uploads" && ready && settings && snapshot && <SettingsSection title="Öğrenci belgeleri" description={`Sunucu üst sınırı ${snapshot.upload_policy.max_size_mb} MB. İzinli uzantılar ${snapshot.upload_policy.allowed_extensions.join(", ")}.`}><Field label="Maksimum boyut (MB)"><input disabled={!canWrite || saving} type="number" min={1} max={snapshot.upload_policy.max_size_mb} value={settings.max_upload_size_mb} onChange={(event) => setSettings({ ...settings, max_upload_size_mb: Number(event.target.value) })} /></Field><Field label="İzin verilen uzantılar" full><input disabled={!canWrite || saving} value={settings.allowed_file_types} onChange={(event) => setSettings({ ...settings, allowed_file_types: event.target.value })} /></Field></SettingsSection>}
         {section === "notifications" && ready && settings && <SettingsSection title="Kayıtlı bildirim tercihleri" description="Gönderim için ilgili servis bağlantısı ve otomasyon kurulumu gerekir.">{notificationPreferences.map(([key, label]) => <Field key={key} label={label}><select disabled={!canWrite || saving} value={String(settings[key])} onChange={(event) => setSettings({ ...settings, [key]: event.target.value === "null" ? null : event.target.value === "true" })}><option value="null">Tanımlanmadı</option><option value="true">Açık tercih</option><option value="false">Kapalı tercih</option></select></Field>)}</SettingsSection>}
       </section>
@@ -97,11 +99,12 @@ export function SettingsPage({ initialSection = "general" }: { initialSection?: 
   </>;
 }
 
-function readIntegrationRecords(value: unknown): IntegrationRecord[] {
+function readIntegrationRecords(value: unknown, organization: string): IntegrationRecord[] {
   if (!Array.isArray(value)) throw new Error("Entegrasyon yanıtı geçerli değil; ayarlar değiştirilmedi.");
   const providers = new Set<string>();
   for (const item of value) {
-    if (!item || typeof item !== "object" || typeof item.provider !== "string" ||
+    if (!item || typeof item !== "object" || typeof item.id !== "string" || !item.id ||
+      item.organization_id !== organization || typeof item.provider !== "string" ||
       typeof item.is_active !== "boolean" || providers.has(item.provider) ||
       (item.requires_review !== undefined && typeof item.requires_review !== "boolean") ||
       (!item.requires_review && (!item.config || typeof item.config !== "object" || Array.isArray(item.config)))) {
@@ -112,7 +115,7 @@ function readIntegrationRecords(value: unknown): IntegrationRecord[] {
   return value;
 }
 
-function IntegrationConnections({ canWrite }: { canWrite: boolean }) {
+function IntegrationConnections({ organization, canWrite }: { organization: string; canWrite: boolean }) {
   const [records, setRecords] = useState<IntegrationRecord[] | null>(null);
   const [patches, setPatches] = useState<Record<string, Record<string, string>>>({});
   const [smsProvider, setSmsProvider] = useState("NETGSM");
@@ -120,23 +123,24 @@ function IntegrationConnections({ canWrite }: { canWrite: boolean }) {
   const [error, setError] = useState("");
   const [loadVersion, setLoadVersion] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const inFlight = useRef(false);
   const { showToast } = useToast();
 
   useEffect(() => {
-    let current = true;
-    api.get<ApiResponse<unknown>>("/settings/integrations").then((response) => {
-      const next = readIntegrationRecords(response.data.data);
-      if (!current) return;
+    const controller = new AbortController();
+    api.get<ApiResponse<unknown>>("/settings/integrations", { params: { organization_id: organization }, signal: controller.signal }).then(({ data }) => {
+      if (controller.signal.aborted) return;
+      const next = readIntegrationRecords(data.success ? data.data : undefined, organization);
       setRecords(next);
       setPatches({});
       const sms = next.find((item) => ["NETGSM", "TWILIO"].includes(item.provider) && item.is_active)
         || next.find((item) => ["NETGSM", "TWILIO"].includes(item.provider));
       setSmsProvider(sms?.provider || "NETGSM");
     }).catch((failure: unknown) => {
-      if (current) setError(failure instanceof Error && failure.message.startsWith("Entegrasyon yanıtı") ? failure.message : apiMessage(failure));
-    }).finally(() => { if (current) setLoading(false); });
-    return () => { current = false; };
-  }, [loadVersion]);
+      if (!controller.signal.aborted) setError(failure instanceof Error && failure.message.startsWith("Entegrasyon yanıtı") ? failure.message : apiMessage(failure));
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [loadVersion, organization]);
 
   const record = (provider: string) => records?.find((item) => item.provider === provider);
   function originalText(provider: string, key: string) {
@@ -159,22 +163,31 @@ function IntegrationConnections({ canWrite }: { canWrite: boolean }) {
   }
   async function saveProvider(provider: string, label: string) {
     const patch = patches[provider];
-    if (!canWrite || !records || busy || record(provider)?.requires_review || !patch || !Object.keys(patch).length) return;
+    const previous = record(provider);
+    if (!canWrite || !records || inFlight.current || previous?.requires_review || !patch || !Object.keys(patch).length) return;
+    inFlight.current = true;
     setBusy(provider);
     try {
-      // Send only explicitly edited public fields. Backend merges with current
-      // credentials/options and retains is_active; a view never activates a sender.
-      await api.put("/settings/integrations", { provider, config: patch });
-      setRecords((current) => {
-        const previous = current?.find((item) => item.provider === provider);
-        return [...(current || []).filter((item) => item.provider !== provider),
-          { ...previous, provider, config: { ...previous?.config, ...patch }, is_active: previous?.is_active ?? false }];
+      const { data: result } = await api.put<ApiResponse<Pick<IntegrationRecord, "id" | "provider" | "organization_id">>>("/settings/integrations", {
+        organization_id: organization, provider, config: patch,
+        expected_config: Object.fromEntries(Object.keys(patch).map((key) => [key, previous?.config?.[key] ?? null])),
       });
+      const stored = result.data;
+      if (!result.success || !stored?.id || stored.provider !== provider || stored.organization_id !== organization) {
+        throw new Error("Entegrasyon kaydı doğrulanamadı.");
+      }
+      const { data } = await api.get<ApiResponse<unknown>>("/settings/integrations", { params: { organization_id: organization } });
+      const refreshed = readIntegrationRecords(data.success ? data.data : undefined, organization);
+      const verified = refreshed.find((entry) => entry.id === stored.id && entry.provider === provider);
+      if (verified?.requires_review || !verified || Object.entries(patch).some(([key, value]) => verified.config?.[key] !== value)) {
+        throw new Error("Kaydedilen entegrasyon doğrulanamadı.");
+      }
+      setRecords(refreshed);
       setPatches((current) => ({ ...current, [provider]: {} }));
-      showToast(`${label} ayarları kaydedildi`, "Yalnız değiştirdiğiniz alanlar kaydedildi. Gönderim durumu değiştirilmedi.");
+      showToast(`${label} ayarları kaydedildi`);
     } catch (failure) {
       showToast(`${label} ayarları kaydedilemedi`, apiMessage(failure), "error");
-    } finally { setBusy(null); }
+    } finally { inFlight.current = false; setBusy(null); }
   }
   function status(provider: string) {
     const source = record(provider);

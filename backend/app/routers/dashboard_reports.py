@@ -951,6 +951,8 @@ async def update_integrations(
         provider = IntegrationProvider(body.provider)
     except (ValueError, TypeError) as exc:
         raise ValidationException("Geçerli bir entegrasyon sağlayıcısı seçin") from exc
+    if tenant.organization_id is None or body.organization_id not in (None, tenant.organization_id):
+        raise ForbiddenException("Seçili kurum değişti")
     # Serialise both initial creation and partial updates in SQLite/PostgreSQL.
     # Re-read after the lock so concurrent requests merge the current JSON.
     await lock_organization(db, tenant.organization_id)
@@ -961,23 +963,29 @@ async def update_integrations(
         ).execution_options(populate_existing=True).with_for_update()
     )
     integration = result.scalar_one_or_none()
-    config = merge_config(integration.config if integration else {}, body.config)
-    if integration:
-        integration.config = config
-        if "is_active" in body.model_fields_set:
-            integration.is_active = body.is_active
-        integration.updated_by = user.id
-    else:
-        db.add(
-            IntegrationSetting(
-                organization_id=tenant.organization_id,
-                provider=provider,
-                config=config,
-                is_active=body.is_active,
-                updated_by=user.id,
-            )
+    current = integration.config if integration else {}
+    config = merge_config(current, body.config)
+    if body.expected_config is not None:
+        if set(body.expected_config) != set(body.config):
+            raise ValidationException("Değişen her entegrasyon alanı için önceki değeri gönderin")
+        from app.core.integration_config import redact_config
+
+        visible = redact_config(current)
+        for key, previous in body.expected_config.items():
+            if visible.get(key) not in (previous, body.config[key]):
+                raise ConflictException("Entegrasyon alanı değişti. Güncel kaydı yükleyip tekrar deneyin")
+    if integration is None:
+        integration = IntegrationSetting(
+            organization_id=tenant.organization_id, provider=provider, is_active=body.is_active,
         )
-    return success_response(message="Entegrasyon ayarları güncellendi")
+        db.add(integration)
+    elif "is_active" in body.model_fields_set:
+        integration.is_active = body.is_active
+    integration.config = config
+    integration.updated_by = user.id
+    await db.flush()
+    return success_response({"id": str(integration.id), "provider": provider.value,
+                             "organization_id": str(tenant.organization_id)}, "Entegrasyon ayarları güncellendi")
 
 
 @router.get("/api/announcements")
@@ -1451,11 +1459,14 @@ async def put_organization_preferences(
 
 @router.get("/api/settings/integrations")
 async def get_integrations(
+    organization_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("settings.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     from app.core.integration_config import config_view
 
+    if tenant.organization_id is None or organization_id not in (None, tenant.organization_id):
+        raise ForbiddenException("Seçili kurum değişti")
     result = await db.execute(
         select(IntegrationSetting).where(
             IntegrationSetting.organization_id == tenant.organization_id
@@ -1467,6 +1478,7 @@ async def get_integrations(
         public_config, requires_review = config_view(integration.config)
         records.append({
             "id": str(integration.id),
+            "organization_id": str(tenant.organization_id),
             "provider": integration.provider.value,
             "is_active": integration.is_active,
             "config": public_config,

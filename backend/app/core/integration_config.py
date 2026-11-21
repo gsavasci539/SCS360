@@ -7,6 +7,7 @@ from copy import deepcopy
 import math
 import re
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
@@ -20,8 +21,10 @@ _MISSING = object()
 class IntegrationUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    organization_id: UUID | None = None
     provider: str
     config: dict[str, Any] = Field(default_factory=dict)
+    expected_config: dict[str, Any] | None = None
     # Omission retains an existing flag; new records start inactive.
     is_active: StrictBool = False
 

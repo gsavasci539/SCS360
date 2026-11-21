@@ -11,7 +11,7 @@ const existing = [
   { provider: "SMTP", is_active: false, config: { host: "smtp.example.invalid", port: 465, username: "school", password: "***", options: { tls: true } } },
   { provider: "NETGSM", is_active: true, config: { apiKey: "***", sender: "School" } },
   { provider: "META_WHATSAPP", is_active: false, config: { phone_id: "phone-one", accessToken: "***" } },
-];
+].map((record) => ({ ...record, id: record.provider.toLowerCase(), organization_id: "school" }));
 let records: unknown;
 let integrationFailure = false;
 const values = {
@@ -36,7 +36,16 @@ beforeEach(() => {
     return { data: { success: true, data: path === "/settings/integrations" ? records : preferences(savedName) } };
   });
   vi.mocked(api.put).mockImplementation(async (path, body) => {
-    if (path === "/settings/preferences") savedName = body.changes.school_name;
+    if (path === "/settings/integrations") {
+      const rows = records as typeof existing;
+      const provider = body.provider as string;
+      const previous = rows.find((row) => row.provider === provider);
+      const record = { id: provider.toLowerCase(), organization_id: "school", provider,
+        is_active: previous?.is_active ?? false, config: { ...previous?.config, ...body.config } };
+      records = [...rows.filter((row) => row.provider !== provider), record];
+      return { data: { success: true, data: record } };
+    }
+    savedName = body.changes.school_name;
     return { data: { success: true, data: preferences(savedName) } };
   });
 });
@@ -50,7 +59,8 @@ it("yalnız değiştirilen sağlayıcı alanını kaydeder; pasif durumu ve bili
   fireEvent.change(host, { target: { value: "new.example.invalid" } });
   fireEvent.click(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" }));
   await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
-  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { provider: "SMTP", config: { host: "new.example.invalid" } });
+  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { organization_id: "school", provider: "SMTP",
+    config: { host: "new.example.invalid" }, expected_config: { host: "smtp.example.invalid" } });
   expect(await screen.findByText("SMTP ayarları kaydedildi")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" })).toBeDisabled();
   expect(screen.queryByText(/şifrelenerek/)).not.toBeInTheDocument();
@@ -75,14 +85,15 @@ it("hatalı yanıt öğelerini form varsayılanlarına çevirmeden güvenle redd
 });
 
 it("eski bozuk sağlayıcıyı inceleme için kapatır, diğer sağlayıcı düzenlemesi onu değiştirmez", async () => {
-  records = [existing[0], { provider: "META_WHATSAPP", is_active: true, config: null, requires_review: true }];
+  records = [existing[0], { ...existing[2], is_active: true, config: null, requires_review: true }];
   view();
   expect(await screen.findByText(/Eski kayıt inceleme gerektiriyor/)).toBeInTheDocument();
   expect(screen.getByLabelText("WhatsApp telefon ID")).toBeDisabled();
   fireEvent.change(screen.getByLabelText("SMTP kullanıcı adı"), { target: { value: "new-user" } });
   fireEvent.click(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" }));
   await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
-  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { provider: "SMTP", config: { username: "new-user" } });
+  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { organization_id: "school", provider: "SMTP",
+    config: { username: "new-user" }, expected_config: { username: "school" } });
 });
 
 it("eski alanın JSON türünü boş metinle değiştirmez ve SMS seçimiyle kayıt oluşturmaz", async () => {
@@ -94,7 +105,8 @@ it("eski alanın JSON türünü boş metinle değiştirmez ve SMS seçimiyle kay
   fireEvent.change(screen.getByLabelText("SMTP portu"), { target: { value: "2525" } });
   fireEvent.click(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" }));
   await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
-  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { provider: "SMTP", config: { port: "2525" } });
+  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { organization_id: "school", provider: "SMTP",
+    config: { port: "2525" }, expected_config: { port: 465 } });
 });
 
 it("eksik sağlayıcıyı yalnız girilen alanla oluşturur; genel kaydet entegrasyon yazmaz", async () => {
@@ -103,7 +115,8 @@ it("eksik sağlayıcıyı yalnız girilen alanla oluşturur; genel kaydet entegr
   fireEvent.change(screen.getByLabelText("SMTP sunucusu"), { target: { value: "new.example.invalid" } });
   fireEvent.click(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" }));
   await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
-  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { provider: "SMTP", config: { host: "new.example.invalid" } });
+  expect(api.put).toHaveBeenCalledWith("/settings/integrations", { organization_id: "school", provider: "SMTP",
+    config: { host: "new.example.invalid" }, expected_config: { host: null } });
   fireEvent.click(screen.getByRole("button", { name: /Genel.*Kurum yapılandırması/ }));
   fireEvent.change(await screen.findByLabelText("Kurum adı"), { target: { value: "Yeni okul" } });
   fireEvent.click(screen.getByRole("button", { name: "Değişiklikleri kaydet" }));
@@ -122,6 +135,16 @@ it("kalıcı geri okuma değişikliği doğrulamazsa genel formu korur", async (
   await screen.findByText("Ayarlar kaydedilemedi");
   expect(screen.getByLabelText("Kurum adı")).toHaveValue("Yeni okul");
   expect(screen.queryByText("Kurum tercihleri kaydedildi")).not.toBeInTheDocument();
+});
+
+it("entegrasyon geri okuması eski değerde kaldığında başarı göstermez", async () => {
+  vi.mocked(api.put).mockResolvedValueOnce({ data: { success: true, data: existing[0] } });
+  view();
+  fireEvent.change(await screen.findByLabelText("SMTP sunucusu"), { target: { value: "new.example.invalid" } });
+  fireEvent.click(screen.getByRole("button", { name: "SMTP ayarlarını kaydet" }));
+  await screen.findByText("SMTP ayarları kaydedilemedi");
+  expect(screen.getByLabelText("SMTP sunucusu")).toHaveValue("new.example.invalid");
+  expect(screen.queryByText("SMTP ayarları kaydedildi")).not.toBeInTheDocument();
 });
 
 it("salt okumada entegrasyon yazma düğmeleri açılmaz", async () => {

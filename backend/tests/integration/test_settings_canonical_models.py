@@ -126,6 +126,27 @@ async def test_registered_integration_config_persists_types_masks_secrets_and_de
         assert stored.config == config and stored.organization_id == data["org"].id
 
 
+async def test_integration_patch_requires_the_selected_organization_and_previous_fields(settings_client):
+    client, _, data = settings_client
+    path = "/api/settings/integrations"
+    writer = auth(data["writer"])
+    organization_id = str(data["org"].id)
+    payload = {"organization_id": organization_id, "provider": "SMTP", "config": {"host": "mail.example.invalid"},
+               "expected_config": {"host": None}}
+    saved = await client.put(path, headers=writer, json=payload)
+    assert saved.status_code == 200, saved.text
+    result = saved.json()["data"]
+    assert result["organization_id"] == organization_id
+    assert (await client.put(path, headers=writer, json=payload)).json()["data"] == result
+    changed = {**payload, "config": {"host": "other.example.invalid"}}
+    assert (await client.put(path, headers=writer, json=changed)).status_code == 409
+    other = auth(data["foreign_writer"])
+    assert (await client.put(path, headers=other, json=payload)).status_code == 403
+    assert (await client.get(path, headers=other, params={"organization_id": organization_id})).status_code == 403
+    reply = await client.get(path, headers=writer, params={"organization_id": organization_id})
+    assert reply.json()["data"] == [result | {"is_active": False, "requires_review": False, "config": payload["config"]}]
+
+
 async def test_existing_legacy_column_layout_updates_preserve_ids_json_and_single_rows(settings_client):
     client, sessions, data = settings_client
     setting_id = UUID("d9999999-0000-4000-8000-000000000001")
