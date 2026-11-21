@@ -39,13 +39,21 @@ it("başlık, sınıf ve dosyayı yükler ve listeyi yeniler", async () => {
   fireEvent.change(screen.getByLabelText("Materyal görünürlüğü"), { target: { value: "CLASS_ONLY" } });
   fireEvent.change(screen.getByLabelText("Materyal sınıfı"), { target: { value: "class-1" } });
   const file = new File(["%PDF-1.4"], "kaynak.pdf", { type: "application/pdf" });
+  vi.mocked(api.post).mockImplementationOnce(async (_path, _data, config) => {
+    const id = config?.params.request_id;
+    vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [{ id, title: "Yeni kaynak",
+      material_type: "PDF", visibility: "CLASS_ONLY", class_id: "class-1", file_name: file.name, file_size: file.size }] } });
+    return { data: { data: { id } } };
+  });
   fireEvent.change(screen.getByLabelText("Materyal dosyası"), { target: { files: [file] } });
   fireEvent.submit(screen.getByRole("button", { name: "Yükle" }).closest("form")!);
   await screen.findByText("Materyal yüklendi");
   const [, form, config] = vi.mocked(api.post).mock.calls[0];
   expect((form as FormData).get("file")).toBe(file);
-  expect(config?.params).toEqual({ title: "Yeni kaynak", material_type: "PDF", visibility: "CLASS_ONLY", class_id: "class-1" });
-  expect(api.get).toHaveBeenCalledTimes(3);
+  expect(config?.params).toEqual({ title: "Yeni kaynak", material_type: "PDF", visibility: "CLASS_ONLY", class_id: "class-1",
+    request_id: expect.any(String) });
+  expect(api.get).toHaveBeenCalledWith("/materials", { params: { record_id: config?.params.request_id, limit: 1 } });
+  expect(api.get).toHaveBeenCalledTimes(4);
 });
 
 it("yalnız okuma yetkisinde yükleme ve silme sunmaz ve gereksiz sınıf isteği atmaz", async () => {

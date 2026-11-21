@@ -4,6 +4,7 @@ import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { downloadFile } from "../../lib/download";
+import { newRequestId } from "../../lib/requestId";
 import { shortDate } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
 import { useWorkspaceUser } from "../../lib/workspaceUser";
@@ -20,6 +21,7 @@ export function MaterialsPage() {
   const [type, setType] = useState("PDF");
   const [visibility, setVisibility] = useState("PUBLIC");
   const fileInput = useRef<HTMLInputElement>(null);
+  const pendingUpload = useRef<{ file: File; fields: string; id: string } | null>(null);
   const canWrite = useAuthStore((state) => state.can("material.write"));
   const user = useWorkspaceUser();
   const teacherScope = !user?.is_super_admin && user?.roles.some((role) => role.slug === "teacher") &&
@@ -49,7 +51,7 @@ export function MaterialsPage() {
   async function upload(event: React.FormEvent) {
     event.preventDefault();
     const file = fileInput.current?.files?.[0];
-    if (!file || !canWrite) return;
+    if (!file || !canWrite || busy) return;
     if (file.size > 10 * 1024 * 1024) {
       showToast("Dosya yüklenemedi", "Dosya boyutu 10 MB sınırını aşıyor.", "error");
       return;
@@ -58,9 +60,23 @@ export function MaterialsPage() {
     try {
       const form = new FormData();
       form.append("file", file);
-      await api.post("/materials/upload", form, { params: {
+      const params = {
         title: title.trim(), material_type: type, visibility, ...(classId ? { class_id: classId } : {}),
-      } });
+      };
+      const fields = JSON.stringify(params);
+      if (pendingUpload.current?.file !== file || pendingUpload.current.fields !== fields) {
+        pendingUpload.current = { file, fields, id: newRequestId() };
+      }
+      const id = pendingUpload.current.id;
+      const receipt = await api.post<ApiResponse<{ id: string }>>("/materials/upload", form, { params: { ...params, request_id: id } });
+      if (receipt.data.data.id !== id) throw new Error("Materyal kimliği doğrulanamadı.");
+      const response = await api.get<ApiResponse<DataRecord[]>>("/materials", { params: { record_id: id, limit: 1 } });
+      const saved = response.data.data[0];
+      if (saved?.id !== id || saved.title !== params.title || saved.material_type !== type || saved.visibility !== visibility ||
+          (saved.class_id ?? "") !== classId || saved.file_name !== file.name || saved.file_size !== file.size) {
+        throw new Error("Materyal kaydı sunucudan doğrulanamadı.");
+      }
+      pendingUpload.current = null;
       setTitle("");
       if (fileInput.current) fileInput.current.value = "";
       showToast("Materyal yüklendi");
