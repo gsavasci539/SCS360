@@ -6,10 +6,16 @@ import { shortDate } from "../../lib/format";
 import type { ApiResponse, DataRecord } from "../../types/api";
 import { BusRouteManager } from "./BusRouteManager";
 import { useWorkspaceUser } from "../../lib/workspaceUser";
-import { hasPermission } from "../../stores/auth";
+import { hasPermission, useAuthStore } from "../../stores/auth";
 
 export function BusPage() {
   const viewer = useWorkspaceUser(), canWrite = hasPermission(viewer, "bus.write");
+  const session = useAuthStore((state) => state.sessionVersion);
+  if (viewer?.is_super_admin) return <p>Servis kayıtları için kurum çalışma alanı seçin.</p>;
+  return <BusWorkspace canWrite={canWrite} key={JSON.stringify([session, viewer?.id, viewer?.organization_id, viewer?.branch_ids, canWrite])} />;
+}
+
+function BusWorkspace({ canWrite }: { canWrite: boolean }) {
   const [managing, setManaging] = useState<string | undefined>(undefined);
   const [routes, setRoutes] = useState<DataRecord[]>([]);
   const [attendance, setAttendance] = useState<DataRecord[]>([]);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { api, apiMessage } from "../../lib/api";
 import { newRequestId } from "../../lib/requestId";
 import { Badge } from "../../components/ui";
@@ -17,6 +17,8 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
   const [routeNonce, setRouteNonce] = useState(newRequestId), [stopNonce, setStopNonce] = useState(newRequestId), [eventNonce, setEventNonce] = useState(newRequestId);
   const [routeStatus, setRouteStatus] = useState<"loading" | "ready" | "error">(routeId ? "loading" : "ready");
   const loadedRouteVersion = useRef("");
+  const writing = useRef<AbortController | null>(null);
+  useLayoutEffect(() => () => writing.current?.abort(), [routeId, canWrite]);
   useEffect(() => {
     const controller = new AbortController();
     if (routeId) setRouteStatus("loading");
@@ -52,26 +54,63 @@ export function BusRouteManager({ routeId, canWrite, onClose, onRefresh }: { rou
   }, [routeId, day, student, page, revision]);
   function refresh() { if (routeId) setRouteStatus("loading"); setRevision((value) => value + 1); onRefresh(); }
   async function save(event: FormEvent<HTMLFormElement>, kind: "route" | "stop" | "attendance" | "check-in") {
-    event.preventDefault(); if (busy || !canWrite || (kind === "route" && routeStatus !== "ready") || (kind === "stop" && stop && !stop.version)) return;
-    const form = event.currentTarget, values = Object.fromEntries(new FormData(form)); setBusy(true); setError(""); setMessage("");
+    event.preventDefault();
+    if (writing.current || !canWrite || (kind === "route" && routeStatus !== "ready") || (kind === "stop" && stop && !stop.version)) return;
+    const form = event.currentTarget, values = Object.fromEntries(new FormData(form));
+    const controller = new AbortController();
+    const { signal } = controller;
+    writing.current = controller;
+    setBusy(true); setError(""); setMessage("");
     try {
       if (kind === "route") {
         const body = { ...values, branch_id: branch, driver_id: driver || null, capacity: Number(values.capacity), request_id: routeNonce, ...(route ? { expected_updated_at: route.updated_at } : {}) };
-        if (routeId) await api.put(`/bus/routes/${routeId}`, body); else await api.post("/bus/routes", body);
+        if (routeId) await api.put(`/bus/routes/${routeId}`, body, { signal }); else await api.post("/bus/routes", body, { signal });
+        if (signal.aborted) return;
         setRouteNonce(newRequestId()); refresh(); setMessage("Servis rotası kaydedildi"); if (!routeId) { onClose(); return; }
       } else if (kind === "stop") {
         const body = { ...values, route_id: routeId, stop_order: Number(values.stop_order), latitude: values.latitude ? Number(values.latitude) : null,
           longitude: values.longitude ? Number(values.longitude) : null,
           estimated_arrival: stop && values.estimated_arrival === timeInput(stop.estimated_arrival) ? stop.estimated_arrival || null : values.estimated_arrival || null, request_id: stopNonce,
           ...(stop ? { expected_version: stop.version } : {}) };
-        if (stop) await api.put(`/bus/stops/${stop.id}`, body); else await api.post("/bus/stops", body);
+        if (stop) await api.put(`/bus/stops/${stop.id}`, body, { signal }); else await api.post("/bus/stops", body, { signal });
+        if (signal.aborted) return;
         setStop(null); form.reset(); setStopNonce(newRequestId()); refresh(); setMessage("Durak kaydedildi");
-      } else if (kind === "attendance") {
-        await api.post("/bus/attendance", { ...values, route_id: routeId, student_id: student, attendance_date: day }); refresh(); setMessage("Servis katılımı kaydedildi");
       } else {
-        await api.post("/bus/check-in", { ...values, route_id: routeId, student_id: student, request_id: eventNonce }); setEventNonce(newRequestId()); refresh(); setMessage("Biniş/iniş kaydedildi");
+        if (!route || route.id !== routeId || !route.branch_id || !student || !day || (kind === "check-in" && day !== options.today)) return;
+        const payload = { ...values, route_id: routeId, student_id: student };
+        const response = await api.post(kind === "attendance" ? "/bus/attendance" : "/bus/check-in",
+          kind === "attendance" ? { ...payload, attendance_date: day } : { ...payload, request_id: eventNonce },
+          { params: { branch_id: route.branch_id }, signal });
+        if (signal.aborted) return;
+        const ack = response.data.data;
+        const recordedDay = kind === "attendance" ? text(ack?.date) : text(ack?.timestamp).slice(0, 10);
+        if (!ack?.id || !recordedDay || (kind === "attendance" && recordedDay !== day) ||
+          (kind === "check-in" && (ack.route_id !== routeId || ack.student_id !== student || ack.event !== values.event))) {
+          throw new Error("Servis kayıt sonucu doğrulanamadı.");
+        }
+        const read = await api.get("/bus/attendance", { params: {
+          route_id: routeId, student_id: student, attendance_date: recordedDay, limit: 2,
+        }, signal });
+        if (signal.aborted) return;
+        const rows = read.data.data;
+        const record = Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+        if (!record || record.id !== ack.id || record.date !== recordedDay || record.route_id !== routeId || record.student_id !== student) {
+          throw new Error("Servis katılımı sunucuda bulunamadı.");
+        }
+        if (kind === "attendance") {
+          if (record.status !== values.status || ack.status !== values.status) throw new Error("Kayıtlı katılım durumu eşleşmedi.");
+          setMessage("Servis katılımı kaydedildi");
+        } else {
+          const timeField = values.event === "BOARDED" ? "pickup_time" : "dropoff_time";
+          if (!ack[timeField] || text(record[timeField]) !== text(ack[timeField]).slice(0, 5)) throw new Error("Kayıtlı servis saati eşleşmedi.");
+          setEventNonce(newRequestId());
+          if (recordedDay !== day) setDay(recordedDay);
+          setMessage("Biniş/iniş kaydedildi");
+        }
+        refresh();
       }
-    } catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
+    } catch (reason) { if (!signal.aborted) setError(apiMessage(reason)); }
+    finally { if (writing.current === controller) { writing.current = null; setBusy(false); } }
   }
   function input(label: string, name: string, value: unknown, type = "text", required = false, min?: number, max?: number) {
     return <label>{label}<input className="filter-select" name={name} type={type} defaultValue={type === "time" ? timeInput(value) : text(value)} required={required} min={min} max={max} step={type === "time" || type === "number" && ["latitude", "longitude"].includes(name) ? "any" : undefined} maxLength={name === "vehicle_plate" ? 20 : name === "route_number" ? 50 : 255} /></label>;

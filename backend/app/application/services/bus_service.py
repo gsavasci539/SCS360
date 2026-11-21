@@ -62,8 +62,10 @@ async def route_rows(db, routes):
     return result
 
 
-async def attendance_references(db, route_id, student_id, stop_id=None):
+async def attendance_references(db, route_id, student_id, stop_id=None, *, branch_id=None):
     selected = await lock_route(db, route_id)
+    if branch_id is not None and selected.branch_id != branch_id:
+        raise HTTPException(404, "Servis rotası seçili şubede bulunamadı")
     branch = await route_owner(db, selected.branch_id, None)
     child = (await db.execute(select(Student).where(Student.id == student_id, Student.deleted_at.is_(None)))).scalar_one_or_none()
     if child is None:
@@ -80,16 +82,22 @@ async def attendance_references(db, route_id, student_id, stop_id=None):
     await db.execute(table.update().where(table.c.id == child.id).values(updated_at=table.c.updated_at))
 
 
-async def summary(db, route_id=None, attendance_date=None):
+async def summary(db, route_id=None, attendance_date=None, *, branch_id=None):
     routes = select(func.count(BusRoute.id), func.sum(case((BusRoute.status == "ACTIVE", 1), else_=0)), func.sum(BusRoute.capacity))
     attendance = select(func.count(BusAttendance.id), func.count(func.distinct(BusAttendance.student_id)),
         func.sum(case((BusAttendance.status.in_(["PRESENT", "LATE"]), 1), else_=0)))
     if route_id:
-        await route(db, route_id)
+        selected = await route(db, route_id)
+        if branch_id is not None and selected.branch_id != branch_id:
+            raise HTTPException(404, "Servis rotası seçili şubede bulunamadı")
         routes = routes.where(BusRoute.id == route_id)
         attendance = attendance.where(BusAttendance.route_id == route_id)
     if attendance_date:
         attendance = attendance.where(BusAttendance.date == attendance_date)
+    if branch_id is not None:
+        await route_owner(db, branch_id, None)
+        routes = routes.where(BusRoute.branch_id == branch_id)
+        attendance = attendance.where(BusAttendance.route_id.in_(select(BusRoute.id).where(BusRoute.branch_id == branch_id)))
     total, active, capacity = (await db.execute(routes)).one()
     records, students, present = (await db.execute(attendance)).one()
     return {"total_routes": total, "active_routes": active or 0, "total_capacity": capacity or 0,
@@ -315,8 +323,8 @@ async def existing_attendance(db, route_id, student_id, day):
     return rows[0] if rows else None
 
 
-async def record_attendance(db, tenant, body):
-    await attendance_references(db, body.route_id, body.student_id, body.stop_id)
+async def record_attendance(db, tenant, body, *, branch_id=None):
+    await attendance_references(db, body.route_id, body.student_id, body.stop_id, branch_id=branch_id)
     selected = await existing_attendance(db, body.route_id, body.student_id, body.attendance_date)
     values = body.model_dump(exclude={"route_id", "student_id", "attendance_date"})
     new = selected is None
@@ -338,8 +346,8 @@ async def record_attendance(db, tenant, body):
     return {"id": str(selected.id), "message": "Servis katılımı kaydedildi", "date": body.attendance_date.isoformat(), "status": selected.status}
 
 
-async def check_in(db, tenant, body):
-    await attendance_references(db, body.route_id, body.student_id)
+async def check_in(db, tenant, body, *, branch_id=None):
+    await attendance_references(db, body.route_id, body.student_id, branch_id=branch_id)
     previous = await cached(db, tenant, body, "BUS_CHECK_IN")
     if previous is not None:
         return previous

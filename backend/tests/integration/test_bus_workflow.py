@@ -20,6 +20,11 @@ async def test_bus_options_summary_and_empty_location_are_scoped(bus_client):
     assert {row["id"] for row in choices.json()["data"]["branches"]} == {str(data["branch"].id)}
     assert str(data["stranger"].id) not in {row["id"] for row in choices.json()["data"]["students"]}
     assert str(data["foreign_driver"].id) not in {row["id"] for row in choices.json()["data"]["drivers"]}
+    stop_id = str(data["stops"][0].id)
+    stop = await client.get("/api/bus/stops", headers=auth, params={"route_id": route, "record_id": stop_id})
+    assert stop.status_code == 200 and [row["id"] for row in stop.json()["data"]] == [stop_id]
+    mismatch = await client.get("/api/bus/stops", headers=auth, params={"route_id": str(data["routes"][1].id), "record_id": stop_id})
+    assert mismatch.status_code == 200 and mismatch.json()["data"] == []
     empty = await client.get(f"/api/bus/telemetry/{route}/latest", headers=auth)
     assert empty.status_code == 200 and empty.json()["data"] is None, empty.text
     async with sessions() as db:
@@ -31,6 +36,23 @@ async def test_bus_options_summary_and_empty_location_are_scoped(bus_client):
     assert summary.json()["data"]["attendance_records"] == 1 and summary.json()["data"]["attendance_rate"] == 100
     rows = await client.get("/api/bus/attendance", headers=auth, params={"route_id": route, "attendance_date": "2026-11-03"})
     assert rows.status_code == 200 and rows.json()["data"][0]["route_name"] == "Own", rows.text
+
+
+async def test_branch_summary_does_not_count_other_local_routes(bus_client):
+    client, sessions, data = bus_client
+    async with sessions() as db:
+        sibling = Branch(organization_id=data["org"].id, name="Alternate service branch")
+        db.add(sibling)
+        await db.flush()
+        db.add(BusRoute(branch_id=sibling.id, route_name="Alternate route", capacity=7))
+        await db.commit()
+    auth = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+    summary = await client.get("/api/bus/summary", headers=auth, params={"branch_id": str(sibling.id)})
+    assert summary.status_code == 200, summary.text
+    assert summary.json()["data"]["total_routes"] == 1 and summary.json()["data"]["total_capacity"] == 7
+    mismatch = await client.get("/api/bus/summary", headers=auth,
+        params={"branch_id": str(sibling.id), "route_id": str(data["routes"][0].id)})
+    assert mismatch.status_code == 404
 
 
 async def test_bus_creates_retry_once_and_preserve_zero_coordinates(bus_client):
@@ -89,12 +111,19 @@ async def test_checkin_retry_keeps_first_clock_and_status_edit_preserves_boardin
     client, sessions, data = bus_client
     auth = headers(data["writer"]); route = str(data["routes"][0].id); child = str(data["children"][0].id)
     body = {"route_id": route, "student_id": child, "event": "BOARDED", "request_id": str(uuid4())}
-    first = await client.post("/api/bus/check-in", headers=auth, json=body)
-    again = await client.post("/api/bus/check-in", headers=auth, json=body)
+    scope = {"branch_id": str(data["branch"].id)}
+    wrong = {"branch_id": str(data["other_branch"].id)}
+    rejected = await client.post("/api/bus/check-in", headers=auth, params=wrong, json=body)
+    assert rejected.status_code == 404
+    first = await client.post("/api/bus/check-in", headers=auth, params=scope, json=body)
+    again = await client.post("/api/bus/check-in", headers=auth, params=scope, json=body)
     assert first.status_code == again.status_code == 200, (first.text, again.text)
     assert first.json()["data"] == again.json()["data"]
     assert (await client.post("/api/bus/check-in", headers=auth, json={**body, "event": "DROPPED"})).status_code == 409
-    changed = await client.post("/api/bus/attendance", headers=auth, json={"route_id": route, "student_id": child, "notes": "Updated note"})
+    status_edit = {"route_id": route, "student_id": child, "notes": "Updated note"}
+    rejected = await client.post("/api/bus/attendance", headers=auth, params=wrong, json=status_edit)
+    assert rejected.status_code == 404
+    changed = await client.post("/api/bus/attendance", headers=auth, params=scope, json=status_edit)
     assert changed.status_code == 200, changed.text
     async with sessions() as db:
         saved = (await db.execute(select(BusAttendance))).scalar_one()

@@ -160,9 +160,9 @@ async def bus_options(branch_id: Optional[UUID] = None, route_id: Optional[UUID]
 
 
 @router.get("/summary")
-async def bus_summary(route_id: Optional[UUID] = None, attendance_date: Optional[date] = None,
+async def bus_summary(route_id: Optional[UUID] = None, attendance_date: Optional[date] = None, branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.read"))):
-    return success_response(await bus_service.summary(db, route_id, attendance_date))
+    return success_response(await bus_service.summary(db, route_id, attendance_date, branch_id=branch_id))
 
 
 @router.get("/routes/{route_id}")
@@ -185,6 +185,7 @@ async def update_bus_route(route_id: UUID, route: BusRouteCreate, db: AsyncSessi
 @router.get("/stops")
 async def get_bus_stops(
     route_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("bus.read"))
@@ -196,6 +197,8 @@ async def get_bus_stops(
     
     if route_id:
         query = query.where(BusStop.route_id == route_id)
+    if record_id:
+        query = query.where(BusStop.id == record_id)
     
     query = query.order_by(BusStop.stop_order, BusStop.id).limit(limit).offset(offset)
     
@@ -356,8 +359,9 @@ async def get_bus_attendance(
 
 
 @router.post("/attendance")
-async def create_bus_attendance(attendance: BusAttendanceCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
-    return success_response(await bus_service.record_attendance(db, tenant, attendance))
+async def create_bus_attendance(attendance: BusAttendanceCreate, branch_id: Optional[UUID] = None,
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.record_attendance(db, tenant, attendance, branch_id=branch_id))
 
 
 @router.get("/routes/{route_id}/students")
@@ -406,5 +410,6 @@ async def get_route_students(
 
 
 @router.post("/check-in")
-async def transport_check_in(check_in: TransportCheckInCreate, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
-    return success_response(await bus_service.check_in(db, tenant, check_in))
+async def transport_check_in(check_in: TransportCheckInCreate, branch_id: Optional[UUID] = None,
+    db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("bus.write"))):
+    return success_response(await bus_service.check_in(db, tenant, check_in, branch_id=branch_id))

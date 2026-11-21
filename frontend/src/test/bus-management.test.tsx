@@ -21,7 +21,7 @@ it("rota oluşturma zaman aşımında aynı kimlik ve seçilen kurum şubesiyle 
   fireEvent.change(screen.getByLabelText("Rota sürücüsü ara"), { target: { value: "Başka arama" } });
   await waitFor(() => expect(screen.getByRole("button", { name: "Servis rotasını kaydet" })).toBeEnabled());
   fireEvent.submit(form); await waitFor(() => expect(close).toHaveBeenCalledOnce());
-  expect(vi.mocked(api.post).mock.calls[0]).toEqual(vi.mocked(api.post).mock.calls[1]);
+  expect(vi.mocked(api.post).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.post).mock.calls[1].slice(0, 2));
   expect(vi.mocked(api.post).mock.calls[0][1]).toEqual(expect.objectContaining({ branch_id: "school-branch", route_name: "Kuzey", capacity: 40 }));
 });
 
@@ -51,7 +51,8 @@ it("ilk sayfa dışındaki sürücüyü arar ve arama değişince seçimi koruya
   await waitFor(() => expect(screen.getByRole("button", { name: "Servis rotasını kaydet" })).toBeEnabled());
   fireEvent.change(screen.getByLabelText("Rota adı"), { target: { value: "Kuzey" } });
   fireEvent.submit(screen.getByRole("form", { name: "Servis rotasını kaydet" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/bus/routes", expect.objectContaining({ driver_id: "later-driver" })));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/bus/routes", expect.objectContaining({ driver_id: "later-driver" }),
+    expect.objectContaining({ signal: expect.any(AbortSignal) })));
 });
 
 it("yalnız okuma rolü rota veya durak yazma formu alamaz", async () => {
@@ -82,7 +83,7 @@ it("durak yanıtı kaybolunca aynı sürümle tekrarlar ve dokunulmayan tam saat
   await waitFor(() => expect(screen.getByRole("button", { name: "Servis durağını kaydet" })).toBeEnabled());
   fireEvent.submit(screen.getByRole("form", { name: "Servis durağını kaydet" }));
   await screen.findByText("Durak kaydedildi");
-  expect(vi.mocked(api.put).mock.calls[0]).toEqual(vi.mocked(api.put).mock.calls[1]);
+  expect(vi.mocked(api.put).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.put).mock.calls[1].slice(0, 2));
   expect(vi.mocked(api.put).mock.calls[0][1]).toEqual(expect.objectContaining({ expected_version: existingStop.version,
     estimated_arrival: "08:30:45.123456", latitude: 0, longitude: 1.12345678 }));
 });
@@ -133,7 +134,7 @@ it("yanıtı kaybolan rota güncellemesini aynı kimlik ve sürümle tekrarlar, 
   await waitFor(() => expect(button).toBeEnabled());
   fireEvent.submit(screen.getByRole("form", { name: "Servis rotasını kaydet" }));
   await waitFor(() => expect(routeReads).toBe(2));
-  expect(vi.mocked(api.put).mock.calls[0]).toEqual(vi.mocked(api.put).mock.calls[1]);
+  expect(vi.mocked(api.put).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.put).mock.calls[1].slice(0, 2));
   expect(vi.mocked(api.put).mock.calls[0][1]).toEqual(expect.objectContaining({ expected_updated_at: existingRoute.updated_at }));
   expect(button).toBeDisabled();
   fireEvent.submit(screen.getByRole("form", { name: "Servis rotasını kaydet" }));
@@ -186,4 +187,31 @@ it("yanıtı belirsiz kayıttan sonra güncel sürüm elle yüklenirse yeni işl
   const next = vi.mocked(api.put).mock.calls[1][1] as { request_id: string; expected_updated_at: string };
   expect(next.request_id).not.toBe(original.request_id);
   expect(next.expected_updated_at).toBe(latest.updated_at);
+});
+
+it("biniş sonucunu ancak aynı kalıcı katılım kaydı bulununca gösterir", async () => {
+  const day = "2026-11-04";
+  const student = "isolated-student";
+  const readback = { id: "attendance", student_id: student, route_id: "route", date: day, pickup_time: "08:30", status: "PRESENT" };
+  let exists = false;
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/bus/routes/route" ? existingRoute
+    : path === "/bus/options" ? { ...routeOptions, today: day, students: [{ id: student, name: "İzole öğrenci" }] }
+    : path === "/bus/attendance" && exists ? [readback] : [] } }));
+  vi.mocked(api.post).mockResolvedValue({ data: { data: {
+    id: "attendance", route_id: "route", student_id: student, event: "BOARDED", timestamp: `${day}T08:30:00`, pickup_time: "08:30:00",
+  } } });
+  render(<BusRouteManager routeId="route" canWrite onClose={vi.fn()} onRefresh={vi.fn()} />);
+  await screen.findByRole("option", { name: /İzole öğrenci/ });
+  await screen.findByRole("heading", { name: existingRoute.route_name });
+  fireEvent.change(screen.getByLabelText("Servis öğrencisi"), { target: { value: student } });
+  const form = screen.getByRole("form", { name: "Servis biniş iniş" });
+  fireEvent.submit(form);
+  expect(await screen.findByRole("alert")).toHaveTextContent("İşlem tamamlanamadı");
+  expect(screen.queryByText("Biniş/iniş kaydedildi")).not.toBeInTheDocument();
+  exists = true;
+  fireEvent.submit(form);
+  expect(await screen.findByText("Biniş/iniş kaydedildi")).toBeInTheDocument();
+  expect(vi.mocked(api.post).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.post).mock.calls[1].slice(0, 2));
+  expect(api.post).toHaveBeenLastCalledWith("/bus/check-in", expect.objectContaining({ student_id: student }),
+    expect.objectContaining({ params: { branch_id: existingRoute.branch_id }, signal: expect.any(AbortSignal) }));
 });
