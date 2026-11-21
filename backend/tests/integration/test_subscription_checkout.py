@@ -147,6 +147,11 @@ async def test_fraud_review_waits_for_approval_and_cannot_be_replaced_by_manual_
     gateway.records[token]["fraudStatus"] = 1
     approved = await client.post(path, headers=auth)
     assert approved.status_code == 200 and approved.json()["data"]["invoice"]["status"] == "PAID", approved.text
+    saved = await client.get("/api/subscription/invoices", headers=auth, params={"record_id": invoice["id"], "limit": 1})
+    assert saved.status_code == 200, saved.text
+    [row] = saved.json()["data"]
+    assert row["status"] == row["checkout_status"] == "PAID"
+    assert row["checkout_id"] == approved.json()["data"]["checkout_id"]
 
 
 async def test_stale_paid_quote_needs_explicit_idempotent_platform_reconciliation(checkout_client):

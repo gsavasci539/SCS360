@@ -128,10 +128,13 @@ async def available_plans(user: User = Depends(get_current_user), db: AsyncSessi
 
 
 @router.get("/api/subscription/invoices")
-async def own_invoices(limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0), user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db, scope="function")):
+async def own_invoices(record_id: UUID | None = None, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db, scope="function")):
     await billing.require_manager(db, user)
-    rows = (await db.execute(select(SubscriptionInvoice).where(SubscriptionInvoice.organization_id == user.organization_id)
-        .order_by(SubscriptionInvoice.created_at.desc(), SubscriptionInvoice.id).limit(limit).offset(offset))).scalars()
+    query = select(SubscriptionInvoice).where(SubscriptionInvoice.organization_id == user.organization_id)
+    if record_id:
+        query = query.where(SubscriptionInvoice.id == record_id)
+    rows = (await db.execute(query.order_by(SubscriptionInvoice.created_at.desc(), SubscriptionInvoice.id).limit(limit).offset(offset))).scalars()
     return success_response(await checkouts.list_data(db, rows, user))
 
 

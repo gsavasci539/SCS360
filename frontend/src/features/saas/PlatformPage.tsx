@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import { useAuthStore } from "../../stores/auth";
 import { PaymentReview } from "./PaymentReview";
-import { confirmPlatformInvoice } from "./platformInvoiceConfirmation";
+import { confirmPaymentStatus, confirmPlatformInvoice } from "./platformInvoiceConfirmation";
 import { PaymentReadinessPanel } from "./PaymentReadinessPanel";
 
 interface Tenant { id: string; name: string; is_active: boolean; access: OrganizationAccess; package: DataRecord | null; usage: Record<string, number>; owner_user_id: string | null; period_start: string | null }
@@ -99,7 +99,13 @@ export function PlatformPage() {
   }
   async function paymentStatus(row: DataRecord) {
     if (busy) return; setBusy(true);
-    try { await api.post(`/platform/invoices/${row.id}/payment-status`); refresh(); showToast("Ödeme durumu güncellendi"); }
+    try {
+      const response = await api.post(`/platform/invoices/${row.id}/payment-status`);
+      if (response.data.success !== true) throw new Error("Ödeme durumu yanıtı doğrulanamadı.");
+      const saved = await confirmPaymentStatus("platform", row, response.data.data);
+      setInvoices((current) => current.map((invoice) => invoice.id === saved.id ? saved : invoice));
+      refresh(); showToast("Ödeme durumu doğrulandı");
+    }
     catch (reason) { showToast("Ödeme durumu alınamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   function field(label: string, name: string, value: unknown, max: number, type = "text", required = false) {

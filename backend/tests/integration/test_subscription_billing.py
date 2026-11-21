@@ -75,6 +75,13 @@ async def test_payment_does_not_reopen_closed_school_and_cancelled_quote_does_no
     identifier = created.json()["data"]["id"]
     cancelled = await client.post(f"/api/subscription/invoices/{identifier}/cancel", headers=auth)
     assert cancelled.status_code == 200, cancelled.text
+    lookup = {"record_id": identifier, "limit": 1}
+    mine = await client.get("/api/subscription/invoices", headers=auth, params=lookup)
+    assert mine.status_code == 200, mine.text
+    assert [(row["id"], row["status"]) for row in mine.json()["data"]] == [(identifier, "CANCELLED")]
+    assert (await client.get("/api/subscription/invoices", headers=auth,
+        params={**lookup, "record_id": str(uuid4())})).json()["data"] == []
+    assert (await client.get("/api/subscription/invoices", headers=headers(data["user"]), params=lookup)).status_code == 403
     denied = await client.post(f"/api/platform/invoices/{identifier}/settle", headers=root, json={"payment_reference": "BANK-CANCELLED", "amount": "100.00", "currency": "TRY"})
     assert denied.status_code == 409, denied.text
     second = await client.post("/api/subscription/invoices", headers=auth, json={"plan_id": data["plan"]["id"], "request_id": str(uuid4())})

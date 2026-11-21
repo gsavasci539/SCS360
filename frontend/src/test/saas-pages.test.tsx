@@ -55,3 +55,26 @@ it("kurum sahibi seçeneği geç yüklenince mevcut ödeme yetkilisini silmez ve
   fireEvent.click(screen.getByRole("button", { name: "Kurum hesabını kapat" }));
   await waitFor(() => expect(api.patch).toHaveBeenCalledWith("/platform/tenants/school/status", { is_active: false }));
 });
+
+it("üyelik durumunu yalnız faturanın ve aynı ödeme oturumunun geri okumasıyla günceller", async () => {
+  const initial = { id: "invoice", organization_id: user.organization_id, plan_id: plan.id, package_name: plan.name,
+    amount: "1200.50", currency: "TRY", status: "PENDING", checkout_status: "PENDING", checkout_id: "checkout", can_cancel: false };
+  const paid = { ...initial, status: "PAID", checkout_status: "PAID" };
+  const fallback = vi.mocked(api.get).getMockImplementation()!;
+  let reads = 0;
+  vi.mocked(api.get).mockImplementation(async (path, config) => {
+    if (path !== "/subscription/invoices") return fallback(path, config);
+    if (!config?.params?.record_id) return { data: { data: [reads > 1 ? paid : initial] } };
+    reads++;
+    return { data: { success: true, data: [reads === 1 ? { ...paid, checkout_id: "older-checkout" } : paid] } };
+  });
+  vi.mocked(api.post).mockResolvedValue({ data: { success: true, data: { invoice: paid, status: "PAID", checkout_id: "checkout" } } });
+  open("subscription");
+  fireEvent.click(await screen.findByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+  await screen.findByText("İstek tamamlanamadı");
+  expect(screen.queryByText("Üyelik ödemesi tamamlandı")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Ödeme sonucunu kontrol et" }));
+  await screen.findByText("Üyelik ödemesi tamamlandı");
+  expect(api.post).toHaveBeenCalledWith("/subscription/invoices/invoice/payment-status");
+  expect(api.get).toHaveBeenCalledWith("/subscription/invoices", { params: { record_id: "invoice", limit: 1 } });
+});

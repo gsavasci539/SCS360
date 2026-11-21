@@ -286,6 +286,7 @@ async def check_status(db, user, invoice_id, gateway, *, platform_user=False):
 def checkout_data(row, attempt, user=None):
     active = bool(attempt and attempt.status in ACTIVE)
     return {**billing.invoice_data(row), "checkout_status": attempt.status if attempt else None,
+        "checkout_id": str(attempt.id) if attempt else None,
         "can_cancel": row.status == "PENDING" and not active,
         "can_checkout": row.status == "PENDING" and not active and row.amount > 0 and utc(row.valid_until) > datetime.now(UTC),
         "can_resume": bool(row.status == "PENDING" and attempt and attempt.status == "PENDING" and user and user.id == attempt.created_by),

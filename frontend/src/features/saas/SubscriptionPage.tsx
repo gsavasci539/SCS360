@@ -10,6 +10,7 @@ import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
 import type { DataRecord, OrganizationAccess } from "../../types/api";
 import { SubscriptionCheckout } from "./SubscriptionCheckout";
+import { confirmOwnerInvoice, confirmPaymentStatus } from "./platformInvoiceConfirmation";
 
 interface Information { access: OrganizationAccess; can_manage: boolean; package?: DataRecord | null; usage?: Record<string, number>; online_payment_available?: boolean; payment_instructions?: string; support_email?: string }
 const text = (value: unknown) => String(value ?? "");
@@ -52,18 +53,42 @@ export function SubscriptionPage() {
   }
   async function requestInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !planId) return; setBusy(true);
-    try { await api.post("/subscription/invoices", { plan_id: planId, request_id: requestId }); setRequestId(newRequestId()); setPage(1); refresh(); showToast(firstPurchase ? "Üyelik ödeme talebi oluşturuldu" : "Yenileme talebi oluşturuldu"); }
+    try {
+      const response = await api.post("/subscription/invoices", { plan_id: planId, request_id: requestId });
+      const written: DataRecord | undefined = response.data.data;
+      if (response.data.success !== true || !written || written.plan_id !== planId ||
+        !user?.organization_id || written.organization_id !== user.organization_id) throw new Error("Üyelik talebi yanıtı doğrulanamadı.");
+      await confirmOwnerInvoice(written);
+      setRequestId(newRequestId()); setPage(1); refresh();
+      showToast(firstPurchase ? "Üyelik ödeme talebi oluşturuldu" : "Yenileme talebi oluşturuldu");
+    }
     catch (reason) { showToast("Talep oluşturulamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function cancel(row: DataRecord) {
     if (busy) return; setBusy(true);
-    try { await api.post(`/subscription/invoices/${row.id}/cancel`); refresh(); showToast("Ödeme talebi iptal edildi"); }
+    try {
+      const response = await api.post(`/subscription/invoices/${row.id}/cancel`);
+      const written: DataRecord | undefined = response.data.data;
+      if (response.data.success !== true || written?.status !== "CANCELLED") throw new Error("İptal yanıtı doğrulanamadı.");
+      const saved = await confirmOwnerInvoice(written, row);
+      setInvoices((current) => current.map((invoice) => invoice.id === saved.id ? saved : invoice));
+      refresh(); showToast("Ödeme talebi iptal edildi");
+    }
     catch (reason) { showToast("Talep iptal edilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   async function paymentAction(row: DataRecord, action: "payment-status" | "activate-free") {
     if (busy) return; setBusy(true);
-    try { const response = action === "payment-status" ? await api.post(`/subscription/invoices/${row.id}/payment-status`) : await api.post(`/subscription/invoices/${row.id}/activate-free`); refresh();
-      showToast(response.data.data.invoice?.status === "PAID" ? "Üyelik ödemesi tamamlandı" : "Ödeme durumu güncellendi"); }
+    try {
+      const response = await api.post(`/subscription/invoices/${row.id}/${action}`);
+      if (response.data.success !== true ||
+        (action === "activate-free" && response.data.data?.invoice?.status !== "PAID")) throw new Error("Ödeme yanıtı doğrulanamadı.");
+      const saved = action === "activate-free" ? await confirmOwnerInvoice(response.data.data.invoice, row) :
+        await confirmPaymentStatus("subscription", row, response.data.data);
+      setInvoices((current) => current.map((invoice) => invoice.id === saved.id ? saved : invoice));
+      refresh();
+      showToast(action === "activate-free" ? "Ücretsiz paket etkinleştirildi" :
+        saved.status === "PAID" ? "Üyelik ödemesi tamamlandı" : "Ödeme durumu doğrulandı");
+    }
     catch (reason) { showToast("İşlem tamamlanamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }
   const firstPurchase = info?.access.status === "PENDING_PAYMENT";
