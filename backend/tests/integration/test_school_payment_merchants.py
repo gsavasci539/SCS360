@@ -65,8 +65,13 @@ async def test_merchant_owner_controls_secrets_while_finance_and_root_require_pr
     minimal = await client.get("/api/payments/merchant", headers=headers(data["finance"]))
     assert minimal.status_code == 200 and minimal.json()["data"] == {"can_manage": False, "available": True}, minimal.text
     scoped = {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
-    viewed = await client.get("/api/payments/merchant", headers=scoped)
+    path = "/api/payments/merchant"
+    selected = {"organization_id": str(data["org"].id)}
+    different = {"organization_id": str(uuid4())}
+    viewed = await client.get(path, headers=scoped, params=selected)
     assert viewed.status_code == 200 and viewed.json()["data"]["can_manage"] is True, viewed.text
+    assert (await client.get(path, headers=scoped, params=different)).status_code == 403
+    assert (await client.put(path, headers=headers(data["user"]), params=different, json=body())).status_code == 403
     async with sessions() as db:
         from app.infrastructure.models.models import SchoolPaymentMerchant
         row = (await db.execute(select(SchoolPaymentMerchant))).scalar_one()

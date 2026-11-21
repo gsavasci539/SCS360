@@ -42,10 +42,10 @@ export function SchoolPaymentSettings() {
   const user = useAuthStore((state) => state.user), workspace = usePlatformWorkspace((state) => state.workspace);
   const organization = user?.is_super_admin ? workspace?.operatorId === user.id ? workspace.id : null : user?.organization_id;
   if (!organization || !user) return <><PageHeader eyebrow="Kurum ayarları" title="Ödeme entegrasyonu" description="Öğrenci tahsilatları için kuruma ait iyzico hesabı." /><p>Önce kurum çalışma alanını seçin.</p></>;
-  return <SchoolPaymentForm key={`${user.id}:${organization}`} />;
+  return <SchoolPaymentForm key={`${user.id}:${organization}`} organization={organization} />;
 }
 
-function SchoolPaymentForm() {
+function SchoolPaymentForm({ organization }: { organization: string }) {
   const [data, setData] = useState<Information | null>(null), [loading, setLoading] = useState(true);
   const [environment, setEnvironment] = useState<Environment>("LIVE"), [enabled, setEnabled] = useState(false), [replaceAccount, setReplaceAccount] = useState(false);
   const [apiKey, setApiKey] = useState(""), [secretKey, setSecretKey] = useState("");
@@ -65,7 +65,7 @@ function SchoolPaymentForm() {
     loadController.current?.abort(); const controller = new AbortController(); loadController.current = controller;
     setLoading(true);
     try {
-      const response = await api.get("/payments/merchant", { signal: controller.signal });
+      const response = await api.get("/payments/merchant", { signal: controller.signal, params: { organization_id: organization } });
       const current = information(response.data.data);
       if (!mounted.current || controller.signal.aborted) return;
       setData(current);
@@ -87,11 +87,24 @@ function SchoolPaymentForm() {
   async function send(body: SaveRequest) {
     if (busy) return; setBusy(true); setError(""); setNotice("");
     try {
-      const response = await api.put("/payments/merchant", body);
-      const current = information(response.data.data);
+      const response = await api.put("/payments/merchant", body, { params: { organization_id: organization } });
+      const written = information(response.data.data);
       if (!mounted.current) return;
+      const selectedProvider = body.provider ?? "iyzico";
+      if (response.data.success === false || !written.can_manage || !written.account_id || !written.revision ||
+        (written.provider ?? "iyzico") !== selectedProvider || written.environment !== body.environment || written.enabled !== body.enabled) {
+        throw new Error("Ödeme ayarı yanıtı doğrulanamadı.");
+      }
+      const saved = await api.get("/payments/merchant", { params: { organization_id: organization } });
+      const current = information(saved.data.data);
+      if (!mounted.current) return;
+      if (saved.data.success === false || !current.can_manage || current.account_id !== written.account_id ||
+        current.revision !== written.revision || (current.provider ?? "iyzico") !== selectedProvider ||
+        current.environment !== body.environment || current.enabled !== body.enabled) {
+        throw new Error("Kaydedilen ödeme hesabı doğrulanamadı.");
+      }
       setData(current); pending.current = null; setUncertain(false); setConflict(false); setApiKey(""); setSecretKey(""); setCredentials({});
-      if (current.can_manage) resetForm(current);
+      resetForm(current);
       setNotice("Ödeme ayarları kaydedildi. Bu işlem sağlayıcıya ödeme göndermez; sağlayıcı kabulü ayrıca yapılmalıdır.");
     } catch (reason) {
       if (!mounted.current) return;

@@ -16,8 +16,12 @@ beforeEach(() => {
     id: "owner", email: "owner@example.invalid", first_name: "Owner", last_name: "Test", organization_id: "school-one",
     is_super_admin: false, roles: [], permissions: [], branch_ids: [],
   } });
-  vi.mocked(api.get).mockResolvedValue({ data: { data: blank } });
-  vi.mocked(api.put).mockResolvedValue({ data: { data: configured } });
+  let saved: unknown = blank;
+  vi.mocked(api.get).mockImplementation(async () => ({ data: { data: saved } }));
+  vi.mocked(api.put).mockImplementation(async (_path, body) => {
+    saved = { ...configured, enabled: body.enabled, environment: body.environment, provider: body.provider ?? "iyzico" };
+    return { data: { data: saved } };
+  });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 const form = () => screen.getByRole("form", { name: "Kurum iyzico hesabı ayarları" });
@@ -46,6 +50,7 @@ it("yeni canlı hesap ayarını açık anahtarlarla kaydeder, anahtarları temiz
     fireEvent.submit(form()); await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
     expect(vi.mocked(api.put).mock.calls[0][1]).toMatchObject({ expected_revision: null, environment: "LIVE", enabled: true,
       replace_account: false, api_key: "private-api-key", secret_key: "private-secret-key", request_id: expect.stringMatching(/^[0-9a-f-]{36}$/i) });
+    expect(vi.mocked(api.put).mock.calls[0][2]).toEqual({ params: { organization_id: "school-one" } });
     expect(await screen.findByText(/Ödeme ayarları kaydedildi/)).toBeInTheDocument();
     expect(screen.getByLabelText(/^API key/)).toHaveValue(""); expect(screen.getByLabelText(/^Secret key/)).toHaveValue("");
     expect(local).not.toHaveBeenCalled();
@@ -75,6 +80,15 @@ it("sonucu bilinmeyen kaydı kilitler ve değişmeyen gövdeyle aynı UUID üzer
   fireEvent.click(retry); await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
   expect(vi.mocked(api.put).mock.calls[1][1]).toBe(vi.mocked(api.put).mock.calls[0][1]);
   expect(Object.isFrozen(vi.mocked(api.put).mock.calls[0][1])).toBe(true);
+});
+
+it("kaydetme yanıtına rağmen aynı revizyon okunamazsa başarı göstermez", async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: { data: blank } });
+  render(<SchoolPaymentSettings />); await ready();
+  keys(); fireEvent.click(screen.getByLabelText("Online öğrenci ödemesini etkinleştir")); fireEvent.submit(form());
+  expect(await screen.findByRole("alert")).toHaveTextContent("Kaydedilen ödeme hesabı doğrulanamadı.");
+  expect(screen.queryByText(/Ödeme ayarları kaydedildi/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Aynı kaydı tekrar dene" })).toBeInTheDocument();
 });
 
 it("409 sonrası son revizyonu gösterir, kullanıcı incelemeden eski formu veya yeni UUID'yi göndermez", async () => {
