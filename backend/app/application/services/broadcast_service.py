@@ -8,7 +8,7 @@ from app.core.config import get_settings
 from app.core.exceptions import ConflictException, NotFoundException, ValidationException
 from app.domain.entities.communications import BroadcastJob
 from app.infrastructure.models.models import (Branch, ClassRoom, NotificationJob, NotificationRecipient,
-    NotificationStatus, NotificationChannel, OperationalRecord, Parent, Student, StudentParent, User, UserRole, Role)
+    NotificationStatus, NotificationChannel, OperationalRecord, Organization, Parent, Student, StudentParent, User, UserRole, Role)
 from app.infrastructure.repositories.base import BaseRepository
 
 
@@ -28,8 +28,16 @@ def stored_schedule(value):
     return value.replace(tzinfo=UTC) if value and value.tzinfo is None else value
 
 
-async def get(db, identifier):
-    job = (await db.execute(select(BroadcastJob).where(BroadcastJob.id == identifier))).scalar_one_or_none()
+def branch_filter(branch_id):
+    if branch_id is None:
+        return True
+    classes = select(ClassRoom.id).where(ClassRoom.branch_id == branch_id)
+    return or_(BroadcastJob.target_branch_id == branch_id,
+        (BroadcastJob.target_branch_id.is_(None)) & BroadcastJob.target_class_id.in_(classes))
+
+
+async def get(db, identifier, branch_id=None):
+    job = (await db.execute(select(BroadcastJob).where(BroadcastJob.id == identifier, branch_filter(branch_id)))).scalar_one_or_none()
     if job is None:
         raise NotFoundException("Toplu ileti bulunamadı")
     return job
@@ -140,11 +148,11 @@ async def serialize(db, job, preloaded=None):
         "sent_at": delivery.processed_at.isoformat() if delivery and delivery.status == NotificationStatus.SENT and delivery.processed_at else None}
 
 
-async def records(db, status=None, created_by=None, start_date=None, end_date=None, limit=100, offset=0):
+async def records(db, status=None, created_by=None, start_date=None, end_date=None, limit=100, offset=0, *, branch_id=None):
     from collections import defaultdict
     from datetime import time, timedelta
     query = select(BroadcastJob).outerjoin(NotificationJob,
-        (NotificationJob.reference_type == "BROADCAST") & (NotificationJob.reference_id == BroadcastJob.id))
+        (NotificationJob.reference_type == "BROADCAST") & (NotificationJob.reference_id == BroadcastJob.id)).where(branch_filter(branch_id))
     if status:
         requested = status.upper()
         equivalent = {"COMPLETED": NotificationStatus.SENT, "QUEUED": NotificationStatus.PENDING,
@@ -153,7 +161,7 @@ async def records(db, status=None, created_by=None, start_date=None, end_date=No
         if equivalent:
             condition = or_(condition, NotificationJob.status == equivalent)
         query = query.where(condition)
-    query = query.order_by(BroadcastJob.created_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(BroadcastJob.created_at.desc(), BroadcastJob.id).limit(limit).offset(offset)
     if created_by:
         query = query.where(BroadcastJob.created_by == created_by)
     if start_date and end_date and end_date < start_date:
@@ -189,7 +197,7 @@ async def edit(db, tenant, job, values):
     targets = await recipients(db, config.organization_id, values)
     fields = {key: getattr(values, key) for key in ("title", "message_content", "target_audience",
         "target_class_id", "target_branch_id", "channel")}
-    fields.update(scheduled_for=schedule(values.scheduled_for), total_recipients=len(targets))
+    fields.update(scheduled_for=schedule(values.scheduled_for) if values.scheduled_for else None, total_recipients=len(targets))
     changed = await db.execute(update(BroadcastJob).where(BroadcastJob.id == job.id, BroadcastJob.status == "DRAFT").values(**fields))
     if changed.rowcount != 1:
         raise ConflictException("Yalnız taslak ileti düzenlenebilir")
@@ -201,11 +209,29 @@ async def edit(db, tenant, job, values):
 
 async def create(db, tenant, values):
     await validate(db, tenant, values)
+    request = values.request_id
+    if request is not None:
+        await db.execute(update(Organization).where(Organization.id == tenant.organization_id)
+            .values(updated_at=Organization.updated_at))
+        previous = await db.scalar(select(BroadcastJob).where(BroadcastJob.id == request, BroadcastJob.created_by == tenant.user_id))
+        if previous is not None:
+            config = await configuration(db, previous)
+            expected = (values.title.strip(), values.message_content.strip(), values.target_audience, values.target_class_id,
+                values.target_branch_id, values.channel, schedule(values.scheduled_for) if values.scheduled_for else None, values.target_role)
+            actual = (previous.title, previous.message_content, previous.target_audience, previous.target_class_id,
+                previous.target_branch_id, previous.channel, stored_schedule(previous.scheduled_for),
+                config.data.get("target_role") if config else None)
+            if config is None or config.organization_id != tenant.organization_id or actual != expected:
+                raise ConflictException("İstek kimliği farklı bir toplu iletiye ait")
+            return await serialize(db, previous)
+        table = BroadcastJob.__table__
+        if await db.scalar(select(table.c.id).where(table.c.id == request)) is not None:
+            raise ConflictException("Toplu ileti işlem kimliği kullanılamıyor")
     targets = await recipients(db, tenant.organization_id, values)
-    job = BroadcastJob(title=values.title.strip(), message_content=values.message_content.strip(),
+    job = BroadcastJob(id=request, title=values.title.strip(), message_content=values.message_content.strip(),
         target_audience=values.target_audience, target_class_id=values.target_class_id,
         target_branch_id=values.target_branch_id, channel=values.channel,
-        scheduled_for=schedule(values.scheduled_for), status="DRAFT", total_recipients=len(targets),
+        scheduled_for=schedule(values.scheduled_for) if values.scheduled_for else None, status="DRAFT", total_recipients=len(targets),
         sent_count=0, failed_count=0, created_by=tenant.user_id)
     db.add(job)
     await db.flush()
@@ -216,9 +242,9 @@ async def create(db, tenant, values):
     return await serialize(db, job)
 
 
-async def send(db, tenant, job_id):
+async def send(db, tenant, job_id, branch_id=None):
     from types import SimpleNamespace
-    job = await get(db, job_id)
+    job = await get(db, job_id, branch_id)
     config = await configuration(db, job)
     if config is None:
         raise ValidationException("Eski toplu ileti doğrulanamıyor; yeni bir taslak oluşturun")
@@ -243,8 +269,8 @@ async def send(db, tenant, job_id):
     return await serialize(db, job)
 
 
-async def cancel(db, job_id):
-    job = await get(db, job_id)
+async def cancel(db, job_id, branch_id=None):
+    job = await get(db, job_id, branch_id)
     delivery = await notification(db, job_id)
     if delivery:
         updated = await db.execute(update(NotificationJob).where(NotificationJob.id == delivery.id,

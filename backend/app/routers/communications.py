@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as SchemaValidationError
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -18,7 +18,8 @@ from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
 from app.domain.entities import User, Branch, Class
 from app.application.services import broadcast_service
-from app.core.exceptions import ValidationException
+from app.core.exceptions import ConflictException, ValidationException
+from app.infrastructure.models.models import Organization
 
 router = APIRouter(prefix="/api/communications", tags=["Communications"])
 
@@ -34,6 +35,7 @@ class BroadcastJobCreate(BaseModel):
     target_role: Optional[Literal["OWNER", "ADMIN", "TEACHER", "STAFF"]] = None
     channel: Literal["SMS", "WHATSAPP", "EMAIL"] = "SMS"
     scheduled_for: Optional[datetime] = None
+    request_id: Optional[UUID] = None
 
 class BroadcastJobUpdate(BaseModel):
     title: Optional[str] = None
@@ -60,6 +62,7 @@ class MessageTemplateCreate(BaseModel):
     channel: str = Field(default="SMS")
     variables: Optional[List[str]] = None
     is_active: bool = Field(default=True)
+    request_id: Optional[UUID] = None
 
 
 # ==================== SMS Providers Endpoints ====================
@@ -133,26 +136,55 @@ async def get_broadcast_jobs(
     status: Optional[str] = Query(None), created_by: Optional[UUID] = Query(None),
     start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None),
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
+    branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    return success_response(await broadcast_service.records(db, status, created_by, start_date, end_date, limit, offset))
+    return success_response(await broadcast_service.records(db, status, created_by, start_date, end_date, limit, offset, branch_id=branch_id))
+
+
+@router.get("/broadcast-options")
+async def get_broadcast_options(
+    branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.write")),
+):
+    branches = (await db.execute(select(Branch).where(Branch.organization_id == tenant.organization_id,
+        Branch.deleted_at.is_(None)).order_by(Branch.name, Branch.id))).scalars().all()
+    query = select(Class).where(Class.organization_id == tenant.organization_id, Class.deleted_at.is_(None))
+    if branch_id:
+        query = query.where(Class.branch_id == branch_id)
+    classes = (await db.execute(query.order_by(Class.name, Class.id))).scalars().all()
+    return success_response({"branches": [{"id": str(row.id), "name": row.name} for row in branches],
+        "classes": [{"id": str(row.id), "name": row.name, "branch_id": str(row.branch_id)} for row in classes]})
+
+
+@router.get("/broadcast-jobs/{job_id}")
+async def get_broadcast_job(
+    job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("communications.read")),
+):
+    job = await broadcast_service.get(db, job_id, branch_id)
+    config = await broadcast_service.configuration(db, job)
+    return success_response({**await broadcast_service.serialize(db, job),
+        "target_role": config.data.get("target_role") if config else None})
 
 
 @router.post("/broadcast-jobs")
 async def create_broadcast_job(
-    job: BroadcastJobCreate, db: AsyncSession = Depends(get_db, scope="function"),
+    job: BroadcastJobCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
+    if branch_id is not None and job.target_branch_id != branch_id:
+        raise ValidationException("Toplu ileti hedefi seçili şubeyle eşleşmiyor")
     return success_response(await broadcast_service.create(db, tenant, job), "Toplu ileti taslağı kaydedildi")
 
 
 @router.put("/broadcast-jobs/{job_id}")
 async def update_broadcast_job(
-    job_id: UUID, job: BroadcastJobUpdate, db: AsyncSession = Depends(get_db, scope="function"),
+    job_id: UUID, job: BroadcastJobUpdate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    current = await broadcast_service.get(db, job_id)
+    current = await broadcast_service.get(db, job_id, branch_id)
     config = await broadcast_service.configuration(db, current)
     values = {key: getattr(current, key) for key in ("title", "message_content", "target_audience",
         "target_class_id", "target_branch_id", "channel", "scheduled_for")}
@@ -165,27 +197,30 @@ async def update_broadcast_job(
         validated = BroadcastJobCreate.model_validate(values)
     except SchemaValidationError as exc:
         raise ValidationException("Toplu ileti alanları geçersiz") from exc
+    if branch_id is not None and validated.target_branch_id != branch_id:
+        raise ValidationException("Toplu ileti hedefi seçili şubeyle eşleşmiyor")
     return success_response(await broadcast_service.edit(db, tenant, current, validated))
 
 
 @router.post("/broadcast-jobs/{job_id}/send")
 async def send_broadcast_job(
-    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    return success_response(await broadcast_service.send(db, tenant, job_id), "Toplu ileti gönderim kuyruğuna alındı")
+    return success_response(await broadcast_service.send(db, tenant, job_id, branch_id), "Toplu ileti gönderim kuyruğuna alındı")
 
 
 @router.delete("/broadcast-jobs/{job_id}")
 async def cancel_broadcast_job(
-    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    return success_response(await broadcast_service.cancel(db, job_id), "Toplu ileti iptal edildi")
+    return success_response(await broadcast_service.cancel(db, job_id, branch_id), "Toplu ileti iptal edildi")
 
 @router.get("/delivery-reports")
 async def get_delivery_reports(
     broadcast_job_id: Optional[UUID] = Query(None), status: Optional[str] = Query(None),
+    branch_id: UUID | None = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
@@ -194,8 +229,10 @@ async def get_delivery_reports(
     query = select(NotificationRecipient, NotificationJob).join(NotificationJob,
         NotificationJob.id == NotificationRecipient.notification_job_id).where(NotificationJob.reference_type == "BROADCAST")
     if broadcast_job_id:
-        await broadcast_service.get(db, broadcast_job_id)
+        await broadcast_service.get(db, broadcast_job_id, branch_id)
         query = query.where(NotificationJob.reference_id == broadcast_job_id)
+    elif branch_id:
+        query = query.where(NotificationJob.branch_id == branch_id)
     if status:
         from app.infrastructure.models.models import NotificationStatus
         try:
@@ -212,10 +249,10 @@ async def get_delivery_reports(
 
 @router.get("/broadcast-jobs/{job_id}/delivery-summary")
 async def get_delivery_summary(
-    job_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+    job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    await broadcast_service.get(db, job_id)
+    await broadcast_service.get(db, job_id, branch_id)
     rows = await broadcast_service.delivery_rows(db, job_id)
     from app.infrastructure.models.models import NotificationStatus
     sent = sum(row.status == NotificationStatus.SENT for row in rows)
@@ -227,6 +264,7 @@ async def get_delivery_summary(
 @router.get("/message-templates")
 async def get_message_templates(
     channel: Optional[str] = Query(None),
+    record_id: UUID | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
@@ -239,8 +277,10 @@ async def get_message_templates(
     
     if channel:
         query = query.where(MessageTemplate.channel == channel.upper())
+    if record_id:
+        query = query.where(MessageTemplate.id == record_id)
     
-    query = query.order_by(MessageTemplate.name).limit(limit).offset(offset)
+    query = query.order_by(MessageTemplate.name, MessageTemplate.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     templates = result.scalars().all()
@@ -269,12 +309,29 @@ async def create_message_template(
 ):
     """Create a new message template"""
     from app.domain.entities.message_template import MessageTemplate
-    
+    identifier = template.request_id or uuid4()
+    if template.request_id:
+        if not tenant.organization_id:
+            raise ValidationException("Şablon için kurum seçin")
+        await db.execute(update(Organization).where(Organization.id == tenant.organization_id)
+            .values(updated_at=Organization.updated_at))
+        row = await db.scalar(select(MessageTemplate).where(MessageTemplate.id == identifier,
+            MessageTemplate.organization_id == tenant.organization_id))
+        if row:
+            if (row.name, row.subject, row.body_template, row.channel, row.is_active) != (
+                template.name, template.subject, template.content, template.channel.upper(), template.is_active
+            ):
+                raise ConflictException("İstek kimliği farklı bir şablona ait")
+            return success_response({"id": str(row.id), "name": row.name, "channel": row.channel, "created_at": row.created_at.isoformat()})
+        table = MessageTemplate.__table__
+        if await db.scalar(select(table.c.id).where(table.c.id == identifier)) is not None:
+            raise ConflictException("Şablon işlem kimliği kullanılamıyor")
     new_template = MessageTemplate(
+        id=identifier,
         name=template.name,
         subject=template.subject,
         organization_id=tenant.organization_id,
-        code=f"custom-{uuid4()}",
+        code=f"custom-{identifier}",
         body_template=template.content,
         channel=template.channel.upper(),
         is_active=template.is_active

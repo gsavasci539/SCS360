@@ -1,5 +1,6 @@
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
-from app.infrastructure.models.models import (NotificationJob, NotificationRecipient, NotificationStatus,
+from app.infrastructure.models.models import (Branch, NotificationChannel, NotificationJob, NotificationRecipient, NotificationStatus,
     Parent, Permission, Role, StudentParent, User)
 from app.infrastructure.notifications.base import ProviderResult
 from app.infrastructure.notifications.outbox_worker import process_pending_jobs
@@ -85,6 +86,74 @@ async def test_broadcast_deduplicates_real_contacts_and_queues_without_claiming_
     summary = (await client.get(path + "/delivery-summary", headers=auth(data["manager"]))).json()["data"]
     assert summary["sent"] == 1 and summary["delivered"] == 0
     assert (await client.delete(path, headers=auth(data["manager"]))).status_code == 409
+
+
+async def test_outbox_selected_branch_pagination_and_active_lease(broadcast_client):
+    client, sessions, data = broadcast_client
+    async with sessions() as db:
+        alternate = Branch(organization_id=data["org"].id, name="Outbox alternate")
+        actor = User(organization_id=data["org"].id, email="isolated-outbox@test.invalid", password_hash="unused",
+            first_name="Test", last_name="Operator", is_super_admin=True)
+        db.add_all([alternate, actor])
+        await db.flush()
+        job = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+            channel=NotificationChannel.EMAIL, body="Isolated", subject="Outbox", status=NotificationStatus.FAILED,
+            scheduled_at=datetime.now(UTC), locked_until=datetime.now(UTC) + timedelta(minutes=10))
+        db.add(job)
+        await db.flush()
+        recipient = NotificationRecipient(notification_job_id=job.id, recipient_address="isolated-recipient@test.invalid",
+            status=NotificationStatus.FAILED)
+        db.add(recipient)
+        await db.commit()
+    headers = {**auth(actor), "X-SCS360-Organization-Id": str(data["org"].id)}
+    scope = {"branch_id": str(data["branch"].id)}
+    wrong = {"branch_id": str(alternate.id)}
+    recipient_path = f"/api/outbox/{recipient.id}"
+    retry_path = f"/api/outbox/retry/{recipient.id}"
+    listed = await client.get("/api/outbox", headers=headers, params={**scope, "page_size": 1})
+    data_page = listed.json()["data"]
+    assert data_page["total"] == 1 and [row["id"] for row in data_page["items"]] == [str(recipient.id)]
+    assert (await client.get(recipient_path, headers=headers, params=wrong)).status_code == 404
+    assert (await client.post(retry_path, headers=headers, params=wrong)).status_code == 404
+    assert (await client.post(retry_path, headers=headers, params=scope)).status_code == 409
+    assert (await client.delete(recipient_path, headers=headers, params=scope)).status_code == 409
+    async with sessions() as db:
+        stored = await db.get(NotificationJob, job.id)
+        stored.locked_until = None
+        await db.commit()
+    assert (await client.post(retry_path, headers=headers, params=scope)).json()["data"]["status"] == "PENDING"
+    verified = await client.get(recipient_path, headers=headers, params=scope)
+    assert verified.json()["data"]["status"] == "PENDING" and verified.json()["data"]["sent_at"] is None
+    assert (await client.delete(recipient_path, headers=headers, params=scope)).status_code == 200
+    assert (await client.get(recipient_path, headers=headers, params=scope)).status_code == 404
+
+
+async def test_broadcast_and_template_replay_with_selected_branch_receipt(broadcast_client):
+    client, _, data = broadcast_client
+    actor = auth(data["manager"])
+    branch = str(data["branch"].id)
+    params = {"branch_id": branch}
+    identifier = str(uuid4())
+    draft = {**payload(data), "target_branch_id": branch, "request_id": identifier}
+    options = await client.get("/api/communications/broadcast-options", headers=actor, params=params)
+    assert options.status_code == 200 and {row["branch_id"] for row in options.json()["data"]["classes"]} == {branch}
+    for _ in range(2):
+        response = await client.post("/api/communications/broadcast-jobs", headers=actor, params=params, json=draft)
+        assert response.status_code == 200 and response.json()["data"]["id"] == identifier, response.text
+    assert (await client.post("/api/communications/broadcast-jobs", headers=actor,
+        params=params, json={**draft, "title": "Farklı"})).status_code == 409
+    readback = await client.get(f"/api/communications/broadcast-jobs/{identifier}", headers=actor, params=params)
+    assert readback.json()["data"]["status"] == "DRAFT"
+    assert readback.json()["data"]["target_class_id"] == draft["target_class_id"]
+    assert (await client.get(f"/api/communications/broadcast-jobs/{identifier}", headers=actor,
+        params={"branch_id": str(data["other_branch"].id)})).status_code == 404
+    template_id = str(uuid4())
+    template = {"name": "İzole şablon", "content": "İzole metin", "channel": "EMAIL", "request_id": template_id}
+    for _ in range(2):
+        response = await client.post("/api/communications/message-templates", headers=actor, json=template)
+        assert response.status_code == 200 and response.json()["data"]["id"] == template_id, response.text
+    stored = await client.get("/api/communications/message-templates", headers=actor, params={"record_id": template_id})
+    assert [row["content"] for row in stored.json()["data"]] == [template["content"]]
 
 
 async def test_broadcast_validation_editing_and_cancellation_are_real(broadcast_client):
