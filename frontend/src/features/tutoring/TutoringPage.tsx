@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader, Badge, ErrorState, LoadingState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { shortDate } from "../../lib/format";
+import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
 import type { DataRecord } from "../../types/api";
 
@@ -12,6 +13,17 @@ interface Choice { id: string; name: string }
 const firstPages = { sessions: 1, requests: 1, availability: 1 };
 const week = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
 const text = (value: unknown) => String(value ?? "");
+type TutoringWrite = Record<string, string | boolean | null>;
+const decisions: Record<string, TutoringWrite> = { cancel: { status: "CANCELLED" }, attendance: { status: "COMPLETED" },
+  approve: { status: "APPROVED" }, reject: { status: "REJECTED" }, disable: { is_available: false } };
+
+async function confirmRecord(kind: Kind, id: string, fields: TutoringWrite) {
+  const response = await api.get(`/tutoring/${kind}`, { params: { record_id: id, limit: 1 } });
+  const row = response.data.data?.[0] as DataRecord | undefined;
+  if (row?.id !== id || !Object.entries(fields).every(([key, value]) => text(row[key]) === text(value))) {
+    throw new Error("Etüt kaydı sunucudan doğrulanamadı.");
+  }
+}
 
 export function TutoringPage() {
   const canWrite = useAuthStore((state) => state.can("tutoring.write"));
@@ -24,6 +36,7 @@ export function TutoringPage() {
   const [pages, setPages] = useState(firstPages), [summary, setSummary] = useState<DataRecord>({ id: "summary" });
   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [revision, setRevision] = useState(0), [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<DataRecord | null>(null), [editId, setEditId] = useState("");
+  const pending = useRef<{ signature: string; id: string } | null>(null);
   const { showToast } = useToast();
   useEffect(() => {
     const controller = new AbortController(); setOptionsLoading(true);
@@ -51,22 +64,40 @@ export function TutoringPage() {
   }, [studentId, teacherId, pages, revision]);
   function scope(student: string, teacher: string) { setParams({ ...(student ? { student } : {}), ...(teacher ? { teacher } : {}) }); setPages(firstPages); }
   function payload(form: HTMLFormElement) {
-    return Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, value === "" ? null : value]));
+    return Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, String(value).trim() || null]));
   }
   async function save(event: FormEvent<HTMLFormElement>, kind: Kind) {
-    event.preventDefault(); const form = event.currentTarget;
+    event.preventDefault();
+    if (!canWrite || busy) return;
+    const form = event.currentTarget;
     const body = { ...payload(form), teacher_id: teacherId || null, ...(kind !== "availability" ? { student_id: studentId } : {}) };
     setBusy(true);
     try {
-      if (kind === "sessions" && editId) await api.put(`/tutoring/sessions/${editId}`, body); else await api.post(`/tutoring/${kind}`, body);
+      const existing = kind === "sessions" ? editId : "";
+      const signature = JSON.stringify([kind, body]);
+      if (!existing && pending.current?.signature !== signature) pending.current = { signature, id: newRequestId() };
+      const id = existing || pending.current!.id;
+      const response = existing ? await api.put(`/tutoring/sessions/${id}`, body)
+        : await api.post(`/tutoring/${kind}`, { ...body, request_id: id });
+      if (response.data.data?.id !== id) throw new Error("Etüt işlem kimliği doğrulanamadı.");
+      await confirmRecord(kind, id, { ...body, ...(kind === "availability" ? { is_available: true } :
+        { status: kind === "sessions" ? "SCHEDULED" : "PENDING" }) });
+      pending.current = null;
       form.reset(); if (kind === "sessions") { setEditId(""); setDraft(null); }
       setRevision((value) => value + 1); setPages(firstPages); showToast("Etüt kaydı kaydedildi");
     } catch (reason) { showToast("Etüt kaydedilemedi", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }
-  async function action(path: string, body?: unknown, remove = false) {
+  async function action(path: string, body?: TutoringWrite, remove = false) {
+    if (!canWrite || busy) return;
     setBusy(true);
-    try { if (remove) await api.delete(path); else await api.post(path, body); setRevision((value) => value + 1); showToast("İşlem kaydedildi"); }
+    try {
+      const [, , kind, id, decision] = path.split("/");
+      const response = remove ? await api.delete(path) : await api.post(path, body);
+      if (response.data.data?.id !== id) throw new Error("Etüt işlem kimliği doğrulanamadı.");
+      await confirmRecord(kind as Kind, id, { ...body, ...decisions[remove ? "disable" : decision] });
+      setRevision((value) => value + 1); showToast("Etüt işlemi doğrulandı");
+    }
     catch (reason) { showToast("İşlem tamamlanamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }

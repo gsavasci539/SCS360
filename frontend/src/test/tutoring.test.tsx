@@ -12,10 +12,25 @@ const manager: AuthUser = { id: "manager", first_name: "Test", last_name: "User"
 const choices = { students: [{ id: "child", name: "Deniz Kabul" }], teachers: [{ id: "teacher", name: "Test Öğretmen" }], today: "2026-11-03" };
 const request = { id: "request", student_id: "child", student_name: "Deniz Kabul", teacher_id: "teacher", subject: "Matematik", requested_date: "2026-11-05", preferred_time_start: "10:00", preferred_time_end: "11:00", status: "PENDING" };
 let requests = [request]; let sessions: Record<string, unknown>[] = [];
+const saved = new Map<string, Record<string, unknown>>();
 beforeEach(() => {
-  requests = [request]; sessions = []; useAuthStore.setState({ user: manager });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/tutoring/options" ? choices : path === "/tutoring/summary" ? { total_sessions: 214, pending_requests: 45 } : path === "/tutoring/requests" ? requests : path === "/tutoring/sessions" ? sessions : [] } }));
-  vi.mocked(api.post).mockResolvedValue({ data: { data: {} } }); vi.mocked(api.put).mockResolvedValue({ data: { data: {} } });
+  requests = [request]; sessions = []; saved.clear(); useAuthStore.setState({ user: manager });
+  vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { data: config?.params?.record_id
+    ? [saved.get(config.params.record_id)].filter(Boolean)
+    : path === "/tutoring/options" ? choices : path === "/tutoring/summary" ? { total_sessions: 214, pending_requests: 45 }
+      : path === "/tutoring/requests" ? requests : path === "/tutoring/sessions" ? sessions : [] } }));
+  const write = async (path: string, raw?: unknown) => {
+    const [, , kind, identifier, operation] = path.split("/");
+    const fields = (raw || {}) as Record<string, unknown>;
+    const id = identifier || String(fields.request_id);
+    const status = operation === "reject" ? "REJECTED" : operation === "attendance" ? "COMPLETED"
+      : kind === "sessions" ? "SCHEDULED" : "PENDING";
+    const row = { ...fields, id, status, is_available: kind === "availability" };
+    saved.set(id, row);
+    return { data: { data: row } };
+  };
+  vi.mocked(api.post).mockImplementation(write);
+  vi.mocked(api.put).mockImplementation(write);
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 const open = (entry = "/tutoring") => render(<MemoryRouter initialEntries={[entry]}><ToastProvider><TutoringPage /></ToastProvider></MemoryRouter>);
@@ -55,7 +70,10 @@ it("talep kararını JSON ile gönderir ve onaylı talepten gerçek ders formunu
   expect(within(form).getByLabelText("Etüt tarihi")).toHaveValue("2026-11-05");
   expect(within(form).getByLabelText("Başlangıç saati")).toHaveValue("10:00");
   fireEvent.click(within(form).getByRole("button", { name: "Dersi planla" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tutoring/sessions", expect.objectContaining({ subject: "Matematik", session_date: "2026-11-05" })));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tutoring/sessions", expect.objectContaining({
+    subject: "Matematik", session_date: "2026-11-05", request_id: expect.any(String),
+  })));
+  expect(await screen.findByText("Etüt kaydı kaydedildi")).toBeInTheDocument();
 });
 
 it("ret gerekçesi ve devam puanı doğru kayıt yollarına gider, listeler sayfalanır", async () => {
