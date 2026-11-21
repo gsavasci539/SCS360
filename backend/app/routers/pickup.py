@@ -28,9 +28,11 @@ from app.infrastructure.repositories.base import BaseRepository
 router = APIRouter(prefix="/api/dismissal", tags=["Dismissal"])
 
 
-async def lock_student(db, student_id):
-    changed = await db.execute(update(Student).where(Student.id == student_id, Student.deleted_at.is_(None))
-        .values(updated_at=Student.updated_at).execution_options(synchronize_session=False))
+async def lock_student(db, student_id, branch_id=None):
+    operation = update(Student).where(Student.id == student_id, Student.deleted_at.is_(None))
+    if branch_id:
+        operation = operation.where(Student.branch_id == branch_id)
+    changed = await db.execute(operation.values(updated_at=Student.updated_at).execution_options(synchronize_session=False))
     if changed.rowcount != 1:
         raise NotFoundException("Öğrenci bulunamadı")
     return (await db.execute(select(Student).where(Student.id == student_id).execution_options(populate_existing=True))).scalar_one()
@@ -177,12 +179,13 @@ async def get_pickup_authorizations(
 @router.post("/authorizations")
 async def create_pickup_authorization(
     authorization: PickupAuthorizationCreate,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.write"))
 ):
     """Create a new pickup authorization"""
     from app.domain.entities.pickup import PickupAuthorization
-    student = await lock_student(db, authorization.student_id)
+    student = await lock_student(db, authorization.student_id, branch_id)
     previous = await service.replay(db, tenant, authorization)
     if previous:
         return success_response(service.authorization_data(previous, student))
@@ -210,7 +213,7 @@ async def create_pickup_authorization(
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        student = (await db.execute(select(Student).where(Student.id == authorization.student_id))).scalar_one()
+        student = await lock_student(db, authorization.student_id, branch_id)
         previous = await service.replay(db, tenant, authorization)
         if previous:
             return success_response(service.authorization_data(previous, student))
@@ -230,6 +233,7 @@ async def create_pickup_authorization(
 async def update_pickup_authorization(
     authorization_id: UUID,
     authorization: PickupAuthorizationCreate,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.write"))
 ):
@@ -245,7 +249,7 @@ async def update_pickup_authorization(
         raise HTTPException(status_code=404, detail="Authorization not found")
     if authorization.student_id != existing_auth.student_id:
         raise ConflictException("Teslim yetkisinin öğrencisi değiştirilemez")
-    student = await lock_student(db, existing_auth.student_id)
+    student = await lock_student(db, existing_auth.student_id, branch_id)
     await db.refresh(existing_auth)
     if student.status != "ACTIVE" or existing_auth.status != "ACTIVE":
         raise HTTPException(409, "Yalnız aktif öğrenciye ait açık teslim yetkisi düzenlenebilir")
@@ -273,6 +277,7 @@ async def update_pickup_authorization(
 @router.delete("/authorizations/{authorization_id}")
 async def revoke_pickup_authorization(
     authorization_id: UUID,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.write"))
 ):
@@ -286,7 +291,7 @@ async def revoke_pickup_authorization(
     
     if not auth:
         raise HTTPException(status_code=404, detail="Authorization not found")
-    student = await lock_student(db, auth.student_id)
+    student = await lock_student(db, auth.student_id, branch_id)
     await db.refresh(auth)
     
     if auth.status != "REVOKED":
@@ -307,13 +312,13 @@ async def revoke_pickup_authorization(
 @router.post("/verify-pickup")
 async def verify_pickup(
     request: PickupVerificationRequest,
+    branch_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("dismissal.write"))
 ):
     """Check registered identity and persist the authenticated operator."""
     from app.domain.entities.pickup import PickupAuthorization, PickupLog
-    await lock_student(db, request.student_id)
-    student = (await db.execute(select(Student).where(Student.id == request.student_id))).scalar_one()
+    student = await lock_student(db, request.student_id, branch_id)
 
     def recorded(log, repeated=False):
         if log.student_id != request.student_id or log.pickup_person_id != request.pickup_person_id or log.verified_by != tenant.user_id:
@@ -347,6 +352,7 @@ async def verify_pickup(
         await db.commit()
     except IntegrityError:
         await db.rollback()
+        student = await lock_student(db, request.student_id, branch_id)
         previous = (await db.execute(select(PickupLog).where(PickupLog.id == request.request_id))).scalar_one_or_none()
         if previous:
             return recorded(previous, True)

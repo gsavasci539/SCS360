@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader, Badge, ErrorState, LoadingState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
@@ -6,6 +6,7 @@ import { api, apiMessage } from "../../lib/api";
 import { newRequestId } from "../../lib/requestId";
 import { downloadFile } from "../../lib/download";
 import { useAuthStore } from "../../stores/auth";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import type { DataRecord } from "../../types/api";
 
 interface Choice { id: string; name: string; active?: boolean }
@@ -13,6 +14,16 @@ const text = (value: unknown) => String(value ?? "");
 const instant = (value: unknown) => value ? new Date(text(value)).toLocaleString("tr-TR") : "Belirtilmedi";
 
 export function SecurityPage() {
+  const user = useAuthStore((state) => state.user);
+  const session = useAuthStore((state) => state.sessionVersion);
+  const canRead = useAuthStore((state) => state.can("security.read"));
+  const workspace = usePlatformWorkspace((state) => state.workspace);
+  const institution = user?.is_super_admin ? workspace?.operatorId === user.id ? workspace.id : null : user?.organization_id;
+  if (!user || !institution || !canRead) return <p>Güvenlik kayıtları için yetkili kurum çalışma alanını açın.</p>;
+  return <SecurityWorkspace key={JSON.stringify([session, user.id, institution, user.branch_ids])} />;
+}
+
+function SecurityWorkspace() {
   const canWrite = useAuthStore((state) => state.can("security.write"));
   const canDismissal = useAuthStore((state) => state.can("dismissal.read"));
   const [params, setParams] = useSearchParams(); const studentId = params.get("student") || "";
@@ -24,6 +35,9 @@ export function SecurityPage() {
   const [busy, setBusy] = useState(false), [downloading, setDownloading] = useState("");
   const [issueId, setIssueId] = useState(() => newRequestId()), [gateId, setGateId] = useState(() => newRequestId());
   const [result, setResult] = useState<DataRecord | null>(null); const { showToast } = useToast();
+  const pending = useRef<AbortController | null>(null);
+  const activeDownload = useRef<AbortController | null>(null);
+  useLayoutEffect(() => () => { pending.current?.abort(); activeDownload.current?.abort(); }, [studentId, canWrite]);
   useEffect(() => { setIssueId(newRequestId()); setGateId(newRequestId()); setResult(null); }, [studentId]);
   useEffect(() => {
     const controller = new AbortController(); setOptionsLoading(true);
@@ -44,26 +58,75 @@ export function SecurityPage() {
     return () => controller.abort();
   }, [studentId, day, pages, revision]);
   function refresh() { setRevision((value) => value + 1); }
+  async function change(title: string, action: (signal: AbortSignal) => Promise<void>) {
+    if (!canWrite || pending.current) return;
+    const controller = new AbortController(); pending.current = controller; setBusy(true);
+    try { await action(controller.signal); }
+    catch (reason) { if (!controller.signal.aborted) showToast(title, apiMessage(reason), "error"); }
+    finally { if (pending.current === controller) { pending.current = null; setBusy(false); } }
+  }
+  async function readRecord(path: string, id: string, student: string, signal: AbortSignal) {
+    const response = await api.get(path, { params: { record_id: id, student_id: student, limit: 1 }, signal });
+    if (signal.aborted) return;
+    const rows = response.data.data;
+    if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id || rows[0].student_id !== student) {
+      throw new Error("Sunucudaki güvenlik kaydı işlemle eşleşmedi.");
+    }
+    return rows[0] as DataRecord;
+  }
   async function issue(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; const form = event.currentTarget; setBusy(true);
-    try { await api.post("/security/digital-id/generate", { student_id: studentId, expires_hours: Number(new FormData(form).get("expires_hours")), request_id: issueId }); setIssueId(newRequestId()); setPages({ tokens: 1, logs: 1 }); refresh(); showToast("Öğrenci kimliği oluşturuldu"); }
-    catch (reason) { showToast("Kimlik oluşturulamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
+    event.preventDefault(); if (!ready) return; const form = event.currentTarget;
+    await change("Kimlik oluşturulamadı", async (signal) => {
+      const response = await api.post("/security/digital-id/generate", {
+        student_id: studentId, expires_hours: Number(new FormData(form).get("expires_hours")), request_id: issueId,
+      }, { signal });
+      if (signal.aborted) return;
+      if (response.data.data?.id !== issueId || response.data.data.student_id !== studentId) throw new Error("Kimlik yanıtı doğrulanamadı.");
+      const stored = await readRecord("/security/digital-ids", issueId, studentId, signal);
+      if (signal.aborted) return;
+      if (stored?.status !== "ACTIVE") throw new Error("Oluşturulan kimlik etkin görünmüyor.");
+      setIssueId(newRequestId()); setPages({ tokens: 1, logs: 1 }); refresh(); showToast("Öğrenci kimliği oluşturuldu");
+    });
   }
   async function verify(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return; const form = event.currentTarget; setBusy(true);
+    event.preventDefault(); const form = event.currentTarget;
     const body = Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, value === "" ? null : value]));
-    try {
-      const response = await api.post("/security/gate-logs/verify-qr", { ...body, request_id: gateId }); const data = response.data.data;
-      setResult(data); if (data.authorized) { form.reset(); setGateId(newRequestId()); setPages((value) => ({ ...value, logs: 1 })); refresh(); }
-    } catch (reason) { showToast("Kapı kaydı tamamlanamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
+    await change("Kapı kaydı tamamlanamadı", async (signal) => {
+      setResult(null);
+      const response = await api.post("/security/gate-logs/verify-qr", { ...body, request_id: gateId }, { signal });
+      if (signal.aborted) return;
+      const data = response.data.data;
+      if (typeof data?.authorized !== "boolean" || data.verification_scope !== "STUDENT_ID_ONLY") throw new Error("Geçiş yanıtı doğrulanamadı.");
+      if (!data.authorized) { setResult(data); return; }
+      if (!data.student_id || data.gate_log_id !== gateId) throw new Error("Geçişin kalıcı kimliği doğrulanamadı.");
+      const record = await readRecord("/security/gate-logs", gateId, data.student_id, signal);
+      if (signal.aborted) return;
+      if (record?.status !== "AUTHORIZED" || record?.direction !== body.direction || record?.verification_method !== body.verification_method) {
+        throw new Error("Kapı geçmişi doğrulanan geçişle eşleşmedi.");
+      }
+      setResult(data); form.reset(); setGateId(newRequestId()); setPages((value) => ({ ...value, logs: 1 })); refresh();
+    });
   }
   async function revoke(row: DataRecord) {
-    setBusy(true); try { await api.post(`/security/digital-ids/${row.id}/revoke`); refresh(); showToast("Kimlik iptal edildi"); }
-    catch (reason) { showToast("Kimlik iptal edilemedi", apiMessage(reason), "error"); } finally { setBusy(false); }
+    await change("Kimlik iptal edilemedi", async (signal) => {
+      const response = await api.post(`/security/digital-ids/${encodeURIComponent(row.id)}/revoke`, undefined, { signal });
+      if (signal.aborted) return;
+      if (response.data.data?.id !== row.id || response.data.data?.status !== "REVOKED") throw new Error("Kimliğin iptali doğrulanamadı.");
+      const stored = await readRecord("/security/digital-ids", row.id, text(row.student_id), signal);
+      if (signal.aborted) return;
+      if (stored?.status !== "REVOKED") throw new Error("Sunucudaki kimlik iptal edilmiş görünmüyor.");
+      refresh(); showToast("Kimlik iptal edildi");
+    });
   }
   async function download(row: DataRecord) {
-    setDownloading(row.id); try { await downloadFile(`/security/digital-ids/${row.id}/qr-code`, `SCS360-kimlik-${row.student_id}.svg`); }
-    catch (reason) { showToast("QR indirilemedi", apiMessage(reason), "error"); } finally { setDownloading(""); }
+    if (activeDownload.current || row.status !== "ACTIVE") return;
+    const controller = new AbortController(); activeDownload.current = controller; setDownloading(row.id);
+    try {
+      await downloadFile(`/security/digital-ids/${encodeURIComponent(row.id)}/qr-code`, `SCS360-kimlik-${row.student_id}.svg`,
+        { signal: controller.signal, expectedContentType: "image/svg+xml" });
+    } catch (reason) {
+      if (!controller.signal.aborted) showToast("QR indirilemedi", apiMessage(reason), "error");
+    } finally { if (activeDownload.current === controller) { activeDownload.current = null; setDownloading(""); } }
   }
   function pagination(kind: "tokens" | "logs", count: number) { return <div className="toolbar" aria-label={`${kind === "tokens" ? "Kimlik" : "Kapı kaydı"} sayfaları`}><button className="btn btn-secondary" disabled={loading || pages[kind] === 1} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] - 1 }))}>Önceki</button><span>Sayfa {pages[kind]}</span><button className="btn btn-secondary" disabled={loading || count <= 20} onClick={() => setPages((value) => ({ ...value, [kind]: value[kind] + 1 }))}>Sonraki</button></div>; }
   const ready = students.some((row) => row.id === studentId && row.active !== false) && !optionsLoading && !optionsError;

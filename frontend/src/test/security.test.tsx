@@ -26,7 +26,8 @@ it("salt okuma kullanıcı kimlik oluşturmaz, korumalı QR dosyasını doğru A
   const table = screen.getByRole("region", { name: "Öğrenci kimlikleri" }); await within(table).findByText("Kimliği aç");
   expect(screen.queryByRole("region", { name: "Güvenlik işlemleri" })).not.toBeInTheDocument();
   fireEvent.click(within(table).getByText("Kimliği aç")); fireEvent.click(within(table).getByRole("button", { name: "QR kodunu indir" }));
-  await waitFor(() => expect(downloadFile).toHaveBeenCalledWith("/security/digital-ids/token/qr-code", "SCS360-kimlik-child.svg"));
+  await waitFor(() => expect(downloadFile).toHaveBeenCalledWith("/security/digital-ids/token/qr-code", "SCS360-kimlik-child.svg",
+    expect.objectContaining({ signal: expect.any(AbortSignal), expectedContentType: "image/svg+xml" })));
   expect(api.post).not.toHaveBeenCalled(); expect(api.get).not.toHaveBeenCalledWith("/students");
   expect(screen.getByLabelText("Kapı özeti")).toHaveTextContent("234");
 });
@@ -43,12 +44,12 @@ it("başarısız kimlik oluşturma tekrarı aynı istek UUID'sini ve süreyi kor
   await screen.findByText("Güvenlik isteği tamamlanamadı");
   fireEvent.click(within(form).getByRole("button", { name: "Öğrenci kimliğini oluştur" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
-  expect(vi.mocked(api.post).mock.calls[0]).toEqual(vi.mocked(api.post).mock.calls[1]);
+  expect(vi.mocked(api.post).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.post).mock.calls[1].slice(0, 2));
   expect(vi.mocked(api.post).mock.calls[0][1]).toEqual(expect.objectContaining({ student_id: "child", expires_hours: 8, request_id: expect.any(String) }));
 });
 
 it("eşleşmeyen kodu görünür ret olarak gösterir ve girilen kodu korur", async () => {
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { authorized: false, message: "Kimlik eşleşmedi" } } }); open();
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { authorized: false, message: "Kimlik eşleşmedi", verification_scope: "STUDENT_ID_ONLY" } } }); open();
   const form = screen.getByRole("form", { name: "Kapı geçişi kaydet" });
   fireEvent.change(within(form).getByLabelText("QR / barkod değeri"), { target: { value: "unknown-code" } });
   fireEvent.click(within(form).getByRole("button", { name: "Kodu doğrula ve geçişi kaydet" }));
@@ -63,11 +64,27 @@ it("kimlik iptali, tarih süzmesi ve sonraki kimlik sayfası gerçek adresleri k
   tokens = Array.from({ length: 21 }, (_, index) => ({ ...token, id: `token${index}` })); open();
   const table = screen.getByRole("region", { name: "Öğrenci kimlikleri" }); await within(table).findAllByText("Kimliği aç");
   fireEvent.click(within(table).getAllByText("Kimliği aç")[0]); fireEvent.click(within(table).getAllByRole("button", { name: "Kimliği iptal et", hidden: true })[0]);
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/security/digital-ids/token0/revoke"));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/security/digital-ids/token0/revoke", undefined,
+    expect.objectContaining({ signal: expect.any(AbortSignal) })));
   await waitFor(() => expect(screen.getByLabelText("Kapı kaydı günü")).toBeEnabled());
   fireEvent.change(screen.getByLabelText("Kapı kaydı günü"), { target: { value: "2026-11-02" } });
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/security/gate-logs", expect.objectContaining({ params: expect.objectContaining({ start_date: "2026-11-02", end_date: "2026-11-02" }) })));
   const pager = within(screen.getByLabelText("Kimlik sayfaları")); await waitFor(() => expect(pager.getByRole("button", { name: "Sonraki" })).toBeEnabled());
   fireEvent.click(pager.getByRole("button", { name: "Sonraki" }));
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/security/digital-ids", expect.objectContaining({ params: expect.objectContaining({ offset: 20, limit: 21 }) })));
+});
+
+it("bağlı kalıcı kapı kaydı eksikse geçişi başarı olarak göstermez", async () => {
+  vi.mocked(api.post).mockImplementation(async (_path, values) => ({ data: { data: { authorized: true,
+    verification_scope: "STUDENT_ID_ONLY", student_id: "child", gate_log_id: (values as { request_id: string }).request_id,
+  } } }));
+  open();
+  const form = screen.getByRole("form", { name: "Kapı geçişi kaydet" });
+  fireEvent.change(within(form).getByLabelText("QR / barkod değeri"), { target: { value: "isolated-code" } });
+  fireEvent.click(within(form).getByRole("button", { name: "Kodu doğrula ve geçişi kaydet" }));
+  expect(await screen.findByText("Kapı kaydı tamamlanamadı")).toBeInTheDocument();
+  expect(screen.queryByText(/Geçiş kaydedildi/)).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith("/security/gate-logs", expect.objectContaining({
+    params: { record_id: expect.any(String), student_id: "child", limit: 1 },
+  }));
 });
