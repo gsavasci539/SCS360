@@ -1,216 +1,208 @@
-import { Check, Plus, Save, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Plus, Save, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useToast } from "../../components/Toast";
-import { EmptyState, LoadingState, Modal, PageHeader } from "../../components/ui";
+import { EmptyState, ErrorState, LoadingState, Modal, PageHeader } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
-import { toArray } from "../../lib/data";
+import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
-import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
+import { usePlatformWorkspace } from "../../stores/platformWorkspace";
+import type { ApiResponse } from "../../types/api";
 
-export function RolesPage() {
-  const [roles, setRoles] = useState<DataRecord[]>([]);
-  const [permissions, setPermissions] = useState<DataRecord[]>([]);
-  const [selected, setSelected] = useState("");
-  const [assigned, setAssigned] = useState<Set<string>>(new Set());
+interface Role { id: string; name: string; slug: string; description: string | null; is_system: boolean; organization_id: string | null }
+interface Permission { id: string; code: string; name: string; module: string; description: string | null; assignable: boolean }
+interface Matrix { roleId: string; saved: Set<string>; draft: Set<string> }
+const emptyRole = { name: "", slug: "", description: "" };
+
+function verified<T>(reply: ApiResponse<T>): T {
+  if (!reply.success || reply.data == null) throw new Error("Sunucu rol kaydını doğrulamadı");
+  return reply.data;
+}
+
+function sameIds(left: Set<string>, right: Set<string>) {
+  return left.size === right.size && [...left].every((id) => right.has(id));
+}
+
+async function readMatrix(roleId: string, signal?: AbortSignal) {
+  const response = await api.get<ApiResponse<Permission[]>>(`/roles/${roleId}/permissions`, { signal });
+  return new Set(verified(response.data).map((row) => row.id));
+}
+
+export function RolesPage({ initialRoleId }: { initialRoleId?: string } = {}) {
+  const user = useAuthStore((state) => state.user);
+  const canWrite = useAuthStore((state) => state.can("users.write") || state.can("role.write"));
+  const workspace = usePlatformWorkspace((state) => state.workspace?.id);
+  const organization = user?.is_super_admin ? workspace : user?.organization_id;
+  if (!organization) return <ErrorState message="Rol yönetimi için kurum çalışma alanını seçin." />;
+  return <RoleWorkspace key={JSON.stringify([user?.id, organization, initialRoleId])}
+    organization={organization} initialRoleId={initialRoleId} canWrite={canWrite} />;
+}
+
+function RoleWorkspace({ organization, initialRoleId, canWrite }: { organization: string; initialRoleId?: string; canWrite: boolean }) {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [selected, setSelected] = useState(initialRoleId || "");
+  const [matrix, setMatrix] = useState<Matrix | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matrixError, setMatrixError] = useState("");
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+  const [matrixRevision, setMatrixRevision] = useState(0);
+  const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
-  const [role, setRole] = useState({ name: "", slug: "", description: "" });
+  const [role, setRole] = useState(emptyRole);
+  const createAttempt = useRef<{ signature: string; id: string } | null>(null);
+  const active = useRef(false);
   const { showToast } = useToast();
-  const canWrite = useAuthStore((state) => state.can("user.write"));
 
-  async function load() {
-    setLoading(true);
-    try {
-      const [r, p] = await Promise.all([
-        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/roles"),
-        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>("/permissions")
-      ]);
-      const roleItems = toArray(r.data.data);
-      setRoles(roleItems);
-      setPermissions(toArray(p.data.data));
-      if (!selected && roleItems[0]) setSelected(roleItems[0].id);
-    } catch (e) {
-      showToast("Yetki verileri yüklenemedi", apiMessage(e), "error");
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    setError(""); setLoading(true);
+    Promise.all([
+      api.get<ApiResponse<Role[]>>("/roles", { signal: controller.signal }),
+      api.get<ApiResponse<Permission[]>>("/permissions", { signal: controller.signal }),
+    ]).then(([roleResult, permissionResult]) => {
+      if (controller.signal.aborted) return;
+      const rows = verified(roleResult.data);
+      setRoles(rows); setPermissions(verified(permissionResult.data));
+      setSelected((current) => current || rows[0]?.id || "");
+    }).catch((reason) => {
+      if (!controller.signal.aborted) setError(apiMessage(reason));
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [revision]);
 
   useEffect(() => {
     if (!selected) return;
-    api.get<ApiResponse<DataRecord[] | string[] | Paginated<DataRecord>>>(`/roles/${selected}/permissions`)
-      .then((r) => {
-        const data = r.data.data;
-        const ids = Array.isArray(data)
-          ? data.map((permission) => typeof permission === "string" ? permission : permission.id)
-          : toArray(data).map((permission) => permission.id);
-        setAssigned(new Set(ids));
-      })
-      .catch(() => setAssigned(new Set()));
-  }, [selected]);
+    const controller = new AbortController();
+    setMatrix(null); setMatrixError("");
+    readMatrix(selected, controller.signal).then((saved) => {
+      if (!controller.signal.aborted) setMatrix({ roleId: selected, saved, draft: new Set(saved) });
+    }).catch((reason) => {
+      if (!controller.signal.aborted) setMatrixError(apiMessage(reason));
+    });
+    return () => controller.abort();
+  }, [selected, matrixRevision]);
 
-  const groups = useMemo(() =>
-    permissions.reduce<Record<string, DataRecord[]>>((result, permission) => {
-      const module = String(permission.module || "Diğer");
-      (result[module] ||= []).push(permission);
-      return result;
-    }, {}), [permissions]);
+  const groups = useMemo(() => {
+    const grouped = new Map<string, Permission[]>();
+    for (const permission of permissions) {
+      const rows = grouped.get(permission.module) ?? [];
+      rows.push(permission);
+      grouped.set(permission.module, rows);
+    }
+    return [...grouped];
+  }, [permissions]);
+  const selectedRole = roles.find((item) => item.id === selected);
+  const editable = canWrite && selectedRole?.organization_id === organization && !selectedRole.is_system;
+  const activeMatrix = matrix?.roleId === selected ? matrix : null;
+  const setPermission = useCallback((id: string, checked: boolean) => {
+    setMatrix((current) => {
+      if (!current) return current;
+      const draft = new Set(current.draft);
+      if (checked) draft.add(id); else draft.delete(id);
+      return { ...current, draft };
+    });
+  }, []);
 
   async function saveMatrix() {
-    if (!canWrite) return;
+    if (!editable || !activeMatrix || busy || sameIds(activeMatrix.saved, activeMatrix.draft)) return;
+    setBusy(true);
+    const { roleId, draft, saved } = activeMatrix;
     try {
-      await api.post(`/roles/${selected}/permissions`, { permission_ids: [...assigned] });
-      showToast("Yetkiler güncellendi", "Rol matrisi kaydedildi.");
+      const reply = await api.put<ApiResponse<{ role_id: string; permission_ids: string[] }>>(`/roles/${roleId}/permissions`,
+        { permission_ids: [...draft], expected_permission_ids: [...saved] });
+      const ack = verified(reply.data);
+      if (ack.role_id !== roleId || !sameIds(new Set(ack.permission_ids), draft)) throw new Error("Rol izinleri doğrulanamadı");
+      if (!active.current) return;
+      const persisted = await readMatrix(roleId);
+      if (!active.current) return;
+      if (!sameIds(persisted, draft)) throw new Error("Kalıcı rol izinleri doğrulanamadı");
+      setMatrix({ roleId, saved: persisted, draft: new Set(persisted) });
+      showToast("Rol izinleri doğrulandı");
     } catch (e) {
-      showToast("Kaydedilemedi", apiMessage(e), "error");
-    }
+      if (active.current) showToast("Rol izinleri doğrulanamadı", apiMessage(e), "error");
+    } finally { if (active.current) setBusy(false); }
   }
 
   async function createRole() {
-    if (!canWrite) return;
+    if (!canWrite || busy) return;
+    const draft = { name: role.name.trim(), slug: role.slug.trim().toLowerCase(), description: role.description.trim() || null };
+    if (!draft.name || !/^[a-z][a-z0-9_-]*$/.test(draft.slug)) return;
+    const signature = JSON.stringify(draft);
+    if (createAttempt.current?.signature !== signature) createAttempt.current = { signature, id: newRequestId() };
+    const requestId = createAttempt.current.id;
+    setBusy(true);
     try {
-      await api.post("/roles", role);
-      showToast("Rol oluşturuldu");
-      setOpen(false);
-      await load();
+      const reply = await api.post<ApiResponse<Role>>("/roles", { ...draft, request_id: requestId });
+      if (verified(reply.data).id !== requestId) throw new Error("Rol kimliği doğrulanamadı");
+      if (!active.current) return;
+      const stored = verified((await api.get<ApiResponse<Role>>(`/roles/${requestId}`)).data);
+      if (!active.current) return;
+      if (stored.id !== requestId || stored.organization_id !== organization || stored.is_system
+          || stored.name !== draft.name || stored.slug !== draft.slug || stored.description !== draft.description) {
+        throw new Error("Kalıcı rol doğrulanamadı");
+      }
+      createAttempt.current = null;
+      setRoles((rows) => [...rows.filter((row) => row.id !== stored.id), stored]);
+      setSelected(stored.id); setOpen(false); setRole(emptyRole); setRevision((current) => current + 1);
+      showToast("Kurum rolü doğrulandı");
     } catch (e) {
-      showToast("Rol oluşturulamadı", apiMessage(e), "error");
-    }
+      if (active.current) showToast("Kurum rolü doğrulanamadı", apiMessage(e), "error");
+    } finally { if (active.current) setBusy(false); }
   }
 
-  return (
-    <>
-      <PageHeader
-        eyebrow="Erişim kontrolü"
-        title="Rol ve yetkiler"
-        description="Her rolün görebileceği ve yönetebileceği alanları açıkça belirleyin."
-      >
-        {canWrite && (
-          <>
-            <button className="btn btn-secondary" onClick={() => setOpen(true)}>
-              <Plus size={16} />Rol ekle
-            </button>
-            <button className="btn btn-primary" onClick={saveMatrix} disabled={!selected}>
-              <Save size={16} />Matrisi kaydet
-            </button>
-          </>
-        )}
-      </PageHeader>
-
-      {loading ? (
-        <div className="card"><LoadingState /></div>
-      ) : roles.length === 0 ? (
-        <div className="card"><EmptyState title="Rol bulunamadı" /></div>
-      ) : (
-        <div className="detail-grid">
-          <aside className="card card-pad">
-            <h2 style={{ font: "700 15px Manrope", margin: "0 0 12px" }}>Roller</h2>
-            <div className="quick-list" style={{ padding: 0 }}>
-              {roles.map((item) => (
-                <button
-                  key={item.id}
-                  className="quick-item"
-                  style={{
-                    width: "100%",
-                    border: selected === item.id ? "1px solid #86b9ab" : "1px solid transparent",
-                    background: selected === item.id ? "#eef6f2" : "transparent",
-                    textAlign: "left"
-                  }}
-                  onClick={() => setSelected(item.id)}
-                >
-                  <div className="quick-icon"><ShieldCheck size={16} /></div>
-                  <div className="quick-copy">
-                    <strong>{String(item.name)}</strong>
-                    <span>{String(item.slug)}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </aside>
-
-          <section className="card">
-            <div className="card-head">
-              <div>
-                <h2>Yetki matrisi</h2>
-                <p>Seçili role atanacak işlem izinleri</p>
-              </div>
-            </div>
-
-            {Object.entries(groups).map(([module, items]) => (
-              <div key={module} style={{ padding: "0 21px 20px" }}>
-                <div className="nav-section" style={{ marginLeft: 0 }}>{module}</div>
-                <div className="form-grid">
-                  {items?.map((permission) => (
-                    <label
-                      className="checkbox-line"
-                      key={permission.id}
-                      style={{
-                        padding: "11px 12px",
-                        border: "1px solid var(--line)",
-                        borderRadius: 10,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        cursor: canWrite ? "pointer" : "not-allowed"
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={!canWrite}
-                        checked={assigned.has(permission.id)}
-                        onChange={(e) => setAssigned((current) => {
-                          const next = new Set(current);
-                          if (e.target.checked) next.add(permission.id);
-                          else next.delete(permission.id);
-                          return next;
-                        })}
-                      />
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                        <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {String(permission.name)}
-                        </strong>
-                        <span className="cell-sub" style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {String(permission.code)}
-                        </span>
-                      </span>
-                      {assigned.has(permission.id) && <Check size={14} color="#176b5b" />}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
+  return <>
+    <PageHeader eyebrow="Erişim kontrolü" title="Rol ve yetkiler" description="Kurum rolleri ve işlem izinleri">
+      {initialRoleId && <Link className="btn btn-secondary" to="/roles">Rollere dön</Link>}
+      {canWrite && <button className="btn btn-secondary" disabled={busy} onClick={() => setOpen(true)}><Plus size={16} />Rol ekle</button>}
+      {editable && <button className="btn btn-primary" onClick={saveMatrix}
+        disabled={busy || !activeMatrix || sameIds(activeMatrix.saved, activeMatrix.draft)}><Save size={16} />Matrisi kaydet</button>}
+    </PageHeader>
+    {loading ? <LoadingState /> : error ? <ErrorState message={error} retry={() => setRevision((current) => current + 1)} />
+      : roles.length === 0 ? <EmptyState title="Kurum rolü bulunamadı" /> : <div className="detail-grid">
+      <aside className="card card-pad">
+        <h2>Roller</h2>
+        <div className="quick-list" style={{ padding: 0 }}>
+          {roles.map((item) => <button type="button" key={item.id} className="quick-item"
+            style={{ textAlign: "left", width: "100%" }} aria-pressed={selected === item.id} disabled={busy} onClick={() => setSelected(item.id)}>
+            <span className="quick-icon"><ShieldCheck size={16} /></span>
+            <span className="quick-copy"><strong>{item.name}</strong><span>{item.slug}</span></span>
+          </button>)}
         </div>
-      )}
-
-      <Modal
-        open={canWrite && open}
-        title="Yeni rol"
-        onClose={() => setOpen(false)}
-        actions={
-          <>
-            <button className="btn btn-secondary" onClick={() => setOpen(false)}>Vazgeç</button>
-            <button className="btn btn-primary" onClick={createRole}>Oluştur</button>
-          </>
-        }
-      >
-        <div className="form-grid">
-          <div className="field">
-            <label>Rol adı</label>
-            <input value={role.name} onChange={(e) => setRole({ ...role, name: e.target.value })} />
-          </div>
-          <div className="field">
-            <label>Kısa kod</label>
-            <input value={role.slug} onChange={(e) => setRole({ ...role, slug: e.target.value })} />
-          </div>
-          <div className="field field-full">
-            <label>Açıklama</label>
-            <textarea value={role.description} onChange={(e) => setRole({ ...role, description: e.target.value })} />
-          </div>
-        </div>
-      </Modal>
-    </>
-  );
+      </aside>
+      <section className="card card-pad" aria-label="Yetki matrisi">
+        <h2>{selectedRole?.name || "Yetki matrisi"}</h2>
+        {selectedRole?.description && <p>{selectedRole.description}</p>}
+        {selectedRole?.is_system && <p>Sistem rolü salt okunur.</p>}
+        {matrixError ? <ErrorState message={matrixError} retry={() => setMatrixRevision((current) => current + 1)} />
+          : !activeMatrix ? <LoadingState label="Rol izinleri yükleniyor" /> : <>
+          {editable && <button className="btn btn-secondary" disabled={busy} onClick={() => setMatrixRevision((current) => current + 1)}>
+            Güncel izinleri yeniden yükle
+          </button>}
+          {groups.map(([module, items]) => <section key={module}>
+            <h3>{module}</h3>
+            <div className="form-grid">{items.map((permission) => <label className="checkbox-line" key={permission.id}>
+              <input type="checkbox" checked={activeMatrix.draft.has(permission.id)}
+                disabled={busy || !editable || !permission.assignable} onChange={(event) => setPermission(permission.id, event.target.checked)} />
+              <span>{permission.name}</span>
+            </label>)}</div>
+          </section>)}
+        </>}
+      </section>
+    </div>}
+    {open && <Modal open title="Yeni kurum rolü" onClose={() => { if (!busy) setOpen(false); }}
+      actions={<button className="btn btn-primary" disabled={busy || !role.name.trim() || !/^[a-z][a-z0-9_-]*$/.test(role.slug.trim().toLowerCase())}
+        onClick={createRole}>Rolü kaydet</button>}>
+      <div className="form-grid">
+        <label>Rol adı<input value={role.name} maxLength={100} disabled={busy} onChange={(event) => setRole({ ...role, name: event.target.value })} /></label>
+        <label>Rol kodu<input value={role.slug} maxLength={100} disabled={busy} onChange={(event) => setRole({ ...role, slug: event.target.value })} /></label>
+        <label>Açıklama<textarea value={role.description} maxLength={2000} disabled={busy} onChange={(event) => setRole({ ...role, description: event.target.value })} /></label>
+      </div>
+    </Modal>}
+  </>;
 }

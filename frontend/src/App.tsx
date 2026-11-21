@@ -162,8 +162,10 @@ export default function App() {
         <Route element={<PermissionRoute permission="user.read" />}><Route path="users" element={<UsersPage />} /></Route>
         <Route element={<PermissionRoute permission="user.write" />}><Route path="users/new" element={<UserCreatePage />} /></Route>
         <Route path="users">{ResourceRoutes({ keyName: "users" })}<Route element={<PermissionRoute permission="user.read" />}><Route path=":id" element={<UserDetailPage />} /></Route></Route>
-        <Route element={<PermissionRoute permission="user.read" />}><Route path="roles" element={<RolesPage />} /></Route>
-        <Route element={<PermissionRoute permission="user.write" />}><Route path="roles/:id/permissions" element={<RolePermissionsPage />} /></Route>
+        <Route element={<PermissionRoute permission="user.read" alternativePermissions={["role.read", "role.write"]} />}>
+          <Route path="roles" element={<RolesPage />} />
+          <Route path="roles/:id/permissions" element={<RolePermissionsPage />} />
+        </Route>
         <Route path="parents">{ResourceRoutes({ keyName: "parents", details: true })}</Route>
         <Route path="classes">{ResourceRoutes({ keyName: "classes", details: false })}<Route element={<PermissionRoute permission="class.read" />}><Route path=":id" element={<ClassDetailPage />} /><Route path=":id/occupancy" element={<ClassOccupancyPage />} /></Route><Route element={<PermissionRoute permission="class.write" />}><Route path=":id/assign-students" element={<AssignStudentsPage />} /></Route></Route>
         <Route element={<PermissionRoute permission="attendance.read" />}><Route path="attendance" element={<AttendancePage />} /><Route path="attendance/student/:id" element={<StudentAttendancePage />} /><Route path="attendance/reports/monthly" element={<MonthlyAttendanceReport />} /></Route>

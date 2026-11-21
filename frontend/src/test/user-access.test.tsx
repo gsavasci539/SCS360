@@ -11,16 +11,24 @@ vi.mock("../lib/api", () => ({ api: { get: vi.fn(), put: vi.fn(), post: vi.fn() 
 const user: AuthUser = { id: "owner", first_name: "Owner", last_name: "Test", email: "owner@example.com", is_super_admin: false, organization_id: "school", roles: [], permissions: ["users.read", "users.write"], branch_ids: [] };
 beforeEach(() => {
   useAuthStore.setState({ user });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/users/staff" ? { id: "staff", organization_id: "school", first_name: "New", last_name: "Staff", email: "staff@example.com", status: "ACTIVE" }
-    : path === "/users/options" ? { organizations: [{ id: "school", name: "Okul" }], roles: [{ id: "teacher", name: "Öğretmen" }], branches: [{ id: "branch", name: "Ana Şube" }] } : [] } }));
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { id: "staff" } } }); vi.mocked(api.put).mockResolvedValue({ data: { data: {} } });
+  const teacher = { id: "teacher", name: "Öğretmen", organization_id: "school", slug: "teacher" };
+  const branch = { id: "branch", name: "Ana Şube" };
+  let assigned = false;
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { success: true,
+    data: path === "/users/staff" ? { id: "staff", organization_id: "school", first_name: "New", last_name: "Staff", email: "staff@example.com", status: "ACTIVE" }
+      : path === "/users/options" ? { organizations: [{ id: "school", name: "Okul" }], roles: [teacher], branches: [branch] }
+      : path === "/users/staff/roles" && assigned ? [teacher]
+      : path === "/users/staff/branches" && assigned ? [branch] : [] } }));
+  vi.mocked(api.post).mockImplementation(async (path) => ({ data: { success: true,
+    data: path === "/users/role-catalog" ? { organization_id: "school", role_slugs: ["teacher"] } : { id: "staff" } } }));
+  vi.mocked(api.put).mockImplementation(async () => { assigned = true; return { data: { success: true } }; });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 const open = (create = false) => render(<MemoryRouter initialEntries={[create ? "/users/new" : "/users/staff"]}><Routes><Route path="/users/new" element={<UserCreatePage />} /><Route path="/users/:id" element={<UserDetailPage />} /></Routes></MemoryRouter>);
 
 it("standart rol tamamlama, kaydedilmemiş rol ve şube seçimlerini silmez", async () => {
   useAuthStore.setState({ user: { ...user, roles: [{ id: "owner-role", name: "Sahip", slug: "owner" }], permissions: [...user.permissions, "role.write"] } });
-  open(); const role = await screen.findByRole("checkbox", { name: "Öğretmen" });
+  open(); const role = await screen.findByRole("checkbox", { name: /Öğretmen/ });
   fireEvent.click(role); fireEvent.click(screen.getByRole("button", { name: "Eksik standart rolleri ekle" }));
   await screen.findByText("Eksik standart kurum rolleri tamamlandı.");
   expect(api.post).toHaveBeenCalledWith("/users/role-catalog", { organization_id: "school" }); expect(role).toBeChecked();
@@ -36,9 +44,10 @@ it("okul sahibi kurum UUID'si girmeden hesap oluşturur ve erişim ataması içi
 });
 
 it("rol ve şube seçimleri tek istekte kaydedilir; salt okumada yazma formu sunulmaz", async () => {
-  open(); await screen.findByLabelText("Öğretmen"); fireEvent.click(screen.getByLabelText("Öğretmen")); fireEvent.click(screen.getByLabelText("Ana Şube"));
+  open(); fireEvent.click(await screen.findByLabelText(/Öğretmen/)); fireEvent.click(screen.getByLabelText("Ana Şube"));
   fireEvent.click(screen.getByRole("button", { name: "Erişimi kaydet" }));
   await waitFor(() => expect(api.put).toHaveBeenCalledWith("/users/staff/access", { role_ids: ["teacher"], branch_ids: ["branch"] }));
+  expect(await screen.findByText("Rol ve şube erişimi kaydedildi.")).toBeInTheDocument();
   await screen.findByRole("status"); cleanup(); useAuthStore.setState({ user: { ...user, permissions: ["users.read"] } }); open();
   await screen.findByRole("heading", { name: "New Staff" }); expect(screen.queryByRole("button", { name: "Erişimi kaydet" })).not.toBeInTheDocument();
 });

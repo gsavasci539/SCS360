@@ -48,7 +48,7 @@ export const navigation: NavigationSection[] = [
       { label: "Kurumlar", path: "/organizations", icon: Building2, permission: "org.read" },
       { label: "Şubeler", path: "/branches", icon: GraduationCap, permission: "branch.read" },
       { label: "Kullanıcılar", path: "/users", icon: Users, permission: "users.read" },
-      { label: "Rol ve Yetkiler", path: "/roles", icon: ShieldCheck, permission: "users.read" },
+      { label: "Rol ve Yetkiler", path: "/roles", icon: ShieldCheck, permission: "users.read", alternativePermissions: ["role.read", "role.write"] },
       { label: "Personel & Nöbet", path: "/staff", icon: BadgeCheck, permission: "users.read" },
       { label: "Öğretmen Paneli", path: "/teacher", icon: GraduationCap, permission: "teacher.view_classes" },
     ],

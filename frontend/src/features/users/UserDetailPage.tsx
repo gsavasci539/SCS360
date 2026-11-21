@@ -72,9 +72,20 @@ export function UserDetailPage() {
 
   async function saveAccess(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (saving) return; setSaving(true); setMessage(""); setAccessError("");
-    try { await api.put(`/users/${id}/access`, { role_ids: roleIds, branch_ids: branchIds });
-      setRoles(options?.roles.filter((row) => roleIds.includes(row.id)) || []);
-      setBranches(options?.branches.filter((row) => branchIds.includes(row.id)) || []);
+    try {
+      const updated = await api.put<ApiResponse<unknown>>(`/users/${id}/access`, { role_ids: roleIds, branch_ids: branchIds });
+      if (!updated.data.success) throw new Error("Erişim kaydı onaylanmadı");
+      const [roleReply, branchReply] = await Promise.all([
+        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/roles`),
+        api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/branches`),
+      ]);
+      const storedRoles = toArray(roleReply.data.data), storedBranches = toArray(branchReply.data.data);
+      const same = (rows: DataRecord[], ids: string[]) => rows.length === ids.length && rows.every((row) => ids.includes(row.id));
+      if (!roleReply.data.success || !branchReply.data.success || !same(storedRoles, roleIds) || !same(storedBranches, branchIds)) {
+        throw new Error("Kaydedilen rol ve şubeler doğrulanamadı");
+      }
+      setRoles(storedRoles);
+      setBranches(storedBranches);
       setMessage("Rol ve şube erişimi kaydedildi.");
       if (useAuthStore.getState().user?.id === id) { const response = await api.get("/auth/me"); useAuthStore.getState().setUser(response.data.data); }
     } catch (reason) { setAccessError(apiMessage(reason)); } finally { setSaving(false); }
@@ -82,7 +93,22 @@ export function UserDetailPage() {
   function checked(values: string[], value: string, enabled: boolean) { return enabled ? [...new Set([...values, value])] : values.filter((item) => item !== value); }
   async function prepareRoles() {
     if (saving || !user) return; setSaving(true); setAccessError(""); setMessage("");
-    try { await api.post("/users/role-catalog", { organization_id: user.organization_id }); const response = await api.get("/users/options", { params: { organization_id: user.organization_id } }); setOptions(response.data.data); setMessage("Eksik standart kurum rolleri tamamlandı."); }
+    try {
+      const organization = String(user.organization_id);
+      const receipt = await api.post<ApiResponse<{ organization_id: string; role_slugs: string[] }>>("/users/role-catalog", { organization_id: organization });
+      const verified = receipt.data.data;
+      if (!receipt.data.success || verified?.organization_id !== organization || !verified.role_slugs?.length) {
+        throw new Error("Kurum rol kataloğu onaylanmadı");
+      }
+      const response = await api.get<ApiResponse<{ roles: DataRecord[]; branches: DataRecord[] }>>("/users/options", { params: { organization_id: organization } });
+      const saved = response.data.data;
+      if (!response.data.success || !verified.role_slugs.every((slug) =>
+        saved.roles.some((row) => row.slug === slug && row.organization_id === organization))) {
+        throw new Error("Kurumun standart rolleri doğrulanamadı");
+      }
+      setOptions(saved);
+      setMessage("Eksik standart kurum rolleri tamamlandı.");
+    }
     catch (reason) { setAccessError(apiMessage(reason)); } finally { setSaving(false); }
   }
 
