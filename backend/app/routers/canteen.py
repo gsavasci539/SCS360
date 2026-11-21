@@ -2,14 +2,15 @@
 Canteen POS & Dietary Restrictions Module API
 Handles POS checkout, dietary restrictions, and canteen management
 """
-from datetime import datetime, date, time
+from datetime import UTC, datetime, date, time
 from decimal import Decimal
 from typing import Optional, List
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, validator
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -33,10 +34,13 @@ class CanteenProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     category: Optional[str] = None
-    price: Decimal = Field(..., gt=0, decimal_places=2)
+    price: Decimal = Field(..., gt=0, le=Decimal("99999999.99"), decimal_places=2)
     image_url: Optional[str] = None
     allergens: Optional[List[str]] = Field(None, description="PEANUT, DAIRY, GLUTEN, EGG, SOY, FISH, SHELLFISH, TREE_NUT, SESAME, OTHER")
     nutritional_info: Optional[dict] = None
+    is_available: Optional[bool] = None
+    request_id: Optional[UUID] = None
+    expected_updated_at: Optional[datetime] = None
 
 class CanteenProductResponse(BaseModel):
     id: UUID
@@ -89,6 +93,19 @@ class POSCheckoutResponse(BaseModel):
     daily_spent: Optional[Decimal]
     daily_limit: Optional[Decimal]
 
+
+class POSCartItem(BaseModel):
+    product_id: UUID
+    quantity: int = Field(ge=1, le=2147483647)
+    expected_unit_price: Decimal = Field(gt=0, le=Decimal("99999999.99"), decimal_places=2)
+
+
+class POSCartRequest(BaseModel):
+    student_id: UUID
+    branch_id: UUID
+    request_id: UUID
+    items: list[POSCartItem] = Field(min_length=1, max_length=100)
+
 class CanteenOrderResponse(BaseModel):
     id: UUID
     student_id: UUID
@@ -132,6 +149,7 @@ class WalletTopUpCreate(BaseModel):
 @router.get("/products")
 async def get_canteen_products(
     branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = None,
     category: Optional[str] = Query(None),
     is_available: Optional[bool] = Query(True),
     limit: int = Query(100, ge=1, le=1000),
@@ -145,15 +163,17 @@ async def get_canteen_products(
     conditions = []
     if branch_id:
         conditions.append(CanteenProduct.branch_id == branch_id)
+    if record_id:
+        conditions.append(CanteenProduct.id == record_id)
     if category:
         conditions.append(CanteenProduct.category == category)
-    if is_available is not None:
+    if is_available is not None and record_id is None:
         conditions.append(CanteenProduct.is_available == is_available)
     
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(CanteenProduct.category, CanteenProduct.name).limit(limit).offset(offset)
+    query = query.order_by(CanteenProduct.category, CanteenProduct.name, CanteenProduct.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     products = result.scalars().all()
@@ -196,19 +216,35 @@ async def create_canteen_product(
     tenant: TenantContext = Depends(PermissionChecker("canteen.write"))
 ):
     """Create a new canteen product"""
-    new_product = CanteenProduct(
+    branch = await BaseRepository(db, tenant).get_by_id(product.branch_id, Branch)
+    await db.execute(update(Branch).where(Branch.id == branch.id).values(updated_at=Branch.updated_at))
+    values = dict(
         branch_id=product.branch_id,
-        name=product.name,
+        name=product.name.strip(),
         description=product.description,
         category=product.category,
         price=product.price,
         image_url=product.image_url,
-        is_available=True,
+        is_available=product.is_available if product.is_available is not None else True,
         allergens=product.allergens or [],
         nutritional_info=product.nutritional_info
     )
+    if not values["name"]:
+        raise HTTPException(422, "Ürün adı boş olamaz")
+    if product.request_id:
+        previous = (await db.execute(select(CanteenProduct).where(CanteenProduct.id == product.request_id))).scalar_one_or_none()
+        if previous is not None:
+            if previous.created_by != tenant.user_id or any(getattr(previous, key) != value for key, value in values.items()):
+                raise HTTPException(409, "İstek kimliği farklı ürüne ait")
+            return success_response({"id": str(previous.id), "name": previous.name, "price": float(previous.price),
+                "category": previous.category, "created_at": previous.created_at.isoformat()})
+    new_product = CanteenProduct(id=product.request_id or uuid4(), created_by=tenant.user_id, **values)
     db.add(new_product)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(409, "Ürün kaydı kimliği kullanılamıyor") from exc
     await db.refresh(new_product)
     
     return success_response({
@@ -228,22 +264,37 @@ async def update_canteen_product(
     tenant: TenantContext = Depends(PermissionChecker("canteen.write"))
 ):
     """Update a canteen product"""
+    await db.execute(update(CanteenProduct).where(CanteenProduct.id == product_id).values(updated_at=CanteenProduct.updated_at))
     result = await db.execute(
-        select(CanteenProduct).where(CanteenProduct.id == product_id)
+        select(CanteenProduct).where(CanteenProduct.id == product_id).with_for_update()
     )
     existing_product = result.scalar_one_or_none()
     
     if not existing_product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
-    existing_product.branch_id = product.branch_id
-    existing_product.name = product.name
-    existing_product.description = product.description
-    existing_product.category = product.category
-    existing_product.price = product.price
-    existing_product.image_url = product.image_url
-    existing_product.allergens = product.allergens or []
-    existing_product.nutritional_info = product.nutritional_info
+    await BaseRepository(db, tenant).get_by_id(product.branch_id, Branch)
+    if not product.name.strip():
+        raise HTTPException(422, "Ürün adı boş olamaz")
+    values = {
+        "branch_id": product.branch_id, "name": product.name.strip(), "description": product.description,
+        "category": product.category, "price": product.price, "image_url": product.image_url, "allergens": product.allergens or [],
+        "nutritional_info": product.nutritional_info, "is_available": product.is_available if product.is_available is not None else existing_product.is_available,
+    }
+    same = all(getattr(existing_product, key) == value for key, value in values.items())
+    if product.expected_updated_at is not None:
+        def utc(value):
+            return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+        if utc(product.expected_updated_at) != utc(existing_product.updated_at) and not (same and existing_product.updated_by == tenant.user_id):
+            raise HTTPException(409, "Ürün değişti; güncel ürünü yükleyin")
+    if existing_product.branch_id != product.branch_id and (await db.execute(
+        select(CanteenOrder.id).where(CanteenOrder.product_id == existing_product.id).limit(1)
+    )).first():
+        raise HTTPException(409, "Satış kaydı olan ürün başka şubeye taşınamaz")
+    if not same:
+        for field, value in values.items():
+            setattr(existing_product, field, value)
+        existing_product.updated_by = tenant.user_id
+        existing_product.updated_at = datetime.now(UTC)
     
     await db.commit()
     await db.refresh(existing_product)
@@ -269,11 +320,13 @@ async def delete_canteen_product(
     
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    if (await db.execute(select(CanteenOrder.id).where(CanteenOrder.product_id == product.id).limit(1))).first():
+        raise HTTPException(409, "Satış kaydı olan ürünü katalogdan satışa kapatın")
     
     await db.delete(product)
     await db.commit()
     
-    return success_response({"message": "Product deleted successfully"})
+    return success_response({"id": str(product_id), "message": "Ürün silindi"})
 
 
 # ==================== Dietary Restrictions Endpoints ====================
@@ -394,7 +447,12 @@ async def canteen_options(branch_id: Optional[UUID] = None, search: str = Query(
     from app.application.services.student_choices import options
     if branch_id:
         await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
-    return success_response(await options(db, search=search.strip(), branch_id=branch_id))
+    branches = select(Branch).where(Branch.deleted_at.is_(None))
+    if branch_id:
+        branches = branches.where(Branch.id == branch_id)
+    rows = (await db.execute(branches.order_by(Branch.name, Branch.id).limit(1000))).scalars().all()
+    return success_response({**await options(db, search=search.strip(), branch_id=branch_id),
+        "branches": [{"id": str(row.id), "name": row.name} for row in rows]})
 
 
 @router.post("/pos/checkout")
@@ -422,6 +480,30 @@ async def get_student_wallet_info(
 ):
     from app.application.services import canteen_wallet_service as wallets
     return success_response(wallets.serialize(*(await wallets.wallet(db, tenant, student_id, read_only=True, branch_id=branch_id))))
+
+
+@router.post("/pos/cart-checkout")
+async def pos_cart_checkout(request: POSCartRequest, db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("canteen.write"))):
+    from app.application.services import canteen_wallet_service as wallets
+    if len({item.product_id for item in request.items}) != len(request.items):
+        raise HTTPException(422, "Aynı ürün sepette tek satır olmalı")
+
+    async def record():
+        details = []
+        balance = None
+        for item in request.items:
+            balance = await wallets.purchase(db, tenant, request.student_id, product_id=item.product_id, quantity=item.quantity,
+                payment_method="WALLET", expected_unit_price=item.expected_unit_price)
+            details.append({"order_id": balance["order_id"], "transaction_id": balance["transaction_id"],
+                "product_id": str(item.product_id), "quantity": item.quantity, "total": balance["total_price"]})
+        return {"student_id": str(request.student_id), "branch_id": str(request.branch_id), "authorized": True,
+            "balance": balance["balance"], "items": details}
+
+    fields = {"items": [{"product_id": str(item.product_id), "quantity": item.quantity,
+        "expected_unit_price": str(item.expected_unit_price.quantize(Decimal("0.01")))} for item in request.items]}
+    return success_response(await wallets.record_command(db, tenant, request.student_id, request.branch_id, request.request_id,
+        "CANTEEN_CART_RECORDED", fields, record))
 
 
 @router.get("/student/{student_id}/wallet/transactions")

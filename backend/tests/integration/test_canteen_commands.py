@@ -73,3 +73,50 @@ async def test_canteen_read_is_side_effect_free_and_two_retries_change_wallet_on
         events = (await db.execute(select(AuditLog).where(AuditLog.entity_type.in_(
             ["CANTEEN_TOPUP_RECORDED", "CANTEEN_POS_RECORDED"])))).scalars().all()
         assert len(events) == 2 and all("dietary_restrictions" not in event.new_values["response"] for event in events)
+
+    async with sessions() as db:
+        second = CanteenProduct(branch_id=data["branch"].id, name="Isolated second product", price=Decimal("2.50"))
+        db.add(second)
+        await db.commit()
+    cart = {"student_id": child, "branch_id": branch, "request_id": str(uuid4()), "items": [
+        {"product_id": str(product.id), "quantity": 1, "expected_unit_price": "8.25"},
+        {"product_id": str(second.id), "quantity": 2, "expected_unit_price": "2.50"},
+    ]}
+    failed = await client.post("/api/canteen/pos/cart-checkout", headers=actor, json=cart)
+    assert failed.status_code == 409, failed.text
+    assert (await client.get(wallet_path, headers=actor)).json()["data"]["balance"] == 11.75
+    cart["items"][1]["quantity"] = 1
+    saved = await client.post("/api/canteen/pos/cart-checkout", headers=actor, json=cart)
+    replay = await client.post("/api/canteen/pos/cart-checkout", headers=actor, json=cart)
+    assert saved.status_code == replay.status_code == 200, (saved.text, replay.text)
+    assert saved.json()["data"]["items"] == replay.json()["data"]["items"]
+    assert len(saved.json()["data"]["items"]) == 2 and replay.json()["data"]["balance"] == 1
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(CanteenOrder)) == 3
+
+    limits = await client.put("/api/canteen/wallet/restrictions", headers=actor, params=scope,
+        json={"student_id": child, "daily_limit": "21.50", "restricted_categories": ["DRINK"], "restricted_allergens": ["DAIRY"]})
+    assert limits.status_code == 200, limits.text
+    current = (await client.get(wallet_path, headers=actor, params=scope)).json()["data"]
+    assert current["daily_limit"] == 21.50 and current["restricted_allergens"] == ["DAIRY"]
+    cleared = await client.put("/api/canteen/wallet/restrictions", headers=actor, params=scope,
+        json={"student_id": child, "daily_limit": None, "restricted_categories": [], "restricted_allergens": []})
+    assert cleared.status_code == 200 and cleared.json()["data"]["daily_limit"] is None
+    item_id = str(uuid4())
+    draft = {"branch_id": branch, "name": "New item", "price": "12.10", "request_id": item_id, "is_available": True}
+    for _ in range(2):
+        created = await client.post("/api/canteen/products", headers=actor, json=draft)
+        assert created.status_code == 200 and created.json()["data"]["id"] == item_id, created.text
+    old = (await client.get("/api/canteen/products", headers=actor, params={**scope, "record_id": item_id})).json()["data"][0]
+    changed = {**draft, "expected_updated_at": old["updated_at"], "is_available": False}
+    for _ in range(2):
+        paused = await client.put(f"/api/canteen/products/{item_id}", headers=actor, json=changed)
+        assert paused.status_code == 200, paused.text
+    read = await client.get("/api/canteen/products", headers=actor, params={**scope, "record_id": item_id})
+    assert read.status_code == 200 and read.json()["data"][0]["is_available"] is False
+    stale_edit = await client.put(f"/api/canteen/products/{item_id}", headers=actor, json={**changed, "price": "15.10"})
+    assert stale_edit.status_code == 409
+    protected = await client.delete(f"/api/canteen/products/{product.id}", headers=actor)
+    assert protected.status_code == 409
+    removed = await client.delete(f"/api/canteen/products/{item_id}", headers=actor)
+    assert removed.status_code == 200 and removed.json()["data"]["id"] == item_id

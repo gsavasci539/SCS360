@@ -86,7 +86,7 @@ async def record_command(db, tenant, student_id, branch_id, request_id, kind, fi
         raise ConflictException("İstek kimliği kullanılamıyor") from exc
     response = {**(await action()), "operation_id": str(request_id), "repeated_request": False}
     receipt = {key: response[key] for key in (
-        "operation_id", "transaction_id", "id", "order_id", "total_price", "amount", "item_name", "message", "authorized", "blocked_reason",
+        "operation_id", "transaction_id", "id", "order_id", "items", "total_price", "amount", "item_name", "message", "authorized", "blocked_reason",
     ) if key in response}
     event.new_values = {"request_sha256": key, "response": receipt}
     await db.flush()
@@ -111,8 +111,8 @@ async def topup(db, tenant, student_id, amount, payment_method, reference=None):
     return dict(serialize(student, row), transaction_id=str(transaction.id), amount=float(value))
 
 
-async def restrictions(db, tenant, body):
-    student, row = await wallet(db, tenant, body.student_id)
+async def restrictions(db, tenant, body, *, branch_id=None):
+    student, row = await wallet(db, tenant, body.student_id, branch_id=branch_id)
     if body.daily_limit is not None and Decimal(str(body.daily_limit)) < 0:
         raise ValidationException("Günlük limit negatif olamaz")
     row.daily_limit = body.daily_limit

@@ -1,15 +1,18 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CanteenSalesPage } from "../features/operations/CanteenSalesPage";
+import { CanteenPage } from "../features/operations/CanteenPage";
+import { ToastProvider } from "../components/Toast";
 import { getAnalysis } from "../lib/analysis";
 import { api } from "../lib/api";
+import { useAuthStore } from "../stores/auth";
 
 vi.mock("../lib/analysis", () => ({ getAnalysis: vi.fn() }));
 vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn() }, apiMessage: () => "İstek tamamlanamadı" }));
 
 beforeEach(() => { vi.mocked(api.get).mockResolvedValue({ data: { data: [] } }); });
-afterEach(() => { cleanup(); vi.resetAllMocks(); });
+afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 
 async function open(analysis: Record<string, unknown>) {
   vi.mocked(getAnalysis).mockResolvedValue({ data: { success: true, data: analysis } } as never);
@@ -33,6 +36,67 @@ it("shows missing history as insufficient trend data while retaining an actual r
   expect(screen.getByText("Trend için veri yetersiz")).toBeInTheDocument();
   expect(metric("Toplam Satış").getByText("0.00 TL")).toBeInTheDocument();
   expect(metric("Günlük Ortalama").getByText("0.00 TL")).toBeInTheDocument();
+});
+
+it("shows the receipt only after exact cart and stored order verification", async () => {
+  useAuthStore.setState({ user: { id: "cashier", first_name: "İzole", last_name: "Görevli", email: "pos@test.invalid",
+    organization_id: "school", is_super_admin: false, roles: [], permissions: ["canteen.read", "canteen.write"], branch_ids: ["branch"] } });
+  let stored = false;
+  const product = { id: "product", branch_id: "branch", name: "İzole ürün", category: "Menü", price: 8.25, allergens: [], is_available: true };
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data:
+    path === "/canteen/options" ? { students: [{ id: "student", name: "İzole öğrenci", active: true }] }
+    : path === "/canteen/products" ? [product]
+    : path === "/canteen/student/student/wallet" ? { student_id: "student", branch_id: "branch", student_name: "İzole öğrenci",
+      balance: 20, daily_limit: null, daily_spent: 0, dietary_restrictions: [] }
+    : path === "/canteen/orders" && stored ? [{ id: "stored-order", student_id: "student", branch_id: "branch", student_name: "İzole öğrenci",
+      branch_name: "Kayıtlı şube", product_id: "product", product_name: "İzole ürün", quantity: 1, unit_price: 8.25, total_price: 8.25,
+      status: "COMPLETED", payment_method: "WALLET", order_date: "2026-11-21", order_time: "10:00:00" }]
+    : [] } }));
+  vi.mocked(api.post).mockImplementation(async (_path, body) => ({ data: { data: { authorized: true,
+    operation_id: (body as { request_id: string }).request_id, student_id: "student", branch_id: "branch",
+    items: [{ order_id: "stored-order", product_id: "product", quantity: 1, total: 8.25 }],
+  } } }));
+  await open({ total_sales: 0 });
+  fireEvent.change(screen.getByPlaceholderText("Öğrenci ara veya kart okutun"), { target: { value: "İzole" } });
+  fireEvent.click(screen.getByRole("button", { name: "Öğrenciyi ara" }));
+  fireEvent.click(await screen.findByRole("button", { name: /İzole ürün/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Cüzdandan satışı kaydet" }));
+  expect(await screen.findByText("İstek tamamlanamadı")).toBeInTheDocument();
+  expect(screen.queryByText("KANTİN MAKBUZU")).not.toBeInTheDocument();
+  stored = true;
+  fireEvent.click(screen.getByRole("button", { name: "Aynı siparişi doğrula" }));
+  expect(await screen.findByText("KANTİN MAKBUZU")).toBeInTheDocument();
+  expect(screen.getByText("Kayıtlı şube")).toBeInTheDocument();
+  expect(vi.mocked(api.post).mock.calls[0].slice(0, 2)).toEqual(vi.mocked(api.post).mock.calls[1].slice(0, 2));
+});
+
+it("creates a product only in the selected real branch and reopens it from the API", async () => {
+  useAuthStore.setState({ user: { id: "owner", first_name: "İzole", last_name: "Yetkili", email: "catalog@test.invalid",
+    organization_id: "school", is_super_admin: false, roles: [], permissions: ["canteen.read", "canteen.write"], branch_ids: [] } });
+  vi.mocked(getAnalysis).mockResolvedValue({ data: { data: null } } as never);
+  let stored: Record<string, unknown> | null = null;
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/canteen/options"
+    ? { branches: [{ id: "north", name: "Kuzey" }, { id: "south", name: "Güney" }] }
+    : path === "/canteen/products" && stored ? [stored] : [] } }));
+  vi.mocked(api.post).mockImplementation(async (_path, body) => {
+    const payload = body as Record<string, unknown>;
+    stored = { ...payload, id: payload.request_id, price: Number(payload.price), updated_at: "2026-11-21T05:21:00Z" };
+    return { data: { data: { id: payload.request_id } } };
+  });
+  render(<MemoryRouter><ToastProvider><CanteenPage /></ToastProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Ürün Ekle" }));
+  const dialog = screen.getByRole("dialog", { name: "Kantin ürünü formu" });
+  expect(within(dialog).getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  fireEvent.change(within(dialog).getByLabelText("Ürün şubesi"), { target: { value: "south" } });
+  fireEvent.change(within(dialog).getByLabelText("Ürün adı"), { target: { value: "İzole katalog ürünü" } });
+  fireEvent.change(within(dialog).getByLabelText("Ürün fiyatı"), { target: { value: "14.20" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Kaydet" }));
+  expect(await screen.findByText("İzole katalog ürünü")).toBeInTheDocument();
+  expect(api.post).toHaveBeenCalledWith("/canteen/products", expect.objectContaining({ branch_id: "south",
+    price: "14.20", request_id: expect.any(String) }), expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  expect(api.get).toHaveBeenCalledWith("/canteen/products", expect.objectContaining({
+    params: { branch_id: "south", record_id: expect.any(String), limit: 1 },
+  }));
 });
 
 it.each([

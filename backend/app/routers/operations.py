@@ -278,11 +278,12 @@ async def topup_canteen_wallet(
 @router.put("/api/canteen/wallet/restrictions")
 async def update_canteen_restrictions(
     body: CanteenRestrictionUpdate,
+    branch_id: uuid.UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("canteen.write", "canteen.manage", "finance.write")),
     db: AsyncSession = Depends(get_db, scope="function")
 ):
     from app.application.services import canteen_wallet_service as wallets
-    return success_response(await wallets.restrictions(db, tenant, body))
+    return success_response(await wallets.restrictions(db, tenant, body, branch_id=branch_id))
 
 
 @router.post("/api/canteen/pos/purchase")

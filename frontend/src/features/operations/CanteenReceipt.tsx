@@ -65,6 +65,7 @@ export function CanteenReceipt({ order, onClose }: CanteenReceiptProps) {
           padding: "20px",
           border: "1px solid #e5e7eb",
           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          overflowWrap: "anywhere",
           fontFamily: "Courier New, monospace",
           fontSize: "12px"
         }}
@@ -72,7 +73,7 @@ export function CanteenReceipt({ order, onClose }: CanteenReceiptProps) {
       >
         {/* Header */}
         <ReceiptBrand />
-        <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 15, borderBottom: "1px dashed #333" }}>
+        {(order.organization_name || order.organization_address || order.organization_phone) && <div style={{ textAlign: "center", marginBottom: 20, paddingBottom: 15, borderBottom: "1px dashed #333" }}>
           <h1 style={{ fontSize: "18px", fontWeight: "bold", margin: "0 0 5px", color: "#2d8f78" }}>
             {order.organization_name}
           </h1>
@@ -86,7 +87,7 @@ export function CanteenReceipt({ order, onClose }: CanteenReceiptProps) {
               Tel: {order.organization_phone}
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Receipt Title */}
         <div style={{ textAlign: "center", marginBottom: 15 }}>
@@ -110,9 +111,9 @@ export function CanteenReceipt({ order, onClose }: CanteenReceiptProps) {
               <strong>Öğrenci No:</strong> {order.student_number}
             </div>
           )}
-          <div style={{ fontSize: "11px" }}>
+          {order.branch_name && <div style={{ fontSize: "11px" }}>
             <strong>Şube:</strong> {order.branch_name}
-          </div>
+          </div>}
         </div>
 
         {/* Items */}

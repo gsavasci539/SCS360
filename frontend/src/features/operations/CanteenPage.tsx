@@ -1,9 +1,12 @@
 import { getAnalysis } from "../../lib/analysis";
 import { Utensils, AlertCircle, CheckCircle, Upload, Plus, Edit, Trash2, X, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PageHeader, Badge, LoadingState, ErrorState } from "../../components/ui";
 import { ExcelImport } from "../../components/ExcelImport";
 import { api, apiMessage } from "../../lib/api";
+import { newRequestId } from "../../lib/requestId";
+import { useWorkspaceUser } from "../../lib/workspaceUser";
+import { hasPermission, useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord } from "../../types/api";
 
 interface CanteenProduct {
@@ -16,10 +19,22 @@ interface CanteenProduct {
   image_url: string | null;
   is_available: boolean;
   allergens: string[];
-  nutritional_info: any;
+  nutritional_info: Record<string, unknown> | null;
+  updated_at: string;
 }
 
 export function CanteenPage() {
+  const viewer = useWorkspaceUser();
+  const session = useAuthStore((state) => state.sessionVersion);
+  const canWrite = hasPermission(viewer, "canteen.write");
+  if (!viewer || viewer.is_super_admin || !hasPermission(viewer, "canteen.read")) {
+    return <p>Kantin kataloğu için yetkili kurum çalışma alanını açın.</p>;
+  }
+  return <CanteenCatalog canWrite={canWrite}
+    key={JSON.stringify([session, viewer.id, viewer.organization_id, viewer.branch_ids, canWrite])} />;
+}
+
+function CanteenCatalog({ canWrite }: { canWrite: boolean }) {
   const [products, setProducts] = useState<CanteenProduct[]>([]);
   const [restrictions, setRestrictions] = useState<DataRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,105 +42,165 @@ export function CanteenPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CanteenProduct | null>(null);
+  const [branches, setBranches] = useState<Array<{ id: string; name: string }>>([]);
+  const [available, setAvailable] = useState(true);
+  const [revision, setRevision] = useState(0);
+  const [formError, setFormError] = useState("");
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [formData, setFormData] = useState({
+    branch_id: "",
     name: "",
     description: "",
     category: "",
     price: "",
     image_url: "",
-    allergens: [] as string[]
+    allergens: [] as string[],
+    is_available: true,
   });
   const [saving, setSaving] = useState(false);
+  const pending = useRef<AbortController | null>(null);
+  const operation = useRef<{ signature: string; id: string } | null>(null);
+  useLayoutEffect(() => () => pending.current?.abort(), []);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function load() {
       setLoading(true);
       try {
-        const [productsRes, restrictionsRes] = await Promise.all([
-          api.get<ApiResponse<CanteenProduct[]>>("/canteen/products"),
-          api.get<ApiResponse<DataRecord[]>>("/canteen/dietary-restrictions")
+        const [productsRes, restrictionsRes, scope] = await Promise.all([
+          api.get<ApiResponse<CanteenProduct[]>>("/canteen/products", { params: { is_available: available }, signal: controller.signal }),
+          api.get<ApiResponse<DataRecord[]>>("/canteen/dietary-restrictions", { signal: controller.signal }),
+          api.get<ApiResponse<{ branches: Array<{ id: string; name: string }> }>>("/canteen/options", { signal: controller.signal }),
         ]);
+        if (controller.signal.aborted) return;
         setProducts(productsRes.data.data || []);
         setRestrictions(restrictionsRes.data.data || []);
+        setBranches(scope.data.data.branches);
+        setError("");
       } catch (err) {
-        setError(apiMessage(err));
+        if (!controller.signal.aborted) setError(apiMessage(err));
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
-    load();
-  }, []);
+    void load();
+    return () => controller.abort();
+  }, [available, revision]);
 
   useEffect(() => {
     getAnalysis("/ai/canteen-analysis").then((r) => setAiAnalysis(r.data.data)).catch(() => {});
   }, []);
 
   const openAddModal = () => {
+    if (!canWrite) return;
+    setFormError("");
+    operation.current = null;
     setEditingProduct(null);
     setFormData({
+      branch_id: branches.length === 1 ? branches[0].id : "",
       name: "",
       description: "",
       category: "",
       price: "",
       image_url: "",
-      allergens: []
+      allergens: [],
+      is_available: true,
     });
     setEditModalOpen(true);
   };
 
   const openEditModal = (product: CanteenProduct) => {
+    if (!canWrite || !product.updated_at) return;
+    setFormError("");
+    operation.current = null;
     setEditingProduct(product);
     setFormData({
+      branch_id: product.branch_id,
       name: product.name,
       description: product.description || "",
       category: product.category || "",
       price: String(product.price),
       image_url: product.image_url || "",
-      allergens: product.allergens || []
+      allergens: product.allergens || [],
+      is_available: product.is_available,
     });
     setEditModalOpen(true);
   };
 
   const handleSave = async () => {
+    if (!canWrite || pending.current || !branches.some((row) => row.id === formData.branch_id)) return;
+    const price = formData.price.trim().replace(",", ".");
+    if (!formData.name.trim() || !/^\d{1,8}(?:\.\d{1,2})?$/.test(price) || Number(price) <= 0) {
+      setFormError("Ürün adı ve geçerli bir fiyat girin.");
+      return;
+    }
+    const controller = new AbortController();
+    pending.current = controller;
+    const { signal } = controller;
     setSaving(true);
-    setError("");
+    setFormError("");
     try {
       const payload = {
-        branch_id: "00000000-0000-0000-0000-000000000000", // Default branch
-        name: formData.name,
-        description: formData.description || null,
-        category: formData.category || null,
-        price: parseFloat(formData.price),
-        image_url: formData.image_url || null,
-        allergens: formData.allergens
+        branch_id: formData.branch_id,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        category: formData.category.trim() || null,
+        price,
+        image_url: formData.image_url.trim() || null,
+        allergens: formData.allergens,
+        is_available: formData.is_available,
+        nutritional_info: editingProduct?.nutritional_info ?? null,
+        expected_updated_at: editingProduct?.updated_at ?? null,
       };
-
-      if (editingProduct) {
-        await api.put(`/canteen/products/${editingProduct.id}`, payload);
-      } else {
-        await api.post("/canteen/products", payload);
-      }
-
+      const signature = JSON.stringify(payload);
+      if (!operation.current || operation.current.signature !== signature) operation.current = { id: newRequestId(), signature };
+      const body = { ...payload, request_id: operation.current.id };
+      const id = editingProduct?.id || operation.current.id;
+      const response = editingProduct ? await api.put(`/canteen/products/${encodeURIComponent(id)}`, body, { signal })
+        : await api.post("/canteen/products", body, { signal });
+      if (signal.aborted) return;
+      if (response.data.data?.id !== id) throw new Error("Kantin ürünü kimliği doğrulanamadı.");
+      const read = await api.get<ApiResponse<CanteenProduct[]>>("/canteen/products", {
+        params: { record_id: id, branch_id: body.branch_id, limit: 1 }, signal,
+      });
+      if (signal.aborted) return;
+      const rows = read.data.data;
+      const stored = Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+      if (!stored || stored.id !== id || stored.branch_id !== body.branch_id || stored.name !== body.name ||
+        Number(stored.price) !== Number(body.price) || stored.is_available !== body.is_available ||
+        stored.description !== body.description || stored.category !== body.category || stored.image_url !== body.image_url ||
+        JSON.stringify(stored.allergens) !== JSON.stringify(body.allergens) ||
+        (editingProduct && stored.updated_at !== response.data.data.updated_at)) throw new Error("Kayıtlı ürün form ile eşleşmedi.");
+      setAvailable(body.is_available);
+      setRevision((value) => value + 1);
       setEditModalOpen(false);
-      // Reload products
-      const productsRes = await api.get<ApiResponse<CanteenProduct[]>>("/canteen/products");
-      setProducts(productsRes.data.data || []);
     } catch (err) {
-      setError(apiMessage(err));
+      if (!signal.aborted) setFormError(apiMessage(err));
     } finally {
-      setSaving(false);
+      if (pending.current === controller) {
+        pending.current = null;
+        setSaving(false);
+      }
     }
   };
 
   const handleDelete = async (productId: string) => {
-    if (!confirm("Bu ürünü silmek istediğinize emin misiniz?")) return;
-    
+    if (!canWrite || pending.current || !confirm("Bu ürünü silmek istediğinize emin misiniz?")) return;
+    const controller = new AbortController();
+    pending.current = controller;
+    const { signal } = controller;
     try {
-      await api.delete(`/canteen/products/${productId}`);
-      setProducts(products.filter(p => p.id !== productId));
+      const response = await api.delete(`/canteen/products/${encodeURIComponent(productId)}`, { signal });
+      if (signal.aborted) return;
+      if (response.data.data?.id !== productId) throw new Error("Kantin ürünü silme yanıtı doğrulanamadı.");
+      const read = await api.get<ApiResponse<CanteenProduct[]>>("/canteen/products", { params: { record_id: productId, limit: 1 }, signal });
+      if (signal.aborted) return;
+      if (!Array.isArray(read.data.data) || read.data.data.length) throw new Error("Ürünün silindiği doğrulanamadı.");
+      setRevision((value) => value + 1);
     } catch (err) {
-      setError(apiMessage(err));
+      if (!signal.aborted) setError(apiMessage(err));
+    } finally {
+      if (pending.current === controller) pending.current = null;
     }
   };
 
@@ -139,14 +214,14 @@ export function CanteenPage() {
         title="Kantin & Beslenme"
         description="Kantin ürünleri ve diyet kısıtlamaları yönetimi"
       >
-        <div style={{ display: "flex", gap: 8 }}>
+        {canWrite && <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <button className="btn btn-primary" onClick={openAddModal}>
             <Plus size={16} />Ürün Ekle
           </button>
           <button className="btn btn-secondary" onClick={() => setImportOpen(true)}>
             <Upload size={16} />Excel İçe Aktar
           </button>
-        </div>
+        </div>}
       </PageHeader>
       {aiAnalysis && (
         <div className="card" style={{ marginBottom: 18 }}>
@@ -191,7 +266,11 @@ export function CanteenPage() {
           <h2>Kantin Ürünleri</h2>
           <span className="badge badge-green">{String(products.length)}</span>
         </div>
-        <div className="card-pad">
+        <div className="card-pad" style={{ overflowX: "auto" }}>
+          <label>Ürün durumu <select value={available ? "active" : "inactive"}
+            onChange={(event) => setAvailable(event.target.value === "active")} aria-label="Liste ürün durumu">
+            <option value="active">Satışa açık</option><option value="inactive">Satışa kapalı</option>
+          </select></label>
           {products.length === 0 ? (
             <p style={{ color: "#5e6c6d" }}>Henüz ürün eklenmedi</p>
           ) : (
@@ -202,7 +281,7 @@ export function CanteenPage() {
                   <th>Kategori</th>
                   <th>Fiyat</th>
                   <th>Durum</th>
-                  <th>İşlemler</th>
+                  {canWrite && <th>İşlemler</th>}
                 </tr>
               </thead>
               <tbody>
@@ -212,11 +291,13 @@ export function CanteenPage() {
                     <td>{product.category || "-"}</td>
                     <td>{product.price.toFixed(2)} TL</td>
                     <td><Badge value={product.is_available ? "ACTIVE" : "INACTIVE"} /></td>
-                    <td>
+                    {canWrite && <td>
                       <div style={{ display: "flex", gap: 4 }}>
                         <button
                           className="btn btn-secondary"
                           style={{ padding: "4px 8px", fontSize: 12 }}
+                          aria-label={`${product.name} ürününü düzenle`}
+                          disabled={!product.updated_at}
                           onClick={() => openEditModal(product)}
                         >
                           <Edit size={14} />
@@ -224,12 +305,13 @@ export function CanteenPage() {
                         <button
                           className="btn btn-danger"
                           style={{ padding: "4px 8px", fontSize: 12 }}
+                          aria-label={`${product.name} ürününü sil`}
                           onClick={() => handleDelete(product.id)}
                         >
                           <Trash2 size={14} />
                         </button>
                       </div>
-                    </td>
+                    </td>}
                   </tr>
                 ))}
               </tbody>
@@ -274,25 +356,7 @@ export function CanteenPage() {
       <ExcelImport
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onSuccess={() => {
-          // Reload data after import
-          const load = async () => {
-            setLoading(true);
-            try {
-              const [productsRes, restrictionsRes] = await Promise.all([
-                api.get<ApiResponse<CanteenProduct[]>>("/canteen/products"),
-                api.get<ApiResponse<DataRecord[]>>("/canteen/dietary-restrictions")
-              ]);
-              setProducts(productsRes.data.data || []);
-              setRestrictions(restrictionsRes.data.data || []);
-            } catch (err) {
-              setError(apiMessage(err));
-            } finally {
-              setLoading(false);
-            }
-          };
-          load();
-        }}
+        onSuccess={() => setRevision((value) => value + 1)}
         endpoint="/import/canteen"
         title="Kantin Ürün İçe Aktarma"
         description="Excel dosyasından kantin ürün bilgilerini toplu olarak içe aktarın."
@@ -306,7 +370,7 @@ export function CanteenPage() {
       />
 
       {/* Edit/Add Modal */}
-      {editModalOpen && (
+      {canWrite && editModalOpen && (
         <div style={{
           position: "fixed",
           top: 0,
@@ -319,25 +383,37 @@ export function CanteenPage() {
           justifyContent: "center",
           zIndex: 1000
         }}>
-          <div style={{
+          <div role="dialog" aria-label="Kantin ürünü formu" style={{
             backgroundColor: "white",
             borderRadius: 8,
             padding: 24,
             width: 500,
-            maxWidth: "90%"
+            maxWidth: "90%",
+            maxHeight: "calc(100dvh - 32px)",
+            overflowY: "auto",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
               <h3>{editingProduct ? "Ürün Düzenle" : "Yeni Ürün Ekle"}</h3>
-              <button onClick={() => setEditModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+              <button disabled={saving} aria-label="Ürün formunu kapat" onClick={() => setEditModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer" }}>
                 <X size={20} />
               </button>
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {formError && <p role="alert">{formError}</p>}
+              <label>Şube<select aria-label="Ürün şubesi" value={formData.branch_id}
+                disabled={saving} onChange={(event) => setFormData({ ...formData, branch_id: event.target.value })}>
+                <option value="">Şube seçin</option>
+                {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+              </select></label>
+              <label><input type="checkbox" checked={formData.is_available} disabled={saving}
+                onChange={(event) => setFormData({ ...formData, is_available: event.target.checked })} /> Satışa açık</label>
               <div>
                 <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>Ürün Adı</label>
                 <input
                   type="text"
+                  aria-label="Ürün adı"
+                  disabled={saving}
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   style={{ width: "100%", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 4 }}
@@ -358,6 +434,8 @@ export function CanteenPage() {
                 <label style={{ fontSize: 12, color: "#6b7280", marginBottom: 4, display: "block" }}>Fiyat (TL)</label>
                 <input
                   type="number"
+                  aria-label="Ürün fiyatı"
+                  disabled={saving}
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -395,7 +473,7 @@ export function CanteenPage() {
               <button
                 className="btn btn-primary"
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !formData.branch_id}
               >
                 {saving ? "Kaydediliyor..." : "Kaydet"}
               </button>

@@ -28,6 +28,6 @@ async def card(db, tenant, number):
 
 async def balance(db, tenant, number):
     row = await card(db, tenant, number)
-    student, wallet = await wallets.wallet(db, tenant, row.holder_id)
+    student, wallet = await wallets.wallet(db, tenant, row.holder_id, read_only=True)
     return dict(wallets.serialize(student, wallet), card_number=row.card_number, holder_id=row.holder_id,
         holder_name=f"{student.first_name} {student.last_name}", holder_type=row.card_type, card_status=row.status)

@@ -465,7 +465,7 @@ class CanteenTopupRequest(BaseModel):
 
 class CanteenRestrictionUpdate(BaseModel):
     student_id: str
-    daily_limit: float
+    daily_limit: Decimal | None = Field(ge=0, le=Decimal("99999999.99"), decimal_places=2)
     restricted_categories: list[str] = []
     restricted_allergens: list[str] = []
 
