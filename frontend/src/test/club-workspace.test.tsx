@@ -20,9 +20,11 @@ const changed = vi.fn(async () => {});
 beforeEach(() => {
   vi.clearAllMocks();
   useAuthStore.setState({ user: manager, accessToken: "test", hydrated: true });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/clubs/options" ? {
+  vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { data: path === "/clubs/options" ? {
     branches: [{ id: "branch-1", name: "Merkez" }], students: [{ id: "student-1", name: "Deniz Test" }], teachers: [], student_count: 1,
-  } : path === "/clubs" ? clubs : String(path).includes("certificates") ? [award] : [] } }));
+  } : path === "/clubs" ? clubs : path === "/clubs/memberships" && config?.params?.record_id === "new-record"
+    ? [{ id: "new-record", club_id: "club-1", student_id: "student-1", status: "ACTIVE" }]
+    : String(path).includes("certificates") ? [award] : [] } }));
   vi.mocked(api.post).mockResolvedValue({ data: { data: { id: "new-record" } } });
   vi.mocked(downloadFile).mockResolvedValue(undefined);
 });
@@ -38,6 +40,7 @@ it("kulüp yazma yetkisini bağımsız seçenek API'siyle kullanır ve gerçek �
   fireEvent.click(screen.getByRole("button", { name: "Üyeliği kaydet" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/clubs/memberships", { club_id: "club-1", student_id: "student-1" }));
   await waitFor(() => expect(changed).toHaveBeenCalled());
+  expect(api.get).toHaveBeenCalledWith("/clubs/memberships", { params: { branch_id: "branch-1", record_id: "new-record", limit: 1 } });
   expect(vi.mocked(api.get).mock.calls.every(([path]) => path === "/clubs" || String(path).startsWith("/clubs/"))).toBe(true);
 });
 

@@ -5,11 +5,14 @@ import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { downloadFile } from "../../lib/download";
 import { shortDate } from "../../lib/format";
+import { newRequestId } from "../../lib/requestId";
 import { useAuthStore } from "../../stores/auth";
 import type { DataRecord } from "../../types/api";
 
 interface Choice { id: string; name: string; student_number?: string }
 interface Options { branches: Choice[]; students: Choice[]; teachers: Choice[]; student_count: number }
+type RecordKind = "club" | "member" | "event" | "certificate";
+const recordPaths = { club: "/clubs", member: "/clubs/memberships", event: "/clubs/events", certificate: "/clubs/certificates" } as const;
 
 export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
   const canWrite = useAuthStore((state) => state.can("clubs.write"));
@@ -36,6 +39,7 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
   const [moreAwards, setMoreAwards] = useState(false);
   const [optionRetry, setOptionRetry] = useState(0);
   const sequence = useRef(0);
+  const command = useRef<{ signature: string; id: string } | null>(null);
   const { showToast } = useToast();
 
   const loadRecords = useCallback(async () => {
@@ -44,8 +48,8 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
     setError("");
     try {
       const [memberships, awards] = await Promise.all([
-        api.get("/clubs/memberships", { params: { status: "ACTIVE", limit: 21, offset: (memberPage - 1) * 20 } }),
-        api.get("/clubs/certificates", { params: { limit: 21, offset: (awardPage - 1) * 20 } }),
+        api.get("/clubs/memberships", { params: { ...(branchId ? { branch_id: branchId } : {}), status: "ACTIVE", limit: 21, offset: (memberPage - 1) * 20 } }),
+        api.get("/clubs/certificates", { params: { ...(branchId ? { branch_id: branchId } : {}), limit: 21, offset: (awardPage - 1) * 20 } }),
       ]);
       if (request !== sequence.current) return;
       setMembers((memberships.data.data || []).slice(0, 20));
@@ -54,7 +58,7 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
       setMoreAwards((awards.data.data || []).length > 20);
     } catch (err) { if (request === sequence.current) setError(apiMessage(err)); }
     finally { if (request === sequence.current) setLoading(false); }
-  }, [memberPage, awardPage]);
+  }, [branchId, memberPage, awardPage]);
   useEffect(() => { void loadRecords(); }, [loadRecords]);
   useEffect(() => {
     if (!canWrite) return;
@@ -64,7 +68,7 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
         if (controller.signal.aborted) return;
         const data = response.data.data as Options;
         setOptions(data);
-        if (!branchId && data.branches.length) setBranchId(data.branches[0].id);
+        if (!branchId && data.branches.length === 1) setBranchId(data.branches[0].id);
       }).catch((err) => { if (!controller.signal.aborted) setError(apiMessage(err)); });
     }, branchId && search ? 250 : 0);
     return () => { controller.abort(); window.clearTimeout(timer); };
@@ -90,22 +94,38 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
     return () => { controller.abort(); window.clearTimeout(timer); };
   }, [canWrite, clubId, eventSearch, catalogRevision, optionRetry]);
 
-  async function save(event: React.FormEvent<HTMLFormElement>, kind: string) {
+  async function save(event: React.FormEvent<HTMLFormElement>, kind: RecordKind) {
     event.preventDefault();
+    if (!canWrite || busy || !branchId) return;
     const element = event.currentTarget;
     const form = Object.fromEntries(new FormData(element).entries());
-    const body = Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value === "" ? null : value]));
+    const body: Record<string, string | number | null> = Object.fromEntries(
+      Object.entries(form).map(([key, value]) => [key, String(value).trim() || null]),
+    );
+    if (kind === "club") Object.assign(body, { branch_id: branchId, max_members: Number(body.max_members || 30) });
+    if (kind === "member" || kind === "event") body.club_id = clubId;
+    if (kind === "event" && body.max_participants) body.max_participants = Number(body.max_participants);
+    if (kind === "member" || kind === "certificate") body.student_id = studentId;
+    if (kind === "certificate") body.template_id = "scs360";
     setBusy(kind);
     try {
+      const signature = JSON.stringify([kind, branchId, body]);
+      if (command.current?.signature !== signature) command.current = { signature, id: newRequestId() };
+      const expectedId = command.current.id;
+      const payload = kind === "member" ? body : { ...body, request_id: expectedId };
+      const response = await api.post(kind === "club" ? "/clubs/clubs" : recordPaths[kind], payload);
+      const id = response.data.data?.id;
+      if (!id || (kind !== "member" && id !== expectedId)) throw new Error("Kulüp kayıt kimliği doğrulanamadı.");
+      const readback = await api.get(recordPaths[kind], { params: { branch_id: branchId, record_id: id, limit: 1 } });
+      const stored = readback.data.data?.[0] as DataRecord | undefined;
+      if (!stored || stored.id !== id || Object.entries(body).some(([key, value]) => String(stored[key] ?? "") !== String(value ?? "")) ||
+          (kind === "member" && stored.status !== "ACTIVE")) throw new Error("Kulüp kaydı sunucudan doğrulanamadı.");
+      command.current = null;
       if (kind === "club") {
-        const response = await api.post("/clubs/clubs", { ...body, branch_id: branchId, max_members: Number(body.max_members || 30) });
         setClubSearch("");
-        setClubs((rows) => [...rows, { ...response.data.data, branch_id: branchId }]);
-        setClubId(response.data.data.id);
+        setClubs((rows) => [...rows.filter((row) => row.id !== id), stored]);
+        setClubId(id);
       }
-      if (kind === "member") await api.post("/clubs/memberships", { club_id: clubId, student_id: studentId });
-      if (kind === "event") await api.post("/clubs/events", { ...body, club_id: clubId });
-      if (kind === "certificate") await api.post("/clubs/certificates", { ...body, student_id: studentId, template_id: "scs360" });
       if (kind !== "member") element.reset();
       setCatalogRevision((value) => value + 1);
       showToast("Kulüp kaydı güncellendi");
@@ -114,10 +134,16 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
     finally { setBusy(""); }
   }
   async function remove(member: DataRecord) {
+    if (!canWrite || busy) return;
     if (!window.confirm("Öğrencinin bu kulüp üyeliği sonlandırılsın mı?")) return;
     setBusy("member");
     try {
-      await api.delete(`/clubs/memberships/${member.id}`);
+      const response = await api.delete(`/clubs/memberships/${member.id}`);
+      if (response.data.data?.id !== member.id || response.data.data.status !== "INACTIVE") throw new Error("Üyelik sonlandırması doğrulanamadı.");
+      const readback = await api.get(recordPaths.member, { params: { branch_id: branchId || undefined, record_id: member.id, limit: 1 } });
+      const stored = readback.data.data?.[0];
+      if (stored?.id !== member.id || stored.status !== "INACTIVE" || stored.student_id !== member.student_id ||
+          stored.club_id !== member.club_id) throw new Error("Üyelik durumu sunucudan doğrulanamadı.");
       await Promise.all([loadRecords(), onChange()]);
     } catch (err) { showToast("Üyelik sonlandırılamadı", apiMessage(err), "error"); }
     finally { setBusy(""); }
@@ -134,7 +160,7 @@ export function ClubWorkspace({ onChange }: { onChange: () => Promise<void> }) {
     {canWrite && <div className="card card-pad" style={{ marginBottom: 18 }}>
       <h2>Kulüp işlemleri</h2>
       <div className="toolbar" style={{ flexWrap: "wrap", margin: "12px 0" }}>
-        <label>İşlem şubesi<select className="filter-select" value={branchId} onChange={(event) => { setBranchId(event.target.value); setClubId(""); setStudentId(""); setSearch(""); setClubSearch(""); setEventSearch(""); setClubs([]); setEvents([]); setOptions((value) => ({ ...value, students: [], teachers: [] })); }}>
+        <label>İşlem şubesi<select className="filter-select" value={branchId} disabled={Boolean(busy)} onChange={(event) => { setBranchId(event.target.value); setMemberPage(1); setAwardPage(1); setClubId(""); setStudentId(""); setSearch(""); setClubSearch(""); setEventSearch(""); setClubs([]); setEvents([]); setOptions((value) => ({ ...value, students: [], teachers: [] })); }}>
           <option value="">Şube seçin</option>{options.branches.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
         </select></label>
         <label>Kulüp ara<input className="filter-select" value={clubSearch} onChange={(event) => { setClubSearch(event.target.value); setClubId(""); setClubs([]); }} placeholder="Kulüp adı" /></label>
