@@ -3,6 +3,7 @@ import { ErrorState } from "../../components/ui";
 import { useToast } from "../../components/Toast";
 import { api, apiMessage } from "../../lib/api";
 import { useAuthStore } from "../../stores/auth";
+import { verifyInventoryRecord } from "./inventoryRecords";
 
 interface Choice { id: string; name: string; code?: string; is_assigned?: boolean }
 interface Options { branches: Choice[]; locations: Choice[]; items: Choice[]; users: Choice[]; more_items?: boolean; more_users?: boolean }
@@ -36,18 +37,22 @@ export function InventoryWorkspace({ revision, onChange }: { revision: number; o
     return () => { controller.abort(); if (timer !== undefined) window.clearTimeout(timer); };
   }, [canWrite, branch, itemSearch, userSearch, revision, retry]);
   if (!canWrite) return null;
-  async function save(event: FormEvent<HTMLFormElement>, kind: string) {
+  async function save(event: FormEvent<HTMLFormElement>, kind: "location" | "item" | "assignment" | "maintenance") {
     event.preventDefault();
     const form = event.currentTarget;
-    const data = Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, value === "" ? null : value]));
+    const data = Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, String(value) || null]));
     setBusy(true);
     try {
-      if (kind === "location") await api.post("/inventory/locations", { ...data, branch_id: branch });
-      if (kind === "item") await api.post("/inventory/items", { ...data, branch_id: branch });
-      if (kind === "assignment") await api.post("/inventory/assignments", { ...data, item_id: item, assigned_to: user });
-      if (kind === "maintenance") await api.post("/inventory/maintenance-requests", { ...data, item_id: item });
-      form.reset(); showToast("Envanter kaydı güncellendi");
+      const [path, fields, status] = kind === "location" ? ["/inventory/locations", { ...data, branch_id: branch }, null] as const
+        : kind === "item" ? ["/inventory/items", { ...data, branch_id: branch }, "ACTIVE"] as const
+        : kind === "assignment" ? ["/inventory/assignments", { ...data, item_id: item, assigned_to: user }, "ASSIGNED"] as const
+        : ["/inventory/maintenance-requests", { ...data, item_id: item }, "PENDING"] as const;
+      const result = await api.post(path, fields);
+      if (!result.data.success) throw new Error("Envanter kaydı onaylanmadı");
+      await verifyInventoryRecord(path, result.data.data.id, branch, { ...fields, ...(status ? { status } : {}) });
+      form.reset();
       await onChange();
+      showToast("Envanter kaydı doğrulandı");
     } catch (reason) { showToast("İşlem tamamlanamadı", apiMessage(reason), "error"); }
     finally { setBusy(false); }
   }

@@ -7,6 +7,7 @@ import { shortDate } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
 import type { DataRecord } from "../../types/api";
 import { InventoryWorkspace } from "./InventoryWorkspace";
+import { verifyInventoryRecord } from "./inventoryRecords";
 
 function Pager({ label, page, more, busy, onChange }: { label: string; page: number; more: boolean; busy: boolean; onChange: (page: number) => void }) {
   if (!more && page === 1) return null;
@@ -56,8 +57,18 @@ export function InventoryPage() {
     if (!window.confirm(kind === "assignment" ? "Demirbaşın iadesi kaydedilsin mi?" : "Bakım tamamlandı olarak kaydedilsin mi?")) return;
     setBusy(String(row.id));
     try {
-      await api.post(kind === "assignment" ? "/inventory/assignments/" + row.id + "/return" : "/inventory/maintenance-requests/" + row.id + "/resolve");
-      await changed(); showToast("Envanter kaydı güncellendi");
+      const path = kind === "assignment" ? "/inventory/assignments" : "/inventory/maintenance-requests";
+      const status = kind === "assignment" ? "RETURNED" : "RESOLVED";
+      const result = await api.post(path + "/" + row.id + (kind === "assignment" ? "/return" : "/resolve"));
+      const ack = result.data.data;
+      const dateField = kind === "assignment" ? "return_date" : "resolved_at";
+      if (!result.data.success || ack?.id !== row.id || ack.status !== status || typeof ack[dateField] !== "string" || !ack[dateField]) {
+        throw new Error("Envanter işlemi onaylanmadı");
+      }
+      await verifyInventoryRecord(path, row.id, typeof row.branch_id === "string" ? row.branch_id : null,
+        { item_id: String(row.item_id), status, [dateField]: ack[dateField] });
+      await changed();
+      showToast("Envanter kaydı doğrulandı");
     } catch (reason) { showToast("İşlem tamamlanamadı", apiMessage(reason), "error"); }
     finally { setBusy(""); }
   }

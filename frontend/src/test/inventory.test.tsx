@@ -12,11 +12,15 @@ const manager: AuthUser = { id: "manager", first_name: "Test", last_name: "User"
 const open = () => render(<ToastProvider><InventoryPage /></ToastProvider>);
 beforeEach(() => {
   useAuthStore.setState({ user: manager });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/inventory/options" ? {
+  vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { success: true, data: config?.params?.record_id ? [{
+    id: "saved", branch_id: "branch", ...(path === "/inventory/items"
+      ? { item_code: "NEW-1", item_name: "Yeni tablet", location_id: null, status: "ACTIVE" }
+      : { item_id: "item", assigned_to: "teacher", return_date: null, notes: null, status: "ASSIGNED" }),
+  }] : path === "/inventory/options" ? {
     branches: [{ id: "branch", name: "Merkez" }], locations: [], items: [{ id: "item", name: "Tablet", code: "PC-1" }], users: [{ id: "teacher", name: "Işıl Öğretmen" }],
   } : path === "/ai/inventory-analysis" ? { total_items: 300, assigned_count: 20, available_count: 280, pending_maintenance: 0 } :
     path === "/inventory/items" ? Array.from({ length: 21 }, (_, index) => ({ id: "item-" + index, item_code: "PC-" + index, item_name: "Tablet " + index, status: "ACTIVE" })) : [] } }));
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { id: "saved" } } });
+  vi.mocked(api.post).mockResolvedValue({ data: { success: true, data: { id: "saved" } } });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 
@@ -42,4 +46,21 @@ it("demirbaş ve zimmet formlarını izinli API yollarına kaydeder", async () =
   fireEvent.change(screen.getByLabelText("Zimmet sorumlusu"), { target: { value: "teacher" } });
   fireEvent.click(screen.getByRole("button", { name: "Zimmeti kaydet" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/inventory/assignments", { item_id: "item", assigned_to: "teacher", return_date: null, notes: null }));
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith("/inventory/assignments", { params: { branch_id: "branch", limit: 1, record_id: "saved" } }));
+  await waitFor(() => expect(screen.getAllByText("Envanter kaydı doğrulandı")).toHaveLength(2));
+});
+
+it("yanlış tekil kayıt döndüğünde demirbaş taslağını korur", async () => {
+  const original = vi.mocked(api.get).getMockImplementation()!;
+  vi.mocked(api.get).mockImplementation((path, config) => config?.params?.record_id
+    ? Promise.resolve({ data: { success: true, data: [{ id: "other", branch_id: "branch" }] } })
+    : original(path, config));
+  open();
+  await screen.findByRole("option", { name: "PC-1 · Tablet" });
+  fireEvent.change(screen.getByLabelText("Demirbaş kodu"), { target: { value: "NEW-1" } });
+  fireEvent.change(screen.getByLabelText("Demirbaş adı"), { target: { value: "Yeni tablet" } });
+  fireEvent.click(screen.getByRole("button", { name: "Demirbaşı oluştur" }));
+  await screen.findByText("İşlem tamamlanamadı");
+  expect(screen.getByLabelText("Demirbaş adı")).toHaveValue("Yeni tablet");
+  expect(screen.queryByText("Envanter kaydı doğrulandı")).not.toBeInTheDocument();
 });
