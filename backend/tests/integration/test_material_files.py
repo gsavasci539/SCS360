@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from io import BytesIO
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import UploadFile
@@ -13,7 +13,7 @@ from app.core.database import get_db
 from app.core.exceptions import ValidationException
 from app.core.security import create_access_token
 from app.domain.entities.materials import CourseMaterial
-from app.infrastructure.models.models import User
+from app.infrastructure.models.models import Branch, User
 from app.infrastructure.storage.local_storage import LocalFileStorage
 from app.infrastructure.storage.uploads import read_upload
 from app.main import app
@@ -91,6 +91,47 @@ async def test_material_upload_download_and_parent_visibility(materials_client):
         assert row.created_by == data["teacher"].id and row.teacher_id == data["teacher"].id
     assert (await client.delete("/api/materials/" + material["id"], headers=headers(data["teacher"]))).status_code == 200
     assert (await client.get(path, headers=headers(data["teacher"]))).status_code == 404
+
+
+async def test_selected_material_branch_and_idempotent_upload(materials_client):
+    client, sessions, data = materials_client
+    async with sessions() as db:
+        alternate = Branch(organization_id=data["org"].id, name="Materials alternate branch")
+        actor = User(organization_id=data["org"].id, email="isolated-materials-root@test.invalid",
+            first_name="Test", last_name="Operator", password_hash="unused", is_super_admin=True)
+        db.add_all([alternate, actor])
+        await db.commit()
+    auth = {**headers(actor), "X-SCS360-Organization-Id": str(data["org"].id)}
+    branch = {"branch_id": str(data["branch"].id)}
+    wrong = {"branch_id": str(alternate.id)}
+    request_id = str(uuid4())
+    form = {"class_id": str(data["classroom"].id), "request_id": request_id, "title": "İzole belge",
+        "material_type": "PDF", "visibility": "CLASS_ONLY"}
+    attachment = b"%PDF-1.4\nbranch material"
+    async def create(scope, content=attachment):
+        return await client.post("/api/materials/upload", headers=auth, params={**scope, **form},
+            files={"file": ("izole.pdf", content, "application/pdf")})
+
+    assert (await create(wrong)).status_code == 422
+    for _ in range(2):
+        saved = await create(branch)
+        assert saved.status_code == 200 and saved.json()["data"]["id"] == request_id, saved.text
+    assert (await create(branch, b"%PDF-1.4\nother material")).status_code == 409
+    choices = await client.get("/api/materials/classes", headers=auth, params=branch)
+    classes = choices.json()["data"]
+    assert choices.status_code == 200 and form["class_id"] in {row["id"] for row in classes}
+    assert {row["branch_id"] for row in classes} == {branch["branch_id"]}
+    detail = await client.get("/api/materials", headers=auth, params={**branch, "record_id": request_id, "limit": 1})
+    assert [row["id"] for row in detail.json()["data"]] == [request_id]
+    hidden = await client.get("/api/materials", headers=auth, params={**wrong, "record_id": request_id})
+    assert hidden.json()["data"] == []
+    path = f"/api/materials/{request_id}"
+    assert (await client.get(path + "/file", headers=auth, params=wrong)).status_code == 404
+    assert (await client.get(path + "/file", headers=auth, params=branch)).content == attachment
+    assert (await client.delete(path, headers=auth, params=wrong)).status_code == 404
+    assert (await client.delete(path, headers=auth, params=branch)).status_code == 200
+    after = await client.get("/api/materials", headers=auth, params={**branch, "record_id": request_id})
+    assert after.json()["data"] == []
 
 
 async def test_invalid_uploads_are_validation_errors_not_server_errors(materials_client, monkeypatch):

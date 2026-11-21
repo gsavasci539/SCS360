@@ -3,6 +3,7 @@ Course Materials & Digital Library Module API
 Handles file uploads, course materials management, and digital library
 """
 from __future__ import annotations
+import asyncio
 from datetime import UTC, datetime, date
 from typing import Optional
 from uuid import UUID, uuid4
@@ -10,10 +11,11 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, or_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.dependencies import get_tenant_context
 from app.infrastructure.models.models import ClassRoom as Class
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
@@ -22,11 +24,11 @@ from app.domain.entities import (
     CourseMaterial, User
 )
 from app.domain.entities.materials import MaterialSubmission
-from app.infrastructure.models.models import Student
+from app.infrastructure.models.models import Branch, Organization, Student
 from sqlalchemy.exc import IntegrityError
 from app.application.services import material_file_service
 from app.infrastructure.storage.uploads import read_upload
-from app.core.exceptions import ValidationException
+from app.core.exceptions import ConflictException, ForbiddenException, ValidationException
 from app.core.student_access import uses_relationship_scope
 
 router = APIRouter(prefix="/api/materials", tags=["Materials"])
@@ -41,12 +43,38 @@ MaterialType = Literal["PDF", "VIDEO", "AUDIO", "DOCUMENT", "PRESENTATION", "IMA
 MaterialVisibility = Literal["PUBLIC", "CLASS_ONLY", "TEACHER_ONLY"]
 
 
-async def _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until):
+async def _selected_branch(
+    branch_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(get_tenant_context),
+):
+    if branch_id is not None:
+        branch = await db.scalar(select(Branch.id).where(Branch.id == branch_id,
+            Branch.organization_id == tenant.organization_id, Branch.deleted_at.is_(None)))
+        if branch is None or not tenant.can_access_branch(branch_id):
+            raise ForbiddenException("Seçili şubeye erişim yetkiniz yok")
+    return branch_id
+
+
+def _material_branch(branch_id, include_unassigned=False):
+    if branch_id is None:
+        return True
+    branch_classes = select(Class.id).where(Class.branch_id == branch_id)
+    matches = CourseMaterial.class_id.in_(branch_classes)
+    return or_(matches, CourseMaterial.class_id.is_(None)) if include_unassigned else matches
+
+
+async def _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until, branch_id=None):
     if visible_from and visible_until and visible_from > visible_until:
         raise ValidationException("Görünürlük bitiş tarihi başlangıçtan önce olamaz")
+    if branch_id is not None and not class_id:
+        raise ValidationException("Seçili şubede bir sınıf seçin")
     if visibility == "CLASS_ONLY" and not class_id:
         raise ValidationException("Sınıfa özel materyal için sınıf seçilmeli")
-    if class_id and not (await db.execute(select(Class.id).where(Class.id == class_id))).scalar_one_or_none():
+    class_query = select(Class.id).where(Class.id == class_id)
+    if branch_id is not None:
+        class_query = class_query.where(Class.branch_id == branch_id)
+    if class_id and not (await db.execute(class_query)).scalar_one_or_none():
         raise ValidationException("Erişilebilir bir sınıf seçilmeli")
     if not (await db.execute(select(User.id).where(User.id == teacher_id))).scalar_one_or_none():
         raise ValidationException("Erişilebilir bir öğretmen seçilmeli")
@@ -56,7 +84,6 @@ async def _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_
 
 def _staff_filter(tenant):
     if uses_relationship_scope(tenant):
-        from sqlalchemy import or_
         return or_(CourseMaterial.visibility != "TEACHER_ONLY", CourseMaterial.teacher_id == tenant.user_id,
             CourseMaterial.created_by == tenant.user_id)
     return True
@@ -64,7 +91,6 @@ def _staff_filter(tenant):
 
 def _write_filter(tenant):
     if uses_relationship_scope(tenant):
-        from sqlalchemy import or_
         return or_(CourseMaterial.teacher_id == tenant.user_id, CourseMaterial.created_by == tenant.user_id)
     return True
 
@@ -124,6 +150,8 @@ class MaterialGradingCreate(BaseModel):
 
 @router.get("")
 async def get_course_materials(
+    branch_id: UUID | None = Depends(_selected_branch),
+    record_id: UUID | None = None,
     class_id: Optional[UUID] = Query(None),
     teacher_id: Optional[UUID] = Query(None),
     material_type: Optional[str] = Query(None),
@@ -135,9 +163,11 @@ async def get_course_materials(
     tenant: TenantContext = Depends(PermissionChecker("material.read"))
 ):
     """Get course materials with filtering"""
-    query = select(CourseMaterial).where(_staff_filter(tenant))
+    query = select(CourseMaterial).where(_staff_filter(tenant), _material_branch(branch_id, include_unassigned=True))
     
     conditions = []
+    if record_id:
+        conditions.append(CourseMaterial.id == record_id)
     if class_id:
         conditions.append(CourseMaterial.class_id == class_id)
     if teacher_id:
@@ -152,7 +182,7 @@ async def get_course_materials(
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(CourseMaterial.created_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(CourseMaterial.created_at.desc(), CourseMaterial.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     materials = result.scalars().all()
@@ -217,8 +247,29 @@ async def get_course_materials(
     return success_response(enriched_materials)
 
 
+@router.get("/classes")
+async def material_class_choices(
+    branch_id: UUID | None = Depends(_selected_branch),
+    db: AsyncSession = Depends(get_db, scope="function"),
+    tenant: TenantContext = Depends(PermissionChecker("material.write")),
+):
+    query = select(Class).where(Class.deleted_at.is_(None))
+    if branch_id is not None:
+        query = query.where(Class.branch_id == branch_id)
+    rows = (await db.execute(query.order_by(Class.name, Class.id))).scalars()
+    return success_response([{"id": str(row.id), "name": row.name, "branch_id": str(row.branch_id)} for row in rows])
+
+
+def _upload_receipt(material):
+    return {"id": str(material.id), "title": material.title, "material_type": material.material_type,
+        "file_url": material.file_url, "file_size": material.file_size, "file_name": material.file_name,
+        "created_at": material.created_at.isoformat()}
+
+
 @router.post("/upload")
 async def upload_course_material(
+    branch_id: UUID | None = Depends(_selected_branch),
+    request_id: UUID | None = None,
     class_id: Optional[UUID] = Query(None),
     subject_id: Optional[UUID] = Query(None),
     teacher_id: Optional[UUID] = Query(None),
@@ -238,9 +289,30 @@ async def upload_course_material(
     if not title:
         raise ValidationException("Materyal başlığı gerekli")
     teacher_id = teacher_id or tenant.user_id
-    await _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until)
+    await _validate_scope(db, tenant, class_id, teacher_id, visibility, visible_from, visible_until, branch_id)
     name, content = await read_upload(file, MATERIAL_EXTENSIONS[material_type])
-    material_id = uuid4()
+    material_id = request_id or uuid4()
+    if request_id:
+        if tenant.organization_id is None:
+            raise ForbiddenException("Materyal yüklemek için kurum seçin")
+        await db.execute(update(Organization).where(Organization.id == tenant.organization_id)
+            .values(updated_at=Organization.updated_at))
+        existing = (await db.execute(select(CourseMaterial).where(CourseMaterial.id == material_id,
+            CourseMaterial.created_by == tenant.user_id, _material_branch(branch_id)))).scalar_one_or_none()
+        if existing is not None:
+            matches = existing.is_active and (
+                existing.class_id, existing.subject_id, existing.teacher_id, existing.title,
+                existing.description, existing.material_type, existing.unit_topic, existing.visibility,
+                existing.visible_from, existing.visible_until, existing.file_name, existing.file_size
+            ) == (class_id, subject_id, teacher_id, title, description, material_type, unit_topic, visibility,
+                visible_from, visible_until, name, len(content))
+            target = material_file_service.private_path(material_id)
+            if matches and target.is_file() and await asyncio.to_thread(target.read_bytes) == content:
+                return success_response(_upload_receipt(existing))
+            raise ConflictException("Materyal isteğinin içeriği değişmiş")
+        table = CourseMaterial.__table__
+        if (await db.execute(select(table.c.id).where(table.c.id == material_id))).first():
+            raise ConflictException("Materyal işlem kimliği kullanılamıyor")
     
     # Create database record
     new_material = CourseMaterial(
@@ -267,27 +339,20 @@ async def upload_course_material(
     await material_file_service.save_content(material_id, content)
     await db.refresh(new_material)
     
-    return success_response({
-        "id": str(new_material.id),
-        "title": new_material.title,
-        "material_type": new_material.material_type,
-        "file_url": new_material.file_url,
-        "file_size": new_material.file_size,
-        "file_name": new_material.file_name,
-        "created_at": new_material.created_at.isoformat()
-    })
+    return success_response(_upload_receipt(new_material))
 
 
 @router.put("/{material_id}")
 async def update_course_material(
     material_id: UUID,
     material: CourseMaterialCreate,
+    branch_id: UUID | None = Depends(_selected_branch),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Update a course material"""
     result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant))
+        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant), _material_branch(branch_id))
     )
     existing_material = result.scalar_one_or_none()
     
@@ -295,7 +360,7 @@ async def update_course_material(
         raise HTTPException(status_code=404, detail="Material not found")
 
     await _validate_scope(db, tenant, material.class_id, material.teacher_id or tenant.user_id,
-        material.visibility, material.visible_from, material.visible_until)
+        material.visibility, material.visible_from, material.visible_until, branch_id)
     if existing_material.material_type != material.material_type:
         raise ValidationException("Dosya türü yüklenen dosyadan bağımsız değiştirilemez")
     
@@ -324,12 +389,13 @@ async def update_course_material(
 @router.delete("/{material_id}")
 async def delete_course_material(
     material_id: UUID,
+    branch_id: UUID | None = Depends(_selected_branch),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.write"))
 ):
     """Delete a course material"""
     result = await db.execute(
-        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant))
+        select(CourseMaterial).where(CourseMaterial.id == material_id, _write_filter(tenant), _material_branch(branch_id))
     )
     material = result.scalar_one_or_none()
     
@@ -370,11 +436,12 @@ async def download_course_material(
 @router.get("/{material_id}/file")
 async def get_material_file(
     material_id: UUID,
+    branch_id: UUID | None = Depends(_selected_branch),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("material.read")),
 ):
     material = (await db.execute(select(CourseMaterial).where(CourseMaterial.id == material_id,
-        CourseMaterial.is_active.is_(True), _staff_filter(tenant)))).scalar_one_or_none()
+        CourseMaterial.is_active.is_(True), _staff_filter(tenant), _material_branch(branch_id, include_unassigned=True)))).scalar_one_or_none()
     if material is None:
         raise HTTPException(status_code=404, detail="Materyal bulunamadı")
     return await material_file_service.file_response(db, material)
