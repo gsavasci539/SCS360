@@ -23,14 +23,43 @@ async def test_subscription_invoice_uses_server_price_and_retries_do_not_duplica
     client, sessions, data = await prepare(platform_client)
     auth = headers(data["owner"])
     body = {"plan_id": data["plan"]["id"], "request_id": str(uuid4())}
+    assert (await client.post("/api/subscription/invoices", headers=auth, json={**body, "free_only": True})).status_code == 409
+    async with sessions() as db:
+        assert not (await db.execute(select(SubscriptionInvoice))).scalars().all()
     responses = await asyncio.gather(*[client.post("/api/subscription/invoices", headers=auth, json=body) for _ in range(2)])
     assert all(row.status_code == 200 for row in responses), [row.text for row in responses]
     first = responses[0].json()["data"]
     assert first["id"] == responses[1].json()["data"]["id"] and Decimal(first["amount"]) == Decimal("100.00")
+    assert (await client.post("/api/subscription/invoices", headers=auth, json={**body, "free_only": True})).status_code == 409
     assert (await client.post("/api/subscription/invoices", headers=auth, json={**body, "amount": "1.00"})).status_code == 422
     assert (await client.get("/api/subscription/invoices", headers=headers(data["user"]))).status_code == 403
     async with sessions() as db:
         assert len((await db.execute(select(SubscriptionInvoice))).scalars().all()) == 1
+
+
+async def test_free_only_quote_does_not_reuse_an_outdated_paid_invoice(platform_client):
+    client, _, data = await prepare(platform_client)
+    owner, root = headers(data["owner"]), headers(data["root"])
+    plan = data["plan"]
+    body = {"plan_id": plan["id"], "request_id": str(uuid4())}
+    created = await client.post("/api/subscription/invoices", headers=owner, json=body)
+    assert created.status_code == 200, created.text
+    original = created.json()["data"]
+    update = {key: plan[key] for key in ("code", "name", "period_months", "currency", "branch_limit", "student_limit", "user_limit", "is_active")}
+    changed = await client.put(f"/api/platform/plans/{plan['id']}", headers=root, json={**update, "price": "0.00"})
+    assert changed.status_code == 200, changed.text
+    free = {**body, "request_id": str(uuid4()), "free_only": True}
+    assert (await client.post("/api/subscription/invoices", headers=owner, json=free)).status_code == 409
+    cancelled = await client.post(f"/api/subscription/invoices/{original['id']}/cancel", headers=owner)
+    assert cancelled.status_code == 200, cancelled.text
+    created = await client.post("/api/subscription/invoices", headers=owner, json=free)
+    assert created.status_code == 200, created.text
+    row = created.json()["data"]
+    assert row["id"] != original["id"] and Decimal(row["amount"]) == 0
+    active = await client.post(f"/api/subscription/invoices/{row['id']}/activate-free", headers=owner)
+    assert active.status_code == 200 and active.json()["data"]["invoice"]["status"] == "PAID", active.text
+    replay = await client.post("/api/subscription/invoices", headers=owner, json=free)
+    assert replay.json()["data"]["id"] == row["id"] and replay.json()["data"]["status"] == "PAID"
 
 
 async def test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two_invoices(platform_client):

@@ -64,13 +64,18 @@ async def create_invoice(db, user, body):
         values = previous.new_values or {}
         if previous.user_id != user.id or values.get("event") != "SUBSCRIPTION_INVOICE_REQUESTED" or values.get("digest") != digest:
             raise ConflictException("İstek kimliği farklı bir ödeme talebinde kullanılmış")
-        return invoice_data(await invoice(db, UUID(values["invoice_id"]), org.id))
+        row = await invoice(db, UUID(values["invoice_id"]), org.id)
+        if body.free_only and row.amount != 0:
+            raise ConflictException("Paket sıfır tutarlı bir ödeme talebine uygun değil")
+        return invoice_data(row)
     audit_table = AuditLog.__table__
     if (await db.execute(select(audit_table.c.id).where(audit_table.c.id == body.request_id))).first():
         raise ConflictException("İstek kimliği kullanılamıyor")
     plan = await platform.get_plan(db, body.plan_id)
     if not plan.is_active:
         raise ConflictException("Paket yeni satın almaya kapalı")
+    if body.free_only and plan.price != 0:
+        raise ConflictException("Paket sıfır tutarlı bir ödeme talebine uygun değil")
     used = await platform.usage(db, org.id)
     if any(used[key] > getattr(plan, key) for key in used):
         raise ConflictException("Paket mevcut kayıt sayınıza yetmiyor; daha geniş bir paket seçin")
@@ -85,6 +90,8 @@ async def create_invoice(db, user, body):
         row = pending[0]
         if row.plan_id != plan.id or row.status != "PENDING":
             raise ConflictException("Mevcut açık talebi sonuçlandırın veya iptal edin")
+        if body.free_only and row.amount != 0:
+            raise ConflictException("Mevcut ödeme talebi sıfır tutarlı değil")
     else:
         now = datetime.now(UTC)
         end = utc(member.period_end) if member and member.period_end else None

@@ -64,7 +64,10 @@ it("üyelik durumunu yalnız faturanın ve aynı ödeme oturumunun geri okuması
   let reads = 0;
   vi.mocked(api.get).mockImplementation(async (path, config) => {
     if (path !== "/subscription/invoices") return fallback(path, config);
-    if (!config?.params?.record_id) return { data: { data: [reads > 1 ? paid : initial] } };
+    const params: unknown = config?.params;
+    if (!params || typeof params !== "object" || !("record_id" in params)) {
+      return { data: { data: [reads > 1 ? paid : initial] } };
+    }
     reads++;
     return { data: { success: true, data: [reads === 1 ? { ...paid, checkout_id: "older-checkout" } : paid] } };
   });

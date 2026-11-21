@@ -65,6 +65,7 @@ class SubscriptionInvoiceCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     plan_id: UUID
     request_id: UUID = Field(default_factory=uuid4)
+    free_only: bool = False
 
 
 class VerifiedReceipt(BaseModel):
