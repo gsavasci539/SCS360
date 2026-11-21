@@ -4,10 +4,15 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.core.dates import school_today
-from app.core.exceptions import ConflictException, ValidationException
+from app.core.exceptions import ConflictException, ForbiddenException, ValidationException
 from app.domain.entities.inventory import AssetAssignment, InventoryItem, InventoryLocation, MaintenanceRequest
 from app.infrastructure.models.models import Branch, User
 from app.infrastructure.repositories.base import BaseRepository
+
+
+def require_workspace(tenant):
+    if tenant.organization_id is None or tenant.is_super_admin:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
 
 
 async def related_records(db, model, ids):
@@ -156,8 +161,13 @@ async def options(db, tenant, branch_id, item_search, user_search):
     return result
 
 
-async def statistics(db):
-    rows = (await db.execute(select(InventoryItem.id, InventoryItem.status))).all()
+async def statistics(db, tenant, branch_id=None):
+    require_workspace(tenant)
+    query = select(InventoryItem.id, InventoryItem.status)
+    if branch_id is not None:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+        query = query.where(InventoryItem.branch_id == branch_id)
+    rows = (await db.execute(query)).all()
     ids = [row.id for row in rows]
     active_ids = [row.id for row in rows if row.status == "ACTIVE"]
     assignments, maintenance = AssetAssignment.__table__, MaintenanceRequest.__table__
@@ -170,5 +180,6 @@ async def statistics(db):
         recommendations.append(f"Açık bakım talebi sayısı: {pending}.")
     if not ids:
         recommendations.append("İlk demirbaşı kaydedip konum ve zimmet bilgilerini ekleyin.")
-    return {"total_items": len(ids), "assigned_count": assigned, "available_count": len(active_ids) - assigned,
+    return {"branch_id": str(branch_id) if branch_id is not None else None,
+        "total_items": len(ids), "assigned_count": assigned, "available_count": len(active_ids) - assigned,
         "pending_maintenance": pending, "source": "DATABASE_AND_RULES", "recommendations": recommendations}

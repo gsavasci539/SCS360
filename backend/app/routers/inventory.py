@@ -15,13 +15,28 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.dependencies import get_tenant_context
+from app.core.exceptions import ValidationException
 from app.application.services import inventory_service
+from app.application.services.consent_service import utc_iso
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
 from app.domain.entities import User, Branch
+from app.domain.entities.inventory import InventoryItem
+from app.infrastructure.repositories.base import BaseRepository
 
-router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
+
+async def inventory_workspace(tenant: TenantContext = Depends(get_tenant_context)):
+    inventory_service.require_workspace(tenant)
+
+
+router = APIRouter(prefix="/api/inventory", tags=["Inventory"], dependencies=[Depends(inventory_workspace)])
+
+
+async def inventory_branch(db, tenant, branch_id):
+    if branch_id is not None:
+        await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
 
 
 # ==================== Schemas ====================
@@ -76,6 +91,7 @@ async def inventory_options(branch_id: Optional[UUID] = None, item_search: str =
 @router.get("/items")
 async def get_inventory_items(
     branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     category: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     location_id: Optional[UUID] = Query(None),
@@ -85,13 +101,14 @@ async def get_inventory_items(
     tenant: TenantContext = Depends(PermissionChecker("inventory.read"))
 ):
     """Get inventory items with filtering"""
-    from app.domain.entities.inventory import InventoryItem
-    
+    await inventory_branch(db, tenant, branch_id)
     query = select(InventoryItem)
     
     conditions = []
     if branch_id:
         conditions.append(InventoryItem.branch_id == branch_id)
+    if record_id:
+        conditions.append(InventoryItem.id == record_id)
     if category:
         conditions.append(InventoryItem.category == category)
     if status:
@@ -125,8 +142,8 @@ async def get_inventory_items(
             "category": item.category,
             "description": item.description,
             "purchase_date": item.purchase_date.isoformat() if item.purchase_date else None,
-            "purchase_price": float(item.purchase_price) if item.purchase_price else None,
-            "current_value": float(item.current_value) if item.current_value else None,
+            "purchase_price": float(item.purchase_price) if item.purchase_price is not None else None,
+            "current_value": float(item.current_value) if item.current_value is not None else None,
             "location_id": str(item.location_id) if item.location_id else None,
             "location_name": location_name,
             "status": item.status,
@@ -164,45 +181,42 @@ async def update_inventory_item(
 @router.get("/locations")
 async def get_inventory_locations(
     branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     location_type: Optional[str] = Query(None),
+    limit: int | None = Query(None, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("inventory.read"))
 ):
     """Get inventory locations"""
     from app.domain.entities.inventory import InventoryLocation
-    
+    await inventory_branch(db, tenant, branch_id)
     query = select(InventoryLocation)
     
     conditions = []
     if branch_id:
         conditions.append(InventoryLocation.branch_id == branch_id)
+    if record_id:
+        conditions.append(InventoryLocation.id == record_id)
     if location_type:
         conditions.append(InventoryLocation.location_type == location_type)
     
     if conditions:
         query = query.where(and_(*conditions))
     
-    query = query.order_by(InventoryLocation.location_name)
+    query = query.order_by(InventoryLocation.location_name, InventoryLocation.id).limit(limit).offset(offset)
     
     result = await db.execute(query)
     locations = result.scalars().all()
     
+    branches = await inventory_service.related_records(db, Branch, {row.branch_id for row in locations})
     enriched_locations = []
     for location in locations:
-        # Get branch name
-        branch_name = None
-        if location.branch_id:
-            branch_result = await db.execute(
-                select(Branch).where(Branch.id == location.branch_id)
-            )
-            branch = branch_result.scalar_one_or_none()
-            if branch:
-                branch_name = branch.name
-        
+        branch = branches.get(location.branch_id)
         enriched_locations.append({
             "id": str(location.id),
             "branch_id": str(location.branch_id),
-            "branch_name": branch_name,
+            "branch_name": branch.name if branch else None,
             "location_name": location.location_name,
             "location_type": location.location_type,
             "description": location.description,
@@ -220,7 +234,9 @@ async def create_inventory_location(
 ):
     """Create a new inventory location"""
     from app.domain.entities.inventory import InventoryLocation
-    
+    await inventory_branch(db, tenant, location.branch_id)
+    if not location.location_name.strip():
+        raise ValidationException("Konum adı gerekli")
     new_location = InventoryLocation(
         branch_id=location.branch_id,
         location_name=location.location_name,
@@ -228,7 +244,7 @@ async def create_inventory_location(
         description=location.description
     )
     db.add(new_location)
-    await db.commit()
+    await db.flush()
     await db.refresh(new_location)
     
     return success_response({
@@ -243,6 +259,8 @@ async def create_inventory_location(
 @router.get("/assignments")
 async def get_asset_assignments(
     item_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     assigned_to: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -251,13 +269,17 @@ async def get_asset_assignments(
     tenant: TenantContext = Depends(PermissionChecker("inventory.read"))
 ):
     """Get asset assignments with filtering"""
-    from app.domain.entities.inventory import AssetAssignment, InventoryItem
-    
+    from app.domain.entities.inventory import AssetAssignment
+    await inventory_branch(db, tenant, branch_id)
     query = select(AssetAssignment)
     
     conditions = []
     if item_id:
         conditions.append(AssetAssignment.item_id == item_id)
+    if record_id:
+        conditions.append(AssetAssignment.id == record_id)
+    if branch_id:
+        conditions.append(AssetAssignment.item_id.in_(select(InventoryItem.id).where(InventoryItem.branch_id == branch_id)))
     if assigned_to:
         conditions.append(AssetAssignment.assigned_to == assigned_to)
     if status:
@@ -272,7 +294,6 @@ async def get_asset_assignments(
     assignments = result.scalars().all()
     
     enriched_assignments = []
-    from app.domain.entities.inventory import InventoryItem
     item_names = await inventory_service.related_records(db, InventoryItem, {row.item_id for row in assignments})
     user_names = await inventory_service.related_records(db, User, {row.assigned_to for row in assignments if row.assigned_to})
     for assignment in assignments:
@@ -284,6 +305,7 @@ async def get_asset_assignments(
         enriched_assignments.append({
             "id": str(assignment.id),
             "item_id": str(assignment.item_id),
+            "branch_id": str(item.branch_id) if item else None,
             "item_name": item_name,
             "item_code": item_code,
             "assigned_to": str(assignment.assigned_to),
@@ -322,6 +344,8 @@ async def return_asset_assignment(
 @router.get("/maintenance-requests")
 async def get_maintenance_requests(
     item_id: Optional[UUID] = Query(None),
+    branch_id: Optional[UUID] = Query(None),
+    record_id: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
@@ -330,13 +354,17 @@ async def get_maintenance_requests(
     tenant: TenantContext = Depends(PermissionChecker("inventory.read"))
 ):
     """Get maintenance requests with filtering"""
-    from app.domain.entities.inventory import MaintenanceRequest, InventoryItem
-    
+    from app.domain.entities.inventory import MaintenanceRequest
+    await inventory_branch(db, tenant, branch_id)
     query = select(MaintenanceRequest)
     
     conditions = []
     if item_id:
         conditions.append(MaintenanceRequest.item_id == item_id)
+    if record_id:
+        conditions.append(MaintenanceRequest.id == record_id)
+    if branch_id:
+        conditions.append(MaintenanceRequest.item_id.in_(select(InventoryItem.id).where(InventoryItem.branch_id == branch_id)))
     if status:
         conditions.append(MaintenanceRequest.status == status.upper())
     if priority:
@@ -364,6 +392,7 @@ async def get_maintenance_requests(
         enriched_requests.append({
             "id": str(req.id),
             "item_id": str(req.item_id),
+            "branch_id": str(item.branch_id) if item else None,
             "item_name": item_name,
             "item_code": item_code,
             "reported_by": str(req.reported_by),
@@ -373,7 +402,7 @@ async def get_maintenance_requests(
             "status": req.status,
             "assigned_to": str(req.assigned_to) if req.assigned_to else None,
             "assigned_to_name": assigned_to_name,
-            "resolved_at": req.resolved_at.isoformat() if req.resolved_at else None,
+            "resolved_at": utc_iso(req.resolved_at),
             "resolution_notes": req.resolution_notes,
             "created_at": req.created_at.isoformat()
         })

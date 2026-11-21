@@ -9,7 +9,7 @@ from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
 from app.domain.entities.inventory import AssetAssignment, InventoryItem, InventoryLocation, MaintenanceRequest
-from app.infrastructure.models.models import Permission, Role, User
+from app.infrastructure.models.models import Branch, Permission, Role, User
 
 
 def auth(user):
@@ -136,3 +136,56 @@ async def test_inventory_pages_use_bounded_queries_for_many_related_records(inve
             assert len(statements) < 25, (path, len(statements))
     finally:
         event.remove(engine, "before_cursor_execute", record)
+
+
+async def test_inventory_exact_readback_uses_explicit_root_workspace_and_selected_branch(inventory_client):
+    client, sessions, data = inventory_client
+    async with sessions() as db:
+        alternate = Branch(name="Alternate storage", organization_id=data["org"].id)
+        operator = User(organization_id=data["org"].id, email="isolated-inventory-root@test.invalid",
+            first_name="Isolated", last_name="Operator", password_hash="unused", is_super_admin=True)
+        db.add_all([alternate, operator])
+        await db.commit()
+
+    root = auth(operator)
+    workspace = {**root, "X-SCS360-Organization-Id": str(data["org"].id)}
+    assert (await client.get("/api/inventory/items", headers=root)).status_code == 403
+    assert (await client.get("/api/ai/inventory-analysis", headers=root)).status_code == 403
+    location = await client.post("/api/inventory/locations", headers=workspace,
+        json={"branch_id": str(data["branch"].id), "location_name": "Verified storage"})
+    assert location.status_code == 200, location.text
+    location_id = location.json()["data"]["id"]
+    item, body = await create_item(client, data, "VERIFIED-INVENTORY")
+    updated = await client.put(f'/api/inventory/items/{item["id"]}', headers=workspace,
+        json={**body, "location_id": location_id, "purchase_price": 0, "current_value": 0})
+    assert updated.status_code == 200, updated.text
+    assignment = await client.post("/api/inventory/assignments", headers=workspace,
+        json={"item_id": item["id"], "assigned_to": str(data["teacher"].id)})
+    assert assignment.status_code == 200, assignment.text
+    maintenance = await client.post("/api/inventory/maintenance-requests", headers=workspace,
+        json={"item_id": item["id"], "issue_description": "Verify complete"})
+    assert maintenance.status_code == 200, maintenance.text
+    maintenance_id = maintenance.json()["data"]["id"]
+    resolved = await client.post(f"/api/inventory/maintenance-requests/{maintenance_id}/resolve", headers=workspace)
+    assert resolved.status_code == 200, resolved.text
+
+    for path, identifier in (("items", item["id"]), ("locations", location_id),
+        ("assignments", assignment.json()["data"]["id"]), ("maintenance-requests", maintenance_id)):
+        scope = {"record_id": identifier, "branch_id": str(data["branch"].id), "limit": 1}
+        response = await client.get(f"/api/inventory/{path}", headers=workspace, params=scope)
+        assert response.status_code == 200, response.text
+        record, = response.json()["data"]
+        assert record["id"] == identifier and record["branch_id"] == scope["branch_id"]
+        if path == "items":
+            assert record["purchase_price"] == record["current_value"] == 0
+        if path == "maintenance-requests":
+            assert record["status"] == "RESOLVED" and record["resolved_at"] == resolved.json()["data"]["resolved_at"]
+        wrong = await client.get(f"/api/inventory/{path}", headers=workspace,
+            params={**scope, "branch_id": str(alternate.id)})
+        assert wrong.status_code == 200 and wrong.json()["data"] == [], wrong.text
+        foreign = await client.get(f"/api/inventory/{path}", headers=workspace,
+            params={**scope, "branch_id": str(data["other_branch"].id)})
+        assert foreign.status_code == 404, foreign.text
+    summary = await client.get("/api/ai/inventory-analysis", headers=workspace, params={"branch_id": str(alternate.id)})
+    assert summary.status_code == 200, summary.text
+    assert summary.json()["data"]["branch_id"] == str(alternate.id) and summary.json()["data"]["total_items"] == 0

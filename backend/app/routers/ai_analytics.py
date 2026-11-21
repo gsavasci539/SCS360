@@ -1004,9 +1004,10 @@ async def get_communication_analysis(
 
 
 @router.get("/inventory-analysis")
-async def get_inventory_analysis(tenant: TenantContext = Depends(AnalysisPermission('/inventory-analysis')), db: AsyncSession = Depends(get_db, scope="function")):
+async def get_inventory_analysis(branch_id: UUID | None = None,
+    tenant: TenantContext = Depends(AnalysisPermission('/inventory-analysis')), db: AsyncSession = Depends(get_db, scope="function")):
     from app.application.services import inventory_service
-    return success_response(await inventory_service.statistics(db))
+    return success_response(await inventory_service.statistics(db, tenant, branch_id))
 
 
 @router.get("/staff-analysis")
