@@ -4,10 +4,11 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import func, or_, select
 
 from app.application.services.academic_records import normalized_score, numeric, records
+from app.application.services.consent_service import utc_iso
 from app.application.services.platform_service import lock_organization
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.responses import paginate
@@ -28,6 +29,8 @@ class ExamFields(BaseModel):
     max_score: Decimal = Field(default=Decimal("100"), gt=0, le=Decimal("999.99"), decimal_places=2)
     weight: Decimal = Field(default=Decimal("1"), ge=0, le=2, decimal_places=2)
     description: str | None = Field(default=None, max_length=1000)
+    request_id: UUID | None = None
+    expected_updated_at: AwareDatetime | None = None
 
     @field_validator("exam_type", mode="before")
     @classmethod
@@ -116,54 +119,80 @@ async def classroom(db, tenant, identifier, *, admission=False):
     return row
 
 
-async def exam_record(db, tenant, identifier):
+async def exam_record(db, tenant, identifier, branch_id=None):
     row = (await db.execute(select(Exam).where(Exam.id == identifier)
         .execution_options(populate_existing=True))).scalar_one_or_none()
     if row is None:
         raise NotFoundException("Sınav bulunamadı")
-    await classroom(db, tenant, row.class_id)
+    room = await classroom(db, tenant, row.class_id)
+    if branch_id is not None and room.branch_id != branch_id:
+        raise NotFoundException("Sınav seçili şubede bulunamadı")
     return row
 
 
-async def class_options(db, tenant, page, page_size, search, selected_id=None, exam_id=None):
+async def class_options(db, tenant, page, page_size, search, selected_id=None, exam_id=None, branch_id=None):
     if tenant.is_super_admin or not tenant.organization_id:
         raise ForbiddenException("Önce kurum çalışma alanını seçin")
-    query = select(ClassRoom.id, ClassRoom.name).join(Branch, Branch.id == ClassRoom.branch_id).where(
+    query = select(ClassRoom.id, ClassRoom.name, ClassRoom.branch_id).join(Branch, Branch.id == ClassRoom.branch_id).where(
         ClassRoom.organization_id == tenant.organization_id, ClassRoom.deleted_at.is_(None),
         Branch.organization_id == tenant.organization_id, Branch.deleted_at.is_(None))
-    current = (await exam_record(db, tenant, exam_id)).class_id if exam_id else None
+    if branch_id is not None:
+        query = query.where(ClassRoom.branch_id == branch_id)
+    current = (await exam_record(db, tenant, exam_id, branch_id)).class_id if exam_id else None
     selected = (await db.execute(query.where(ClassRoom.id == current))).first() if selected_id == current and current else None
     query = query.where(ClassRoom.is_active.is_(True), Branch.is_active.is_(True))
     if search:
         query = query.where(ClassRoom.name.ilike(f"%{search.strip()}%"))
     total = await db.scalar(select(func.count()).select_from(query.subquery()))
     rows = (await db.execute(query.order_by(ClassRoom.name, ClassRoom.id).offset((page - 1) * page_size).limit(page_size))).all()
-    return {**paginate([{"id": str(row.id), "name": row.name} for row in rows], total, page, page_size),
-        "selected": {"id": str(selected.id), "name": selected.name} if selected else None}
+    return {**paginate([{"id": str(row.id), "name": row.name, "branch_id": str(row.branch_id)} for row in rows], total, page, page_size),
+        "selected": {"id": str(selected.id), "name": selected.name, "branch_id": str(selected.branch_id)} if selected else None}
 
 
-async def save_exam(db, tenant, payload, identifier=None):
+async def save_exam(db, tenant, payload, identifier=None, branch_id=None):
     await lock_school(db, tenant)
-    existing = await exam_record(db, tenant, identifier) if identifier else None
+    existing = await exam_record(db, tenant, identifier, branch_id) if identifier else None
+    excluded = {"request_id", "expected_updated_at"}
+    values = payload.model_dump(exclude=excluded, exclude_unset=existing is not None)
     if existing and existing.status == "CANCELLED":
         raise ConflictException("İptal edilen sınav değiştirilemez")
+    if existing and payload.expected_updated_at is not None and utc_iso(existing.updated_at) != utc_iso(payload.expected_updated_at):
+        if all(getattr(existing, name) == value for name, value in values.items()):
+            return existing
+        raise ConflictException("Sınav güncellendi. Güncel kaydı tekrar açın")
+    if not existing and payload.request_id is not None:
+        previous = await db.scalar(select(Exam).where(Exam.id == payload.request_id))
+        if previous is not None:
+            room = await classroom(db, tenant, previous.class_id)
+            if (branch_id is not None and room.branch_id != branch_id) or previous.created_by != tenant.user_id or any(
+                getattr(previous, name) != value for name, value in values.items()
+            ):
+                raise ConflictException("Sınav istek kimliği farklı kayıt için kullanılmış")
+            return previous
+        table = Exam.__table__
+        if await db.scalar(select(table.c.id).where(table.c.id == payload.request_id)) is not None:
+            raise ConflictException("Sınav istek kimliği kullanılamıyor")
     target = await classroom(db, tenant, payload.class_id, admission=existing is None or existing.class_id != payload.class_id)
+    if branch_id is not None and target.branch_id != branch_id:
+        raise NotFoundException("Sınav sınıfı seçili şubede bulunamadı")
     if payload.teacher_id:
         teacher = (await db.execute(select(User).where(User.id == payload.teacher_id,
             User.organization_id == target.organization_id, User.deleted_at.is_(None), User.status == UserStatus.ACTIVE))).scalar_one_or_none()
         if teacher is None:
             raise ValidationException("Sınav görevlisi aynı kurumda aktif bir kullanıcı olmalı")
-    if existing and (existing.class_id != payload.class_id or existing.max_score != payload.max_score):
+    if existing and (existing.class_id != payload.class_id or existing.max_score != values.get("max_score", existing.max_score)):
         # Core count retains awareness of historical rows hidden by current pupil scope.
         table = ExamResult.__table__
         if await db.scalar(select(func.count()).select_from(table).where(table.c.exam_id == existing.id)):
             raise ConflictException("Not girilmiş sınavın sınıfı ve tam puanı değiştirilemez")
     now = datetime.now(UTC)
     if existing is None:
-        existing = Exam(**payload.model_dump(), status="SCHEDULED", created_by=tenant.user_id, updated_by=tenant.user_id)
+        if payload.request_id is not None:
+            values["id"] = payload.request_id
+        existing = Exam(**values, status="SCHEDULED", created_by=tenant.user_id, updated_by=tenant.user_id)
         db.add(existing)
     else:
-        for key, value in payload.model_dump().items():
+        for key, value in values.items():
             setattr(existing, key, value)
         existing.updated_by = tenant.user_id
         existing.updated_at = now
@@ -171,18 +200,18 @@ async def save_exam(db, tenant, payload, identifier=None):
     return existing
 
 
-async def cancel_exam(db, tenant, identifier):
+async def cancel_exam(db, tenant, identifier, branch_id=None):
     await lock_school(db, tenant)
-    row = await exam_record(db, tenant, identifier)
+    row = await exam_record(db, tenant, identifier, branch_id)
     if row.status != "CANCELLED":
         row.status, row.updated_by, row.updated_at = "CANCELLED", tenant.user_id, datetime.now(UTC)
         await db.flush()
     return row
 
 
-async def write_grades(db, tenant, payload, *, result_id=None):
+async def write_grades(db, tenant, payload, *, result_id=None, branch_id=None):
     await lock_school(db, tenant)
-    exam = await exam_record(db, tenant, payload.exam_id)
+    exam = await exam_record(db, tenant, payload.exam_id, branch_id)
     if exam.status == "CANCELLED":
         raise ConflictException("İptal edilen sınava not girilemez")
     maximum = numeric(exam.max_score)
@@ -232,8 +261,8 @@ def result_data(row, student_name=None, exam_title=None, actor_name=None):
         "created_at": row.created_at, "updated_at": row.updated_at}
 
 
-async def roster(db, tenant, identifier, page, page_size, search):
-    exam = await exam_record(db, tenant, identifier)
+async def roster(db, tenant, identifier, page, page_size, search, branch_id=None):
+    exam = await exam_record(db, tenant, identifier, branch_id)
     result_ids = select(ExamResult.student_id).where(ExamResult.exam_id == exam.id)
     query = select(Student).where(Student.deleted_at.is_(None),
         or_(Student.class_id == exam.class_id, Student.id.in_(result_ids)))
@@ -291,11 +320,11 @@ async def performance(db, tenant, student, academic_year, semester):
     return (round(average / 25, 2) if average is not None else None, rank, full_size if full_scope else None, rate)
 
 
-async def generate_card(db, tenant, payload):
+async def generate_card(db, tenant, payload, branch_id=None):
     await lock_school(db, tenant)
     student = (await db.execute(select(Student).where(Student.id == payload.student_id,
         Student.deleted_at.is_(None)))).scalar_one_or_none()
-    if student is None:
+    if student is None or (branch_id is not None and student.branch_id != branch_id):
         raise NotFoundException("Öğrenci bulunamadı")
     values = await performance(db, tenant, student, payload.academic_year, payload.semester)
     cards = (await db.execute(select(ReportCard).where(ReportCard.student_id == student.id,

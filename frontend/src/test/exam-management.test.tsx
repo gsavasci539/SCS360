@@ -4,6 +4,7 @@ import { ExamsPage } from "../features/academic/ExamsPage";
 import { api } from "../lib/api";
 import { getAnalysis } from "../lib/analysis";
 import { ParentReportCards } from "../features/parent/ParentReportCards";
+import { StudentReportCards } from "../features/academic/StudentReportCards";
 
 vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }, apiMessage: () => "Sınav verileri alınamadı" }));
 vi.mock("../lib/analysis", () => ({ getAnalysis: vi.fn() }));
@@ -11,15 +12,19 @@ let permissions = new Set<string>();
 vi.mock("../lib/workspaceUser", () => ({ useWorkspaceUser: () => ({ permissions: [...permissions], roles: [] }) }));
 vi.mock("../stores/auth", () => ({ hasPermission: (_user: unknown, permission: string) => permissions.has(permission) }));
 const exam = { id: "exam", class_id: "class", title: "Gerçek sınav", class_name: "A Sınıfı", exam_date: "2026-10-20",
-  exam_type: "QUIZ", status: "SCHEDULED", max_score: 80, duration_minutes: 60, weight: 1, start_time: "10:15:00" };
+  exam_type: "QUIZ", status: "SCHEDULED", max_score: 80, duration_minutes: 60, weight: 1, start_time: "10:15:00", branch_id: "branch" };
+let acceptGrade = true;
 beforeEach(() => {
   permissions = new Set(["exam.read", "exam.write"]);
+  acceptGrade = true;
+  const row = { id: "result", exam_id: "exam", student_id: "child", score: 40, grade_scale: null, notes: null };
   vi.mocked(getAnalysis).mockResolvedValue({ data: { data: null } });
-  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { data: path === "/exams" ? {
+  vi.mocked(api.get).mockImplementation(async (path) => ({ data: { success: true, data: path === "/exams" ? {
     items: [exam], total: 1, total_pages: 1, page: 1, page_size: 25,
   } : String(path).endsWith("/roster") ? { items: [{ id: "child", name: "Gerçek Öğrenci", score: 0, result_id: "result" }],
-    total: 1, total_pages: 1, page: 1, page_size: 50 } : { items: [], total: 0, total_pages: 0 } } }));
-  vi.mocked(api.post).mockResolvedValue({ data: { data: { created: 0, updated: 1 } } });
+    total: 1, total_pages: 1, page: 1, page_size: 50 } : String(path).endsWith("/results")
+      ? [{ ...row, score: acceptGrade ? 40 : 0 }] : { items: [], total: 0, total_pages: 0 } } }));
+  vi.mocked(api.post).mockResolvedValue({ data: { success: true, data: { created: 0, updated: 1, items: [row] } } });
 });
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
@@ -34,8 +39,42 @@ it("sınavdan gerçek sıfır notunu yükler ve boş değere dönüştürmeden g
   fireEvent.click(screen.getByRole("button", { name: "Notları kaydet" }));
   await waitFor(() => expect(api.post).toHaveBeenCalledWith("/exams/bulk-grade-entry", {
     exam_id: "exam", grades: [{ student_id: "child", score: 40, grade_scale: null, notes: null }],
-  }));
+  }, { params: { branch_id: "branch" } }));
   expect(await screen.findByRole("status")).toHaveTextContent("Notlar kaydedildi");
+});
+
+it("doğrulanmayan kalıcı notu başarı saymaz ve taslağı korur", async () => {
+  acceptGrade = false;
+  render(<ExamsPage />);
+  await screen.findByRole("cell", { name: "Gerçek sınav" });
+  fireEvent.click(screen.getByRole("button", { name: "Notlar ve karne" }));
+  const grade = await screen.findByRole("spinbutton", { name: "Gerçek Öğrenci notu" });
+  fireEvent.change(grade, { target: { value: "40" } });
+  fireEvent.click(screen.getByRole("button", { name: "Notları kaydet" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Sınav verileri alınamadı");
+  expect(grade).toHaveValue(40);
+  expect(screen.queryByText("Notlar kaydedildi.")).not.toBeInTheDocument();
+});
+
+it("karne yanıtında doğru öğrenci ve kalıcı taslak doğrulanana kadar başarı göstermez", async () => {
+  let draft: Record<string, unknown> | null = null;
+  let verified = false;
+  vi.mocked(api.get).mockImplementation(async () => ({
+    data: { success: true, data: draft ? [{ ...draft, student_id: verified ? "child" : "other" }] : [] },
+  }));
+  vi.mocked(api.post).mockImplementation(async (_path, form) => {
+    draft = { ...(form as Record<string, unknown>), id: "card", is_published: false };
+    return { data: { success: true, data: draft } };
+  });
+  render(<StudentReportCards student={{ id: "child", name: "Gerçek Öğrenci" }} writable onClose={() => {}} />);
+  const comment = screen.getByLabelText("Öğretmen yorumu");
+  fireEvent.change(comment, { target: { value: "Dönem açıklaması" } });
+  fireEvent.click(screen.getByRole("button", { name: "Karne taslağı oluştur" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Sınav verileri alınamadı");
+  expect(comment).toHaveValue("Dönem açıklaması");
+  verified = true;
+  fireEvent.click(screen.getByRole("button", { name: "Karne taslağı oluştur" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("Karne taslağı oluşturuldu.");
 });
 
 it("salt okuma yetkisinde yazma düğmelerini ve kontrollerini sunmaz", async () => {

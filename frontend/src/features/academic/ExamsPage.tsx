@@ -8,6 +8,7 @@ import { hasPermission } from "../../stores/auth";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 import { ExamEditor } from "./ExamEditor";
 import { ExamGrades } from "./ExamGrades";
+import { readExamRecord } from "./examRecords";
 
 export function ExamsPage() {
   const viewer = useWorkspaceUser(), writable = hasPermission(viewer, "exam.write");
@@ -34,8 +35,12 @@ export function ExamsPage() {
   async function cancel() {
     if (!cancelling || busy) return; setBusy(true); setActionError(""); setMessage("");
     try {
-      await api.delete(`/exams/${cancelling.id}`);
-      if (selected?.id === cancelling.id) setSelected({ ...selected, status: "CANCELLED" });
+      const branch = typeof cancelling.branch_id === "string" ? cancelling.branch_id : undefined;
+      const reply = await api.delete<ApiResponse<DataRecord>>(`/exams/${cancelling.id}`, { params: { branch_id: branch } });
+      if (!reply.data.success || reply.data.data?.id !== cancelling.id || reply.data.data.status !== "CANCELLED") throw new Error("Sınav iptali onaylanmadı");
+      const stored = await readExamRecord(cancelling.id, branch);
+      if (stored.status !== "CANCELLED") throw new Error("Sınav iptali doğrulanamadı");
+      if (selected?.id === cancelling.id) setSelected(stored);
       setCancelling(null); setMessage("Sınav iptal edildi. Not geçmişi korundu."); setRevision((value) => value + 1);
     } catch (reason) { setActionError(apiMessage(reason)); } finally { setBusy(false); }
   }
@@ -52,7 +57,7 @@ export function ExamsPage() {
     </section>}
     {summaryError && <p>{summaryError}</p>}
     <section className="card">
-      <div className="card-head"><h2>Sınavlar</h2><span>{list?.total ?? 0} kayıt</span></div>
+      <div className="card-head"><h2>Sınavlar</h2>{list && !error && <span>{list.total} kayıt</span>}</div>
       <div className="card-pad">
         <div className="form-grid" style={{ marginBottom: 16 }}>
           <Field label="Sınav ara"><input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></Field>

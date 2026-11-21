@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Field, Modal } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
-import type { DataRecord } from "../../types/api";
+import type { ApiResponse, DataRecord } from "../../types/api";
+import { newRequestId } from "../../lib/requestId";
 import { ResourceChoice } from "../resources/ResourceChoice";
+import { readExamRecord } from "./examRecords";
 
 type Values = Record<string, string | number | boolean>;
 export function ExamEditor({ exam, onClose, onSaved }: { exam: DataRecord | null; onClose: () => void; onSaved: () => void }) {
   const [error, setError] = useState(""), [saving, setSaving] = useState(false);
+  const attempt = useRef<{ body: string; id: string } | null>(null);
   const { register, control, handleSubmit } = useForm<Values>({ defaultValues: {
     title: String(exam?.title ?? ""), class_id: String(exam?.class_id ?? ""), exam_type: String(exam?.exam_type ?? "QUIZ"),
     exam_date: String(exam?.exam_date ?? ""), start_time: String(exam?.start_time ?? "").slice(0, 5),
@@ -23,13 +26,25 @@ export function ExamEditor({ exam, onClose, onSaved }: { exam: DataRecord | null
       duration_minutes: Number(values.duration_minutes), max_score: Number(values.max_score), weight: Number(values.weight),
       description: String(values.description).trim() || null, teacher_id: exam?.teacher_id ?? null, subject_id: exam?.subject_id ?? null };
     try {
-      if (exam) await api.put(`/exams/${exam.id}`, payload); else await api.post("/exams", payload);
+      const body = JSON.stringify(payload);
+      if (!exam && attempt.current?.body !== body) attempt.current = { body, id: newRequestId() };
+      const expectedId = exam?.id ?? attempt.current?.id;
+      if (!expectedId) throw new Error("Sınav kimliği oluşturulamadı");
+      const response = exam
+        ? await api.put<ApiResponse<DataRecord>>(`/exams/${expectedId}`, { ...payload, expected_updated_at: exam.updated_at ?? null })
+        : await api.post<ApiResponse<DataRecord>>("/exams", { ...payload, request_id: expectedId });
+      if (!response.data.success || response.data.data?.id !== expectedId) throw new Error("Sınav kimliği doğrulanamadı");
+      const stored = await readExamRecord(expectedId, undefined);
+      if (!Object.entries(payload).every(([key, value]) => key === "start_time"
+        ? String(stored[key] ?? "").slice(0, 5) === (value ?? "") : (stored[key] ?? null) === value)) {
+        throw new Error("Kaydedilen sınav alanları doğrulanamadı");
+      }
       onSaved();
     } catch (reason) { setError(apiMessage(reason)); }
     finally { setSaving(false); }
   }
   return <Modal open title={exam ? "Sınavı düzenle" : "Yeni sınav"} onClose={() => { if (!saving) onClose(); }}>
-    <form onSubmit={handleSubmit(save)}>
+    <form onSubmit={(event) => void handleSubmit(save)(event)}>
       {error && <p role="alert">{error}</p>}
       <fieldset disabled={saving} style={{ border: 0, padding: 0, minWidth: 0 }}>
         <div className="form-grid">

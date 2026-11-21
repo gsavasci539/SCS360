@@ -12,30 +12,47 @@ export function ExamGrades({ exam, writable, onChanged, onClose }: {
   const [page, setPage] = useState(1), [search, setSearch] = useState(""), [revision, setRevision] = useState(0);
   const [data, setData] = useState<Paginated<DataRecord> | null>(null), [loading, setLoading] = useState(true);
   const [error, setError] = useState(""), [message, setMessage] = useState(""), [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({}), [student, setStudent] = useState<{ id: string; name: string } | null>(null);
   const validMaximum = typeof exam.max_score === "number" && Number.isFinite(exam.max_score) && exam.max_score > 0;
   const editable = writable && exam.status !== "CANCELLED" && validMaximum;
+  const branch = typeof exam.branch_id === "string" ? exam.branch_id : undefined;
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError("");
     api.get<ApiResponse<Paginated<DataRecord>>>(`/exams/${exam.id}/roster`, {
-      params: { page, page_size: 50, search: search || undefined }, signal: controller.signal,
+      params: { page, page_size: 50, search: search || undefined, branch_id: branch }, signal: controller.signal,
     }).then((reply) => { if (!controller.signal.aborted) setData(reply.data.data); })
       .catch((reason) => { if (!controller.signal.aborted) setError(apiMessage(reason)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [exam.id, page, search, revision]);
+  }, [exam.id, page, search, revision, branch]);
   function change(row: DataRecord, key: keyof Draft, value: string) {
     setDrafts((previous) => ({ ...previous, [row.id]: { ...(previous[row.id] || fields(row)), [key]: value } })); setMessage("");
   }
   async function save(event: React.FormEvent) {
     event.preventDefault(); if (saving || !Object.keys(drafts).length) return;
-    setSaving(true); setError(""); setMessage("");
+    setSaving(true); setSaveError(""); setMessage("");
     try {
-      await api.post("/exams/bulk-grade-entry", { exam_id: exam.id, grades: Object.entries(drafts).map(([id, row]) => ({
+      const grades = Object.entries(drafts).map(([id, row]) => ({
         student_id: id, score: row.score === "" ? null : Number(row.score), grade_scale: row.grade_scale.trim() || null, notes: row.notes.trim() || null,
-      })) });
+      }));
+      const write = await api.post<ApiResponse<{ items: DataRecord[] }>>("/exams/bulk-grade-entry", { exam_id: exam.id, grades },
+        { params: { branch_id: branch } });
+      const ack = write.data.data?.items;
+      const matches = (row: DataRecord, grade: typeof grades[number]) => row.exam_id === exam.id && row.student_id === grade.student_id &&
+        Object.entries(grade).every(([key, value]) => (row[key] ?? null) === value);
+      if (!write.data.success || ack?.length !== grades.length || !grades.every((grade) => ack.some((row) => row.id && matches(row, grade)))) {
+        throw new Error("Notlar sunucu tarafından doğrulanmadı");
+      }
+      const read = await api.get<ApiResponse<DataRecord[]>>(`/exams/${exam.id}/results`, { params: { branch_id: branch } });
+      const byId = new Map(read.data.data.map((row) => [row.id, row]));
+      if (!read.data.success || !grades.every((grade) => {
+        const id = ack.find((row) => row.student_id === grade.student_id)?.id;
+        const row = id ? byId.get(id) : undefined;
+        return row && matches(row, grade);
+      })) throw new Error("Kalıcı notlar doğrulanamadı");
       setDrafts({}); setMessage("Notlar kaydedildi."); setRevision((value) => value + 1); onChanged();
-    } catch (reason) { setError(apiMessage(reason)); } finally { setSaving(false); }
+    } catch (reason) { setSaveError(apiMessage(reason)); } finally { setSaving(false); }
   }
   return <section className="card" style={{ marginTop: 20 }} aria-label={`${exam.title} notları`}>
     <div className="card-head"><div><h2>{String(exam.title)} · Notlar</h2><p>Tam puan: {String(exam.max_score ?? "—")}. Boş not değerlendirmeye alınmaz; sıfır gerçek bir nottur.</p></div>
@@ -43,6 +60,7 @@ export function ExamGrades({ exam, writable, onChanged, onClose }: {
     <div className="card-pad">
       {message && <p role="status">{message}</p>}
       {error && <div role="alert"><ErrorState message={error} retry={() => setRevision((value) => value + 1)} /></div>}
+      {saveError && <p role="alert">{saveError}</p>}
       {exam.status === "CANCELLED" && <p>Sınav iptal edildi. Geçmiş notlar korunur; not girişi kapalıdır.</p>}
       {!validMaximum && <p role="alert">Sınavın eski tam puan kaydı incelenmeli; not girişi kapalıdır.</p>}
       <Field label="Öğrenci ara"><input type="search" value={search} disabled={saving} onChange={(event) => { setSearch(event.target.value); setPage(1); }} /></Field>

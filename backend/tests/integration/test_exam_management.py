@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 
 from app.domain.entities.exams import Exam, ExamResult
-from app.infrastructure.models.models import AttendanceRecord, AttendanceStatus
+from app.infrastructure.models.models import AttendanceRecord, AttendanceStatus, Branch
 from test_saas_platform import platform_client  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
@@ -44,6 +44,36 @@ async def test_exam_time_and_actor_are_persisted_without_database_type_errors(pl
         assert stored.created_by == data["root"].id and stored.updated_by == data["root"].id
     listed = await client.get("/api/exams", headers=scope(data))
     assert listed.status_code == 200 and listed.json()["data"][0]["start_time"] == "11:30:00", listed.text
+
+
+async def test_exam_readback_replay_and_stale_edits_respect_selected_branch(platform_client):
+    client, sessions, data = platform_client
+    async with sessions() as db:
+        alternate = Branch(name="Alternate exam branch", organization_id=data["org"].id)
+        db.add(alternate)
+        await db.commit()
+    branch = {"branch_id": str(data["branch"].id)}
+    wrong_branch = {"branch_id": str(alternate.id)}
+    identifier = str(uuid4())
+    payload = body(data, request_id=identifier, description="Keep the existing description")
+    assert (await client.get("/api/exams", headers=headers(data["root"]))).status_code == 403
+    assert (await client.post("/api/exams", headers=scope(data), params=wrong_branch, json=payload)).status_code == 404
+    replies = await asyncio.gather(*[client.post("/api/exams", headers=scope(data), params=branch, json=payload) for _ in range(2)])
+    assert all(row.status_code == 200 and row.json()["data"]["id"] == identifier for row in replies), [row.text for row in replies]
+    listed = await client.get("/api/exams", headers=scope(data), params={**branch, "record_id": identifier})
+    row, = listed.json()["data"]
+    assert row["branch_id"] == branch["branch_id"] and row["id"] == identifier
+    absent = await client.get("/api/exams", headers=scope(data), params={**wrong_branch, "record_id": identifier})
+    assert absent.status_code == 200 and absent.json()["data"] == []
+    edit = body(data, title="Verified update", expected_updated_at=row["updated_at"])
+    origin = f"/api/exams/{identifier}"
+    updated = await client.put(origin, headers=scope(data), params=branch, json=edit)
+    assert updated.status_code == 200 and updated.json()["data"]["description"] == payload["description"], updated.text
+    replay = await client.put(origin, headers=scope(data), params=branch, json=edit)
+    assert replay.status_code == 200 and replay.json()["data"]["updated_at"] == updated.json()["data"]["updated_at"], replay.text
+    stale = await client.put(origin, headers=scope(data), params=branch, json={**edit, "title": "Different edit"})
+    assert stale.status_code == 409, stale.text
+    assert (await client.delete(origin, headers=scope(data), params=wrong_branch)).status_code == 404
 
 
 async def test_invalid_exam_storage_values_are_rejected_before_writing(platform_client):

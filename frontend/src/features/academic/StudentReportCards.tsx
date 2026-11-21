@@ -26,6 +26,12 @@ export function StudentReportCards({ student, writable, onClose }: {
   const [teacherComments, setTeacherComments] = useState(""), [principalComments, setPrincipalComments] = useState("");
   const [cards, setCards] = useState<DataRecord[]>([]), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [error, setError] = useState(""), [message, setMessage] = useState(""), [busy, setBusy] = useState(false);
+  async function readCard(id: string) {
+    const response = await api.get<ApiResponse<DataRecord[]>>(`/exams/report-cards/${student.id}`);
+    const found = response.data.data?.filter((card) => card.id === id);
+    if (!response.data.success || found?.length !== 1 || found[0].student_id !== student.id) throw new Error("Kalıcı karne doğrulanamadı");
+    return found[0];
+  }
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError("");
     api.get<ApiResponse<DataRecord[]>>(`/exams/report-cards/${student.id}`, { signal: controller.signal })
@@ -37,14 +43,27 @@ export function StudentReportCards({ student, writable, onClose }: {
   async function generate(event: React.FormEvent) {
     event.preventDefault(); if (busy) return; setBusy(true); setError(""); setMessage("");
     try {
-      await api.post("/exams/report-cards/generate", { student_id: student.id, academic_year: year, semester,
-        teacher_comments: teacherComments.trim() || null, principal_comments: principalComments.trim() || null });
+      const draft = { student_id: student.id, academic_year: year, semester,
+        teacher_comments: teacherComments.trim() || null, principal_comments: principalComments.trim() || null };
+      const response = await api.post<ApiResponse<DataRecord>>("/exams/report-cards/generate", draft);
+      const ack = response.data.data;
+      if (!response.data.success || !ack?.id || ack.student_id !== student.id || ack.is_published !== false) throw new Error("Karne taslağı onaylanmadı");
+      const saved = await readCard(ack.id);
+      if (saved.is_published !== false || !Object.entries(draft).every(([key, value]) => (saved[key] ?? null) === value)) {
+        throw new Error("Karne taslağı doğrulanamadı");
+      }
       setMessage("Karne taslağı oluşturuldu. Veliye açmak için yayımlayın."); setRevision((value) => value + 1);
     } catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
   }
   async function publish(card: DataRecord) {
     if (busy) return; setBusy(true); setError(""); setMessage("");
-    try { await api.put(`/exams/report-cards/${card.id}/publish`); setMessage("Karne veliye yayımlandı."); setRevision((value) => value + 1); }
+    try {
+      const response = await api.put<ApiResponse<DataRecord>>(`/exams/report-cards/${card.id}/publish`);
+      const ack = response.data.data;
+      if (!response.data.success || ack?.id !== card.id || ack.student_id !== student.id ||
+          ack.is_published !== true || (await readCard(card.id)).is_published !== true) throw new Error("Karne yayını doğrulanamadı");
+      setMessage("Karne veliye yayımlandı."); setRevision((value) => value + 1);
+    }
     catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
   }
   return <Modal open title={`${student.name} · Karneler`} onClose={() => { if (!busy) onClose(); }}>
