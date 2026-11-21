@@ -95,7 +95,7 @@ class RoleCatalogRequest(BaseModel):
 
 @router.post("/api/users/role-catalog")
 async def complete_role_catalog(body: RoleCatalogRequest, tenant: TenantContext = Depends(PermissionChecker("user.write")), db: AsyncSession = Depends(get_db, scope="function")):
-    from app.core.role_catalog import default_permissions, institution_roles
+    from app.core.role_catalog import ROLE_NAMES, default_permissions, institution_roles
     from app.infrastructure.models.models import Permission
     from app.application.services.platform_service import lock_organization, audit, commit
     from types import SimpleNamespace
@@ -114,7 +114,7 @@ async def complete_role_catalog(body: RoleCatalogRequest, tenant: TenantContext 
     if created:
         audit(db, SimpleNamespace(id=tenant.user_id), org, "INSTITUTION_ROLE_CATALOG_COMPLETED", {"slugs": [row.slug for row in created]})
     await commit(db)
-    return success_response({"created_count": len(created)})
+    return success_response({"organization_id": str(org.id), "role_slugs": sorted(ROLE_NAMES), "created_count": len(created)})
 
 
 @router.post("/api/users")
@@ -280,28 +280,34 @@ async def assign_access(user_id: UUID, body: UserAccessWrite, tenant: TenantCont
 
 @router.get("/api/roles")
 async def list_roles(
-    tenant: TenantContext = Depends(PermissionChecker("user.read")),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    query = select(Role).where(Role.deleted_at.is_(None))
-    if not tenant.is_super_admin:
-        query = query.where(
-            (Role.organization_id == tenant.organization_id) | Role.is_system.is_(True)
-        )
+    if tenant.is_super_admin or tenant.organization_id is None:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
+    query = select(Role).where(Role.deleted_at.is_(None),
+        (Role.organization_id == tenant.organization_id) | (Role.organization_id.is_(None) & Role.is_system.is_(True))
+    ).order_by(Role.name, Role.id).limit(limit).offset(offset)
     result = await db.execute(query)
     roles = result.scalars().all()
-    return success_response([{"id": str(r.id), "name": r.name, "slug": r.slug} for r in roles])
+    return success_response([{"id": str(r.id), "name": r.name, "slug": r.slug, "description": r.description,
+        "is_system": r.is_system, "organization_id": str(r.organization_id) if r.organization_id else None} for r in roles])
 
 
 @router.get("/api/permissions")
 async def list_permissions(
-    tenant: TenantContext = Depends(PermissionChecker("user.read")),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     from app.infrastructure.models.models import Permission
 
-    result = await db.execute(select(Permission).order_by(Permission.module, Permission.code))
+    result = await db.execute(select(Permission).order_by(Permission.module, Permission.code, Permission.id).limit(limit).offset(offset))
     perms = result.scalars().all()
     return success_response(
-        [{"id": str(p.id), "code": p.code, "name": p.name, "module": p.module} for p in perms]
+        [{"id": str(p.id), "code": p.code, "name": p.name, "module": p.module, "description": p.description,
+            "assignable": tenant.has_permission(p.code)} for p in perms]
     )

@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
+import re
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy import delete, or_, select, and_
+from sqlalchemy import delete, or_, select, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,10 +18,12 @@ from app.core.exceptions import (
 )
 from app.core.permissions import PermissionChecker
 from app.core.responses import paginate, success_response
+from app.core.role_catalog import ROLE_NAMES
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import (
     Parent,
     ParentRelationType,
+    Organization,
     Permission,
     Role,
     RolePermission,
@@ -58,6 +61,23 @@ def role_dict(role: Role) -> dict:
     }
 
 
+def require_role_workspace(tenant: TenantContext):
+    if tenant.organization_id is None or tenant.is_super_admin:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
+
+
+class InstitutionRoleDraft(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    slug: str = Field(min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+    request_id: UUID | None = None
+
+
+class RolePermissionMatrix(BaseModel):
+    permission_ids: list[UUID] = Field(max_length=1000)
+    expected_permission_ids: list[UUID] | None = Field(default=None, max_length=1000)
+
+
 @router.get("/api/users/{user_id}/roles")
 async def get_user_roles(
     user_id: UUID,
@@ -89,9 +109,10 @@ async def get_user_branches(
 @router.get("/api/roles/{role_id}")
 async def get_role(
     role_id: UUID,
-    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read")),
+    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    require_role_workspace(tenant)
     role = (await db.execute(select(Role).where(Role.id == role_id, Role.deleted_at.is_(None)))).scalar_one_or_none()
     if not role:
         raise NotFoundException("Rol bulunamadı")
@@ -102,19 +123,37 @@ async def get_role(
 
 @router.post("/api/roles")
 async def create_role(
-    body: dict,
+    body: InstitutionRoleDraft,
     tenant: TenantContext = Depends(PermissionChecker("user.write", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    name = str(body.get("name", "")).strip()
-    slug = str(body.get("slug", "")).strip().lower()
+    require_role_workspace(tenant)
+    name = body.name.strip()
+    slug = body.slug.strip().lower()
     if not name or not slug:
         raise ValidationException("Rol adı ve kısa kodu zorunludur")
+    if not re.fullmatch(r"[a-z][a-z0-9_-]*", slug):
+        raise ValidationException("Rol kodu küçük Latin harf, rakam, tire ve alt çizgi içerebilir")
+    if slug in ROLE_NAMES or slug in {"super_admin", "superadmin", "admin", "teacher1", "teacher2", "teacher3"}:
+        raise ValidationException("Bu rol kodu standart roller için ayrılmış")
     organization_id = tenant.organization_id
+    await db.execute(update(Organization).where(Organization.id == organization_id).values(updated_at=Organization.updated_at))
+    description = body.description.strip() or None if body.description else None
+    if body.request_id is not None:
+        previous = await db.scalar(select(Role).where(Role.id == body.request_id,
+            Role.organization_id == organization_id, Role.deleted_at.is_(None)))
+        if previous is not None:
+            if previous.is_system or (previous.name, previous.slug, previous.description) != (name, slug, description):
+                raise ConflictException("İşlem kimliği farklı rol bilgileri için kullanılmış")
+            return success_response(role_dict(previous))
+        if await db.scalar(select(Role.__table__.c.id).where(Role.__table__.c.id == body.request_id)) is not None:
+            raise ConflictException("İşlem kimliği kullanılamıyor")
     existing = (await db.execute(select(Role).where(Role.slug == slug, Role.organization_id == organization_id, Role.deleted_at.is_(None)))).scalar_one_or_none()
     if existing:
         raise ConflictException("Bu rol kodu zaten mevcut")
-    role = Role(name=name, slug=slug, description=body.get("description"), organization_id=organization_id, is_system=False)
+    role = Role(name=name, slug=slug, description=description, organization_id=organization_id, is_system=False)
+    if body.request_id is not None:
+        role.id = body.request_id
     db.add(role)
     await db.flush()
     return success_response(role_dict(role), "Rol oluşturuldu")
@@ -123,9 +162,10 @@ async def create_role(
 @router.get("/api/roles/{role_id}/permissions")
 async def get_role_permissions(
     role_id: UUID,
-    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read")),
+    tenant: TenantContext = Depends(PermissionChecker("user.read", "role.read", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    require_role_workspace(tenant)
     role = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(Role.id == role_id, Role.deleted_at.is_(None)))).scalar_one_or_none()
     if not role:
         raise NotFoundException("Rol bulunamadı")
@@ -134,40 +174,52 @@ async def get_role_permissions(
     return success_response([permission_dict(permission) for permission in role.permissions])
 
 
-async def _replace_role_permissions(role_id: UUID, permission_ids: list[str], tenant: TenantContext, db: AsyncSession):
-    role = (await db.execute(select(Role).where(Role.id == role_id, Role.deleted_at.is_(None)))).scalar_one_or_none()
+async def _replace_role_permissions(role_id: UUID, body: RolePermissionMatrix, tenant: TenantContext, db: AsyncSession):
+    require_role_workspace(tenant)
+    role = (await db.execute(select(Role).where(Role.id == role_id, Role.deleted_at.is_(None)).with_for_update())).scalar_one_or_none()
     if not role:
         raise NotFoundException("Rol bulunamadı")
-    if not tenant.is_super_admin and (role.is_system or role.organization_id != tenant.organization_id):
+    if role.is_system or role.organization_id != tenant.organization_id:
         raise ForbiddenException("Bu rolün izinleri değiştirilemez")
-    ids = [UUID(value) for value in permission_ids]
-    found = list((await db.execute(select(Permission.id).where(Permission.id.in_(ids)))).scalars().all()) if ids else []
-    if len(found) != len(set(ids)):
+    await db.execute(update(Role).where(Role.id == role_id).values(updated_at=Role.updated_at))
+    ids = set(body.permission_ids)
+    current = set((await db.scalars(select(RolePermission.permission_id).where(RolePermission.role_id == role_id))).all())
+    permissions = dict((await db.execute(select(Permission.id, Permission.code).where(Permission.id.in_(ids | current)))).all())
+    if ids - permissions.keys():
         raise ValidationException("Geçersiz izin kaydı")
-    await db.execute(delete(RolePermission).where(RolePermission.role_id == role_id))
-    for permission_id in ids:
+    if any(not tenant.has_permission(permissions[identifier]) for identifier in ids ^ current if identifier in permissions):
+        raise ForbiddenException("Kendi yetki kapsamınız dışındaki izinleri değiştiremezsiniz")
+    if ids == current:
+        return success_response({"role_id": str(role_id), "permission_ids": sorted(map(str, ids))})
+    if body.expected_permission_ids is not None and set(body.expected_permission_ids) != current:
+        raise ConflictException("Rol izinleri değişti. Güncel kayıtları yeniden açın.")
+    if current - ids:
+        await db.execute(delete(RolePermission).where(RolePermission.role_id == role_id,
+            RolePermission.permission_id.in_(current - ids)))
+    for permission_id in ids - current:
         db.add(RolePermission(role_id=role_id, permission_id=permission_id))
-    return success_response(message="Rol izinleri güncellendi")
+    await db.flush()
+    return success_response({"role_id": str(role_id), "permission_ids": sorted(map(str, ids))})
 
 
 @router.post("/api/roles/{role_id}/permissions")
 async def assign_role_permissions_post(
     role_id: UUID,
-    body: dict,
+    body: RolePermissionMatrix,
     tenant: TenantContext = Depends(PermissionChecker("user.write", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    return await _replace_role_permissions(role_id, body.get("permission_ids", []), tenant, db)
+    return await _replace_role_permissions(role_id, body, tenant, db)
 
 
 @router.put("/api/roles/{role_id}/permissions")
 async def assign_role_permissions_put(
     role_id: UUID,
-    body: dict,
+    body: RolePermissionMatrix,
     tenant: TenantContext = Depends(PermissionChecker("user.write", "role.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    return await _replace_role_permissions(role_id, body.get("permission_ids", []), tenant, db)
+    return await _replace_role_permissions(role_id, body, tenant, db)
 
 
 class ChatMessageCreate(BaseModel):

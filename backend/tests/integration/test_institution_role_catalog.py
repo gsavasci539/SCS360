@@ -30,6 +30,8 @@ async def test_new_school_gets_complete_roles_and_legacy_repair_preserves_custom
     responses = await asyncio.gather(*[client.post("/api/users/role-catalog", headers=headers(data["owner"]), json=body) for _ in range(2)])
     assert all(row.status_code == 200 for row in responses), [row.text for row in responses]
     assert sorted(row.json()["data"]["created_count"] for row in responses) == [0, 1]
+    assert all(row.json()["data"]["organization_id"] == str(organization)
+        and set(row.json()["data"]["role_slugs"]) == set(ROLE_NAMES) for row in responses)
     assert (await client.post("/api/users/role-catalog", headers=headers(data["owner"]), json={"organization_id": str(data["org"].id)})).status_code == 403
     assert (await client.post("/api/users/role-catalog", headers=headers(data["teacher"]), json=body)).status_code == 403
     async with sessions() as db:
