@@ -1114,8 +1114,8 @@ async def get_payroll_analysis(
     tenant: TenantContext = Depends(AnalysisPermission('/payroll-analysis')),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    from app.application.services.payroll_service import summary
-    return success_response(await summary(db))
+    from app.application.services.payroll_service import scoped_staff_ids, summary
+    return success_response(await summary(db, staff_scope_ids=scoped_staff_ids(db, tenant)))
 
 
 @router.get("/health-analysis")

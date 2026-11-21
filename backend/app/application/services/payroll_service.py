@@ -11,11 +11,13 @@ from app.domain.entities.payroll import StaffTimesheet, AdditionalCourseHours, P
 from app.infrastructure.models.models import User, Role, UserRole, UserStatus, Organization
 
 
+def require_workspace(tenant):
+    if tenant.organization_id is None or tenant.is_super_admin:
+        raise ForbiddenException("Önce kurum çalışma alanını seçin")
+
+
 def scoped_staff_ids(db, tenant, branch_id=None):
-    if tenant.is_super_admin and tenant.organization_id is None and branch_id is None:
-        return select(User.__table__.c.id)
-    if tenant.organization_id is None:
-        raise ForbiddenException()
+    require_workspace(tenant)
     branches, _, _, users = scope_filters(tenant, db.info.get("accessible_student_ids"))
     if branch_id is None:
         return staff_scope(tenant, branches, users)

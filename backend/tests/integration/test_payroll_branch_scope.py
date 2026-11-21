@@ -91,6 +91,9 @@ async def test_payroll_selected_workspace_and_branch_verify_exact_upserts(materi
             last_name="Operator", organization_id=data["org"].id, is_super_admin=True)
         db.add_all([other, actor])
         await db.commit()
+    for path in ("/api/payroll/summary", "/api/payroll/options", "/api/payroll/records", "/api/ai/payroll-analysis"):
+        denied = await client.get(path, headers=headers(actor))
+        assert denied.status_code == 403, denied.text
     auth = {**headers(actor), "X-SCS360-Organization-Id": str(data["org"].id)}
     branch = {"branch_id": str(data["branch"].id)}
     wrong = {"branch_id": str(other.id)}

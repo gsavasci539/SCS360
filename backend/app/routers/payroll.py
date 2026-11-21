@@ -14,15 +14,21 @@ from sqlalchemy import select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.dependencies import get_tenant_context
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
 from app.domain.entities import User
 from app.core.exceptions import ConflictException, NotFoundException, ValidationException
 from app.application.services.consent_service import utc_iso
-from app.application.services.payroll_service import scoped_staff_ids
+from app.application.services.payroll_service import require_workspace, scoped_staff_ids
 
-router = APIRouter(prefix="/api/payroll", tags=["Payroll"])
+
+async def payroll_workspace(tenant: TenantContext = Depends(get_tenant_context)):
+    require_workspace(tenant)
+
+
+router = APIRouter(prefix="/api/payroll", tags=["Payroll"], dependencies=[Depends(payroll_workspace)])
 
 
 async def lock_staff(db, tenant, staff_id, branch_id=None):
@@ -115,7 +121,7 @@ async def payroll_summary(year: Optional[int] = Query(None, ge=2020, le=2100), m
                            db: AsyncSession = Depends(get_db, scope="function"),
                            tenant: TenantContext = Depends(PermissionChecker("payroll.read"))):
     from app.application.services.payroll_service import summary
-    scope = scoped_staff_ids(db, tenant, branch_id) if branch_id else None
+    scope = scoped_staff_ids(db, tenant, branch_id)
     return success_response(await summary(db, year, month, period.upper() if period else None, staff_id, staff_scope_ids=scope))
 
 
