@@ -1879,9 +1879,10 @@ export function ResourceFormPage({
           if (values[name] === "") payload[name] = null;
         }
       }
-      if (editing && ["organizations", "branches"].includes(resourceKey)) {
+      if (resourceKey === "organizations" || resourceKey === "branches") {
         for (const name of ["legal_name", "tax_number", "tax_office", "code", "phone", "email", "city", "address"]) {
-          if (values[name] === "") payload[name] = null;
+          const value = values[name];
+          if (typeof value === "string" && (editing || value)) payload[name] = value.trim() || null;
         }
       }
       if (editing && resourceKey === "students") {
@@ -1914,6 +1915,25 @@ export function ResourceFormPage({
         const response = editing
           ? await api.put<ApiResponse<DataRecord>>(`${config.endpoint}/${id}`, payload)
           : await api.post<ApiResponse<DataRecord>>(config.endpoint, payload);
+
+        if (resourceKey === "organizations" || resourceKey === "branches") {
+          const written = response.data.data;
+          const expectedOrganization = editing ? user?.organization_id : payload.organization_id;
+          const matches = (row: DataRecord) => Object.entries(payload).every(([key, value]) =>
+            row[key] === (typeof value === "string" ? value.trim() : value)
+          );
+          if (response.data.success !== true || !written?.id || (editing && written.id !== id) || !matches(written) ||
+            (resourceKey === "branches" && expectedOrganization && written.organization_id !== expectedOrganization)) {
+            throw new Error("Kayıt yanıtı doğrulanamadı.");
+          }
+          const result = await api.get<ApiResponse<DataRecord>>(`${config.endpoint}/${written.id}`);
+          const saved = result.data.data;
+          if (result.data.success !== true || !saved || saved.id !== written.id || !matches(saved) ||
+            (resourceKey === "branches" && (typeof written.organization_id !== "string" || !written.organization_id ||
+              saved.organization_id !== written.organization_id))) {
+            throw new Error("Kayıt sunucudan doğrulanamadı.");
+          }
+        }
 
         showToast(
           `${config.singular} ${

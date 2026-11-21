@@ -28,12 +28,53 @@ it("eski yeni-kurum URL'si yetkisiz kayıt formu açmaz", () => {
 });
 
 it("kurum iletişim alanı temizlenince eski değeri geri kaydetmez ve null gönderir", async () => {
-  session(); vi.mocked(api.get).mockResolvedValue({ data: { data: { id: "school", name: "Kurum", phone: "05320000000" } } });
-  vi.mocked(api.put).mockResolvedValue({ data: { data: {} } });
+  session();
+  const original = { id: "school", name: "Kurum", phone: "05320000000", country: "Türkiye" };
+  let saved: Record<string, unknown> | undefined;
+  let fresh = false;
+  vi.mocked(api.get).mockImplementation(async () => ({ data: { success: true,
+    data: saved ? { ...saved, phone: fresh ? null : original.phone } : original } }));
+  vi.mocked(api.put).mockImplementation(async (_path, body) => {
+    saved = { ...original, ...(body as Record<string, unknown>) };
+    return { data: { success: true, data: saved } };
+  });
   const view = render(<MemoryRouter initialEntries={["/organizations/school/edit"]}><ToastProvider><Routes>
     <Route path="/organizations/:id/edit" element={<ResourceFormPage resourceKey="organizations" />} /><Route path="/organizations" element={<p>Liste</p>} />
   </Routes></ToastProvider></MemoryRouter>);
   const phone = await screen.findByLabelText("Telefon"); expect(phone).toHaveValue("05320000000");
   fireEvent.change(phone, { target: { value: "" } }); fireEvent.submit(view.container.querySelector("form")!);
   await waitFor(() => expect(api.put).toHaveBeenCalledWith("/organizations/school", expect.objectContaining({ phone: null })));
+  await screen.findByText("İstek tamamlanamadı");
+  expect(phone).toHaveValue("");
+  fresh = true;
+  fireEvent.submit(view.container.querySelector("form")!);
+  await screen.findByText("Liste");
+  expect(api.get).toHaveBeenCalledWith("/organizations/school");
+});
+
+it("şube güncellemesi aynı kurumda ve aynı kayıtta doğrulanır", async () => {
+  session();
+  const original = { id: "branch", organization_id: "school", name: "Şube", capacity: 10, is_active: true };
+  let saved: Record<string, unknown> | undefined;
+  let correctScope = false;
+  vi.mocked(api.get).mockImplementation(async (path) => ({
+    data: { success: true, data: path === "/branches/branch" ? (saved || original) : [] },
+  }));
+  vi.mocked(api.put).mockImplementation(async (_path, body) => {
+    saved = { ...original, ...(body as Record<string, unknown>), organization_id: correctScope ? "school" : "other" };
+    return { data: { success: true, data: saved } };
+  });
+  const view = render(<MemoryRouter initialEntries={["/branches/branch/edit"]}><ToastProvider><Routes>
+    <Route path="/branches/:id/edit" element={<ResourceFormPage resourceKey="branches" />} /><Route path="/branches" element={<p>Şube listesi</p>} />
+  </Routes></ToastProvider></MemoryRouter>);
+  const capacity = await screen.findByLabelText(/Kapasite/);
+  fireEvent.change(capacity, { target: { value: "25" } });
+  fireEvent.submit(view.container.querySelector("form")!);
+  await screen.findByText("İstek tamamlanamadı");
+  expect(capacity).toHaveValue(25);
+  correctScope = true;
+  fireEvent.submit(view.container.querySelector("form")!);
+  await screen.findByText("Şube listesi");
+  expect(api.put).toHaveBeenCalledWith("/branches/branch", expect.objectContaining({ capacity: 25 }));
+  expect(api.get).toHaveBeenCalledWith("/branches/branch");
 });
