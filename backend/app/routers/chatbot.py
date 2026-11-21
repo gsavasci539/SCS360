@@ -1086,6 +1086,7 @@ def normalize_audit_role(role: str) -> str:
 @router.get("/ai/audit-logs")
 async def get_audit_logs(
     role: Optional[str] = Query(None, max_length=50, description="Kayıt anındaki gönderici rolü"),
+    record_id: UUID | None = None,
     topic: Optional[str] = None,
     feedback_status: Optional[str] = None,
     page: int = Query(1, ge=1),
@@ -1100,7 +1101,11 @@ async def get_audit_logs(
     Süper Admin: Chat Loglarını ve Niyet İstatistiklerini Getir
     """
     # Build base query
-    query = select(AiChatAuditLogModel).order_by(AiChatAuditLogModel.created_at.desc(), AiChatAuditLogModel.id.desc())
+    query = select(AiChatAuditLogModel).where(
+        AiChatAuditLogModel.organization_id == current_user.organization_id
+    ).order_by(AiChatAuditLogModel.created_at.desc(), AiChatAuditLogModel.id.desc())
+    if record_id is not None:
+        query = query.where(AiChatAuditLogModel.id == record_id)
     
     # Apply filters
     if role and role.strip():
@@ -1194,7 +1199,10 @@ async def update_audit_log_feedback(
         raise HTTPException(status_code=400, detail="Invalid log ID")
     
     result = await db.execute(
-        select(AiChatAuditLogModel).where(AiChatAuditLogModel.id == log_uuid)
+        select(AiChatAuditLogModel).where(
+            AiChatAuditLogModel.id == log_uuid,
+            AiChatAuditLogModel.organization_id == current_user.organization_id,
+        )
     )
     log = result.scalar_one_or_none()
     

@@ -35,6 +35,15 @@ async def test_audit_root_selection_and_native_owner_boundaries(platform_client)
     response = await client.get(path, headers=other_scope)
     assert response.status_code == 200, response.text
     assert {row["id"] for row in response.json()["data"]["logs"]} == {foreign_id}
+    correction = {"quality_rating": 4, "feedback_status": "CORRECTED",
+                  "corrected_response": "Controlled correction", "is_fine_tuning_ready": False}
+    assert (await client.put(f"{path}/{foreign_id}/verify", headers=scoped, json=correction)).status_code == 404
+    assert (await client.get(path, headers=scoped, params={"record_id": foreign_id})).json()["data"]["logs"] == []
+    verified = await client.put(f"{path}/{own_id}/verify", headers=scoped, json=correction)
+    assert verified.status_code == 200 and verified.json()["data"]["log_id"] == own_id, verified.text
+    [persisted] = (await client.get(path, headers=scoped, params={"record_id": own_id})).json()["data"]["logs"]
+    assert persisted["id"] == own_id
+    assert {k: persisted[k] for k in correction} == correction
 
 
 async def test_audit_filter_uses_recorded_role_for_global_actor_and_bounds_pagination(platform_client):  # noqa: F811

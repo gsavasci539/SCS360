@@ -15,7 +15,7 @@ import {
   TrendingUp,
   RefreshCw,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ErrorState, LoadingState, PageHeader, StatCard, Tabs } from "../../components/ui";
 import { api, apiMessage } from "../../lib/api";
 
@@ -26,8 +26,8 @@ interface ChatAuditLog {
   organization_id: string;
   user_query: string;
   ai_response: string;
-  detected_intent: string;
-  topic_category: string;
+  detected_intent: string | null;
+  topic_category: string | null;
   sentiment: "POSITIVE" | "NEUTRAL" | "QUESTION" | "CRITICAL";
   quality_rating: number;
   feedback_status: "VERIFIED" | "CORRECTED" | "NEEDS_REVIEW";
@@ -35,7 +35,6 @@ interface ChatAuditLog {
   token_count: number;
   latency_ms: number;
   is_fine_tuning_ready: boolean;
-  meta_data?: any;
   created_at: string;
   updated_at: string;
   sender_name: string;
@@ -87,6 +86,9 @@ export function ChatbotManagementPage() {
   const [editedResponse, setEditedResponse] = useState("");
   const [editedRating, setEditedRating] = useState(0);
   const [editedStatus, setEditedStatus] = useState<"VERIFIED" | "CORRECTED" | "NEEDS_REVIEW">("NEEDS_REVIEW");
+  const [feedbackError, setFeedbackError] = useState("");
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const feedbackPending = useRef(false);
   
   // Export
   const [exportFormat, setExportFormat] = useState("jsonl");
@@ -152,7 +154,7 @@ export function ChatbotManagementPage() {
         log.user_query.toLowerCase().includes(query) ||
         log.ai_response.toLowerCase().includes(query) ||
         log.sender_name.toLowerCase().includes(query) ||
-        log.topic_category.toLowerCase().includes(query)
+        (log.topic_category ?? "").toLowerCase().includes(query)
       );
     }
     
@@ -168,14 +170,31 @@ export function ChatbotManagementPage() {
     loadAllData();
   }
 
-  async function handleUpdateFeedback(logId: string) {
+  async function handleUpdateFeedback(log: ChatAuditLog) {
+    if (feedbackPending.current) return;
+    const draft = {
+      quality_rating: editedRating,
+      feedback_status: editedStatus,
+      corrected_response: editedStatus === "CORRECTED" ? editedResponse.trim() : null,
+      is_fine_tuning_ready: editedStatus === "VERIFIED",
+    };
+    if (!draft.quality_rating || (editedStatus === "CORRECTED" && !draft.corrected_response)) return;
+    feedbackPending.current = true;
+    setSavingFeedback(true);
+    setFeedbackError("");
     try {
-      await api.put(`/v1/chatbot/ai/audit-logs/${logId}/verify`, {
-        quality_rating: editedRating,
-        feedback_status: editedStatus,
-        corrected_response: editedStatus === "CORRECTED" ? editedResponse : undefined,
-        is_fine_tuning_ready: editedStatus === "VERIFIED"
-      });
+      const path = "/v1/chatbot/ai/audit-logs";
+      const reply = await api.put(`${path}/${log.id}/verify`, draft);
+      if (reply.data?.success !== true || reply.data.data?.log_id !== log.id) throw new Error("Geri bildirim yanıtı doğrulanamadı.");
+      const confirmed = await api.get(path, { params: { record_id: log.id, page: 1, page_size: 1 } });
+      const rows = confirmed.data?.data?.logs;
+      const saved: ChatAuditLog | undefined = Array.isArray(rows) && rows.length === 1 ? rows[0] : undefined;
+      if (confirmed.data?.success !== true || saved?.id !== log.id || saved.organization_id !== log.organization_id ||
+        saved.quality_rating !== draft.quality_rating || saved.feedback_status !== draft.feedback_status ||
+        (saved.corrected_response ?? null) !== draft.corrected_response || saved.is_fine_tuning_ready !== draft.is_fine_tuning_ready) {
+        throw new Error("Kaydedilen geri bildirim doğrulanamadı.");
+      }
+      setSelectedLog((current) => current?.id === saved.id ? saved : current);
       
       setEditingLog(null);
       setEditedResponse("");
@@ -185,7 +204,10 @@ export function ChatbotManagementPage() {
       await loadConversationLogs();
       await loadAnalytics();
     } catch (err) {
-      setError(apiMessage(err));
+      setFeedbackError(apiMessage(err));
+    } finally {
+      feedbackPending.current = false;
+      setSavingFeedback(false);
     }
   }
 
@@ -208,6 +230,7 @@ export function ChatbotManagementPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
     } catch (err) {
       setError(apiMessage(err));
     } finally {
@@ -827,6 +850,7 @@ export function ChatbotManagementPage() {
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => {
+                    setFeedbackError("");
                     setEditingLog(selectedLog);
                     setEditedResponse(selectedLog.corrected_response || selectedLog.ai_response);
                     setEditedRating(selectedLog.quality_rating);
@@ -893,7 +917,8 @@ export function ChatbotManagementPage() {
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700 }}>Geri Bildirim</h2>
                 <button
-                  onClick={() => setEditingLog(null)}
+                  disabled={savingFeedback}
+                  onClick={() => { setFeedbackError(""); setEditingLog(null); }}
                   style={{ padding: 8, borderRadius: 8, border: "none", background: "#f3f4f6", cursor: "pointer" }}
                 >
                   ✕
@@ -908,6 +933,8 @@ export function ChatbotManagementPage() {
                   {[1, 2, 3, 4, 5].map((rating) => (
                     <button
                       key={rating}
+                      disabled={savingFeedback}
+                      aria-label={`Kalite puanı ${rating}`}
                       onClick={() => setEditedRating(rating)}
                       style={{
                         padding: "8px 12px",
@@ -930,7 +957,9 @@ export function ChatbotManagementPage() {
                 </label>
                 <select
                   value={editedStatus}
-                  onChange={(e) => setEditedStatus(e.target.value as any)}
+                  disabled={savingFeedback}
+                  aria-label="Durum"
+                  onChange={(e) => setEditedStatus(e.target.value as ChatAuditLog["feedback_status"])}
                   style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 13, width: "100%" }}
                 >
                   <option value="NEEDS_REVIEW">İnceleme Gerekiyor</option>
@@ -945,6 +974,8 @@ export function ChatbotManagementPage() {
                     Düzeltilmiş Yanıt
                   </label>
                   <textarea
+                    disabled={savingFeedback}
+                    aria-label="Düzeltilmiş yanıt"
                     value={editedResponse}
                     onChange={(e) => setEditedResponse(e.target.value)}
                     rows={6}
@@ -960,9 +991,11 @@ export function ChatbotManagementPage() {
                 </div>
               )}
 
+              {feedbackError && <p role="alert">{feedbackError}</p>}
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => handleUpdateFeedback(editingLog.id)}
+                  disabled={savingFeedback || editedRating === 0 || (editedStatus === "CORRECTED" && !editedResponse.trim())}
+                  onClick={() => handleUpdateFeedback(editingLog)}
                   style={{
                     flex: 1,
                     padding: "10px 16px",
@@ -974,10 +1007,11 @@ export function ChatbotManagementPage() {
                     cursor: "pointer"
                   }}
                 >
-                  Kaydet
+                  {savingFeedback ? "Kaydediliyor…" : "Kaydet"}
                 </button>
                 <button
-                  onClick={() => setEditingLog(null)}
+                  disabled={savingFeedback}
+                  onClick={() => { setFeedbackError(""); setEditingLog(null); }}
                   style={{
                     padding: "10px 16px",
                     borderRadius: 8,
