@@ -1,6 +1,6 @@
 import asyncio
 from datetime import date
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import select
@@ -189,3 +189,31 @@ async def test_inventory_exact_readback_uses_explicit_root_workspace_and_selecte
     summary = await client.get("/api/ai/inventory-analysis", headers=workspace, params={"branch_id": str(alternate.id)})
     assert summary.status_code == 200, summary.text
     assert summary.json()["data"]["branch_id"] == str(alternate.id) and summary.json()["data"]["total_items"] == 0
+
+
+async def test_inventory_creation_replays_only_same_scoped_request(inventory_client):
+    client, sessions, data = inventory_client
+    headers = auth(data["manager"])
+    item, _ = await create_item(client, data, "REPLAY-ASSET")
+    cases = (
+        ("locations", {"branch_id": str(data["branch"].id), "location_name": "Replay room"}, "location_name", "Other room"),
+        ("items", {"branch_id": str(data["branch"].id), "item_code": "REPLAY-2", "item_name": "Replay item"}, "item_name", "Other item"),
+        ("assignments", {"item_id": item["id"], "assigned_to": str(data["teacher"].id)}, "notes", "Other notes"),
+        ("maintenance-requests", {"item_id": item["id"], "issue_description": "Verify replay"}, "issue_description", "Other issue"),
+    )
+    for route, fields, changed, replacement in cases:
+        path = f"/api/inventory/{route}"
+        identifier = str(uuid4())
+        payload = {**fields, "request_id": identifier}
+        results = await asyncio.gather(*(client.post(path, headers=headers, json=payload) for _ in range(2)))
+        assert all(response.status_code == 200 for response in results), [response.text for response in results]
+        assert results[0].json()["data"] == results[1].json()["data"]
+        assert results[0].json()["data"]["id"] == identifier
+        changed_result = await client.post(path, headers=headers, json={**payload, changed: replacement})
+        assert changed_result.status_code == 409, changed_result.text
+        rows = await client.get(path, headers=headers, params={"record_id": identifier, "branch_id": str(data["branch"].id)})
+        assert rows.status_code == 200 and len(rows.json()["data"]) == 1, rows.text
+
+    async with sessions() as db:
+        assert len((await db.scalars(select(AssetAssignment).where(AssetAssignment.item_id == UUID(item["id"])))).all()) == 1
+        assert len((await db.scalars(select(MaintenanceRequest).where(MaintenanceRequest.item_id == UUID(item["id"])))).all()) == 1

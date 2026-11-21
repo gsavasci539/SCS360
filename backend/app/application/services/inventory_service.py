@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.dates import school_today
 from app.core.exceptions import ConflictException, ForbiddenException, ValidationException
 from app.domain.entities.inventory import AssetAssignment, InventoryItem, InventoryLocation, MaintenanceRequest
-from app.infrastructure.models.models import Branch, User
+from app.infrastructure.models.models import Branch, Organization, User
 from app.infrastructure.repositories.base import BaseRepository
 
 
@@ -20,6 +20,32 @@ async def related_records(db, model, ids):
         return {}
     rows = (await db.execute(select(model).where(model.id.in_(ids)))).scalars()
     return {row.id: row for row in rows if row is not None}
+
+
+async def replay_creation(db, tenant, model, body, **expected):
+    identifier = body.request_id
+    if identifier is None:
+        return None
+    require_workspace(tenant)
+    await db.execute(update(Organization).where(Organization.id == tenant.organization_id)
+        .values(updated_at=Organization.updated_at))
+    previous = await db.scalar(select(model).where(model.id == identifier))
+    if previous is not None:
+        fields = body.model_dump(exclude={"request_id"}) | expected
+        if any(getattr(previous, key) != value for key, value in fields.items()):
+            raise ConflictException("İşlem kimliği farklı bir kayıt için kullanılmış")
+        return previous
+    table = model.__table__
+    if await db.scalar(select(table.c.id).where(table.c.id == identifier)) is not None:
+        raise ConflictException("İşlem kimliği kullanılamıyor")
+    return None
+
+
+def creation_fields(body):
+    fields = body.model_dump(exclude={"request_id"})
+    if body.request_id is not None:
+        fields["id"] = body.request_id
+    return fields
 
 
 async def validate_item(db, tenant, body, item_id=None):
@@ -52,19 +78,27 @@ async def validate_item(db, tenant, body, item_id=None):
 
 
 async def save_item(db, tenant, body, item_id=None):
+    if item_id is None:
+        previous = await replay_creation(db, tenant, InventoryItem, body)
+        if previous is not None:
+            return item_receipt(previous)
     await validate_item(db, tenant, body, item_id)
     if item_id:
         row = await BaseRepository(db, tenant).get_by_id(item_id, InventoryItem, for_update=True)
-        for key, value in body.model_dump().items():
+        for key, value in body.model_dump(exclude={"request_id"}).items():
             setattr(row, key, value)
     else:
-        row = InventoryItem(**body.model_dump(), status="ACTIVE")
+        row = InventoryItem(**creation_fields(body), status="ACTIVE")
         db.add(row)
     try:
         await db.flush()
     except IntegrityError as error:
         raise ConflictException("Bu demirbaş kodu kullanılıyor") from error
     await db.refresh(row, attribute_names=["updated_at"])
+    return item_receipt(row)
+
+
+def item_receipt(row):
     return {"id": str(row.id), "item_code": row.item_code, "item_name": row.item_name, "status": row.status,
         "created_at": row.created_at.isoformat(), "updated_at": row.updated_at.isoformat()}
 
@@ -78,6 +112,9 @@ async def assignee(db, tenant, item, user_id):
 
 
 async def assign(db, tenant, body):
+    previous = await replay_creation(db, tenant, AssetAssignment, body)
+    if previous is not None:
+        return assignment_receipt(previous)
     repo = BaseRepository(db, tenant)
     item = await repo.get_by_id(body.item_id, InventoryItem, for_update=True)
     await assignee(db, tenant, item, body.assigned_to)
@@ -91,9 +128,13 @@ async def assign(db, tenant, body):
         raise ConflictException("Demirbaş zaten zimmetli; önce iade edilmeli")
     if body.return_date and body.return_date < school_today():
         raise ValidationException("Planlanan iade tarihi zimmet tarihinden önce olamaz")
-    row = AssetAssignment(**body.model_dump(), assigned_date=school_today(), status="ASSIGNED")
+    row = AssetAssignment(**creation_fields(body), assigned_date=school_today(), status="ASSIGNED")
     db.add(row)
     await db.flush()
+    return assignment_receipt(row)
+
+
+def assignment_receipt(row):
     return {"id": str(row.id), "assigned_date": row.assigned_date.isoformat(), "status": row.status, "created_at": row.created_at.isoformat()}
 
 
@@ -111,14 +152,21 @@ async def return_assignment(db, tenant, assignment_id, notes):
 
 
 async def maintenance(db, tenant, body):
+    previous = await replay_creation(db, tenant, MaintenanceRequest, body, reported_by=tenant.user_id)
+    if previous is not None:
+        return maintenance_receipt(previous)
     item = await BaseRepository(db, tenant).get_by_id(body.item_id, InventoryItem)
     if not body.issue_description.strip():
         raise ValidationException("Bakım talebinin açıklaması gerekli")
     if body.assigned_to:
         await assignee(db, tenant, item, body.assigned_to)
-    row = MaintenanceRequest(**body.model_dump(), reported_by=tenant.user_id, status="PENDING")
+    row = MaintenanceRequest(**creation_fields(body), reported_by=tenant.user_id, status="PENDING")
     db.add(row)
     await db.flush()
+    return maintenance_receipt(row)
+
+
+def maintenance_receipt(row):
     return {"id": str(row.id), "priority": row.priority, "status": row.status, "created_at": row.created_at.isoformat()}
 
 

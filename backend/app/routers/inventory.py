@@ -41,7 +41,11 @@ async def inventory_branch(db, tenant, branch_id):
 
 # ==================== Schemas ====================
 
-class InventoryItemCreate(BaseModel):
+class InventoryCreateRequest(BaseModel):
+    request_id: UUID | None = None
+
+
+class InventoryItemCreate(InventoryCreateRequest):
     branch_id: UUID
     item_code: str = Field(..., min_length=1, max_length=50)
     item_name: str = Field(..., min_length=1, max_length=255)
@@ -56,19 +60,19 @@ class InventoryItemCreate(BaseModel):
     barcode: Optional[str] = Field(None, max_length=255)
     warranty_expiry: Optional[date] = None
 
-class InventoryLocationCreate(BaseModel):
+class InventoryLocationCreate(InventoryCreateRequest):
     branch_id: UUID
     location_name: str = Field(..., min_length=1, max_length=255)
     location_type: Optional[str] = Field(None, max_length=50)
     description: Optional[str] = None
 
-class AssetAssignmentCreate(BaseModel):
+class AssetAssignmentCreate(InventoryCreateRequest):
     item_id: UUID
     assigned_to: UUID
     return_date: Optional[date] = Field(None, description="Planlanan iade; iade işleminde gerçekleşen tarihle güncellenir")
     notes: Optional[str] = None
 
-class MaintenanceRequestCreate(BaseModel):
+class MaintenanceRequestCreate(InventoryCreateRequest):
     item_id: UUID
     issue_description: str = Field(..., description="Issue description")
     priority: Literal["LOW", "MEDIUM", "HIGH", "URGENT"] = "MEDIUM"
@@ -237,15 +241,12 @@ async def create_inventory_location(
     await inventory_branch(db, tenant, location.branch_id)
     if not location.location_name.strip():
         raise ValidationException("Konum adı gerekli")
-    new_location = InventoryLocation(
-        branch_id=location.branch_id,
-        location_name=location.location_name,
-        location_type=location.location_type,
-        description=location.description
-    )
-    db.add(new_location)
-    await db.flush()
-    await db.refresh(new_location)
+    new_location = await inventory_service.replay_creation(db, tenant, InventoryLocation, location)
+    if new_location is None:
+        new_location = InventoryLocation(**inventory_service.creation_fields(location))
+        db.add(new_location)
+        await db.flush()
+        await db.refresh(new_location)
     
     return success_response({
         "id": str(new_location.id),
