@@ -42,6 +42,7 @@ class TutoringSessionCreate(Input):
     end_time: time
     location: str | None = Field(None, max_length=255)
     notes: str | None = Field(None, max_length=4000)
+    request_id: UUID | None = None
 
     @model_validator(mode="after")
     def valid_times(self):
@@ -57,6 +58,7 @@ class TutoringRequestCreate(Input):
     preferred_time_start: time | None = None
     preferred_time_end: time | None = None
     reason: str | None = Field(None, max_length=4000)
+    request_id: UUID | None = None
 
     @model_validator(mode="after")
     def valid_times(self):
@@ -70,6 +72,7 @@ class TeacherAvailabilityCreate(Input):
     start_time: time
     end_time: time
     max_students: int = Field(default=1, ge=1, le=100)
+    request_id: UUID | None = None
 
     @model_validator(mode="after")
     def valid_times(self):
@@ -121,8 +124,8 @@ async def enrich(db, rows):
     return output
 
 
-async def get_record(db, model, identifier):
-    row = (await db.execute(select(model).where(model.id == identifier))).scalar_one_or_none()
+async def get_record(db, model, identifier, branch_id=None):
+    row = (await db.execute(select(model).where(model.id == identifier, service.branch_filter(model, branch_id)))).scalar_one_or_none()
     if row is None:
         raise HTTPException(404, "Kayıt bulunamadı veya erişim kapsamı dışında")
     return row
@@ -130,24 +133,27 @@ async def get_record(db, model, identifier):
 
 @router.get("/options")
 async def options(student_id: UUID | None = None, teacher_id: UUID | None = None, search: str = Query("", max_length=100),
-    teacher_search: str = Query("", max_length=100), db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
-    return success_response(await service.options(db, tenant, student_id, search.strip(), teacher_search.strip(), teacher_id))
+    teacher_search: str = Query("", max_length=100), branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
+    return success_response(await service.options(db, tenant, student_id, search.strip(), teacher_search.strip(), teacher_id, branch_id))
 
 
 @router.get("/summary")
-async def summary(student_id: UUID | None = None, teacher_id: UUID | None = None,
+async def summary(student_id: UUID | None = None, teacher_id: UUID | None = None, branch_id: UUID | None = None,
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
-    return success_response(await service.summary(db, student_id, teacher_id))
+    return success_response(await service.summary(db, student_id, teacher_id, branch_id))
 
 
 @router.get("/sessions")
 async def get_tutoring_sessions(teacher_id: UUID | None = None, student_id: UUID | None = None,
+    branch_id: UUID | None = None, record_id: UUID | None = None,
     start_date: date | None = None, end_date: date | None = None, status: Literal["SCHEDULED", "COMPLETED", "CANCELLED"] | None = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
     if start_date and end_date and end_date < start_date:
         raise HTTPException(422, "Bitiş tarihi başlangıçtan önce olamaz")
-    query = select(TutoringSession)
+    query = select(TutoringSession).where(service.branch_filter(TutoringSession, branch_id))
+    if record_id is not None:
+        query = query.where(TutoringSession.id == record_id)
     for value, condition in ((teacher_id, TutoringSession.teacher_id == teacher_id), (student_id, TutoringSession.student_id == student_id),
         (start_date, TutoringSession.session_date >= start_date if start_date else True),
         (end_date, TutoringSession.session_date <= end_date if end_date else True), (status, TutoringSession.status == status)):
@@ -158,42 +164,45 @@ async def get_tutoring_sessions(teacher_id: UUID | None = None, student_id: UUID
 
 
 @router.post("/sessions")
-async def create_tutoring_session(body: TutoringSessionCreate, db: AsyncSession = Depends(get_db, scope="function"),
+async def create_tutoring_session(body: TutoringSessionCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
     service.require_calendar_owner(tenant, body.teacher_id)
-    student = await service.require_student(db, body.student_id)
-    await service.require_teacher(db, tenant, body.teacher_id, student)
+    student = await service.require_student(db, body.student_id, branch_id)
+    await service.require_teacher(db, tenant, body.teacher_id, student, branch_id)
     await service.lock_calendar(db, [body.teacher_id], [body.student_id])
+    prior = await service.replay(db, TutoringSession, body, branch_id)
+    if prior is not None:
+        return success_response(data(prior))
     await service.check_booking(db, body)
-    row = TutoringSession(**body.model_dump(), status="SCHEDULED")
+    row = TutoringSession(id=body.request_id, **body.model_dump(exclude={"request_id"}), status="SCHEDULED")
     db.add(row); await db.commit(); await db.refresh(row)
     return success_response(data(row))
 
 
 @router.put("/sessions/{session_id}")
-async def update_tutoring_session(session_id: UUID, body: TutoringSessionCreate, db: AsyncSession = Depends(get_db, scope="function"),
+async def update_tutoring_session(session_id: UUID, body: TutoringSessionCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    row = await get_record(db, TutoringSession, session_id)
+    row = await get_record(db, TutoringSession, session_id, branch_id)
     service.require_calendar_owner(tenant, body.teacher_id)
-    student = await service.require_student(db, body.student_id)
-    await service.require_teacher(db, tenant, body.teacher_id, student)
+    student = await service.require_student(db, body.student_id, branch_id)
+    await service.require_teacher(db, tenant, body.teacher_id, student, branch_id)
     await service.lock_calendar(db, [row.teacher_id, body.teacher_id], [row.student_id, body.student_id])
-    row = await service.lock_record(db, TutoringSession, session_id)
+    row = await service.lock_record(db, TutoringSession, session_id, branch_id)
     if row.status != "SCHEDULED":
         raise HTTPException(409, "Yalnız planlanmış dersin zamanı değiştirilebilir")
     await service.check_booking(db, body, row.id)
-    for key, value in body.model_dump().items():
+    for key, value in body.model_dump(exclude={"request_id"}).items():
         setattr(row, key, value)
     await db.commit(); await db.refresh(row)
     return success_response(data(row))
 
 
 @router.post("/sessions/{session_id}/cancel")
-async def cancel_tutoring_session(session_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+async def cancel_tutoring_session(session_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    row = await get_record(db, TutoringSession, session_id)
+    row = await get_record(db, TutoringSession, session_id, branch_id)
     await service.lock_calendar(db, [row.teacher_id], [row.student_id])
-    row = await service.lock_record(db, TutoringSession, session_id)
+    row = await service.lock_record(db, TutoringSession, session_id, branch_id)
     if row.status == "COMPLETED":
         raise HTTPException(409, "Devam kaydı olan ders iptal edilemez")
     row.status = "CANCELLED"
@@ -202,11 +211,11 @@ async def cancel_tutoring_session(session_id: UUID, db: AsyncSession = Depends(g
 
 
 @router.post("/sessions/{session_id}/attendance")
-async def mark_session_attendance(session_id: UUID, body: SessionAttendanceUpdate, db: AsyncSession = Depends(get_db, scope="function"),
+async def mark_session_attendance(session_id: UUID, body: SessionAttendanceUpdate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    row = await get_record(db, TutoringSession, session_id)
+    row = await get_record(db, TutoringSession, session_id, branch_id)
     await service.lock_calendar(db, [row.teacher_id], [row.student_id])
-    row = await service.lock_record(db, TutoringSession, session_id)
+    row = await service.lock_record(db, TutoringSession, session_id, branch_id)
     if row.status == "CANCELLED":
         raise HTTPException(409, "İptal edilmiş dersin devamı kaydedilemez")
     for key, value in body.model_dump().items():
@@ -218,9 +227,12 @@ async def mark_session_attendance(session_id: UUID, body: SessionAttendanceUpdat
 
 @router.get("/requests")
 async def get_tutoring_requests(student_id: UUID | None = None, teacher_id: UUID | None = None,
+    branch_id: UUID | None = None, record_id: UUID | None = None,
     status: Literal["PENDING", "APPROVED", "REJECTED"] | None = None, limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db, scope="function"), tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
-    query = select(TutoringRequest)
+    query = select(TutoringRequest).where(service.branch_filter(TutoringRequest, branch_id))
+    if record_id is not None:
+        query = query.where(TutoringRequest.id == record_id)
     for value, condition in ((teacher_id, TutoringRequest.teacher_id == teacher_id), (student_id, TutoringRequest.student_id == student_id), (status, TutoringRequest.status == status)):
         if value is not None:
             query = query.where(condition)
@@ -229,21 +241,26 @@ async def get_tutoring_requests(student_id: UUID | None = None, teacher_id: UUID
 
 
 @router.post("/requests")
-async def create_tutoring_request(body: TutoringRequestCreate, db: AsyncSession = Depends(get_db, scope="function"),
+async def create_tutoring_request(body: TutoringRequestCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    student = await service.require_student(db, body.student_id)
+    student = await service.require_student(db, body.student_id, branch_id)
     if body.teacher_id:
-        await service.require_teacher(db, tenant, body.teacher_id, student)
-    row = TutoringRequest(**body.model_dump(), status="PENDING")
+        await service.require_teacher(db, tenant, body.teacher_id, student, branch_id)
+    if body.request_id is not None:
+        await service.lock_calendar(db, [body.teacher_id] if body.teacher_id else [], [body.student_id])
+        prior = await service.replay(db, TutoringRequest, body, branch_id)
+        if prior is not None:
+            return success_response(data(prior))
+    row = TutoringRequest(id=body.request_id, **body.model_dump(exclude={"request_id"}), status="PENDING")
     db.add(row); await db.commit(); await db.refresh(row)
     return success_response(data(row))
 
 
 @router.post("/requests/{request_id}/approve")
-async def approve_tutoring_request(request_id: UUID, body: RequestApproval | None = Body(None), db: AsyncSession = Depends(get_db, scope="function"),
+async def approve_tutoring_request(request_id: UUID, body: RequestApproval | None = Body(None), branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    await get_record(db, TutoringRequest, request_id)
-    row = await service.lock_record(db, TutoringRequest, request_id)
+    await get_record(db, TutoringRequest, request_id, branch_id)
+    row = await service.lock_record(db, TutoringRequest, request_id, branch_id)
     teacher_id = body.teacher_id if body and body.teacher_id else row.teacher_id or (tenant.user_id if service.self_only(tenant) else None)
     if row.status == "APPROVED":
         if teacher_id != row.teacher_id:
@@ -253,8 +270,8 @@ async def approve_tutoring_request(request_id: UUID, body: RequestApproval | Non
         raise HTTPException(409, "Yalnız bekleyen talep onaylanabilir")
     if teacher_id is None:
         raise HTTPException(422, "Onay için öğretmen seçin")
-    student = await service.require_student(db, row.student_id)
-    await service.require_teacher(db, tenant, teacher_id, student)
+    student = await service.require_student(db, row.student_id, branch_id)
+    await service.require_teacher(db, tenant, teacher_id, student, branch_id)
     row.teacher_id = teacher_id; row.status = "APPROVED"
     row.approved_by = tenant.user_id; row.approved_at = datetime.now(UTC)
     await db.commit()
@@ -263,10 +280,11 @@ async def approve_tutoring_request(request_id: UUID, body: RequestApproval | Non
 
 @router.post("/requests/{request_id}/reject")
 async def reject_tutoring_request(request_id: UUID, body: RequestRejection | None = Body(None),
+    branch_id: UUID | None = None,
     rejection_reason: str | None = Query(None, min_length=1, max_length=2000, deprecated=True), db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    await get_record(db, TutoringRequest, request_id)
-    row = await service.lock_record(db, TutoringRequest, request_id)
+    await get_record(db, TutoringRequest, request_id, branch_id)
+    row = await service.lock_record(db, TutoringRequest, request_id, branch_id)
     if row.status == "REJECTED":
         return success_response(data(row))
     if row.status != "PENDING":
@@ -281,9 +299,12 @@ async def reject_tutoring_request(request_id: UUID, body: RequestRejection | Non
 
 @router.get("/availability")
 async def get_teacher_availability(teacher_id: UUID | None = None, day_of_week: int | None = Query(None, ge=0, le=6),
+    branch_id: UUID | None = None, record_id: UUID | None = None,
     limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0), db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.read"))):
-    query = select(TeacherAvailability)
+    query = select(TeacherAvailability).where(service.branch_filter(TeacherAvailability, branch_id))
+    if record_id is not None:
+        query = query.where(TeacherAvailability.id == record_id)
     if teacher_id:
         query = query.where(TeacherAvailability.teacher_id == teacher_id)
     if day_of_week is not None:
@@ -293,26 +314,29 @@ async def get_teacher_availability(teacher_id: UUID | None = None, day_of_week: 
 
 
 @router.post("/availability")
-async def create_teacher_availability(body: TeacherAvailabilityCreate, db: AsyncSession = Depends(get_db, scope="function"),
+async def create_teacher_availability(body: TeacherAvailabilityCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    await service.require_teacher(db, tenant, body.teacher_id)
+    await service.require_teacher(db, tenant, body.teacher_id, branch_id=branch_id)
     await service.lock_calendar(db, [body.teacher_id])
+    prior = await service.replay(db, TeacherAvailability, body, branch_id)
+    if prior is not None:
+        return success_response(data(prior))
     overlap = (await db.execute(select(TeacherAvailability.id).where(TeacherAvailability.teacher_id == body.teacher_id,
         TeacherAvailability.day_of_week == body.day_of_week, TeacherAvailability.is_available.is_(True),
         TeacherAvailability.start_time < body.end_time, TeacherAvailability.end_time > body.start_time).limit(1))).first()
     if overlap:
         raise HTTPException(409, "Bu öğretmenin aynı gün çakışan aktif müsaitliği var")
-    row = TeacherAvailability(**body.model_dump(), is_available=True)
+    row = TeacherAvailability(id=body.request_id, **body.model_dump(exclude={"request_id"}), is_available=True)
     db.add(row); await db.commit(); await db.refresh(row)
     return success_response(data(row))
 
 
 @router.delete("/availability/{availability_id}")
-async def disable_teacher_availability(availability_id: UUID, db: AsyncSession = Depends(get_db, scope="function"),
+async def disable_teacher_availability(availability_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("tutoring.write"))):
-    row = await get_record(db, TeacherAvailability, availability_id)
+    row = await get_record(db, TeacherAvailability, availability_id, branch_id)
     await service.lock_calendar(db, [row.teacher_id])
-    row = await service.lock_record(db, TeacherAvailability, availability_id)
+    row = await service.lock_record(db, TeacherAvailability, availability_id, branch_id)
     # History is preserved. Existing bookings remain valid; disabling blocks new bookings.
     row.is_available = False
     await db.commit()

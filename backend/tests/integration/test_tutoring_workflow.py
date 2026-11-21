@@ -1,5 +1,6 @@
 import asyncio
 from datetime import timedelta
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select
@@ -62,6 +63,34 @@ async def test_tutoring_teacher_cannot_write_another_teachers_calendar_or_sessio
     body = {"teacher_id": str(data["other_teacher"].id), "student_id": str(data["children"][0].id),
         "session_date": str(school_today() + timedelta(days=1)), "start_time": "10:00", "end_time": "11:00"}
     assert (await client.post("/api/tutoring/sessions", headers=auth, json=body)).status_code == 403
+
+
+async def test_tutoring_branch_reads_and_create_retries_use_one_authorized_record(tutoring_client):
+    client, _, data = tutoring_client
+    auth = headers(data["teacher"])
+    branch = {"branch_id": str(data["branch"].id)}
+    wrong = {"branch_id": str(data["other_branch"].id)}
+    day = school_today() + timedelta(days=1)
+    teacher = str(data["teacher"].id)
+    student = str(data["children"][0].id)
+    availability = {"teacher_id": teacher, "day_of_week": day.weekday(), "start_time": "09:00",
+        "end_time": "12:00", "request_id": str(uuid4())}
+    session = {"teacher_id": teacher, "student_id": student, "session_date": str(day), "start_time": "10:00",
+        "end_time": "11:00", "request_id": str(uuid4())}
+    request = request_body(data, request_id=str(uuid4()))
+    for kind, payload in (("availability", availability), ("sessions", session), ("requests", request)):
+        path = "/api/tutoring/" + kind
+        for _ in range(2):
+            saved = await client.post(path, headers=auth, params=branch, json=payload)
+            assert saved.status_code == 200 and saved.json()["data"]["id"] == payload["request_id"], saved.text
+        options = {"record_id": payload["request_id"], "limit": 1}
+        exact = await client.get(path, headers=auth, params={**branch, **options})
+        assert [row["id"] for row in exact.json()["data"]] == [payload["request_id"]]
+        denied = await client.get(path, headers=auth, params={**wrong, **options})
+        assert denied.json()["data"] == []
+    mark = f'/api/tutoring/sessions/{session["request_id"]}/attendance'
+    assert (await client.post(mark, headers=auth, params=wrong, json={"attendance_status": "PRESENT"})).status_code == 404
+    assert (await client.post(mark, headers=auth, params=branch, json={"attendance_status": "PRESENT"})).json()["data"]["status"] == "COMPLETED"
 
 
 async def test_tutoring_validates_times_and_serializes_conflicting_bookings(tutoring_client):

@@ -3,15 +3,32 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_, select, update
 
 from app.core.dates import school_today
-from app.core.exceptions import ForbiddenException
+from app.core.exceptions import ConflictException, ForbiddenException
 from app.core.student_access import require_teacher_for_student, uses_relationship_scope
 from app.core.teaching import teacher_class_condition
 from app.domain.entities.tutoring import TeacherAvailability, TutoringRequest, TutoringSession
-from app.infrastructure.models.models import ClassRoom, ClassTeacher, ClassroomAssignment, Student, StudentTeacherAssignment, User, Role, UserRole
+from app.infrastructure.models.models import ClassRoom, ClassTeacher, ClassroomAssignment, Student, StudentTeacherAssignment, User, Role, UserBranch, UserRole
 
 
 def self_only(tenant):
-    return uses_relationship_scope(tenant) and "teacher" in tenant.role_slugs
+    return uses_relationship_scope(tenant) and tenant.has_teacher_role
+
+
+def branch_filter(model, branch_id):
+    if branch_id is None:
+        return True
+    students = select(Student.id).where(Student.branch_id == branch_id, Student.deleted_at.is_(None))
+    if model in (TutoringSession, TutoringRequest):
+        return model.student_id.in_(students)
+    if model is Student:
+        return Student.branch_id == branch_id
+    classes = select(ClassRoom.id).where(ClassRoom.branch_id == branch_id, ClassRoom.deleted_at.is_(None))
+    actor = User.id if model is User else model.teacher_id
+    return or_(actor.in_(select(UserBranch.user_id).where(UserBranch.branch_id == branch_id)),
+        actor.in_(select(ClassRoom.teacher_id).where(ClassRoom.id.in_(classes))),
+        actor.in_(select(ClassTeacher.user_id).where(ClassTeacher.class_id.in_(classes))),
+        actor.in_(select(ClassroomAssignment.teacher_id).where(ClassroomAssignment.class_id.in_(classes))),
+        actor.in_(select(StudentTeacherAssignment.teacher_id).where(StudentTeacherAssignment.student_id.in_(students))))
 
 
 def require_calendar_owner(tenant, teacher_id):
@@ -22,17 +39,17 @@ def require_calendar_owner(tenant, teacher_id):
 def teacher_condition():
     users, roles, assignments = User.__table__, Role.__table__, UserRole.__table__
     teachers = select(assignments.c.user_id).join(roles, roles.c.id == assignments.c.role_id).where(
-        roles.c.slug == "teacher", roles.c.deleted_at.is_(None),
+        roles.c.slug.in_(("teacher", "teacher1", "teacher2", "teacher3")), roles.c.deleted_at.is_(None),
         or_(roles.c.organization_id.is_(None), roles.c.organization_id == users.c.organization_id)).correlate(users)
     return or_(users.c.id.in_(teachers), users.c.id.in_(select(ClassRoom.__table__.c.teacher_id)),
         users.c.id.in_(select(ClassTeacher.__table__.c.user_id)), users.c.id.in_(select(ClassroomAssignment.__table__.c.teacher_id)),
         users.c.id.in_(select(StudentTeacherAssignment.__table__.c.teacher_id)))
 
 
-async def require_teacher(db, tenant, teacher_id, student=None):
+async def require_teacher(db, tenant, teacher_id, student=None, branch_id=None):
     require_calendar_owner(tenant, teacher_id)
     teacher = (await db.execute(select(User).where(User.id == teacher_id, User.deleted_at.is_(None),
-        User.status == "ACTIVE", teacher_condition()))).scalar_one_or_none()
+        User.status == "ACTIVE", teacher_condition(), branch_filter(User, branch_id)))).scalar_one_or_none()
     if teacher is None or (student is not None and teacher.organization_id != student.organization_id):
         raise ForbiddenException("Erişilebilir, aktif ve aynı kuruma bağlı öğretmen gerekli")
     if student is not None:
@@ -40,8 +57,9 @@ async def require_teacher(db, tenant, teacher_id, student=None):
     return teacher
 
 
-async def require_student(db, student_id):
-    student = (await db.execute(select(Student).where(Student.id == student_id, Student.deleted_at.is_(None)))).scalar_one_or_none()
+async def require_student(db, student_id, branch_id=None):
+    student = (await db.execute(select(Student).where(Student.id == student_id, Student.deleted_at.is_(None),
+        branch_filter(Student, branch_id)))).scalar_one_or_none()
     if student is None:
         raise HTTPException(404, "Öğrenci bulunamadı veya erişim kapsamı dışında")
     return student
@@ -56,13 +74,28 @@ async def lock_calendar(db, teacher_ids, student_ids=()):
             await db.execute(update(table).where(table.c.id == identifier).values(updated_at=table.c.updated_at))
 
 
-async def lock_record(db, model, identifier):
+async def lock_record(db, model, identifier, branch_id=None):
     table = model.__table__
     await db.execute(update(table).where(table.c.id == identifier).values(updated_at=table.c.updated_at))
-    row = (await db.execute(select(model).where(model.id == identifier).execution_options(populate_existing=True))).scalar_one_or_none()
+    row = (await db.execute(select(model).where(model.id == identifier, branch_filter(model, branch_id))
+        .execution_options(populate_existing=True))).scalar_one_or_none()
     if row is None:
         raise HTTPException(404, "Kayıt bulunamadı veya erişim kapsamı dışında")
     return row
+
+
+async def replay(db, model, body, branch_id=None):
+    if body.request_id is None:
+        return None
+    row = await db.scalar(select(model).where(model.id == body.request_id, branch_filter(model, branch_id)))
+    if row is not None:
+        if any(getattr(row, name) != value for name, value in body.model_dump(exclude={"request_id"}).items()):
+            raise ConflictException("İşlem kimliği farklı bir etüt kaydına ait")
+        return row
+    table = model.__table__
+    if await db.scalar(select(table.c.id).where(table.c.id == body.request_id)) is not None:
+        raise ConflictException("Etüt işlem kimliği kullanılamıyor")
+    return None
 
 
 async def check_booking(db, body, exclude=None):
@@ -102,15 +135,15 @@ async def names(db, model, identifiers):
         select(model.id, model.first_name, model.last_name).where(model.id.in_(identifiers)))).all()}
 
 
-async def options(db, tenant, student_id=None, search="", teacher_search="", teacher_id=None):
-    query = select(Student).where(Student.deleted_at.is_(None))
+async def options(db, tenant, student_id=None, search="", teacher_search="", teacher_id=None, branch_id=None):
+    query = select(Student).where(Student.deleted_at.is_(None), branch_filter(Student, branch_id))
     filtered = query.where(or_(Student.first_name.ilike(f"%{search}%"), Student.last_name.ilike(f"%{search}%"))) if search else query
     rows = (await db.execute(filtered.order_by(Student.first_name, Student.id).limit(101))).scalars().all()
     choices = rows[:100]
     selected = (await db.execute(query.where(Student.id == student_id))).scalar_one_or_none() if student_id else None
     if selected and not any(row.id == selected.id for row in choices):
         choices = [*choices, selected]
-    teachers = select(User).where(User.deleted_at.is_(None), User.status == "ACTIVE", teacher_condition())
+    teachers = select(User).where(User.deleted_at.is_(None), User.status == "ACTIVE", teacher_condition(), branch_filter(User, branch_id))
     if self_only(tenant):
         teachers = teachers.where(User.id == tenant.user_id)
     if selected:
@@ -133,9 +166,9 @@ async def options(db, tenant, student_id=None, search="", teacher_search="", tea
         "self_only": self_only(tenant), "current_user_id": str(tenant.user_id)}
 
 
-async def summary(db, student_id=None, teacher_id=None):
+async def summary(db, student_id=None, teacher_id=None, branch_id=None):
     async def count(model, *conditions):
-        query = select(func.count(model.id)).where(*conditions)
+        query = select(func.count(model.id)).where(branch_filter(model, branch_id), *conditions)
         if student_id and model != TeacherAvailability:
             query = query.where(model.student_id == student_id)
         if teacher_id:
