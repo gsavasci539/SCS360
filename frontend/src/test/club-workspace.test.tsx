@@ -22,7 +22,7 @@ beforeEach(() => {
   useAuthStore.setState({ user: manager, accessToken: "test", hydrated: true });
   vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { data: path === "/clubs/options" ? {
     branches: [{ id: "branch-1", name: "Merkez" }], students: [{ id: "student-1", name: "Deniz Test" }], teachers: [], student_count: 1,
-  } : path === "/clubs" ? clubs : path === "/clubs/memberships" && config?.params?.record_id === "new-record"
+  } : path === "/clubs" ? clubs : path === "/clubs/memberships" && (config?.params as { record_id?: string } | undefined)?.record_id === "new-record"
     ? [{ id: "new-record", club_id: "club-1", student_id: "student-1", status: "ACTIVE" }]
     : String(path).includes("certificates") ? [award] : [] } }));
   vi.mocked(api.post).mockResolvedValue({ data: { data: { id: "new-record" } } });

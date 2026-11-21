@@ -52,11 +52,12 @@ export function SettingsPage({ initialSection = "general" }: { initialSection?: 
   }, [organization, reload]);
 
   async function save() {
-    if (!canWrite || savingNow.current || !settings || snapshot?.organization_id !== organization || !sectionFields[section]) return;
+    if (!canWrite || savingNow.current || !settings || !snapshot || snapshot.organization_id !== organization || !sectionFields[section]) return;
+    const previous = snapshot;
     savingNow.current = true;
     setSaving(true);
     try {
-      const patch = preferenceChanges(snapshot, settings, section);
+      const patch = preferenceChanges(previous, settings, section);
       const keys = Object.keys(patch.changes) as (keyof AppSettings)[];
       if (!keys.length) return;
       const { data: written } = await api.put<ApiResponse<OrganizationPreferences>>("/settings/preferences", patch);
@@ -67,7 +68,7 @@ export function SettingsPage({ initialSection = "general" }: { initialSection?: 
       setSnapshot(current);
       setSettings((draft) => draft && Object.fromEntries(Object.entries(current.values).map(([key, value]) => {
         const field = key as keyof AppSettings;
-        return [key, keys.includes(field) || draft[field] === snapshot.values[field] ? value : draft[field]];
+        return [key, keys.includes(field) || draft[field] === previous.values[field] ? value : draft[field]];
       })) as AppSettings | null);
       showToast("Kurum tercihleri kaydedildi");
     } catch (error) {

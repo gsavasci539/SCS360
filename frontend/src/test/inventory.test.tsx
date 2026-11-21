@@ -12,8 +12,8 @@ const manager: AuthUser = { id: "manager", first_name: "Test", last_name: "User"
 const open = () => render(<ToastProvider><InventoryPage /></ToastProvider>);
 beforeEach(() => {
   useAuthStore.setState({ user: manager });
-  vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { success: true, data: config?.params?.record_id ? [{
-    id: config.params.record_id, branch_id: "branch", ...(path === "/inventory/items"
+  vi.mocked(api.get).mockImplementation(async (path, config) => ({ data: { success: true, data: (config?.params as { record_id?: string } | undefined)?.record_id ? [{
+    id: (config?.params as { record_id?: string } | undefined)?.record_id, branch_id: "branch", ...(path === "/inventory/items"
       ? { item_code: "NEW-1", item_name: "Yeni tablet", location_id: null, status: "ACTIVE" }
       : { item_id: "item", assigned_to: "teacher", return_date: null, notes: null, status: "ASSIGNED" }),
   }] : path === "/inventory/options" ? {
@@ -54,7 +54,7 @@ it("demirbaş ve zimmet formlarını izinli API yollarına kaydeder", async () =
 it("yanlış tekil kayıt döndüğünde demirbaş taslağını korur", async () => {
   let wrongRecord = true;
   const original = vi.mocked(api.get).getMockImplementation()!;
-  vi.mocked(api.get).mockImplementation((path, config) => wrongRecord && config?.params?.record_id
+  vi.mocked(api.get).mockImplementation((path, config) => wrongRecord && (config?.params as { record_id?: string } | undefined)?.record_id
     ? Promise.resolve({ data: { success: true, data: [{ id: "other", branch_id: "branch" }] } })
     : original(path, config));
   open();

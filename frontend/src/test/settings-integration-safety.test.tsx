@@ -38,14 +38,15 @@ beforeEach(() => {
   vi.mocked(api.put).mockImplementation(async (path, body) => {
     if (path === "/settings/integrations") {
       const rows = records as typeof existing;
-      const provider = body.provider as string;
+      const input = body as { provider: string; config: Record<string, unknown> };
+      const provider = input.provider;
       const previous = rows.find((row) => row.provider === provider);
       const record = { id: provider.toLowerCase(), organization_id: "school", provider,
-        is_active: previous?.is_active ?? false, config: { ...previous?.config, ...body.config } };
+        is_active: previous?.is_active ?? false, config: { ...previous?.config, ...input.config } };
       records = [...rows.filter((row) => row.provider !== provider), record];
       return { data: { success: true, data: record } };
     }
-    savedName = body.changes.school_name;
+    savedName = (body as { changes: { school_name: string } }).changes.school_name;
     return { data: { success: true, data: preferences(savedName) } };
   });
 });

@@ -69,7 +69,7 @@ it("taslak oluşturunca ayrıntı adresine geçer ve gerçek soru ekler", async 
   });
   vi.mocked(api.get).mockImplementation((path, options) => {
     if (path === `/surveys/surveys/${savedDraft?.id}`) return Promise.resolve({ data: { data: savedDraft } });
-    if (path === "/surveys/questions" && options?.params?.survey_id === savedDraft?.id) {
+    if (path === "/surveys/questions" && (options?.params as { survey_id?: string } | undefined)?.survey_id === savedDraft?.id) {
       return Promise.resolve({ data: { data: savedQuestion ? [savedQuestion] : [] } });
     }
     return original(path, options);

@@ -19,7 +19,8 @@ beforeEach(() => {
   let saved: unknown = blank;
   vi.mocked(api.get).mockImplementation(async () => ({ data: { data: saved } }));
   vi.mocked(api.put).mockImplementation(async (_path, body) => {
-    saved = { ...configured, enabled: body.enabled, environment: body.environment, provider: body.provider ?? "iyzico" };
+    const input = body as { enabled?: boolean; environment?: string | null; provider?: string };
+    saved = { ...configured, enabled: input.enabled, environment: input.environment, provider: input.provider ?? "iyzico" };
     return { data: { data: saved } };
   });
 });

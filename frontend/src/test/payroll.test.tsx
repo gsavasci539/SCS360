@@ -42,7 +42,7 @@ it("onay işlemi gerçek kayıt yolunu kullanır ve üç aylık aralık yıl sı
   const approved = { id: "record", staff_id: "teacher", status: "APPROVED", net_salary: 50000,
     approved_by: "manager", approved_at: "2026-11-03T08:00:00Z" };
   const get = vi.mocked(api.get).getMockImplementation()!;
-  vi.mocked(api.get).mockImplementation((path, config) => config?.params?.record_id === "record"
+  vi.mocked(api.get).mockImplementation((path, config) => (config?.params as { record_id?: string } | undefined)?.record_id === "record"
     ? Promise.resolve({ data: { data: [approved] } }) : get(path, config));
   vi.mocked(api.post).mockResolvedValue({ data: { data: approved } });
   open(); const region = await screen.findByRole("region", { name: "Bordro kayıtları" });

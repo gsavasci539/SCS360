@@ -40,7 +40,7 @@ it("başlık, sınıf ve dosyayı yükler ve listeyi yeniler", async () => {
   fireEvent.change(screen.getByLabelText("Materyal sınıfı"), { target: { value: "class-1" } });
   const file = new File(["%PDF-1.4"], "kaynak.pdf", { type: "application/pdf" });
   vi.mocked(api.post).mockImplementationOnce(async (_path, _data, config) => {
-    const id = config?.params.request_id;
+    const id = (config?.params as { request_id?: string } | undefined)?.request_id;
     vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [{ id, title: "Yeni kaynak",
       material_type: "PDF", visibility: "CLASS_ONLY", class_id: "class-1", file_name: file.name, file_size: file.size }] } });
     return { data: { data: { id } } };
@@ -52,7 +52,7 @@ it("başlık, sınıf ve dosyayı yükler ve listeyi yeniler", async () => {
   expect((form as FormData).get("file")).toBe(file);
   expect(config?.params).toEqual({ title: "Yeni kaynak", material_type: "PDF", visibility: "CLASS_ONLY", class_id: "class-1",
     request_id: expect.any(String) });
-  expect(api.get).toHaveBeenCalledWith("/materials", { params: { record_id: config?.params.request_id, limit: 1 } });
+  expect(api.get).toHaveBeenCalledWith("/materials", { params: { record_id: (config?.params as { request_id?: string } | undefined)?.request_id, limit: 1 } });
   expect(api.get).toHaveBeenCalledTimes(4);
 });
 
