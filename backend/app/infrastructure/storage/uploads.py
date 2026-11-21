@@ -15,7 +15,9 @@ def upload_name(file: UploadFile) -> str:
     return name
 
 
-async def read_upload(file: UploadFile, extensions: set[str] | None = None) -> tuple[str, bytes]:
+async def read_upload(
+    file: UploadFile, extensions: set[str] | None = None, *, max_size_mb: int | None = None,
+) -> tuple[str, bytes]:
     settings = get_settings()
     name = upload_name(file)
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
@@ -23,9 +25,11 @@ async def read_upload(file: UploadFile, extensions: set[str] | None = None) -> t
     if ext not in allowed:
         raise ValidationException("İzin verilmeyen dosya türü")
     # A single over-limit chunk is sufficient; never read an unbounded upload.
-    content = await file.read(settings.max_upload_size_bytes + 1)
-    if len(content) > settings.max_upload_size_bytes:
-        raise ValidationException(f"Dosya boyutu {settings.MAX_UPLOAD_SIZE_MB}MB limitini aşıyor")
+    maximum = settings.MAX_UPLOAD_SIZE_MB if max_size_mb is None else min(max_size_mb, settings.MAX_UPLOAD_SIZE_MB)
+    limit = maximum * 1024 * 1024
+    content = await file.read(limit + 1)
+    if len(content) > limit:
+        raise ValidationException(f"Dosya boyutu {maximum}MB limitini aşıyor")
     if not content:
         raise ValidationException("Boş dosya yüklenemez")
     signatures = {"pdf": b"%PDF-", "jpg": b"\xff\xd8\xff", "jpeg": b"\xff\xd8\xff",

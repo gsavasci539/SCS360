@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.application.services.organization_preferences import student_document_limits
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundException, ValidationException
@@ -187,7 +188,8 @@ async def upload_student_file(
 ):
     repo = BaseRepository(db, tenant)
     student = await repo.get_by_id(student_id, Student)
-    name, content = await read_upload(file)
+    maximum, extensions = await student_document_limits(db, student.organization_id)
+    name, content = await read_upload(file, set(extensions), max_size_mb=maximum)
 
     storage = LocalFileStorage()
     subfolder = f"students/{student_id}"

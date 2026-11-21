@@ -7,6 +7,7 @@ from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 
 from app.core.security import create_access_token
+from app.core.config import get_settings
 from app.domain.entities.app_setting import AppSetting as ExportedAppSetting
 from app.domain.entities.integration_setting import IntegrationSetting as ExportedIntegrationSetting
 from app.infrastructure.models.models import AppSetting, IntegrationSetting, Permission, Role, User
@@ -59,6 +60,50 @@ async def test_registered_settings_roundtrip_json_and_native_read_write_institut
     assert other.status_code == 200, other.text
     assert (await client.get("/api/settings", headers=auth(data["writer"]))).json()["data"] == payload
     assert (await client.get("/api/settings", headers=auth(data["foreign_writer"]))).json()["data"] == {"other_school_only": "separate"}
+
+
+async def test_organization_preferences_scope_conflicts_and_student_document_limits(settings_client, monkeypatch):
+    client, sessions, data = settings_client
+    monkeypatch.setattr(get_settings(), "MAX_UPLOAD_SIZE_MB", 3)
+    monkeypatch.setattr(get_settings(), "ALLOWED_FILE_TYPES", "pdf,png")
+    async with sessions() as db:
+        operator = await db.get(User, data["teacher"].id)
+        operator.is_super_admin = True
+        await db.commit()
+    path = "/api/settings/preferences"
+    organization_id = str(data["org"].id)
+    writer, reader = auth(data["writer"]), auth(data["reader"])
+    root = auth(data["teacher"])
+    workspace = root | {"X-SCS360-Organization-Id": organization_id}
+    initial = (await client.get(path, headers=reader)).json()["data"]
+    assert initial["organization_id"] == organization_id
+    assert initial["values"]["academic_year"] is None
+    assert initial["values"]["receipt_email_enabled"] is None
+    assert initial["upload_policy"] == {"max_size_mb": 3, "allowed_extensions": ["pdf", "png"]}
+    assert (await client.get(path, headers=root)).status_code == 403
+    assert (await client.get(path, headers=workspace)).json()["data"] == initial
+    changes = {"max_upload_size_mb": 1, "allowed_file_types": "PDF", "receipt_email_enabled": False}
+    payload = {"organization_id": organization_id, "changes": changes,
+               "expected": {key: initial["values"][key] for key in changes}}
+    assert (await client.put(path, headers=reader, json=payload)).status_code == 403
+    assert (await client.put(path, headers=auth(data["foreign_writer"]), json=payload)).status_code == 403
+    saved = await client.put(path, headers=writer, json=payload)
+    assert saved.status_code == 200, saved.text
+    values = saved.json()["data"]["values"]
+    assert [values[key] for key in changes] == [1, "pdf", False]
+    assert (await client.put(path, headers=workspace, json=payload)).status_code == 200
+    stale = {**payload, "changes": {**changes, "max_upload_size_mb": 2, "receipt_email_enabled": True}}
+    assert (await client.put(path, headers=writer, json=stale)).status_code == 409
+    assert (await client.get(path, headers=reader)).json()["data"]["values"] == values
+
+    upload = f'/api/students/{data["children"][0].id}/files'
+    for name, content, expected in (
+        ("invalid.png", b"\x89PNG\r\n\x1a\n", 422),
+        ("large.pdf", b"%PDF-1.4\n" + b" " * 1024 * 1024, 422),
+        ("valid.pdf", b"%PDF-1.4\nreference", 200),
+    ):
+        reply = await client.post(upload, headers=workspace, files={"file": (name, content, "application/octet-stream")})
+        assert reply.status_code == expected, reply.text
 
 
 async def test_registered_integration_config_persists_types_masks_secrets_and_denies_writes(settings_client):

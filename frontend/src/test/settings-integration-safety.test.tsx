@@ -14,18 +14,31 @@ const existing = [
 ];
 let records: unknown;
 let integrationFailure = false;
+const values = {
+  school_name: "Our school", academic_year: null, default_currency: "TRY",
+  max_upload_size_mb: 10, allowed_file_types: "pdf,png",
+  receipt_email_enabled: null, overdue_reminders_enabled: null, failed_notification_alerts_enabled: null,
+};
+const preferences = (school_name: string) => ({
+  organization_id: "school", values: { ...values, school_name },
+  upload_policy: { max_size_mb: 10, allowed_extensions: ["pdf", "png"] },
+});
+let savedName: string;
 function view() { render(<MemoryRouter><ToastProvider><SettingsPage initialSection="integrations" /></ToastProvider></MemoryRouter>); }
 beforeEach(() => {
-  records = existing; integrationFailure = false;
+  records = existing; integrationFailure = false; savedName = values.school_name;
   useAuthStore.getState().setSession({ access_token: "test", refresh_token: "test", token_type: "bearer", user: {
     id: "writer", email: "writer@test.invalid", first_name: "Settings", last_name: "Writer", organization_id: "school",
     is_super_admin: false, roles: [], permissions: ["settings.read", "settings.write"], branch_ids: [],
   } });
   vi.mocked(api.get).mockImplementation(async (path) => {
     if (path === "/settings/integrations" && integrationFailure) throw new Error("offline");
-    return { data: { data: path === "/settings/integrations" ? records : { school_name: "Our school" } } };
+    return { data: { success: true, data: path === "/settings/integrations" ? records : preferences(savedName) } };
   });
-  vi.mocked(api.put).mockResolvedValue({ data: { success: true } });
+  vi.mocked(api.put).mockImplementation(async (path, body) => {
+    if (path === "/settings/preferences") savedName = body.changes.school_name;
+    return { data: { success: true, data: preferences(savedName) } };
+  });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 
@@ -92,9 +105,23 @@ it("eksik sağlayıcıyı yalnız girilen alanla oluşturur; genel kaydet entegr
   await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
   expect(api.put).toHaveBeenCalledWith("/settings/integrations", { provider: "SMTP", config: { host: "new.example.invalid" } });
   fireEvent.click(screen.getByRole("button", { name: /Genel.*Kurum yapılandırması/ }));
+  fireEvent.change(await screen.findByLabelText("Kurum adı"), { target: { value: "Yeni okul" } });
   fireEvent.click(screen.getByRole("button", { name: "Değişiklikleri kaydet" }));
-  await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
-  expect(vi.mocked(api.put).mock.calls[1][0]).toBe("/settings");
+  await screen.findByText("Kurum tercihleri kaydedildi");
+  expect(api.put).toHaveBeenCalledWith("/settings/preferences", {
+    organization_id: "school", changes: { school_name: "Yeni okul" }, expected: { school_name: "Our school" },
+  });
+});
+
+it("kalıcı geri okuma değişikliği doğrulamazsa genel formu korur", async () => {
+  vi.mocked(api.put).mockResolvedValueOnce({ data: { success: true, data: preferences("Yeni okul") } });
+  view();
+  fireEvent.click(screen.getByRole("button", { name: /Genel.*Kurum yapılandırması/ }));
+  fireEvent.change(await screen.findByLabelText("Kurum adı"), { target: { value: "Yeni okul" } });
+  fireEvent.click(screen.getByRole("button", { name: "Değişiklikleri kaydet" }));
+  await screen.findByText("Ayarlar kaydedilemedi");
+  expect(screen.getByLabelText("Kurum adı")).toHaveValue("Yeni okul");
+  expect(screen.queryByText("Kurum tercihleri kaydedildi")).not.toBeInTheDocument();
 });
 
 it("salt okumada entegrasyon yazma düğmeleri açılmaz", async () => {

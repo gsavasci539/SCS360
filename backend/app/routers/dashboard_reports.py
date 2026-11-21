@@ -9,6 +9,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.schemas.common import AnnouncementCreate
+from app.application.services.organization_preferences import PreferencesUpdate, read_preferences, save_preferences
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
@@ -1387,9 +1388,9 @@ async def get_settings(
     tenant: TenantContext = Depends(PermissionChecker("settings.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    query = select(AppSetting)
-    if tenant.organization_id:
-        query = query.where(AppSetting.organization_id == tenant.organization_id)
+    if tenant.organization_id is None:
+        raise ForbiddenException("Önce bir kurum seçin")
+    query = select(AppSetting).where(AppSetting.organization_id == tenant.organization_id)
     result = await db.execute(query)
     settings = result.scalars().all()
     return success_response({s.setting_key: s.setting_value for s in settings})
@@ -1402,6 +1403,11 @@ async def update_settings(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
+    from app.application.services.platform_service import lock_organization
+
+    if tenant.organization_id is None:
+        raise ForbiddenException("Önce bir kurum seçin")
+    await lock_organization(db, tenant.organization_id)
     for key, value in body.items():
         result = await db.execute(
             select(AppSetting).where(
@@ -1423,6 +1429,24 @@ async def update_settings(
                 )
             )
     return success_response(message="Ayarlar güncellendi")
+
+
+@router.get("/api/settings/preferences")
+async def get_organization_preferences(
+    tenant: TenantContext = Depends(PermissionChecker("settings.read")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    return success_response(await read_preferences(db, tenant.organization_id))
+
+
+@router.put("/api/settings/preferences")
+async def put_organization_preferences(
+    body: PreferencesUpdate,
+    tenant: TenantContext = Depends(PermissionChecker("settings.write")),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    return success_response(await save_preferences(db, tenant.organization_id, user.id, body))
 
 
 @router.get("/api/settings/integrations")
