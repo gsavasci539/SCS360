@@ -48,6 +48,14 @@ async def test_verified_manual_receipt_extends_once_and_reference_cannot_pay_two
     again = await client.post(f"/api/platform/invoices/{invoice_id}/settle", headers=root, json=paid)
     assert first.status_code == again.status_code == 200, (first.text, again.text)
     assert first.json()["data"] == again.json()["data"]
+    lookup = {"record_id": invoice_id, "organization_id": data["tenant"]["organization_id"], "limit": 1}
+    path = "/api/platform/invoices"
+    assert (await client.get(path, headers=auth, params=lookup)).status_code == 403
+    persisted = await client.get(path, headers=root, params=lookup)
+    assert persisted.status_code == 200, persisted.text
+    [row] = persisted.json()["data"]
+    assert row["id"] == invoice_id and row["status"] == "PAID"
+    assert (await client.get(path, headers=root, params={**lookup, "organization_id": str(uuid4())})).json()["data"] == []
     async with sessions() as db:
         membership = await db.get(OrganizationSubscription, UUID(data["tenant"]["organization_id"]))
         end = membership.period_end

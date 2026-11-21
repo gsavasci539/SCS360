@@ -3,6 +3,7 @@ import { api, apiMessage } from "../../lib/api";
 import { newRequestId } from "../../lib/requestId";
 import { packagePrice } from "../../lib/subscription";
 import type { DataRecord } from "../../types/api";
+import { confirmPlatformInvoice } from "./platformInvoiceConfirmation";
 
 export function PaymentReview({ invoice, onDone, onClose }: { invoice: DataRecord; onDone: () => void; onClose: () => void }) {
   const [action, setAction] = useState("APPLY"), [busy, setBusy] = useState(false), [error, setError] = useState("");
@@ -13,7 +14,15 @@ export function PaymentReview({ invoice, onDone, onClose }: { invoice: DataRecor
     try {
       const body = action === "APPLY" ? { period_start: new Date(String(values.get("period_start"))).toISOString(), period_end: new Date(String(values.get("period_end"))).toISOString() }
         : { refund_reference: values.get("refund_reference") };
-      await api.post(`/platform/invoices/${invoice.id}/review`, { ...body, action, reason: values.get("reason"), request_id: requestId }); onDone();
+      const response = await api.post(`/platform/invoices/${invoice.id}/review`, { ...body, action, reason: values.get("reason"), request_id: requestId });
+      const saved = response.data.data;
+      const expected = action === "APPLY" ? "PAID" : "REFUNDED";
+      if (response.data.success !== true || saved?.checkout_status !== expected ||
+        (action === "APPLY" ? saved.status !== "PAID" : !["PAID", "REFUNDED"].includes(saved.status))) {
+        throw new Error("Uzlaştırma yanıtı doğrulanamadı.");
+      }
+      await confirmPlatformInvoice(invoice, saved, true);
+      onDone();
     } catch (reason) { setError(apiMessage(reason)); } finally { setBusy(false); }
   }
   return <section className="card card-pad" aria-label="Üyelik ödemesini uzlaştır" style={{ marginTop: 18 }}>

@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { usePlatformWorkspace } from "../../stores/platformWorkspace";
 import { useAuthStore } from "../../stores/auth";
 import { PaymentReview } from "./PaymentReview";
+import { confirmPlatformInvoice } from "./platformInvoiceConfirmation";
 import { PaymentReadinessPanel } from "./PaymentReadinessPanel";
 
 interface Tenant { id: string; name: string; is_active: boolean; access: OrganizationAccess; package: DataRecord | null; usage: Record<string, number>; owner_user_id: string | null; period_start: string | null }
@@ -89,8 +90,10 @@ export function PlatformPage() {
   }
   async function verifyReceipt(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !receipt) return; const data = new FormData(event.currentTarget); setBusy(true);
-    try { await api.post(`/platform/invoices/${receipt.id}/settle`, { payment_reference: data.get("payment_reference"), amount: data.get("amount"),
+    try { const response = await api.post(`/platform/invoices/${receipt.id}/settle`, { payment_reference: data.get("payment_reference"), amount: data.get("amount"),
       currency: data.get("currency"), ...(data.get("paid_at") ? { paid_at: new Date(text(data.get("paid_at"))).toISOString() } : {}) });
+      if (response.data.success !== true || response.data.data?.status !== "PAID") throw new Error("Ödeme yanıtı doğrulanamadı.");
+      await confirmPlatformInvoice(receipt, response.data.data);
       setReceipt(null); refresh(); showToast("Doğrulanan ödeme kaydedildi"); }
     catch (reason) { showToast("Ödeme doğrulanamadı", apiMessage(reason), "error"); } finally { setBusy(false); }
   }

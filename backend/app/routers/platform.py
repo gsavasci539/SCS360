@@ -146,11 +146,14 @@ async def cancel_invoice(invoice_id: UUID, user: User = Depends(get_current_user
 
 
 @router.get("/api/platform/invoices")
-async def platform_invoices(organization_id: UUID | None = None, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
+async def platform_invoices(organization_id: UUID | None = None, record_id: UUID | None = None,
+    limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
     actor: User = Depends(require_super_admin), db: AsyncSession = Depends(get_db, scope="function")):
     query = select(SubscriptionInvoice)
     if organization_id:
         query = query.where(SubscriptionInvoice.organization_id == organization_id)
+    if record_id:
+        query = query.where(SubscriptionInvoice.id == record_id)
     rows = (await db.execute(query.order_by(SubscriptionInvoice.created_at.desc(), SubscriptionInvoice.id).limit(limit).offset(offset))).scalars()
     rows = list(rows)
     names = {org.id: org.name for org in (await db.execute(select(Organization).where(Organization.id.in_({row.organization_id for row in rows})))).scalars()}
