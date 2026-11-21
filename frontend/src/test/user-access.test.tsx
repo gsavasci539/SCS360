@@ -21,7 +21,8 @@ beforeEach(() => {
       : path === "/users/staff/branches" && assigned ? [branch] : [] } }));
   vi.mocked(api.post).mockImplementation(async (path) => ({ data: { success: true,
     data: path === "/users/role-catalog" ? { organization_id: "school", role_slugs: ["teacher"] } : { id: "staff" } } }));
-  vi.mocked(api.put).mockImplementation(async () => { assigned = true; return { data: { success: true } }; });
+  vi.mocked(api.put).mockImplementation(async () => { assigned = true; return { data: { success: true,
+    data: { user_id: "staff", role_ids: ["teacher"], branch_ids: ["branch"] } } }; });
 });
 afterEach(() => { cleanup(); useAuthStore.getState().clearSession(); vi.resetAllMocks(); });
 const open = (create = false) => render(<MemoryRouter initialEntries={[create ? "/users/new" : "/users/staff"]}><Routes><Route path="/users/new" element={<UserCreatePage />} /><Route path="/users/:id" element={<UserDetailPage />} /></Routes></MemoryRouter>);
@@ -37,7 +38,9 @@ it("standart rol tamamlama, kaydedilmemiş rol ve şube seçimlerini silmez", as
 it("okul sahibi kurum UUID'si girmeden hesap oluşturur ve erişim ataması için profile gider", async () => {
   open(true); expect(screen.queryByLabelText("Kurum")).not.toBeInTheDocument();
   for (const [label, value] of [["Ad", "New"], ["Soyad", "Staff"], ["E-posta", "staff@example.com"], ["Başlangıç parolası", "AcceptancePass1!"]]) fireEvent.change(screen.getByLabelText(label), { target: { value } });
-  fireEvent.click(screen.getByRole("button", { name: "Kullanıcıyı oluştur" }));
+  const submit = screen.getByRole("button", { name: "Kullanıcıyı oluştur" });
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit);
   await screen.findByRole("heading", { name: "New Staff" });
   expect(vi.mocked(api.post).mock.calls[0][1]).not.toHaveProperty("organization_id");
   expect(await screen.findByRole("form", { name: "Kullanıcı erişimini düzenle" })).toBeInTheDocument();
@@ -46,7 +49,8 @@ it("okul sahibi kurum UUID'si girmeden hesap oluşturur ve erişim ataması içi
 it("rol ve şube seçimleri tek istekte kaydedilir; salt okumada yazma formu sunulmaz", async () => {
   open(); fireEvent.click(await screen.findByLabelText(/Öğretmen/)); fireEvent.click(screen.getByLabelText("Ana Şube"));
   fireEvent.click(screen.getByRole("button", { name: "Erişimi kaydet" }));
-  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/users/staff/access", { role_ids: ["teacher"], branch_ids: ["branch"] }));
+  await waitFor(() => expect(api.put).toHaveBeenCalledWith("/users/staff/access",
+    { role_ids: ["teacher"], branch_ids: ["branch"], expected_role_ids: [], expected_branch_ids: [] }));
   expect(await screen.findByText("Rol ve şube erişimi kaydedildi.")).toBeInTheDocument();
   await screen.findByRole("status"); cleanup(); useAuthStore.setState({ user: { ...user, permissions: ["users.read"] } }); open();
   await screen.findByRole("heading", { name: "New Staff" }); expect(screen.queryByRole("button", { name: "Erişimi kaydet" })).not.toBeInTheDocument();

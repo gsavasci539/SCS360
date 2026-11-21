@@ -24,10 +24,13 @@ from app.infrastructure.models.models import (
     Parent,
     ParentRelationType,
     Organization,
+    Branch,
     Permission,
     Role,
     RolePermission,
     User,
+    UserBranch,
+    UserRole,
     Student,
     StudentParent,
     ChatMessage,
@@ -84,12 +87,16 @@ async def get_user_roles(
     tenant: TenantContext = Depends(PermissionChecker("user.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    user = (await db.execute(select(User).options(selectinload(User.roles)).where(User.id == user_id, User.deleted_at.is_(None)))).scalar_one_or_none()
-    if not user:
-        raise NotFoundException("Kullanıcı bulunamadı")
+    user = await BaseRepository(db, tenant).get_by_id(user_id, User)
     if not tenant.is_super_admin and (user.organization_id != tenant.organization_id or user.is_super_admin):
         raise ForbiddenException()
-    return success_response([role_dict(role) for role in user.roles])
+    roles, links = Role.__table__, UserRole.__table__
+    rows = (await db.execute(select(roles.c.id, roles.c.name, roles.c.slug, roles.c.description,
+        roles.c.is_system, roles.c.organization_id).join(links, links.c.role_id == roles.c.id).where(
+            links.c.user_id == user_id, roles.c.deleted_at.is_(None),
+            (roles.c.organization_id == user.organization_id) | roles.c.organization_id.is_(None)
+    ).order_by(roles.c.name, roles.c.id))).all()
+    return success_response([role_dict(role) for role in rows])
 
 
 @router.get("/api/users/{user_id}/branches")
@@ -98,12 +105,16 @@ async def get_user_branches(
     tenant: TenantContext = Depends(PermissionChecker("user.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    user = (await db.execute(select(User).options(selectinload(User.branches)).where(User.id == user_id, User.deleted_at.is_(None)))).scalar_one_or_none()
-    if not user:
-        raise NotFoundException("Kullanıcı bulunamadı")
+    user = await BaseRepository(db, tenant).get_by_id(user_id, User)
     if not tenant.is_super_admin and (user.organization_id != tenant.organization_id or user.is_super_admin):
         raise ForbiddenException()
-    return success_response([{"id": str(branch.id), "name": branch.name, "code": branch.code} for branch in user.branches])
+    branches, links = Branch.__table__, UserBranch.__table__
+    query = select(branches.c.id, branches.c.name, branches.c.code).join(links, links.c.branch_id == branches.c.id).where(
+        links.c.user_id == user_id, branches.c.organization_id == user.organization_id, branches.c.deleted_at.is_(None))
+    if tenant.branch_ids:
+        query = query.where(branches.c.id.in_(tenant.branch_ids))
+    rows = (await db.execute(query.order_by(branches.c.name, branches.c.id))).all()
+    return success_response([{"id": str(branch.id), "name": branch.name, "code": branch.code} for branch in rows])
 
 
 @router.get("/api/roles/{role_id}")

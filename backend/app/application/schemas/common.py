@@ -95,6 +95,7 @@ class UserCreate(BaseModel):
     position: str | None = Field(default=None, max_length=100)
     department: str | None = Field(default=None, max_length=100)
     organization_id: str | None = None
+    branch_id: UUID | None = None
 
     @field_validator("organization_id")
     @classmethod

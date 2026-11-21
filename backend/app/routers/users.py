@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -15,7 +15,7 @@ from app.application.schemas.common import (
 )
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
-from app.core.exceptions import ConflictException, ForbiddenException
+from app.core.exceptions import ConflictException, ForbiddenException, ValidationException
 from app.core.permissions import PermissionChecker
 from app.core.responses import paginate, success_response
 from app.core.security import hash_password
@@ -31,7 +31,35 @@ def require_account_access(user, tenant):
         raise ForbiddenException("Platform hesabını yalnız ana yönetici düzenleyebilir")
 
 
-def user_dict(u: User) -> dict:
+def can_change_role(tenant, role):
+    if role.slug in {"super_admin", "superadmin"}:
+        return False
+    if role.slug == "owner" and not (tenant.is_super_admin or tenant.platform_admin or tenant.is_organization_owner):
+        return False
+    return all(tenant.has_permission(permission.code) for permission in role.permissions)
+
+
+async def access_ids(db, model, identifier):
+    table = model.__table__
+    column = table.c.role_id if model is UserRole else table.c.branch_id
+    return set((await db.scalars(select(column).where(table.c.user_id == identifier))).all())
+
+
+async def lock_user_access(db, tenant, user_id):
+    user = await BaseRepository(db, tenant).get_by_id(user_id, User, for_update=True)
+    require_account_access(user, tenant)
+    accounts = User.__table__
+    await db.execute(update(accounts).where(accounts.c.id == user.id).values(updated_at=accounts.c.updated_at))
+    if tenant.branch_ids:
+        current_branches = await access_ids(db, UserBranch, user_id)
+        if current_branches - set(tenant.branch_ids) or (
+            not current_branches and await access_ids(db, UserRole, user_id)
+        ):
+            raise ForbiddenException("Yalnız şube kapsamınızdaki kullanıcıların erişimini düzenleyebilirsiniz")
+    return user
+
+
+def user_dict(u: User, roles: list[dict] | None = None) -> dict:
     return {
         "id": str(u.id),
         "email": u.email,
@@ -43,7 +71,7 @@ def user_dict(u: User) -> dict:
         "status": u.status.value,
         "organization_id": str(u.organization_id) if u.organization_id else None,
         "is_super_admin": u.is_super_admin,
-        "roles": [{"id": str(r.id), "name": r.name, "slug": r.slug} for r in u.roles],
+        "roles": roles if roles is not None else [{"id": str(r.id), "name": r.name, "slug": r.slug} for r in u.roles],
     }
 
 
@@ -52,21 +80,36 @@ async def list_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=1000),
     search: str | None = None,
+    branch_id: UUID | None = None,
     tenant: TenantContext = Depends(PermissionChecker("user.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    query = select(User).where(User.deleted_at.is_(None)).options(selectinload(User.roles))
+    query = select(User).where(User.deleted_at.is_(None))
     repo = BaseRepository(db, tenant)
     if not tenant.is_super_admin:
         query = query.where(User.organization_id == tenant.organization_id, User.is_super_admin.is_(False))
+    user_branches = UserBranch.__table__
+    if branch_id is not None:
+        await repo.get_by_id(branch_id, Branch)
+        query = query.where(User.id.in_(select(user_branches.c.user_id).where(user_branches.c.branch_id == branch_id)))
     if search:
         query = query.where(
             User.first_name.ilike(f"%{search}%")
             | User.last_name.ilike(f"%{search}%")
             | User.email.ilike(f"%{search}%")
         )
-    items, total = await repo.paginate(query.order_by(User.last_name), page, page_size)
-    return success_response(paginate([user_dict(u) for u in items], total, page, page_size))
+    items, total = await repo.paginate(query.order_by(User.last_name, User.first_name, User.id), page, page_size)
+    roles_by_user = {account.id: [] for account in items}
+    if items:
+        members, roles, accounts = UserRole.__table__, Role.__table__, User.__table__
+        assigned = await db.execute(select(members.c.user_id, roles.c.id, roles.c.name, roles.c.slug)
+            .join(roles, roles.c.id == members.c.role_id).join(accounts, accounts.c.id == members.c.user_id)
+            .where(members.c.user_id.in_(roles_by_user), roles.c.deleted_at.is_(None),
+                (roles.c.organization_id == accounts.c.organization_id) | roles.c.organization_id.is_(None))
+            .order_by(roles.c.name, roles.c.id))
+        for member, identifier, name, slug in assigned:
+            roles_by_user[member].append({"id": str(identifier), "name": name, "slug": slug})
+    return success_response(paginate([user_dict(account, roles_by_user[account.id]) for account in items], total, page, page_size))
 
 
 @router.get("/api/users/options")
@@ -81,11 +124,15 @@ async def user_options(organization_id: UUID | None = None, tenant: TenantContex
     roles, branches = [], []
     if target:
         await BaseRepository(db, tenant).require_related(target, Organization)
-        roles = (await db.execute(select(Role).where(Role.deleted_at.is_(None), (Role.organization_id == target) | Role.organization_id.is_(None)).order_by(Role.name))).scalars().all()
+        roles = (await db.execute(select(Role).options(selectinload(Role.permissions)).where(
+            Role.deleted_at.is_(None), (Role.organization_id == target) | Role.organization_id.is_(None)
+        ).order_by(Role.name, Role.id))).scalars().all()
         branches = (await db.execute(select(Branch).where(Branch.deleted_at.is_(None), Branch.organization_id == target).order_by(Branch.name))).scalars().all()
     return success_response({"organizations": [{"id": str(row.id), "name": row.name} for row in organizations],
-        "roles": [{"id": str(row.id), "name": row.name, "slug": row.slug, "organization_id": str(row.organization_id) if row.organization_id else None} for row in roles],
-        "branches": [{"id": str(row.id), "name": row.name} for row in branches]})
+        "roles": [{"id": str(row.id), "name": row.name, "slug": row.slug, "organization_id": str(row.organization_id) if row.organization_id else None,
+            "assignable": can_change_role(tenant, row)} for row in roles],
+        "branches": [{"id": str(row.id), "name": row.name} for row in branches],
+        "allows_institution_scope": not tenant.branch_ids})
 
 
 class RoleCatalogRequest(BaseModel):
@@ -131,6 +178,17 @@ async def create_user(
     if not org_id or not tenant.can_access_organization(org_id):
         raise ForbiddenException()
     await BaseRepository(db, tenant).require_related(org_id, Organization)
+    branch_id = body.branch_id
+    if branch_id is None and tenant.branch_ids:
+        if len(tenant.branch_ids) != 1:
+            raise ValidationException("Yeni kullanıcı için yetkili şube seçin")
+        branch_id = tenant.branch_ids[0]
+    branches = []
+    if branch_id is not None:
+        branch = await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
+        if branch.organization_id != org_id:
+            raise ForbiddenException("Şube seçili kuruma ait olmalı")
+        branches = [branch]
     user = User(
         organization_id=org_id,
         email=body.email.lower(),
@@ -143,7 +201,7 @@ async def create_user(
         created_by=current_user.id,
         updated_by=current_user.id,
         roles=[],
-        branches=[],
+        branches=branches,
     )
     db.add(user)
     try:
@@ -224,23 +282,27 @@ async def assign_roles(
     tenant: TenantContext = Depends(PermissionChecker("user.write")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    repo = BaseRepository(db, tenant)
-    user = await repo.get_by_id(user_id, User)
-    require_account_access(user, tenant)
-    role_ids = list(dict.fromkeys(UUID(role_id) for role_id in body.role_ids))
+    user = await lock_user_access(db, tenant, user_id)
+    role_ids = {UUID(role_id) for role_id in body.role_ids}
+    if tenant.branch_ids and role_ids and not await access_ids(db, UserBranch, user_id):
+        raise ForbiddenException("Önce kullanıcıya yetkili şubeyi atayın")
+    current_ids = await access_ids(db, UserRole, user_id)
     roles = list(
-        (await db.execute(select(Role).where(Role.id.in_(role_ids), Role.deleted_at.is_(None))))
+        (await db.execute(select(Role).options(selectinload(Role.permissions))
+            .where(Role.id.in_(role_ids | current_ids), Role.deleted_at.is_(None))))
         .scalars()
         .all()
     )
-    if len(roles) != len(set(role_ids)):
+    if role_ids - {role.id for role in roles}:
         raise ConflictException("Geçersiz rol kaydı")
-    if not tenant.is_super_admin and any(
-        role.organization_id not in (None, tenant.organization_id) for role in roles
-    ):
+    if any(role.id in role_ids and role.organization_id not in (None, user.organization_id) for role in roles):
         raise ForbiddenException()
-    await db.execute(UserRole.__table__.delete().where(UserRole.user_id == user_id))
-    for role_id in role_ids:
+    if any(role.id in (role_ids ^ current_ids) and not can_change_role(tenant, role) for role in roles):
+        raise ForbiddenException("Bu rolü atama veya kaldırma yetkiniz bulunmuyor")
+    if current_ids - role_ids:
+        await db.execute(UserRole.__table__.delete().where(UserRole.user_id == user_id,
+            UserRole.role_id.in_(current_ids - role_ids)))
+    for role_id in role_ids - current_ids:
         db.add(UserRole(user_id=user_id, role_id=role_id, assigned_by=tenant.user_id))
     return success_response(message="Roller atandı")
 
@@ -253,14 +315,18 @@ async def assign_branches(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     repo = BaseRepository(db, tenant)
-    user = await repo.get_by_id(user_id, User)
-    require_account_access(user, tenant)
-    branch_ids = list(dict.fromkeys(UUID(branch_id) for branch_id in body.branch_ids))
+    user = await lock_user_access(db, tenant, user_id)
+    branch_ids = {UUID(branch_id) for branch_id in body.branch_ids}
+    if tenant.branch_ids and not branch_ids:
+        raise ForbiddenException("Şube kapsamındaki kullanıcı için en az bir şube seçin")
     branches = [await repo.require_related(branch_id, Branch) for branch_id in branch_ids]
     if any(branch.organization_id != user.organization_id for branch in branches):
         raise ForbiddenException()
-    await db.execute(UserBranch.__table__.delete().where(UserBranch.user_id == user_id))
-    for branch_id in branch_ids:
+    current_ids = await access_ids(db, UserBranch, user_id)
+    if current_ids - branch_ids:
+        await db.execute(UserBranch.__table__.delete().where(UserBranch.user_id == user_id,
+            UserBranch.branch_id.in_(current_ids - branch_ids)))
+    for branch_id in branch_ids - current_ids:
         db.add(UserBranch(user_id=user_id, branch_id=branch_id, assigned_by=tenant.user_id))
     return success_response(message="Şubeler atandı")
 
@@ -269,13 +335,30 @@ class UserAccessWrite(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role_ids: list[UUID] = Field(max_length=1000)
     branch_ids: list[UUID] = Field(max_length=1000)
+    expected_role_ids: list[UUID] | None = Field(default=None, max_length=1000)
+    expected_branch_ids: list[UUID] | None = Field(default=None, max_length=1000)
 
 
 @router.put("/api/users/{user_id}/access")
 async def assign_access(user_id: UUID, body: UserAccessWrite, tenant: TenantContext = Depends(PermissionChecker("user.write")), db: AsyncSession = Depends(get_db, scope="function")):
-    await assign_roles(user_id, RoleAssignRequest(role_ids=[str(value) for value in body.role_ids]), tenant, db)
+    await lock_user_access(db, tenant, user_id)
+    desired_roles, desired_branches = set(body.role_ids), set(body.branch_ids)
+    old_roles = await access_ids(db, UserRole, user_id)
+    old_branches = await access_ids(db, UserBranch, user_id)
+    acknowledgement = {"user_id": str(user_id), "role_ids": sorted(map(str, desired_roles)),
+        "branch_ids": sorted(map(str, desired_branches))}
+    if (desired_roles, desired_branches) == (old_roles, old_branches):
+        return success_response(acknowledgement)
+    if (body.expected_role_ids is not None and set(body.expected_role_ids) != old_roles) or (
+        body.expected_branch_ids is not None and set(body.expected_branch_ids) != old_branches
+    ):
+        raise ConflictException("Kullanıcı erişimi değişti. Güncel kaydı yeniden açın.")
+    # Apply branches before roles so a delegated role has a valid branch scope.
     await assign_branches(user_id, BranchAssignRequest(branch_ids=[str(value) for value in body.branch_ids]), tenant, db)
-    return success_response(message="Rol ve şube erişimi kaydedildi")
+    await db.flush()
+    await assign_roles(user_id, RoleAssignRequest(role_ids=[str(value) for value in body.role_ids]), tenant, db)
+    await db.flush()
+    return success_response(acknowledgement)
 
 
 @router.get("/api/roles")

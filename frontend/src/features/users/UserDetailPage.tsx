@@ -9,6 +9,8 @@ import { useAuthStore, hasPermission } from "../../stores/auth";
 import { useWorkspaceUser } from "../../lib/workspaceUser";
 import type { ApiResponse, DataRecord, Paginated } from "../../types/api";
 
+type AccessOptions = { roles: DataRecord[]; branches: DataRecord[]; allows_institution_scope?: boolean };
+
 export function UserDetailPage() {
   const { id } = useParams();
   const [user, setUser] = useState<DataRecord | null>(null);
@@ -17,7 +19,7 @@ export function UserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [accessError, setAccessError] = useState(""), [saving, setSaving] = useState(false), [message, setMessage] = useState("");
-  const [options, setOptions] = useState<{ roles: DataRecord[]; branches: DataRecord[] } | null>(null);
+  const [options, setOptions] = useState<AccessOptions | null>(null);
   const [roleIds, setRoleIds] = useState<string[]>([]), [branchIds, setBranchIds] = useState<string[]>([]);
   const viewer = useWorkspaceUser(), operator = useAuthStore((state) => state.user);
   const can = (permission: string) => hasPermission(viewer, permission);
@@ -73,15 +75,21 @@ export function UserDetailPage() {
   async function saveAccess(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (saving) return; setSaving(true); setMessage(""); setAccessError("");
     try {
-      const updated = await api.put<ApiResponse<unknown>>(`/users/${id}/access`, { role_ids: roleIds, branch_ids: branchIds });
-      if (!updated.data.success) throw new Error("Erişim kaydı onaylanmadı");
+      const updated = await api.put<ApiResponse<{ user_id: string; role_ids: string[]; branch_ids: string[] }>>(`/users/${id}/access`, {
+        role_ids: roleIds, branch_ids: branchIds, expected_role_ids: roles.map((row) => row.id), expected_branch_ids: branches.map((row) => row.id),
+      });
+      const ack = updated.data.data;
+      const same = (left: string[], right: string[]) => left.length === right.length && left.every((value) => right.includes(value));
+      if (!updated.data.success || ack?.user_id !== id || !same(ack.role_ids, roleIds) || !same(ack.branch_ids, branchIds)) {
+        throw new Error("Erişim kaydı onaylanmadı");
+      }
       const [roleReply, branchReply] = await Promise.all([
         api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/roles`),
         api.get<ApiResponse<DataRecord[] | Paginated<DataRecord>>>(`/users/${id}/branches`),
       ]);
       const storedRoles = toArray(roleReply.data.data), storedBranches = toArray(branchReply.data.data);
-      const same = (rows: DataRecord[], ids: string[]) => rows.length === ids.length && rows.every((row) => ids.includes(row.id));
-      if (!roleReply.data.success || !branchReply.data.success || !same(storedRoles, roleIds) || !same(storedBranches, branchIds)) {
+      if (!roleReply.data.success || !branchReply.data.success
+          || !same(storedRoles.map((row) => row.id), roleIds) || !same(storedBranches.map((row) => row.id), branchIds)) {
         throw new Error("Kaydedilen rol ve şubeler doğrulanamadı");
       }
       setRoles(storedRoles);
@@ -100,7 +108,7 @@ export function UserDetailPage() {
       if (!receipt.data.success || verified?.organization_id !== organization || !verified.role_slugs?.length) {
         throw new Error("Kurum rol kataloğu onaylanmadı");
       }
-      const response = await api.get<ApiResponse<{ roles: DataRecord[]; branches: DataRecord[] }>>("/users/options", { params: { organization_id: organization } });
+      const response = await api.get<ApiResponse<AccessOptions>>("/users/options", { params: { organization_id: organization } });
       const saved = response.data.data;
       if (!response.data.success || !verified.role_slugs.every((slug) =>
         saved.roles.some((row) => row.slug === slug && row.organization_id === organization))) {
@@ -138,9 +146,10 @@ export function UserDetailPage() {
         {canPrepare && <button className="btn btn-secondary" disabled={saving} onClick={prepareRoles}>Eksik standart rolleri ekle</button>}
         {accessError && <p role="alert">{accessError}</p>}{message && <p role="status">{message}</p>}
         {options && <form aria-label="Kullanıcı erişimini düzenle" onSubmit={saveAccess}><fieldset disabled={saving} style={{ border: 0, padding: 0, display: "grid", gap: 14 }}>
-          <fieldset><legend>Roller</legend>{options.roles.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={roleIds.includes(row.id)} onChange={(event) => setRoleIds(checked(roleIds, row.id, event.target.checked))} /> {String(row.name)}{row.organization_id === null ? " · Genel rol" : row.organization_id ? " · Kurum rolü" : ""}</label>)}</fieldset>
-          <fieldset><legend>Şube erişimi</legend>{options.branches.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={branchIds.includes(row.id)} onChange={(event) => setBranchIds(checked(branchIds, row.id, event.target.checked))} /> {String(row.name)}</label>)}<p>Şube seçilmezse hesap, rolünün izin verdiği kurum kapsamını kullanır.</p></fieldset>
-          <button className="btn btn-primary">Erişimi kaydet</button>
+          <fieldset><legend>Roller</legend>{options.roles.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={roleIds.includes(row.id)} disabled={row.assignable === false} onChange={(event) => setRoleIds(checked(roleIds, row.id, event.target.checked))} /> {String(row.name)}{row.organization_id === null ? " · Genel rol" : row.organization_id ? " · Kurum rolü" : ""}</label>)}</fieldset>
+          <fieldset><legend>Şube erişimi</legend>{options.branches.map((row) => <label key={row.id} style={{ display: "block", margin: "8px 0" }}><input type="checkbox" checked={branchIds.includes(row.id)} onChange={(event) => setBranchIds(checked(branchIds, row.id, event.target.checked))} /> {String(row.name)}</label>)}
+            <p>{options.allows_institution_scope === false ? "En az bir yetkili şube seçin." : "Şube seçilmezse hesap, rolünün izin verdiği kurum kapsamını kullanır."}</p></fieldset>
+          <button className="btn btn-primary" disabled={options.allows_institution_scope === false && branchIds.length === 0}>Erişimi kaydet</button>
         </fieldset></form>}
       </section>}
 
