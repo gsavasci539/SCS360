@@ -61,11 +61,6 @@ async def list_classes(
     else:
         classes = await repo.get_by_organization(db, tenant.organization_id, skip, limit)
     
-    print(f"DEBUG: List classes returning {len(classes)} classes")
-    if classes:
-        print(f"DEBUG: Sample class: {classes[0]}")
-        print(f"DEBUG: teacher_name in sample: {classes[0].get('teacher_name')}")
-    
     return success_response(classes)
 
 
@@ -78,16 +73,11 @@ async def get_class(
     from app.infrastructure.models.models import User
     from sqlalchemy import select
     
-    print(f"DEBUG: Class endpoint called with class_id={class_id}")
-    
     repo = ClassRepository()
     db_class = await repo.get(db, class_id)
     
     if not db_class or db_class.organization_id != tenant.organization_id:
-        print(f"DEBUG: Class not found or organization mismatch")
         return success_response(None, "Sınıf bulunamadı", success=False)
-    
-    print(f"DEBUG: Class found: {db_class.name}")
     
     # Get teacher for this class using teacher_id
     teacher_name = ""
@@ -98,8 +88,6 @@ async def get_class(
         )
         teacher_row = teacher_result.first()
         teacher_name = f"{teacher_row[0]} {teacher_row[1]}" if teacher_row else ""
-    
-    print(f"DEBUG: teacher_name={teacher_name}")
     
     # Convert to dict and add teacher_name
     class_dict = {
@@ -117,9 +105,6 @@ async def get_class(
         "created_at": db_class.created_at,
         "updated_at": db_class.updated_at
     }
-    
-    print(f"DEBUG: Response data keys: {list(class_dict.keys())}")
-    print(f"DEBUG: teacher_name in response: {class_dict.get('teacher_name')}")
     
     return success_response(class_dict)
 

@@ -69,8 +69,6 @@ class ClassRepository(BaseRepository[Class]):
         from app.infrastructure.models.models import User, Student
         from sqlalchemy import func
         
-        print(f"DEBUG: get_by_organization called with org_id={organization_id}, skip={skip}, limit={limit}")
-        
         # Get classes
         result = await db.execute(
             select(Class)
@@ -80,12 +78,9 @@ class ClassRepository(BaseRepository[Class]):
         )
         
         classes = result.scalars().all()
-        print(f"DEBUG: Found {len(classes)} classes")
         
         classes_data = []
         for class_obj in classes:
-            print(f"DEBUG: Processing class {class_obj.name}, teacher_id={class_obj.teacher_id}")
-            
             # Get teacher for this class using teacher_id
             teacher_name = ""
             if class_obj.teacher_id:
@@ -95,9 +90,6 @@ class ClassRepository(BaseRepository[Class]):
                 )
                 teacher_row = teacher_result.first()
                 teacher_name = f"{teacher_row[0]} {teacher_row[1]}" if teacher_row else ""
-                print(f"DEBUG: Teacher found: {teacher_name}")
-            else:
-                print(f"DEBUG: No teacher_id for class {class_obj.name}")
             
             class_dict = {
                 "id": str(class_obj.id),
@@ -111,10 +103,7 @@ class ClassRepository(BaseRepository[Class]):
                 "teacher_name": teacher_name,
                 "teacher_id": str(class_obj.teacher_id) if class_obj.teacher_id else None
             }
-            print(f"DEBUG: Class dict teacher_name: {class_dict['teacher_name']}")
             classes_data.append(class_dict)
-        
-        print(f"DEBUG: Returning {len(classes_data)} classes with data")
         return classes_data
 
     async def get_active_classes(

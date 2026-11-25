@@ -67,8 +67,6 @@ async def list_debts(
         return success_response(paginate([], total, page, page_size))
     
     student_ids = set(debt.student_id for debt in debts if debt.student_id)
-    print(f"DEBUG: Found {len(student_ids)} unique student IDs")
-    print(f"DEBUG: Student IDs: {student_ids}")
     
     students_result = await db.execute(
         select(Student).where(
@@ -79,7 +77,6 @@ async def list_debts(
         )
     )
     students = {str(s.id): s for s in students_result.scalars().all()}
-    print(f"DEBUG: Loaded {len(students)} students from database")
     
     class_ids = set(s.class_id for s in students.values() if s.class_id)
     classes_result = await db.execute(
