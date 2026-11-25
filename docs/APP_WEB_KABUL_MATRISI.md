@@ -357,3 +357,4 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 - Nginx başlıkları WIP: HSTS, eşit CSP (`object-src 'none'` dahil) ve proxy upstream sürüm başlığı gizleme kaynakta eklendi. Canlı alan adı/edge config doğrulanmadı. `security.txt`, gerçek ve izlenen bildirim kanalı belirlenmediği için açık.
 - Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `7892eb31aad20e3847cc40f89fa877cf158aa402`. Canlı edge'e dağıtım veya güvenlik kabulü değildir.
 - Paylaşımlı Redis rate-limit WIP: üretim başlangıcı authenticated shared store olmadan reddediliyor; Compose servisi özel iç ağda ve dış portsuz. İzole config 17/17 ve YAML statik yapı kontrolü geçti. Redis konteyneri/Docker yok, gerçek ortak sayaç doğrulanmadı. Remote SHA bu adımda bekliyor.
+- Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `436938cc9e2ea71ff36802885aa3bc3232738306`. Gerçek Redis/Docker ve üretim kabulü değildir.
