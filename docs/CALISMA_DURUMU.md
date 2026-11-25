@@ -1003,3 +1003,10 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 - Android bearer login/refresh/logout uçları korunuyor. Eski tarayıcı token anahtarları temizlenip cookie oturumuna yeniden giriş yapılıyor. Dış HTTPS/WAF/firewall kurulmadı; XSS’in açık oturum adına işlem yapması tamamen engellenmez.
 - Backend cookie/CSRF 4/4; web oturum/refresh/login yönlendirmesi 27/27; TypeScript `--noEmit`, Python compileall ve ilgili Ruff kontrolleri geçti. Test veritabanı geçici SQLite; gerçek hesap, sağlayıcı veya üretim kullanılmadı.
 - Açık blokajlar: Compose HTTP/80, dış TLS/WAF/firewall, ortak dağıtık rate limit, bağımsız XSS/CSRF/tenant pentest, yedek şifreleme/geri yükleme ve işletme KVKK süreçleri. Bu değişiklik tam güvenlik veya KVKK kabulü değildir. Kaynak yayını ve remote SHA bu checkpoint için henüz bekliyor.
+
+### 25 Kasım 2026 · Site taraması: Nginx başlıkları (WIP)
+
+- Kaynak Nginx dosyalarında CSP, `X-Frame-Options: DENY`, Referrer-Policy, Permissions-Policy ve `server_tokens off` bulunuyordu; CSP iki katmanda hizalandı, `object-src 'none'` eklendi, HSTS `max-age=31536000` olarak eklendi. Proxy upstream `Server`/`X-Powered-By` başlıklarını saklıyor. `includeSubDomains`, alt alan adı HTTPS envanteri olmadığı için özellikle eklenmedi.
+- Salt-okunur GET'te `scs360.com.tr` `nginx/1.18.0 (Ubuntu)` döndürdü; sayfada `X-Content-Type-Options` dışında taranan başlıklar yoktu. `/iletisim` ve `/.well-known/security.txt` SPA HTML fallback veriyor. Kaynak değişikliği üretime dağıtılmadı; TLS edge/vhost doğrulaması olmadan canlı bulgular kapanmış sayılmaz.
+- `security.txt` beklemede: izlenen, doğrulanmış güvenlik iletişim kanalı yok; örnek/eski e-posta yayımlanmadı. Sonraki somut iş: gerçek iletişim kanalını ve sorumlusunu belirlemek; ardından HTTP dışı erişimden bağımsız `security.txt` ve TLS edge doğrulaması.
+- Önceki backend/frontend cookie-auth checkpoint uzak SHA `f7a69f92d2e9607a5231336c6d02f534bb993671`; bu Nginx checkpoint'inin push/remote SHA sonucu henüz bekliyor. Tam güvenlik, canlıya hazır veya KVKK uyumu iddiası yok.
