@@ -1020,5 +1020,14 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 - Frontend Nginx statik `/assets/` yanıtlarında üst seviye `add_header` kalıtımı Nginx 1.18 davranışı nedeniyle kesiliyordu. Alt konuma güvenlik başlıkları açıkça eklendi; `server_tokens off`, proxy `Server`/`X-Powered-By` gizleme ve bir yıllık HSTS `includeSubDomains` ayarı kaynakta korunuyor. Yeni statik regresyon testiyle güvenlik hedefli backend testi 18/18, Ruff geçti. Gerçek `nginx -t`, container, TLS ingress, alt alan adları veya canlı yanıt doğrulanmadı; HSTS alt alan adları HTTPS envanteri dağıtım öncesi doğrulanmalı.
 - Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `d4864250ea4de148c0bbe1b0090543f6d3624246`. WIP; canlı edge düzeltmesi değildir.
 - Sıradaki somut iş: izole container ortamında frontend Nginx konfigürasyonunu `nginx -t` ve gerçek asset/API yanıt başlıklarıyla doğrulamak; canlı edge değişikliği için yetkili operatörün onaylı dağıtımı gerekir.
+
+
 - Devam kaydı normal push/`ls-remote` ile güncellendi: SCS360 `codex/source-sync-20261111` SHA `48596b7bed2a67b4b3b0361c1ef15e9f848b8ce3`. WIP; canlı/KVKK kabulü değildir.
 - Sıradaki somut iş: izole container ortamında frontend Nginx konfigürasyonunu `nginx -t` ve gerçek asset/API yanıt başlıklarıyla doğrulamak; canlı edge değişikliği için yetkili operatörün onaylı dağıtımı gerekir.
+
+### 26 Kasım 2026 · CSRF hata yanıtlarında güvenlik başlıkları (WIP)
+
+- Cookie oturumunda CSRF/Origin reddinin özel 403 yanıtı `Permissions-Policy` başlığını atlıyordu. Middleware bu başlığı da ekliyor; hedefli API yanıt testi 19/19, ilgili Ruff geçti. Bu yalnız uygulama/test kapsamıdır.
+- `SECURITY_AND_KVKK_READINESS.md` Web oturum kaydı güncellendi: access/refresh token browser storage’da değil HttpOnly cookie’de; XSS’in açık oturum adına işlem yapma riski ve gerçek HTTPS/CSRF/Origin doğrulama gereği açık tutuldu.
+- SCS360 `codex/source-sync-20261111` SHA `9db5bbd0107f6bea7d93a98b449175d61ecc065b` push ve `ls-remote` ile doğrulandı. Sıradaki somut iş Nginx/Docker runtime ve gerçek asset/API başlık kontrolü; canlı edge/KVKK kabulü değildir.
+- Güvenlik devam kaydı düzeltmeleri tekilleştirildi; cookie depolama durumu ve HSTS alt alan adı koşulu güncel kaynakla hizalandı. SCS360 `codex/source-sync-20261111` SHA bu belge commitinden sonra kaydedilecek.
