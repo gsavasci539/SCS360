@@ -6,6 +6,7 @@ from app.core.dates import school_today
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+import logging
 from typing import List, Dict, Optional
 from uuid import UUID
 
@@ -34,6 +35,7 @@ from app.routers.daily_reports import scoped as scoped_daily_reports
 
 
 router = APIRouter(prefix="/api/ai", tags=["AI Analytics"])
+logger = logging.getLogger(__name__)
 
 
 # New endpoints to match frontend expectations
@@ -574,10 +576,8 @@ async def get_parent_analysis(
     """
     Get AI-powered analysis for a specific parent
     """
-    import sys
     try:
         organization_id = tenant.organization_id
-        print(f"DEBUG: Analyzing parent {parent_id} for org {organization_id}", file=sys.stderr)
         
         # Fetch the specific parent
         parent_result = await db.execute(
@@ -588,7 +588,6 @@ async def get_parent_analysis(
         parent = parent_result.scalar_one_or_none()
         
         if not parent:
-            print(f"DEBUG: Parent {parent_id} not found", file=sys.stderr)
             return success_response({
                 "has_contact_info": False,
                 "receives_notifications": False,
@@ -598,12 +597,10 @@ async def get_parent_analysis(
                 "summary": "Veli kaydı bulunamadı"
             })
         
-        print(f"DEBUG: Parent found: {parent.first_name} {parent.last_name}", file=sys.stderr)
         
         # Check contact information
         has_contact_info = bool(parent.phone or parent.email or parent.sms_phone or parent.whatsapp_phone)
         receives_notifications = parent.receive_notifications
-        print(f"DEBUG: Contact info: {has_contact_info}, Notifications: {receives_notifications}", file=sys.stderr)
         
         # Fetch students associated with this parent
         from app.infrastructure.models.models import StudentParent, Student, AttendanceRecord
@@ -612,7 +609,6 @@ async def get_parent_analysis(
         )
         student_parents = student_parent_result.scalars().all()
         student_ids = [sp.student_id for sp in student_parents]
-        print(f"DEBUG: Found {len(student_ids)} students for parent", file=sys.stderr)
         
         # Calculate payment compliance for this parent's students
         payment_compliance = 0.0
@@ -629,7 +625,6 @@ async def get_parent_analysis(
                 total_debt_amount = sum((d.amount for d in debts), Decimal("0"))
                 total_paid_amount = sum((d.paid_amount for d in debts), Decimal("0"))
                 payment_compliance = float(total_paid_amount / total_debt_amount * 100) if total_debt_amount > 0 else 0
-                print(f"DEBUG: Total debt: {total_debt_amount}, Paid: {total_paid_amount}, Compliance: {payment_compliance}%", file=sys.stderr)
         
         # Calculate attendance rate for parent's students
         attendance_rate = 0.0
@@ -644,7 +639,6 @@ async def get_parent_analysis(
             if attendance_records:
                 present_count = sum(1 for r in attendance_records if _status_value(r.status) == "PRESENT")
                 attendance_rate = (present_count / len(attendance_records) * 100) if attendance_records else 0
-                print(f"DEBUG: Attendance rate: {attendance_rate}%", file=sys.stderr)
         
         # Calculate engagement score with more factors
         contact_score = 30 if has_contact_info else 0
@@ -683,25 +677,11 @@ async def get_parent_analysis(
             "summary": f"{parent.first_name} {parent.last_name} - {len(student_ids)} öğrenci. İletişim: {'Var' if has_contact_info else 'Yok'}, Ödeme uyumu: %{round(payment_compliance, 1)}, Devamsızlık: %{round(attendance_rate, 1)}"
         }
         
-        print(f"DEBUG: Returning analysis for parent {parent_id}", file=sys.stderr)
         return success_response(result)
         
-    except Exception as e:
-        import traceback
-        print(f"Parent Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "has_contact_info": False,
-            "receives_notifications": False,
-            "payment_compliance": 0.0,
-            "attendance_rate": 0.0,
-            "engagement_score": 0.0,
-            "student_count": 0,
-            "total_debt": 0.0,
-            "total_paid": 0.0,
-            "recommendations": [f"Hata: {str(e)}"],
-            "summary": f"Error: {str(e)}"
-        })
+    except Exception as exc:
+        logger.error("parent_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Veli analizi şu anda yüklenemiyor", status_code=503) from None
 
 
 @router.get("/parent-satisfaction")
