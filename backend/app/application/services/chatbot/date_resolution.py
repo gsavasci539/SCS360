@@ -78,7 +78,7 @@ class DateResolutionService:
                 return None
 
         except Exception as e:
-            logger.exception(f"Error resolving period '{period}': {e}")
+            logger.error("chatbot_period_resolution_failed exception_type=%s", type(e).__name__)
             return None
 
     def _today(self) -> DateRange:

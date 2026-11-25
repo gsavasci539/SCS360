@@ -172,7 +172,7 @@ class ContextService:
                         })
 
         except Exception as e:
-            logger.exception(f"Error getting accessible teachers: {e}")
+            logger.error("chatbot_accessible_teachers_failed exception_type=%s", type(e).__name__)
 
         return accessible_teachers
 
@@ -230,7 +230,7 @@ class ContextService:
                         return student.id
 
         except Exception as e:
-            logger.exception(f"Error resolving student reference: {e}")
+            logger.error("chatbot_student_reference_failed exception_type=%s", type(e).__name__)
 
         return None
 

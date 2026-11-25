@@ -110,8 +110,8 @@ class OpenAIProvider(LLMProvider):
                 finish_reason=choice.finish_reason,
             )
             
-        except Exception as e:
-            logger.exception(f"OpenAI API error: {e}")
+        except Exception as exc:
+            logger.error("openai_chat_completion_failed exception_type=%s", type(exc).__name__)
             raise
 
     async def structured_completion(
@@ -218,8 +218,8 @@ class OllamaProvider(LLMProvider):
                 finish_reason=choice.finish_reason,
             )
             
-        except Exception as e:
-            logger.exception(f"Ollama API error: {e}")
+        except Exception as exc:
+            logger.error("ollama_chat_completion_failed exception_type=%s", type(exc).__name__)
             raise
 
     async def structured_completion(

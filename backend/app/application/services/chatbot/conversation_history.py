@@ -64,7 +64,7 @@ class ConversationHistoryService:
             return history
         
         except Exception as e:
-            logger.error(f"Error getting conversation history: {e}")
+            logger.error("chatbot_conversation_history_read_failed exception_type=%s", type(e).__name__)
             raise
     
     @staticmethod
@@ -106,7 +106,7 @@ class ConversationHistoryService:
             return context
         
         except Exception as e:
-            logger.error(f"Error getting recent context: {e}")
+            logger.error("chatbot_recent_context_read_failed exception_type=%s", type(e).__name__)
             return []
     
     @staticmethod
@@ -185,7 +185,7 @@ class ConversationHistoryService:
             }
         
         except Exception as e:
-            logger.error(f"Error getting session summary: {e}")
+            logger.error("chatbot_session_summary_read_failed exception_type=%s", type(e).__name__)
             raise
     
     @staticmethod
@@ -252,7 +252,7 @@ class ConversationHistoryService:
             }
         
         except Exception as e:
-            logger.error(f"Error getting user conversation stats: {e}")
+            logger.error("chatbot_conversation_stats_failed exception_type=%s", type(e).__name__)
             raise
 
 

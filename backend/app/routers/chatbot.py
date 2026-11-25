@@ -644,7 +644,7 @@ async def _process_chatbot_query(
             db.add(audit_log)
             await db.commit()
         except Exception as log_error:
-            logger.error(f"Failed to create audit log: {log_error}")
+            logger.error("chatbot_audit_write_failed exception_type=%s", type(log_error).__name__)
             # Don't fail the request if audit logging fails
 
         return {
@@ -657,14 +657,13 @@ async def _process_chatbot_query(
 
     except AppException:
         raise
-    except Exception as e:
+    except Exception as exc:
         execution_time = time.time() - start_time
 
-        logger.exception(
-            "Chatbot error | user_id=%s | execution_time=%.2fs | error=%s",
-            current_user.id,
+        logger.error(
+            "chatbot_request_failed exception_type=%s execution_time=%.2fs",
+            type(exc).__name__,
             execution_time,
-            str(e),
         )
 
         raise HTTPException(
@@ -1285,7 +1284,7 @@ async def export_fine_tuning_dataset(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Dataset export error: {e}")
+        logger.error("chatbot_dataset_export_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=500, detail="Dataset export failed")
 
 
@@ -1330,7 +1329,7 @@ async def get_analytics_overview(
             },
         })
     except Exception as e:
-        logger.error(f"Analytics overview error: {e}")
+        logger.error("chatbot_analytics_overview_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Analytics overview is temporarily unavailable")
 
 
@@ -1366,7 +1365,7 @@ async def get_analytics_trends(
             "sentiment_trends": sentiment_trends,
         })
     except Exception as e:
-        logger.error(f"Analytics trends error: {e}")
+        logger.error("chatbot_analytics_trends_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Analytics trends is temporarily unavailable")
 
 
@@ -1398,7 +1397,7 @@ async def get_intent_performance(
             } for row in performance_result.all()],
         })
     except Exception as e:
-        logger.error(f"Intent performance error: {e}")
+        logger.error("chatbot_intent_performance_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Intent performance is temporarily unavailable")
 
 
@@ -1448,7 +1447,7 @@ async def get_conversation_history(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Conversation history error: {e}")
+        logger.error("chatbot_conversation_history_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Conversation history is temporarily unavailable")
 
 
@@ -1491,7 +1490,7 @@ async def get_session_summary(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Session summary error: {e}")
+        logger.error("chatbot_session_summary_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Conversation summary is temporarily unavailable")
 
 
@@ -1517,5 +1516,5 @@ async def get_my_conversation_stats(
         })
     
     except Exception as e:
-        logger.error(f"User conversation stats error: {e}")
+        logger.error("chatbot_user_stats_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=503, detail="Conversation statistics are temporarily unavailable")

@@ -143,7 +143,7 @@ class AttendanceHandler:
                     )
 
         except Exception as e:
-            logger.exception(f"Error handling attendance intent: {e}")
+            logger.error("chatbot_handler_failed intent=attendance exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="📅 Devamsızlık bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -198,7 +198,7 @@ class GradesHandler:
                 )
 
         except Exception as e:
-            logger.exception(f"Error handling grades intent: {e}")
+            logger.error("chatbot_handler_failed intent=grades exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="📊 Not bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -247,7 +247,7 @@ class PaymentsHandler:
                 suggested_actions=[{"label": "💳 Tüm Ödemeler", "action_tag": "VIEW_PAYMENTS"}])
 
         except Exception as e:
-            logger.exception(f"Error handling payments intent: {e}")
+            logger.error("chatbot_handler_failed intent=payments exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="💰 Ödeme bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -305,7 +305,7 @@ class DebtHandler:
                 )
 
         except Exception as e:
-            logger.exception(f"Error handling debt intent: {e}")
+            logger.error("chatbot_handler_failed intent=debt exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="💳 Borç bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -391,7 +391,7 @@ class ExpensesHandler:
                 )
 
         except Exception as e:
-            logger.exception(f"Error handling expenses intent: {e}")
+            logger.error("chatbot_handler_failed intent=expenses exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="📉 Gider bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -499,7 +499,7 @@ class StudentInfoHandler:
                     )
 
         except Exception as e:
-            logger.exception(f"Error handling student info intent: {e}")
+            logger.error("chatbot_handler_failed intent=student_info exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="📚 Öğrenci bilgileri alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
@@ -553,7 +553,7 @@ class SystemStatusHandler:
             )
 
         except Exception as e:
-            logger.exception(f"Error handling system status intent: {e}")
+            logger.error("chatbot_handler_failed intent=system_status exception_type=%s", type(e).__name__)
             return HandlerResponse(
                 message="📊 Sistem durumu alınırken hata oluştu. Lütfen daha sonra tekrar deneyin."
             )
