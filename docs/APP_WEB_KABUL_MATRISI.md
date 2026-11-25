@@ -375,3 +375,7 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 ### 26 Kasım — Veli analizi hata ve log mahremiyeti
 
 Veli analiz endpoint’inde kişisel/metrik debug çıktıları kaldırıldı; beklenmeyen hata API iç hata metni/traceback’ini açmadan 503 döner, sunucuda yalnız exception türü kaydedilir. Kaynak SCS360 `codex/source-sync-20261111` SHA `6e8c21ee`; hedefli API/frontend testi çalıştırılmadı. Bu yalnız tek endpoint’tir; aynı analiz dosyasındaki diğer eski hata/log yolları ve canlı loglar ayrıca incelenmeli.
+
+### 26 Kasım — Web analiz hata konsolu
+
+Parent/class analiz çağrılarının Axios hata nesnesini `console.error` ile yazması kaldırıldı. `reportClientError` üretimde sessizdir; DEV’de yalnız whitelist hata alanları yazar. SCS360 kaynak SHA `fe88e0eb`; frontend testi/build çalıştırılmadı. Tüm istemci konsol çıktılarının genel denetimi tamamlanmadı.

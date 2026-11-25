@@ -62,3 +62,5 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 26 Kasım 2026 host routing: public Nginx unknown `Host` değerlerini 444 ile reddediyor; hedefli test 23/23, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `1d5221973d86d4b8f9538c5b0020a70824e1d632` normal push/`ls-remote` ile doğrulandı. Nginx runtime ve canlı edge doğrulanmadı.
 
 26 Kasım 2026 veli analizi WIP: `/api/ai/parent-analysis/{id}` stdout/traceback’inden veli adı, öğrenci sayısı, finans/yoklama metrikleri ve hata ayrıntıları kaldırıldı. Beklenmeyen hata sahte sıfır analiz yerine genel 503 döndürür; server loguna yalnız exception sınıfı yazılır. SHA `6e8c21ee` normal push/`ls-remote` ile doğrulanacak. Hedefli test çalıştırılmadı. Aynı router’daki diğer debug/exception yolları, mevcut logların yaşam döngüsü ve canlı/KVKK kabulü açık kalır.
+
+Web analiz hata logu WIP: ayrıntı ekranındaki Axios hata nesnesi yazdırılmıyor; mevcut `reportClientError` production’da kapalı, DEV’de alanları whitelist ediyor. SCS360 SHA `fe88e0eb`. Hedefli frontend doğrulaması yapılmadı; kalan istemci logları, backend genel taraması ve canlı kabulü açık.
