@@ -1002,7 +1002,7 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 - Web login/refresh/logout için ayrı cookie uçları eklendi. Access/refresh tokenları web JSON yanıtından çıkarılıyor; frontend tokenları local/session storage’a yazmıyor, cookie oturumunu bellekte kullanıcı+CSRF bilgisiyle yönetiyor. Mutasyonlar CSRF çift gönderim tokenı ve izinli Origin doğrulamasından geçiyor.
 - Android bearer login/refresh/logout uçları korunuyor. Eski tarayıcı token anahtarları temizlenip cookie oturumuna yeniden giriş yapılıyor. Dış HTTPS/WAF/firewall kurulmadı; XSS’in açık oturum adına işlem yapması tamamen engellenmez.
 - Backend cookie/CSRF 4/4; web oturum/refresh/login yönlendirmesi 27/27; TypeScript `--noEmit`, Python compileall ve ilgili Ruff kontrolleri geçti. Test veritabanı geçici SQLite; gerçek hesap, sağlayıcı veya üretim kullanılmadı.
-- Açık blokajlar: Compose HTTP/80, dış TLS/WAF/firewall, ortak dağıtık rate limit, bağımsız XSS/CSRF/tenant pentest, yedek şifreleme/geri yükleme ve işletme KVKK süreçleri. Bu değişiklik tam güvenlik veya KVKK kabulü değildir. Kaynak yayını ve remote SHA bu checkpoint için henüz bekliyor.
+- Açık blokajlar: Compose HTTP/80, dış TLS/WAF/firewall, ortak dağıtık rate limit, bağımsız XSS/CSRF/tenant pentest, yedek şifreleme/geri yükleme ve işletme KVKK süreçleri. Bu değişiklik tam güvenlik veya KVKK kabulü değildir. Cookie kaynak SHA `f7a69f92d2e9607a5231336c6d02f534bb993671`.
 
 ### 25 Kasım 2026 · Site taraması: Nginx başlıkları (WIP)
 
@@ -1010,3 +1010,9 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 - Salt-okunur GET'te `scs360.com.tr` `nginx/1.18.0 (Ubuntu)` döndürdü; sayfada `X-Content-Type-Options` dışında taranan başlıklar yoktu. `/iletisim` ve `/.well-known/security.txt` SPA HTML fallback veriyor. Kaynak değişikliği üretime dağıtılmadı; TLS edge/vhost doğrulaması olmadan canlı bulgular kapanmış sayılmaz.
 - `security.txt` beklemede: izlenen, doğrulanmış güvenlik iletişim kanalı yok; örnek/eski e-posta yayımlanmadı. Sonraki somut iş: gerçek iletişim kanalını ve sorumlusunu belirlemek; ardından HTTP dışı erişimden bağımsız `security.txt` ve TLS edge doğrulaması.
 - Önceki backend/frontend cookie-auth checkpoint uzak SHA `f7a69f92d2e9607a5231336c6d02f534bb993671`. Nginx kaynak checkpoint'i normal push ve `ls-remote` ile `7892eb31aad20e3847cc40f89fa877cf158aa402` olarak doğrulandı. Tam güvenlik, canlıya hazır veya KVKK uyumu iddiası yok.
+
+### 25 Kasım 2026 · Dağıtık rate limit (WIP)
+
+- Bellek içi limit deposu paylaşımlı parola korumalı Redis/Valkey yapılandırmasına taşınıyor. Production/staging bellek, yerel host, yer tutucu parola veya kısa/parolasız Redis URI’sini reddediyor. Compose Redis’i host portuna açmıyor; parola, ayrı iç ağ, 128 MB sınır ve `noeviction` ile kuruyor; tüm backend/worker örneklerine ortak URI veriyor.
+- Hedefli güvenlik yapılandırma testleri 17/17, Ruff ve Compose YAML yapısal kontrolü geçti. Gerçek Redis servis entegrasyonu çalıştırılmadı; Docker/nginx araçları yok. Canlı dağıtım, çoklu instance kabulü veya WAF oran limiti değildir.
+- Sıradaki somut iş: Docker bulunan izole ortamda compose/Redis erişim, limit sayaçlarının worker’lar arasında ortaklığı ve servis kesintisinde fail-closed doğrulaması; sonra dependency/secret taraması. Remote SHA bu checkpoint için bekliyor.

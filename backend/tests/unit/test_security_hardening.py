@@ -27,11 +27,32 @@ def test_production_accepts_strong_jwt_secret():
         JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
         CORS_ORIGINS="https://school.example",
         PASSWORD_RESET_URL="https://school.example/reset-password",
+        RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
         _env_file=None,
     )
 
     assert settings.APP_ENV == "production"
     assert settings.api_docs_enabled is False
+
+
+@pytest.mark.parametrize("storage_uri", [
+    "memory://",
+    "redis://rate-limit-store:6379/0",
+    "rediss://:REPLACE_WITH_32_PLUS_URL_SAFE_RANDOM_CHARACTERS@redis.example:6379/0",
+    "rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@localhost:6379/0",
+    "redis://:short@rate-limit-store:6379/0",
+    "http://user:password@rate-limit-store:6379/0",
+])
+def test_production_requires_authenticated_shared_rate_limit_storage(storage_uri):
+    with pytest.raises(ValidationError, match="shared Redis rate-limit storage"):
+        Settings(
+            APP_ENV="production",
+            JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+            CORS_ORIGINS="https://school.example",
+            PASSWORD_RESET_URL="https://school.example/reset-password",
+            RATE_LIMIT_STORAGE_URI=storage_uri,
+            _env_file=None,
+        )
 
 
 @pytest.mark.parametrize("origin", [
@@ -58,6 +79,7 @@ def test_production_requires_https_password_reset_url_even_without_mail_delivery
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
             CORS_ORIGINS="https://school.example",
             PASSWORD_RESET_URL="http://school.example/reset-password",
+            RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
             NOTIFICATION_DELIVERY_ENABLED=False,
             _env_file=None,
         )
@@ -70,6 +92,7 @@ def test_production_requires_https_payment_callbacks_when_enabled():
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
             CORS_ORIGINS="https://school.example",
             PASSWORD_RESET_URL="https://school.example/reset-password",
+            RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
             IYZICO_PAYMENT_ENABLED=True,
             SCHOOL_PAYMENT_CALLBACK_URL="http://school.example/callback",
             _env_file=None,

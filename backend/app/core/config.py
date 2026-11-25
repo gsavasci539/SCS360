@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     BUSINESS_TIMEZONE: str = "Europe/Istanbul"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost"
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
 
     # LLM Configuration for Chatbot
     # Default: Ollama (free local LLM)
@@ -128,6 +129,21 @@ class Settings(BaseSettings):
                     or host.endswith(".localhost")
                 ):
                     raise ValueError("Production and staging CORS origins must be exact HTTPS origins")
+            rate_limit_storage = urlsplit(self.RATE_LIMIT_STORAGE_URI)
+            rate_limit_host = (rate_limit_storage.hostname or "").lower()
+            if (
+                rate_limit_storage.scheme not in {"redis", "rediss"}
+                or not rate_limit_storage.hostname
+                or rate_limit_host == "localhost"
+                or rate_limit_host.endswith(".localhost")
+                or rate_limit_storage.hostname in {"127.0.0.1", "::1"}
+                or rate_limit_storage.password is None
+                or len(rate_limit_storage.password) < 32
+                or "replace" in rate_limit_storage.password.lower()
+            ):
+                raise ValueError(
+                    "Production and staging require authenticated shared Redis rate-limit storage"
+                )
             reset_url = urlsplit(self.PASSWORD_RESET_URL)
             if reset_url.scheme != "https" or not reset_url.hostname:
                 raise ValueError("PASSWORD_RESET_URL must use HTTPS in production or staging")

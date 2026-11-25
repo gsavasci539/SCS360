@@ -1,6 +1,10 @@
 from fastapi import Request
 from slowapi import Limiter
 
+from app.core.config import get_settings
+
+settings = get_settings()
+
 
 def get_client_ip(request: Request) -> str:
     # The backend is only reachable through the bundled reverse proxy in Compose.
@@ -12,4 +16,4 @@ def get_client_ip(request: Request) -> str:
 
 
 # Routes opt into their own budgets; there is no blanket default limit.
-limiter = Limiter(key_func=get_client_ip, storage_uri="memory://", default_limits=[])
+limiter = Limiter(key_func=get_client_ip, storage_uri=settings.RATE_LIMIT_STORAGE_URI, default_limits=[])
