@@ -156,6 +156,23 @@ def test_frontend_nginx_keeps_security_headers_on_immutable_assets():
         assert f"add_header {header} " in assets
 
 
+def test_public_nginx_emits_a_single_authoritative_security_header_set():
+    repo_root = Path(__file__).resolve().parents[3]
+    config = (repo_root / "nginx" / "default.conf").read_text(encoding="utf-8")
+
+    for header in (
+        "Server",
+        "X-Powered-By",
+        "Strict-Transport-Security",
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+        "Permissions-Policy",
+    ):
+        assert config.count(f"proxy_hide_header {header};") == 1
+
+
 def test_upload_rejects_extension_content_mismatch():
     upload = UploadFile(file=BytesIO(b"not a pdf"), filename="record.pdf")
 
