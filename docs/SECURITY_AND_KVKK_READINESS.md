@@ -52,3 +52,5 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 26 Kasım 2026 dokümantasyon tutarlılık düzeltmesi: Web cookie oturumunun storage durumunu ve HSTS `includeSubDomains` ön koşulunu son kaynakla hizaladım. SCS360 `codex/source-sync-20261111` SHA `88fb67803249d62aa5c55a750504306dc5c53127` normal push/`ls-remote` ile doğrulandı. Canlı site/edge doğrulaması değildir.
 
 26 Kasım 2026 Public Nginx header tekilleştirmesi: edge config artık upstream API/frontend kopyalarını gizleyip security header setini tek noktadan yayıyor; hedefli test 20/20, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `63bd0120db199cf041b0125a07a9740a0cecf798` normal push/`ls-remote` ile doğrulandı. Container, TLS ingress veya canlı yanıt doğrulaması değildir.
+
+26 Kasım 2026 rate-limit taşıma güvenliği: Production/staging remote Redis bağlantısı `rediss://` olmak zorunda; düz `redis://` yalnız private Compose `rate-limit-store` hostname’i için kabul edilir. Hedefli test 22/22, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `d249c2976ca645fa329ff3bbc8e92e05ac85d51f` normal push/`ls-remote` ile doğrulandı. Redis TLS ve container runtime test edilmedi.
