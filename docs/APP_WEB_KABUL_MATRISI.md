@@ -391,3 +391,7 @@ Parent satisfaction’ın bildirim/duyuru sorgu hatalarında sessizce kısmi ba�
 ### 26 Kasım — Analiz placeholder’ları kapatıldı
 
 Personel analiz hatası iç detay/traceback döndürmüyor. Veriye bağlı olmayan kütüphane ve kart analizleri kart numarasını da yansıtan sıfır/tahmin placeholder’ları sunmuyor; şimdilik genel 503. SCS360 SHA `39b92001`; hedefli test çalıştırılmadı. Gerçek tenant-scoped analiz DTO’ları daha sonra eklenmeli.
+
+### 26 Kasım — Kalan AI analiz hata yolları
+
+Parent-engagement ve kurum/sınıf/personel/kaynak/risk/operasyonel analiz catch blokları kişisel exception/traceback içeriği yazmaz; boş metrikle sahte başarı yerine genel 503 döndürür, beklenen `AppException` durumları korunur. SCS360 `codex/source-sync-20261111` SHA `4d9fcfea50e35f4f1a0b66ebdb1dd16c1279e1fa` doğrulandı. Test/build çalıştırılmadı. Bu kaynak checkpoint’i canlı/kapsamlı güvenlik veya KVKK kabulü değildir; başka endpointler ve runtime hâlâ incelenmeli.
