@@ -236,21 +236,9 @@ async def get_ai_homework_analysis(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Homework analysis error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "ai_model": "Homework Analytics v1.0",
-            "homework_stats": {
-                "total": 0,
-                "completion_rate": 0,
-                "avg_score": 0
-            },
-            "subject_insights": [],
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except Exception as exc:
+        logger.error("homework_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Ödev analizi şu anda yüklenemiyor", status_code=503) from None
 
 
 @router.get("/ai-daily-reports-analysis")
