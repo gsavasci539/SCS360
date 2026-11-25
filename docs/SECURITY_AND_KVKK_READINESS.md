@@ -67,6 +67,8 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 
 26 Kasım 2026 chatbot log mahremiyeti WIP: chatbot router/handler, konuşma geçmişi ve context servisleri ile OpenAI/Ollama adaptörlerinde hata mesajı, traceback ve kullanıcı kimliği loglaması kaldırıldı; hata türü ve sabit işlem etiketi kullanılıyor, API hata yanıtları genel kalıyor. SCS360 `codex/source-sync-20261111` SHA `f9107087bf303fac105df0f5c27c178bfbe01b99` normal push/`ls-remote` ile doğrulandı. Test/build çalıştırılmadı. Tüm backend logları, dış LLM sağlayıcısına gönderilen veri kapsamı, mevcut logların saklama/silme politikası ve canlı/KVKK kabulü ayrıca doğrulanmalı.
 
+26 Kasım 2026 chatbot prompt logları WIP: intent tespiti sorgu metni, bilinmeyen dönem içeriği ve LLM'nin geçersiz JSON yanıt gövdesi logdan çıkarıldı; sabit olay adları kullanılıyor. SCS360 SHA `f4a635a9dbe494ff27591b26bfb00d56e673c260` normal push/`ls-remote` ile doğrulandı. Test/build yok. Bu kontrol chatbot akışıyla sınırlı; LLM aktarım envanteri/izin-hukuki mekanizma ve diğer uygulama logları açık.
+
 Web analiz hata logu WIP: ayrıntı ekranındaki Axios hata nesnesi yazdırılmıyor; mevcut `reportClientError` production’da kapalı, DEV’de alanları whitelist ediyor. SCS360 SHA `fe88e0eb`. Hedefli frontend doğrulaması yapılmadı; kalan istemci logları, backend genel taraması ve canlı kabulü açık.
 
 26 Kasım 2026 ödev analizi WIP: `/api/ai/ai-homework-analysis` hatasında exception/traceback loglaması ve kullanıcıya iç hata metni verme kaldırıldı; hata türüyle genel 503. SHA `6ab1a930`; test çalıştırılmadı. Diğer analiz uçları ve canlı log/infra doğrulaması açık.

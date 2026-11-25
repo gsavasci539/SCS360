@@ -1050,3 +1050,7 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 ## 26 Kasım 2026 — Chatbot hata logu mahremiyeti
 
 Chatbot route, intent handler, konuşma geçmişi/context/date servisleri ve OpenAI/Ollama adaptörlerinde hata metni, traceback ve kullanıcı kimliği loglaması kaldırıldı; hata sınıfı ile sabit etiket kalır. Değişen 6 dosyada statik `git diff --check` geçti; test/build yapılmadı. SCS360 `codex/source-sync-20261111` SHA `f9107087bf303fac105df0f5c27c178bfbe01b99` normal push/`ls-remote` ile doğrulandı. Bu sınırlı WIP; harici LLM veri aktarım envanteri/uygun hukuki mekanizma, backend genel log denetimi, canlı log saklama/silme ve KVKK süreçleri kapanmış değildir.
+
+### Chatbot prompt loglarının daraltılması
+
+Intent detection prompt/query metni, tanınmayan tarih/dönem girdisi ve LLM JSON parse response gövdesi loglanmıyor. SCS360 `codex/source-sync-20261111` SHA `f4a635a9dbe494ff27591b26bfb00d56e673c260` normal push/`ls-remote` ile doğrulandı; statik `git diff --check` dışında test/build yok. Dış LLM veri işleme/aktarımının envanteri ve KVKK dayanağı belirlenmeden bu kod değişiklikleri KVKK uyumu veya canlı güvenliği göstermez.
