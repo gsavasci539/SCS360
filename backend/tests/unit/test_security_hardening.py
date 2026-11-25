@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from app.core.config import Settings
 from app.core.exceptions import ValidationException
 from app.core.middleware import SecurityHeadersMiddleware
+from app.core.web_session import ACCESS_COOKIE
 from app.routers.files_receipts import _validate_upload
 
 
@@ -112,6 +113,25 @@ def test_security_headers_protect_api_responses_from_caching_and_sniffing():
 
     assert response.headers["cache-control"] == "no-store, max-age=0"
     assert response.headers["pragma"] == "no-cache"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+
+
+def test_csrf_rejection_keeps_api_security_headers():
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    @app.post("/api/private")
+    def private_write():
+        return {"ok": True}
+
+    client = TestClient(app)
+    client.cookies.set(ACCESS_COOKIE, "session")
+    response = client.post("/api/private")
+
+    assert response.status_code == 403
+    assert response.headers["permissions-policy"] == "camera=(), microphone=(), geolocation=()"
+    assert response.headers["cache-control"] == "no-store, max-age=0"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
 
