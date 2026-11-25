@@ -1,6 +1,6 @@
 import axios, { AxiosError, CanceledError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../stores/auth";
-import type { ApiResponse, AuthUser } from "../types/api";
+import type { ApiResponse, AuthUser, WebSessionPayload } from "../types/api";
 import { subscriptionAccessFromError } from "./subscription";
 import { isWorkspaceRequest, usePlatformWorkspace } from "../stores/platformWorkspace";
 
@@ -9,7 +9,7 @@ import { isWorkspaceRequest, usePlatformWorkspace } from "../stores/platformWork
 const configuredUrl = String(import.meta.env.VITE_API_BASE_URL || "/api");
 export const API_BASE_URL = configuredUrl.replace(/\/$/, "");
 
-export const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
+export const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000, withCredentials: true });
 
 type SessionRequest = InternalAxiosRequestConfig & { _retry?: boolean; _scsSession?: number; _scsWorkspace?: string | null; _scsOperator?: string };
 function currentRequest(config: SessionRequest) {
@@ -22,7 +22,13 @@ api.interceptors.request.use((config) => {
   scoped._scsSession ??= useAuthStore.getState().sessionVersion;
   if (!currentRequest(scoped)) throw new CanceledError("Oturum veya kurum yetkisi değişti", config);
   const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const { authMode, csrfToken } = useAuthStore.getState();
+  config.withCredentials = true;
+  if (authMode === "bearer" && token) config.headers.Authorization = `Bearer ${token}`;
+  else config.headers.delete("Authorization");
+  if (authMode === "cookie" && !["GET", "HEAD", "OPTIONS"].includes((config.method || "get").toUpperCase()) && csrfToken) {
+    config.headers.set("X-CSRF-Token", csrfToken);
+  }
   const account = useAuthStore.getState().user, workspace = usePlatformWorkspace.getState().workspace;
   if (scoped._scsWorkspace === undefined) { scoped._scsWorkspace = account?.is_super_admin && workspace?.operatorId === account.id ? workspace.id : null; scoped._scsOperator = account?.id; }
   if (account?.is_super_admin && scoped._scsOperator === account.id && scoped._scsWorkspace && isWorkspaceRequest(config.url || "")) config.headers.set("X-SCS360-Organization-Id", scoped._scsWorkspace);
@@ -31,15 +37,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-let refreshing: { version: number; promise: Promise<string> } | null = null;
+let refreshing: { version: number; promise: Promise<string | null> } | null = null;
 
 async function refreshAccessToken() {
-  const { refreshToken, sessionVersion, user: operator } = useAuthStore.getState();
+  const { authMode, csrfToken, refreshToken, sessionVersion, user: operator } = useAuthStore.getState();
+  if (authMode === "cookie") {
+    if (!csrfToken) throw new Error("Web oturum doğrulaması başlatılmamış");
+    const response = await axios.post<ApiResponse<WebSessionPayload>>(
+      `${API_BASE_URL}/auth/web/refresh`, {},
+      { timeout: 20000, withCredentials: true, headers: { "X-CSRF-Token": csrfToken } },
+    );
+    const current = useAuthStore.getState();
+    const session = response.data.data;
+    if (current.sessionVersion !== sessionVersion || (operator && session.user.id !== operator.id)) throw new CanceledError("Oturum değişti");
+    current.setCookieSession(session.user, session.csrf_token, false);
+    return null;
+  }
   if (!refreshToken) throw new Error("Oturum bulunamadı");
   const response = await axios.post<ApiResponse<{ access_token: string; refresh_token: string; user?: AuthUser }>>(
     `${API_BASE_URL}/auth/refresh`,
     { refresh_token: refreshToken },
-    { timeout: 20000 },
+    { timeout: 20000, withCredentials: true },
   );
   const { access_token, refresh_token, user } = response.data.data;
   const current = useAuthStore.getState();
@@ -71,7 +89,8 @@ api.interceptors.response.use(
           refreshing = flight;
           void flight.promise.finally(() => { if (refreshing === flight) refreshing = null; }).catch(() => {});
         }
-        original.headers.Authorization = `Bearer ${await refreshing.promise}`;
+        const refreshedToken = await refreshing.promise;
+        if (refreshedToken) original.headers.Authorization = `Bearer ${refreshedToken}`;
         return api(original);
       } catch (reason) {
         if (axios.isCancel(reason) || !currentRequest(original)) return Promise.reject(reason);
@@ -95,6 +114,30 @@ export function apiMessage(error: unknown): string {
     return data?.message || (error.code === "ECONNABORTED" ? "Sunucu yanıt vermedi. Lütfen tekrar deneyin." : "Sunucuya ulaşılamadı.");
   }
   return error instanceof Error ? error.message : "Beklenmeyen bir hata oluştu.";
+}
+
+let restoringWebSession: Promise<void> | null = null;
+
+export function restoreWebSession() {
+  if (restoringWebSession) return restoringWebSession;
+  restoringWebSession = (async () => {
+    const state = useAuthStore.getState();
+    try {
+      const csrfResponse = await axios.get<ApiResponse<{ csrf_token: string }>>(`${API_BASE_URL}/auth/web/csrf`, {
+        timeout: 20000, withCredentials: true,
+      });
+      const csrfToken = csrfResponse.data.data.csrf_token;
+      const response = await axios.post<ApiResponse<WebSessionPayload>>(`${API_BASE_URL}/auth/web/refresh`, {}, {
+        timeout: 20000, withCredentials: true, headers: { "X-CSRF-Token": csrfToken },
+      });
+      state.setCookieSession(response.data.data.user, response.data.data.csrf_token);
+    } catch {
+      state.clearSession();
+    } finally {
+      useAuthStore.getState().setHydrated(true);
+    }
+  })();
+  return restoringWebSession;
 }
 
 export const unwrap = <T,>(response: { data: ApiResponse<T> }) => response.data.data;

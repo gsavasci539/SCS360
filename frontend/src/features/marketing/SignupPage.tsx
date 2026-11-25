@@ -5,7 +5,7 @@ import { newRequestId } from "../../lib/requestId";
 import { packagePrice } from "../../lib/subscription";
 import { useAuthStore } from "../../stores/auth";
 import { ErrorState, LoadingState } from "../../components/ui";
-import type { AuthPayload } from "../../types/api";
+import type { WebSessionPayload } from "../../types/api";
 import { PublicLayout, usePublicPlans } from "./MarketingPage";
 
 export function SignupPage() {
@@ -18,8 +18,9 @@ export function SignupPage() {
     delete fields.confirm_password; setBusy(true);
     try {
       await api.post("/public/signup", { ...fields, plan_id: plan.id, request_id: requestId });
-      const response = await api.post("/auth/login", { email: fields.owner_email, password: fields.owner_password });
-      useAuthStore.getState().setSession(response.data.data as AuthPayload, false);
+      const response = await api.post("/auth/web/login", { email: fields.owner_email, password: fields.owner_password, remember: false });
+      const session = response.data.data as WebSessionPayload;
+      useAuthStore.getState().setCookieSession(session.user, session.csrf_token);
       navigate(`/subscription?paket=${plan.id}`, { replace: true });
     } catch (reason) { setFailure(apiMessage(reason)); } finally { setBusy(false); }
   }

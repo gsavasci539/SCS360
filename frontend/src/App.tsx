@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { LoadingState } from "./components/ui";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
@@ -14,6 +14,7 @@ import { getHomePath } from "./lib/home";
 import { useAuthStore } from "./stores/auth";
 import { SubscriptionGuard } from "./routes/SubscriptionGuard";
 import { PlatformModeGuard } from "./routes/PlatformModeGuard";
+import { restoreWebSession } from "./lib/api";
 
 const PlatformPage = lazy(() => import("./features/saas/PlatformPage").then((module) => ({ default: module.PlatformPage })));
 const SubscriptionPage = lazy(() => import("./features/saas/SubscriptionPage").then((module) => ({ default: module.SubscriptionPage })));
@@ -125,6 +126,9 @@ function RoleHomeRedirect() {
 }
 
 export default function App() {
+  const hydrated = useAuthStore((state) => state.hydrated);
+  useEffect(() => { if (!useAuthStore.getState().hydrated) void restoreWebSession(); }, []);
+  if (!hydrated) return <LoadingState label="Oturum doğrulanıyor" />;
   return <Routes>
     <Route path="/" element={<Suspense fallback={<LoadingState label="SCS360 yükleniyor" />}><MarketingPage /></Suspense>} />
     <Route path="/fiyatlandirma" element={<Suspense fallback={<LoadingState label="Paketler yükleniyor" />}><MarketingPage pricing /></Suspense>} />

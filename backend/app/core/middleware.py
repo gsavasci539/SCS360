@@ -10,6 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import get_settings
 from app.core.exceptions import AppException
 from app.core.responses import error_response
+from app.core.web_session import ACCESS_COOKIE, require_csrf
 
 settings = get_settings()
 
@@ -54,6 +55,29 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Apply response protections centrally, including API errors and preflights."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        if (
+            request.cookies.get(ACCESS_COOKIE)
+            and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}
+            and request.url.path != "/api/auth/web/login"
+        ):
+            try:
+                require_csrf(request)
+            except AppException as exc:
+                from fastapi.responses import JSONResponse
+
+                response = JSONResponse(status_code=exc.status_code, content=error_response(exc.message, exc.errors))
+                response.headers.setdefault("X-Content-Type-Options", "nosniff")
+                response.headers.setdefault("X-Frame-Options", "DENY")
+                response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+                if request.url.path.startswith("/api/"):
+                    response.headers["Cache-Control"] = "no-store, max-age=0"
+                    response.headers["Pragma"] = "no-cache"
+                origin = request.headers.get("origin")
+                if origin and origin in settings.cors_origins_list:
+                    response.headers["Access-Control-Allow-Origin"] = origin
+                    response.headers["Access-Control-Allow-Credentials"] = "true"
+                    response.headers["Vary"] = "Origin"
+                return response
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")

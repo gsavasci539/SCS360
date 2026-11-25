@@ -8,6 +8,10 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=4096)
 
 
+class WebLoginRequest(LoginRequest):
+    remember: bool = False
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 

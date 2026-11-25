@@ -20,7 +20,7 @@ export function AppShell() {
   const profileRef = useRef<HTMLDivElement>(null);
   const user = useAuthStore((state) => state.user);
   const can = useAuthStore((state) => state.can);
-  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const authenticated = useAuthStore((state) => state.authenticated);
   const clearSession = useAuthStore((state) => state.clearSession);
   const location = useLocation();
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ export function AppShell() {
   }, [profileOpen]);
 
   async function logout() {
-    try { if (refreshToken) await api.post("/auth/logout", { refresh_token: refreshToken }); } catch { /* local logout must still work */ }
+    try { if (authenticated) await api.post("/auth/web/logout"); } catch { /* local logout must still work */ }
     clearSession(); showToast("Oturum kapatıldı", "Güvenli biçimde çıkış yaptınız."); navigate("/login", { replace: true });
   }
 

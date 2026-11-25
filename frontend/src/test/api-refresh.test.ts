@@ -26,7 +26,26 @@ it("eşzamanlı 401 yanıtında bir kez yeniler ve kaldırılan yetkiyi arayüzd
   expect(refresh).toHaveBeenCalledTimes(1);
   expect(useAuthStore.getState().can("canteen.read")).toBe(true);
   expect(useAuthStore.getState().can("canteen.write")).toBe(false);
-  expect(JSON.parse(localStorage.getItem("scs360-session")!).user.permissions).toEqual(["canteen.read"]);
+  expect(useAuthStore.getState().user?.permissions).toEqual(["canteen.read"]);
+  expect(localStorage.getItem("scs360-session")).toBeNull();
+});
+
+it("web 401 yanıtında HttpOnly cookie oturumunu CSRF ile yeniler ve bearer token üretmez", async () => {
+  useAuthStore.getState().setCookieSession(user, "csrf-value");
+  const refresh = vi.spyOn(axios, "post").mockResolvedValue({ data: { data: { csrf_token: "csrf-next", user: { ...user, permissions: ["canteen.read"] } } } });
+  let attempts = 0;
+  const adapter: AxiosAdapter = async (config) => {
+    attempts += 1;
+    const response: AxiosResponse = { status: 200, statusText: "OK", config, headers: {}, data: {} };
+    if (attempts === 1) { response.status = 401; throw new AxiosError("Expired", "ERR_BAD_REQUEST", config, undefined, response); }
+    return response;
+  };
+  await api.get("/private/cookie-session", { adapter });
+  expect(refresh).toHaveBeenCalledWith(expect.stringContaining("/auth/web/refresh"), {}, expect.objectContaining({
+    withCredentials: true, headers: { "X-CSRF-Token": "csrf-value" },
+  }));
+  expect(useAuthStore.getState().accessToken).toBeNull();
+  expect(useAuthStore.getState().csrfToken).toBe("csrf-next");
 });
 
 it("rol adı tek başına yazma yetkisi vermez", () => {

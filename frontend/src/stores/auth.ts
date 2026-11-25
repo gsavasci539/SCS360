@@ -1,11 +1,8 @@
 import { create } from "zustand";
 import type { AuthPayload, AuthUser } from "../types/api";
-import { isOrganizationAccess } from "../lib/subscription";
 import { usePlatformWorkspace, WORKSPACE_OPERATOR } from "./platformWorkspace";
 
-const STORAGE_KEY = "scs360-session";
-// Read the previous release's key once so a brand change does not sign users out.
-const LEGACY_STORAGE_KEY = "okul360-session";
+const TOKEN_STORAGE_KEYS = ["scs360-session", "okul360-session"] as const;
 
 // Roles created by the current seed use plural resource names, whereas a few
 // established page guards still use singular names.  Accept both spellings so
@@ -65,19 +62,17 @@ export function hasPermission(user: AuthUser | null | undefined, permission?: st
   );
 }
 
-interface PersistedSession {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthUser;
-}
-
 interface AuthState {
   sessionVersion: number;
+  authMode: "bearer" | "cookie" | null;
+  authenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  csrfToken: string | null;
   user: AuthUser | null;
   hydrated: boolean;
   setSession: (payload: AuthPayload, remember?: boolean) => void;
+  setCookieSession: (user: AuthUser, csrfToken: string, newSession?: boolean) => void;
   setTokens: (accessToken: string, refreshToken: string, user?: AuthUser) => void;
   setUser: (user: AuthUser) => void;
   clearSession: () => void;
@@ -85,132 +80,56 @@ interface AuthState {
   can: (permission?: string) => boolean;
 }
 
-function storageAvailable(storage: Storage): boolean {
+function clearBrowserTokenStorage() {
+  if (typeof window === "undefined") return;
   try {
-    const key = `${STORAGE_KEY}-check`;
-    storage.setItem(key, key);
-    storage.removeItem(key);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function validStoredUser(value: unknown): value is AuthUser {
-  if (!value || typeof value !== "object") return false;
-  const user = value as Record<string, unknown>;
-  const strings = (items: unknown) => Array.isArray(items) && items.every((item) => typeof item === "string");
-  return ["id", "email", "first_name", "last_name"].every((key) => typeof user[key] === "string") &&
-    (user.organization_access === undefined || isOrganizationAccess(user.organization_access)) &&
-    typeof user.is_super_admin === "boolean" && (user.organization_id === null || typeof user.organization_id === "string") &&
-    strings(user.permissions) && strings(user.branch_ids) && Array.isArray(user.roles) && user.roles.every((role) =>
-      role && typeof role === "object" && ["id", "name", "slug"].every((key) => typeof (role as Record<string, unknown>)[key] === "string"));
-}
-
-function parseSession(raw: string | null): PersistedSession | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return null;
-    const container = parsed as Record<string, unknown>;
-    const value = ("state" in container ? container.state : container) as Partial<PersistedSession> | undefined;
-    if (
-      typeof value?.accessToken !== "string" ||
-      !value.accessToken ||
-      typeof value.refreshToken !== "string" ||
-      !value.refreshToken ||
-      !validStoredUser(value.user)
-    ) return null;
-    return value as PersistedSession;
-  } catch {
-    return null;
-  }
-}
-
-function getStorage(kind: "local" | "session"): Storage | null {
-  if (typeof window === "undefined") return null;
-  const storage = kind === "local" ? window.localStorage : window.sessionStorage;
-  return storageAvailable(storage) ? storage : null;
-}
-
-function readInitialSession(): PersistedSession | null {
-  const local = getStorage("local");
-  const session = getStorage("session");
-  if (!parseSession(local?.getItem(STORAGE_KEY) ?? null) && !parseSession(session?.getItem(STORAGE_KEY) ?? null)) {
-    for (const storage of [local, session]) {
-      const previous = parseSession(storage?.getItem(LEGACY_STORAGE_KEY) ?? null);
-      if (storage && previous) {
-        storage.setItem(STORAGE_KEY, JSON.stringify(previous));
-        break;
-      }
+    for (const storage of [window.localStorage, window.sessionStorage]) {
+      for (const key of TOKEN_STORAGE_KEYS) storage.removeItem(key);
     }
-  }
-  local?.removeItem(LEGACY_STORAGE_KEY);
-  session?.removeItem(LEGACY_STORAGE_KEY);
-  const localValue = parseSession(local?.getItem(STORAGE_KEY) ?? null);
-  if (localValue) {
-    session?.removeItem(STORAGE_KEY);
-    return localValue;
-  }
-  local?.removeItem(STORAGE_KEY);
-  const sessionValue = parseSession(session?.getItem(STORAGE_KEY) ?? null);
-  if (!sessionValue) session?.removeItem(STORAGE_KEY);
-  return sessionValue;
+  } catch { /* Storage may be disabled by the browser; auth never depends on it. */ }
 }
 
-function persistSession(value: PersistedSession, remember: boolean) {
-  const local = getStorage("local");
-  const session = getStorage("session");
-  local?.removeItem(STORAGE_KEY);
-  session?.removeItem(STORAGE_KEY);
-  (remember ? local : session)?.setItem(STORAGE_KEY, JSON.stringify(value));
-}
-
-function clearPersistedSession() {
-  getStorage("local")?.removeItem(STORAGE_KEY);
-  getStorage("session")?.removeItem(STORAGE_KEY);
-  getStorage("local")?.removeItem(LEGACY_STORAGE_KEY);
-  getStorage("session")?.removeItem(LEGACY_STORAGE_KEY);
-}
-
-const initialSession = readInitialSession();
+clearBrowserTokenStorage();
 
 export const useAuthStore = create<AuthState>()((set, get) => ({
   sessionVersion: 0,
-  accessToken: initialSession?.accessToken ?? null,
-  refreshToken: initialSession?.refreshToken ?? null,
-  user: initialSession?.user ?? null,
-  hydrated: true,
-  setSession: (payload, remember = false) => {
+  authMode: null,
+  authenticated: false,
+  accessToken: null,
+  refreshToken: null,
+  csrfToken: null,
+  user: null,
+  hydrated: false,
+  setSession: (payload, _remember = false) => {
     usePlatformWorkspace.getState().select(null);
-    const session = {
-      accessToken: payload.access_token,
-      refreshToken: payload.refresh_token,
-      user: payload.user,
-    };
-    persistSession(session, remember);
-    set({ ...session, sessionVersion: get().sessionVersion + 1 });
+    clearBrowserTokenStorage();
+    set({ authMode: "bearer", authenticated: true, accessToken: payload.access_token, refreshToken: payload.refresh_token,
+      csrfToken: null, user: payload.user, hydrated: true, sessionVersion: get().sessionVersion + 1 });
+  },
+  setCookieSession: (user, csrfToken, newSession = true) => {
+    const workspace = usePlatformWorkspace.getState().workspace;
+    if (workspace && (!user.is_super_admin || user.id !== workspace.operatorId)) usePlatformWorkspace.getState().select(null);
+    clearBrowserTokenStorage();
+    set({ authMode: "cookie", authenticated: true, accessToken: null, refreshToken: null, csrfToken, user, hydrated: true,
+      sessionVersion: get().sessionVersion + (newSession ? 1 : 0) });
   },
   setTokens: (accessToken, refreshToken, updatedUser) => {
     const user = updatedUser ?? get().user;
     const workspace = usePlatformWorkspace.getState().workspace;
     if (workspace && (!user?.is_super_admin || user.id !== workspace.operatorId)) usePlatformWorkspace.getState().select(null);
-    const remember = Boolean(getStorage("local")?.getItem(STORAGE_KEY));
-    if (user) persistSession({ accessToken, refreshToken, user }, remember);
-    set({ accessToken, refreshToken, user });
+    clearBrowserTokenStorage();
+    set({ authMode: "bearer", authenticated: Boolean(accessToken), accessToken, refreshToken, user });
   },
   setUser: (user) => {
     const workspace = usePlatformWorkspace.getState().workspace;
     if (workspace && (!user.is_super_admin || user.id !== workspace.operatorId)) usePlatformWorkspace.getState().select(null);
-    const { accessToken, refreshToken } = get();
-    const remember = Boolean(getStorage("local")?.getItem(STORAGE_KEY));
-    if (accessToken && refreshToken) persistSession({ accessToken, refreshToken, user }, remember);
     set({ user });
   },
   clearSession: () => {
     usePlatformWorkspace.getState().select(null);
-    clearPersistedSession();
-    set({ accessToken: null, refreshToken: null, user: null, sessionVersion: get().sessionVersion + 1 });
+    clearBrowserTokenStorage();
+    set({ authMode: null, authenticated: false, accessToken: null, refreshToken: null, csrfToken: null, user: null,
+      hydrated: true, sessionVersion: get().sessionVersion + 1 });
   },
   setHydrated: (hydrated) => set({ hydrated }),
   can: (permission) => hasPermission(get().user, permission),

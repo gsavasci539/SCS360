@@ -1,19 +1,22 @@
 from uuid import UUID
 
-from fastapi import Depends, Request, Header
+from fastapi import Depends, Header, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core import (
+    class_capacity_guard,  # noqa: F401 - organization locks precede quota checks
+    subscription_guard,  # noqa: F401 - register purchased capacity checks
+    tenant_guard,  # noqa: F401 - register session boundary guards
+)
 from app.core.database import get_db
 from app.core.exceptions import ForbiddenException, UnauthorizedException
 from app.core.security import verify_access_token
 from app.core.tenant import TenantContext, effective_roles
+from app.core.web_session import ACCESS_COOKIE, require_csrf
 from app.infrastructure.models.models import Role, User, UserStatus
-from app.core import tenant_guard  # noqa: F401 - register session boundary guards
-from app.core import class_capacity_guard  # noqa: F401 - organization locks precede quota checks
-from app.core import subscription_guard  # noqa: F401 - register purchased capacity checks
 
 security = HTTPBearer(auto_error=False)
 
@@ -24,9 +27,12 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db, scope="function"),
     workspace_header: str | None = Header(default=None, alias="X-SCS360-Organization-Id", description="Yalnız platform yöneticisi: seçilen kurum çalışma alanının UUID'si. Auth/platform/subscription yolları asıl platform hesabında kalır."),
 ) -> User:
-    if not credentials:
+    cookie_token = request.cookies.get(ACCESS_COOKIE) if not credentials else None
+    if not credentials and not cookie_token:
         raise UnauthorizedException()
-    payload = verify_access_token(credentials.credentials)
+    if cookie_token and request.method.upper() not in {"GET", "HEAD", "OPTIONS"}:
+        require_csrf(request)
+    payload = verify_access_token(credentials.credentials if credentials else cookie_token)
     if not payload:
         raise UnauthorizedException("Geçersiz veya süresi dolmuş token")
     user_id = payload.get("sub")

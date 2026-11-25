@@ -8,7 +8,7 @@ import { z } from "zod";
 import { api, apiMessage, unwrap } from "../../lib/api";
 import { getHomePath } from "../../lib/home";
 import { useAuthStore } from "../../stores/auth";
-import type { ApiResponse, AuthPayload } from "../../types/api";
+import type { ApiResponse, WebSessionPayload } from "../../types/api";
 import { useToast } from "../../components/Toast";
 import { Field } from "../../components/ui";
 
@@ -22,8 +22,8 @@ function AuthFrame({ children }: { children: React.ReactNode }) {
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
-  const setSession = useAuthStore((state) => state.setSession);
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const setCookieSession = useAuthStore((state) => state.setCookieSession);
+  const authenticated = useAuthStore((state) => state.authenticated);
   const navigate = useNavigate();
   const { showToast } = useToast();
   const demoEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_CREDENTIALS === "true";
@@ -31,12 +31,12 @@ export function LoginPage() {
   const demoPassword = demoEnabled ? import.meta.env.VITE_DEMO_PASSWORD || "" : "";
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema), defaultValues: { email: demoEmail, password: demoPassword, remember: false } });
   const user = useAuthStore((state) => state.user);
-  if (accessToken) return <Navigate to={getHomePath(user)} replace />;
+  if (authenticated) return <Navigate to={getHomePath(user)} replace />;
   const submit = async (values: LoginForm) => {
     setServerError("");
     try {
-      const payload = unwrap(await api.post<ApiResponse<AuthPayload>>("/auth/login", { email: values.email, password: values.password }));
-      setSession(payload, Boolean(values.remember)); showToast("Hoş geldiniz", `${payload.user.first_name}, çalışma alanınız hazır.`);
+      const payload = unwrap(await api.post<ApiResponse<WebSessionPayload>>("/auth/web/login", { email: values.email, password: values.password, remember: Boolean(values.remember) }));
+      setCookieSession(payload.user, payload.csrf_token); showToast("Hoş geldiniz", `${payload.user.first_name}, çalışma alanınız hazır.`);
       // A fresh sign-in always starts in the role's own workspace. This avoids
       // returning a parent or teacher to an administrator-only URL saved in a
       // previous session or an external login link.

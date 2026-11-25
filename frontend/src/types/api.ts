@@ -48,6 +48,11 @@ export interface AuthPayload {
   user: AuthUser;
 }
 
+export interface WebSessionPayload {
+  user: AuthUser;
+  csrf_token: string;
+}
+
 export type RecordValue = string | number | boolean | null | undefined | Record<string, unknown>[];
 export type DataRecord = Record<string, RecordValue> & { id: string };
 

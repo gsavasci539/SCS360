@@ -23,7 +23,7 @@ export function SubscriptionPage() {
   const [loading, setLoading] = useState(true), [error, setError] = useState(""), [revision, setRevision] = useState(0), [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false), [planId, setPlanId] = useState(() => query.get("paket") || ""), [requestId, setRequestId] = useState(() => newRequestId());
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
-  const user = useAuthStore((state) => state.user), refreshToken = useAuthStore((state) => state.refreshToken);
+  const user = useAuthStore((state) => state.user), authenticated = useAuthStore((state) => state.authenticated);
   const { showToast } = useToast(); const navigate = useNavigate();
   useEffect(() => {
     const controller = new AbortController(); setLoading(true);
@@ -49,7 +49,7 @@ export function SubscriptionPage() {
   }, [revision, page]);
   const refresh = () => setRevision((value) => value + 1);
   async function logout() {
-    try { if (refreshToken) await api.post("/auth/logout", { refresh_token: refreshToken }); } catch { /* Local logout remains available offline. */ } finally { useAuthStore.getState().clearSession(); navigate("/login", { replace: true }); }
+    try { if (authenticated) await api.post("/auth/web/logout"); } catch { /* Local logout remains available offline. */ } finally { useAuthStore.getState().clearSession(); navigate("/login", { replace: true }); }
   }
   async function requestInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy || !planId) return; setBusy(true);

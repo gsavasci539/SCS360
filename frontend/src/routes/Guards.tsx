@@ -3,9 +3,9 @@ import { useAuthStore, hasPermission } from "../stores/auth";
 import { useWorkspaceUser } from "../lib/workspaceUser";
 
 export function ProtectedRoute() {
-  const token = useAuthStore((state) => state.accessToken); const hydrated = useAuthStore((state) => state.hydrated); const location = useLocation();
+  const authenticated = useAuthStore((state) => state.authenticated); const hydrated = useAuthStore((state) => state.hydrated); const location = useLocation();
   if (!hydrated) return <div className="state" style={{ minHeight: "100vh" }}><div className="spinner" /></div>;
-  return token ? <Outlet /> : <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return authenticated ? <Outlet /> : <Navigate to="/login" replace state={{ from: location.pathname }} />;
 }
 
 export function PermissionRoute({ permission, alternativePermissions = [] }: { permission?: string; alternativePermissions?: string[] }) {

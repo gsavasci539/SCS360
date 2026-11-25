@@ -120,7 +120,7 @@ it("bekleyen fiyat kataloğu tamamlanınca alt bölüm yer imini yeni yüksekli�
 });
 
 it("kayıt zaman aşımından sonra aynı istekle tekrar edilir, giriş sonrası ödeme adımına gider", async () => {
-  vi.mocked(api.post).mockImplementation(async (path) => path === "/auth/login" ? { data: { data: { access_token: "access", refresh_token: "refresh", user: { id: "owner", organization_id: "school", is_super_admin: false, roles: [], branch_ids: [], permissions: [] } } } } : { data: { data: {} } });
+  vi.mocked(api.post).mockImplementation(async (path) => path === "/auth/web/login" ? { data: { data: { csrf_token: "csrf", user: { id: "owner", organization_id: "school", is_super_admin: false, roles: [], branch_ids: [], permissions: [] } } } } : { data: { data: {} } });
   vi.mocked(api.post).mockRejectedValueOnce(new Error("timeout"));
   render(<MemoryRouter initialEntries={["/kayit?paket=school-plan"]}><Routes><Route path="/kayit" element={<SignupPage />} /><Route path="/subscription" element={<p>Üyelik ödeme adımı</p>} /></Routes></MemoryRouter>);
   await screen.findByRole("form", { name: "Kurum üyeliği oluştur" });
@@ -129,5 +129,5 @@ it("kayıt zaman aşımından sonra aynı istekle tekrar edilir, giriş sonrası
   fireEvent.click(screen.getByRole("button", { name: "Hesabı oluştur ve ödeme adımına geç" })); await screen.findByText("Üyelik ödeme adımı");
   const calls = vi.mocked(api.post).mock.calls.filter(([path]) => path === "/public/signup");
   expect(calls).toHaveLength(2); expect(calls[0]).toEqual(calls[1]); expect(calls[0][1]).not.toHaveProperty("price"); expect(calls[0][1]).not.toHaveProperty("confirm_password");
-  await waitFor(() => expect(useAuthStore.getState().accessToken).toBe("access"));
+  await waitFor(() => expect(useAuthStore.getState().authenticated).toBe(true));
 });

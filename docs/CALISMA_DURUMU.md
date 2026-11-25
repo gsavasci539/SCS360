@@ -996,3 +996,10 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 
 Mobil, backend/frontend ve ortak kaynak/yapılandırma/belgeler güvenli manifestlerle izole yayın checkoutlarına eşitlendi. Kalan üç kaynak değişikliği dahil WIP olarak gönderiliyor; yeni test veya üretim kabulü iddiası yok. Uzak README/devam/doğrulama notları korunur. Veritabanı, kullanıcı/hesap verileri, seed kayıtları, gerçek env/sırlar, imzalama, upload, geçici/çıktı/cache/APK/log dosyaları kapsam dışında. Mobile f21f8934ce211faa542337ed205f8f4d982e8fd9 zaten uzakta. Son normal push SHA sonucu yerel output/all-source-push-20261113.json kaydına yazılacak.
 Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c5268b1b37dfc16c9999f3e4e317d6; Mobile f21f8934ce211faa542337ed205f8f4d982e8fd9. İzole yayın ağaçları temiz; yeni test çalıştırılmadı.
+
+### 25 Kasım 2026 · Web HttpOnly cookie oturumu ve CSRF (WIP)
+
+- Web login/refresh/logout için ayrı cookie uçları eklendi. Access/refresh tokenları web JSON yanıtından çıkarılıyor; frontend tokenları local/session storage’a yazmıyor, cookie oturumunu bellekte kullanıcı+CSRF bilgisiyle yönetiyor. Mutasyonlar CSRF çift gönderim tokenı ve izinli Origin doğrulamasından geçiyor.
+- Android bearer login/refresh/logout uçları korunuyor. Eski tarayıcı token anahtarları temizlenip cookie oturumuna yeniden giriş yapılıyor. Dış HTTPS/WAF/firewall kurulmadı; XSS’in açık oturum adına işlem yapması tamamen engellenmez.
+- Backend cookie/CSRF 4/4; web oturum/refresh/login yönlendirmesi 27/27; TypeScript `--noEmit`, Python compileall ve ilgili Ruff kontrolleri geçti. Test veritabanı geçici SQLite; gerçek hesap, sağlayıcı veya üretim kullanılmadı.
+- Açık blokajlar: Compose HTTP/80, dış TLS/WAF/firewall, ortak dağıtık rate limit, bağımsız XSS/CSRF/tenant pentest, yedek şifreleme/geri yükleme ve işletme KVKK süreçleri. Bu değişiklik tam güvenlik veya KVKK kabulü değildir. Kaynak yayını ve remote SHA bu checkpoint için henüz bekliyor.
