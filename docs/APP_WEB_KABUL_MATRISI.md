@@ -379,3 +379,7 @@ Veli analiz endpoint’inde kişisel/metrik debug çıktıları kaldırıldı; b
 ### 26 Kasım — Web analiz hata konsolu
 
 Parent/class analiz çağrılarının Axios hata nesnesini `console.error` ile yazması kaldırıldı. `reportClientError` üretimde sessizdir; DEV’de yalnız whitelist hata alanları yazar. SCS360 kaynak SHA `fe88e0eb`; frontend testi/build çalıştırılmadı. Tüm istemci konsol çıktılarının genel denetimi tamamlanmadı.
+
+### 26 Kasım — Ödev analizi hata mahremiyeti
+
+`/api/ai/ai-homework-analysis` exception metni ve traceback’i stdout’a yazmıyor; boş/sıfır değerlerle yanlış başarı vermek yerine genel 503 döndürüyor ve hata türünü kaydediyor. SCS360 kaynak SHA `6ab1a930`; hedefli test çalıştırılmadı. Bu analiz router’ının kalan eski hata yolları ayrıca taranmalı.
