@@ -68,3 +68,5 @@ Web analiz hata logu WIP: ayrıntı ekranındaki Axios hata nesnesi yazdırılm�
 26 Kasım 2026 ödev analizi WIP: `/api/ai/ai-homework-analysis` hatasında exception/traceback loglaması ve kullanıcıya iç hata metni verme kaldırıldı; hata türüyle genel 503. SHA `6ab1a930`; test çalıştırılmadı. Diğer analiz uçları ve canlı log/infra doğrulaması açık.
 
 Veli memnuniyeti ve iletişim analizi WIP: iç exception/traceback ifşası kaldırıldı; sorgu hataları sahte/kısmi başarı üretmek yerine genel 503’e gider, hata türü dışında bilgi loglanmaz. SHA `494cd631`; hedefli test yok. Analiz router’ındaki kalan uçlar ve canlı log/infra kabulü açık.
+
+Personel analiz hatası WIP: exception ayrıntısı artık kullanıcıya/loga yazılmaz. Gerçek DB verisi kullanmayan kütüphane ve kart analizleri placeholder üretmek yerine 503 verir; card number response’ta echo edilmez. SCS360 SHA `39b92001`; test yok. Gerçek analiz sözleşmeleri ve canlı doğrulama açık.

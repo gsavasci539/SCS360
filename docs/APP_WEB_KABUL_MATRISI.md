@@ -387,3 +387,7 @@ Parent/class analiz çağrılarının Axios hata nesnesini `console.error` ile y
 ### 26 Kasım — Veli/iletişim analiz hataları
 
 Parent satisfaction’ın bildirim/duyuru sorgu hatalarında sessizce kısmi başarı döndürmesi kaldırıldı; hata genel 503 olur. Veli memnuniyeti ve iletişim analizleri exception içeriği/traceback’i dışa veya loga yazmaz; yalnız hata türü loglanır. SCS360 kaynak SHA `494cd631`; hedefli test çalıştırılmadı. Diğer AI analiz yolları tamamlanmış sayılmaz.
+
+### 26 Kasım — Analiz placeholder’ları kapatıldı
+
+Personel analiz hatası iç detay/traceback döndürmüyor. Veriye bağlı olmayan kütüphane ve kart analizleri kart numarasını da yansıtan sıfır/tahmin placeholder’ları sunmuyor; şimdilik genel 503. SCS360 SHA `39b92001`; hedefli test çalıştırılmadı. Gerçek tenant-scoped analiz DTO’ları daha sonra eklenmeli.
