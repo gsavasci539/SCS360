@@ -157,7 +157,7 @@ class IntentDetectionService:
 
         This provides a safety net if LLM is unavailable.
         """
-        logger.info(f"Starting intent detection for query: '{query}'")
+        logger.info("chatbot_intent_detection_started")
         follow_up_intent = self._follow_up_intent(query, context)
         if follow_up_intent:
             logger.info("Using conversation follow-up intent: %s", follow_up_intent.intent)
@@ -171,7 +171,7 @@ class IntentDetectionService:
             logger.info(f"LLM intent detection succeeded: {intent.intent}")
             return intent
         except Exception as e:
-            logger.warning(f"LLM intent detection failed, using fallback: {e}")
+            logger.warning("chatbot_llm_intent_failed exception_type=%s; using fallback", type(e).__name__)
             fallback_intent = self._fallback_intent_detection(query, context)
             logger.info(f"Fallback intent: {fallback_intent.intent}")
             return fallback_intent

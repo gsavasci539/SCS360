@@ -149,7 +149,7 @@ class OpenAIProvider(LLMProvider):
         try:
             return json.loads(response.content)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM JSON response: {response.content}")
+            logger.error("openai_structured_response_invalid_json")
             raise ValueError(f"Invalid JSON response from LLM: {e}")
 
 
@@ -267,7 +267,7 @@ class OllamaProvider(LLMProvider):
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM JSON response: {content}")
+            logger.error("ollama_structured_response_invalid_json")
             raise ValueError(f"Invalid JSON response from LLM: {e}")
 
 

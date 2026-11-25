@@ -74,7 +74,7 @@ class DateResolutionService:
                 return self._last_n_days(90)
 
             else:
-                logger.warning(f"Unknown period: {period}")
+                logger.warning("chatbot_period_unrecognized")
                 return None
 
         except Exception as e:

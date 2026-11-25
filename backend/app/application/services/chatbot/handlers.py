@@ -685,7 +685,7 @@ class HandlerDispatcher:
         handler = self.handlers.get(intent.intent)
 
         if not handler:
-            logger.warning(f"No handler found for intent: {intent.intent}")
+            logger.warning("chatbot_handler_unavailable")
             handler = self.handlers["GENERAL"]
 
         return await handler.handle(intent, current_user, db)
