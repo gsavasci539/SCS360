@@ -66,3 +66,5 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 Web analiz hata logu WIP: ayrıntı ekranındaki Axios hata nesnesi yazdırılmıyor; mevcut `reportClientError` production’da kapalı, DEV’de alanları whitelist ediyor. SCS360 SHA `fe88e0eb`. Hedefli frontend doğrulaması yapılmadı; kalan istemci logları, backend genel taraması ve canlı kabulü açık.
 
 26 Kasım 2026 ödev analizi WIP: `/api/ai/ai-homework-analysis` hatasında exception/traceback loglaması ve kullanıcıya iç hata metni verme kaldırıldı; hata türüyle genel 503. SHA `6ab1a930`; test çalıştırılmadı. Diğer analiz uçları ve canlı log/infra doğrulaması açık.
+
+Veli memnuniyeti ve iletişim analizi WIP: iç exception/traceback ifşası kaldırıldı; sorgu hataları sahte/kısmi başarı üretmek yerine genel 503’e gider, hata türü dışında bilgi loglanmaz. SHA `494cd631`; hedefli test yok. Analiz router’ındaki kalan uçlar ve canlı log/infra kabulü açık.

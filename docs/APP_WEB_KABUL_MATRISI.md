@@ -383,3 +383,7 @@ Parent/class analiz çağrılarının Axios hata nesnesini `console.error` ile y
 ### 26 Kasım — Ödev analizi hata mahremiyeti
 
 `/api/ai/ai-homework-analysis` exception metni ve traceback’i stdout’a yazmıyor; boş/sıfır değerlerle yanlış başarı vermek yerine genel 503 döndürüyor ve hata türünü kaydediyor. SCS360 kaynak SHA `6ab1a930`; hedefli test çalıştırılmadı. Bu analiz router’ının kalan eski hata yolları ayrıca taranmalı.
+
+### 26 Kasım — Veli/iletişim analiz hataları
+
+Parent satisfaction’ın bildirim/duyuru sorgu hatalarında sessizce kısmi başarı döndürmesi kaldırıldı; hata genel 503 olur. Veli memnuniyeti ve iletişim analizleri exception içeriği/traceback’i dışa veya loga yazmaz; yalnız hata türü loglanır. SCS360 kaynak SHA `494cd631`; hedefli test çalıştırılmadı. Diğer AI analiz yolları tamamlanmış sayılmaz.
