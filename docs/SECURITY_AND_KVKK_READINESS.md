@@ -54,3 +54,5 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 26 Kasım 2026 Public Nginx header tekilleştirmesi: edge config artık upstream API/frontend kopyalarını gizleyip security header setini tek noktadan yayıyor; hedefli test 20/20, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `63bd0120db199cf041b0125a07a9740a0cecf798` normal push/`ls-remote` ile doğrulandı. Container, TLS ingress veya canlı yanıt doğrulaması değildir.
 
 26 Kasım 2026 rate-limit taşıma güvenliği: Production/staging remote Redis bağlantısı `rediss://` olmak zorunda; düz `redis://` yalnız private Compose `rate-limit-store` hostname’i için kabul edilir. Hedefli test 22/22, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `d249c2976ca645fa329ff3bbc8e92e05ac85d51f` normal push/`ls-remote` ile doğrulandı. Redis TLS ve container runtime test edilmedi.
+
+26 Kasım 2026 host routing: public Nginx unknown `Host` değerlerini 444 ile reddediyor; hedefli test 23/23, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `1d5221973d86d4b8f9538c5b0020a70824e1d632` normal push/`ls-remote` ile doğrulandı. Nginx runtime ve canlı edge doğrulanmadı.
