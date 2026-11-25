@@ -355,3 +355,4 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 
 - Web cookie oturumu WIP: backend HttpOnly access/refresh cookie uçları, CSRF+Origin doğrulaması, frontend token depolamama ve refresh akışı eklendi. Android bearer auth değişmedi. Backend 4/4, frontend 27/27, TypeScript, compileall ve Ruff geçti. Dış firewall/TLS/WAF, dağıtık rate limit, pentest ve KVKK işletme kabulü açık. Kaynak SHA yayın sonrası kaydedilecek.
 - Nginx başlıkları WIP: HSTS, eşit CSP (`object-src 'none'` dahil) ve proxy upstream sürüm başlığı gizleme kaynakta eklendi. Canlı alan adı/edge config doğrulanmadı. `security.txt`, gerçek ve izlenen bildirim kanalı belirlenmediği için açık.
+- Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `7892eb31aad20e3847cc40f89fa877cf158aa402`. Canlı edge'e dağıtım veya güvenlik kabulü değildir.

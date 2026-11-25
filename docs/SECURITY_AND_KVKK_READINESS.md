@@ -34,6 +34,8 @@ Bu belge, uygulamadaki güvenlik kontrollerini işletim ve KVKK sorumlulukların
 
 25 Kasım 2026'da yapılan salt-okunur GET isteğinde `scs360.com.tr` yanıtı `nginx/1.18.0 (Ubuntu)` gösterdi; `X-Content-Type-Options` dışındaki incelenen başlıklar yoktu. `/iletisim` ve `/.well-known/security.txt` de gerçek iletişim/bildirim içeriği yerine SPA `index.html` döndürdü. Tarama bulguları canlı için doğrulandı. Repo Nginx yapılandırmalarında CSP/çerçeve/referrer/permissions ve sürüm kapatma zaten vardı; HSTS eklendi, CSP/proxy üstbilgileri hizalandı ve bilinen `scs360.com.tr` hostu vhost listesine eklendi. Bu kaynak değişikliği üretime dağıtılmadı; aktif TLS terminatörü ve vhost yapılandırması repo ile eşleşmeyebilir.
 
+Kaynak değişikliği SCS360 `codex/source-sync-20261111` dalına normal push ile gönderildi ve `ls-remote` SHA `7892eb31aad20e3847cc40f89fa877cf158aa402` ile doğrulandı. Bu yalnız kaynak checkpoint'idir.
+
 `/.well-known/security.txt` için kuruluş adına izlenen, doğrulanmış bir güvenlik bildirim adresi/kanalı bulunamadı. Eski dokümandaki örnek e-posta kullanılmadı; gerçek iletişim kanalı tanımlanıp izleme sorumlusu atanıncaya kadar bu tarama bulgusu açık kalır.
 
 Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik checkpoint'idir. Canlı sunucu/edge firewall, TLS, yedek şifreleme/geri yükleme, WAF, dağıtık rate limit, bağımsız penetrasyon testi ve kurumların KVKK süreçleri bu kod değişikliğiyle doğrulanmış değildir. Bunlar tamamlanana kadar canlı güvenlik veya KVKK uyumu için kabul verilmez.
