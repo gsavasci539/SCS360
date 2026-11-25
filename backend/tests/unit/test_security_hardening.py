@@ -1,4 +1,5 @@
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
@@ -113,6 +114,26 @@ def test_security_headers_protect_api_responses_from_caching_and_sniffing():
     assert response.headers["pragma"] == "no-cache"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
+
+
+def test_frontend_nginx_keeps_security_headers_on_immutable_assets():
+    repo_root = Path(__file__).resolve().parents[3]
+    config = (repo_root / "frontend" / "nginx.conf").read_text(encoding="utf-8")
+    assets = config.split("location /assets/ {", 1)[1].split("\n  }", 1)[0]
+
+    assert "server_tokens off;" in config
+    assert 'Strict-Transport-Security "max-age=31536000; includeSubDomains" always;' in config
+    assert "proxy_hide_header Server;" in config
+    assert "proxy_hide_header X-Powered-By;" in config
+    for header in (
+        "Strict-Transport-Security",
+        "Content-Security-Policy",
+        "X-Content-Type-Options",
+        "X-Frame-Options",
+        "Referrer-Policy",
+        "Permissions-Policy",
+    ):
+        assert f"add_header {header} " in assets
 
 
 def test_upload_rejects_extension_content_mismatch():
