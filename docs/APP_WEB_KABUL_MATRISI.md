@@ -371,3 +371,7 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 - Rate-limit Redis WIP: remote `redis://` artık reddediliyor; `rediss://` veya yalnız private Compose `rate-limit-store` bağlantısı kabul ediliyor. Hedefli backend 22/22, Ruff geçti. Redis/TLS runtime testi yok. SCS360 `codex/source-sync-20261111` SHA `d249c2976ca645fa329ff3bbc8e92e05ac85d51f`.
 - Nginx host routing WIP: bilinmeyen `Host` default vhost’ta 444 ile reddediliyor. Nginx statik config kontrolleri dahil backend 23/23, Ruff geçti; Nginx runtime ve canlı TLS edge doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `1d5221973d86d4b8f9538c5b0020a70824e1d632`.
 - Güvenlik devam notlarının çakışan tekrarları temizlendi; Web cookie durumu ve `includeSubDomains` dağıtım koşulu tutarlı biçimde kaydedildi. Normal push/`ls-remote`: SCS360 `codex/source-sync-20261111` SHA `88fb67803249d62aa5c55a750504306dc5c53127`. WIP; canlı kabulü değildir.
+
+### 26 Kasım — Veli analizi hata ve log mahremiyeti
+
+Veli analiz endpoint’inde kişisel/metrik debug çıktıları kaldırıldı; beklenmeyen hata API iç hata metni/traceback’ini açmadan 503 döner, sunucuda yalnız exception türü kaydedilir. Kaynak SCS360 `codex/source-sync-20261111` SHA `6e8c21ee`; hedefli API/frontend testi çalıştırılmadı. Bu yalnız tek endpoint’tir; aynı analiz dosyasındaki diğer eski hata/log yolları ve canlı loglar ayrıca incelenmeli.
