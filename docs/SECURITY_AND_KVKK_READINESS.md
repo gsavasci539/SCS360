@@ -49,4 +49,6 @@ Uygulama katmanındaki bu kontrol ve düzeltmeler sınırlı bir güvenlik check
 
 26 Kasım 2026 API hata yanıtı checkpoint'i: cookie oturumunda CSRF reddinin özel 403 yanıtına da `Permissions-Policy` eklendi. Hedefli testler 19/19, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `9db5bbd0107f6bea7d93a98b449175d61ecc065b` push ve `ls-remote` ile doğrulandı; Nginx runtime ve canlı edge doğrulaması değildir.
 
-26 Kasım 2026 dokümantasyon tutarlılık düzeltmesi: Web cookie oturumunun storage durumunu ve HSTS `includeSubDomains` ön koşulunu son kaynakla hizaladım. Canlı site/edge doğrulaması değildir; sonraki normal push SHA devam kaydında yer alacak.
+26 Kasım 2026 dokümantasyon tutarlılık düzeltmesi: Web cookie oturumunun storage durumunu ve HSTS `includeSubDomains` ön koşulunu son kaynakla hizaladım. SCS360 `codex/source-sync-20261111` SHA `88fb67803249d62aa5c55a750504306dc5c53127` normal push/`ls-remote` ile doğrulandı. Canlı site/edge doğrulaması değildir.
+
+26 Kasım 2026 Public Nginx header tekilleştirmesi: edge config artık upstream API/frontend kopyalarını gizleyip security header setini tek noktadan yayıyor; hedefli test 20/20, Ruff geçti. SCS360 `codex/source-sync-20261111` SHA `63bd0120db199cf041b0125a07a9740a0cecf798` normal push/`ls-remote` ile doğrulandı. Container, TLS ingress veya canlı yanıt doğrulaması değildir.
