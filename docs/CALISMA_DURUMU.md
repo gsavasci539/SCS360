@@ -1046,3 +1046,7 @@ Tüm kaynak WIP push doğrulandı: SCS360 codex/source-sync-20261111 130466f5f8c
 # 26 Kasım 2026 — AI analiz hata mahremiyeti checkpoint’i
 
 `backend/app/routers/ai_analytics.py`: parent-engagement, class-analysis, classes-overview, executive-summary, comparative-analysis, resource-utilization, staff-productivity, risk-management ve operational-metrics catch blokları artık sıfır/boş analizle sahte başarı üretmez; genel 503 döndürür. Günlüklerde yalnız exception sınıfı kalır; beklenen `AppException` iş/4xx hataları aynen yükseltilir. Statik `git diff --check` geçti; test/build çalıştırılmadı. SCS360 `codex/source-sync-20261111` kaynak SHA `4d9fcfea50e35f4f1a0b66ebdb1dd16c1279e1fa` normal push/`ls-remote` ile doğrulandı. Bu WIP; tüm backend log denetimi, canlı eski log saklama/silme, edge/firewall/WAF/TLS runtime, bağımsız pentest ve KVKK işletim süreçleri açık.
+
+## 26 Kasım 2026 — Chatbot hata logu mahremiyeti
+
+Chatbot route, intent handler, konuşma geçmişi/context/date servisleri ve OpenAI/Ollama adaptörlerinde hata metni, traceback ve kullanıcı kimliği loglaması kaldırıldı; hata sınıfı ile sabit etiket kalır. Değişen 6 dosyada statik `git diff --check` geçti; test/build yapılmadı. SCS360 `codex/source-sync-20261111` SHA `f9107087bf303fac105df0f5c27c178bfbe01b99` normal push/`ls-remote` ile doğrulandı. Bu sınırlı WIP; harici LLM veri aktarım envanteri/uygun hukuki mekanizma, backend genel log denetimi, canlı log saklama/silme ve KVKK süreçleri kapanmış değildir.

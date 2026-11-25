@@ -395,3 +395,7 @@ Personel analiz hatası iç detay/traceback döndürmüyor. Veriye bağlı olmay
 ### 26 Kasım — Kalan AI analiz hata yolları
 
 Parent-engagement ve kurum/sınıf/personel/kaynak/risk/operasyonel analiz catch blokları kişisel exception/traceback içeriği yazmaz; boş metrikle sahte başarı yerine genel 503 döndürür, beklenen `AppException` durumları korunur. SCS360 `codex/source-sync-20261111` SHA `4d9fcfea50e35f4f1a0b66ebdb1dd16c1279e1fa` doğrulandı. Test/build çalıştırılmadı. Bu kaynak checkpoint’i canlı/kapsamlı güvenlik veya KVKK kabulü değildir; başka endpointler ve runtime hâlâ incelenmeli.
+
+### 26 Kasım — Chatbot log mahremiyeti
+
+Chatbot route, intent handler, context/history/date servisleri ve OpenAI/Ollama adaptörlerindeki hata ayrıntısı/traceback logları kaldırıldı; sabit işlem etiketi ve exception sınıfı kalıyor. SCS360 SHA `f9107087bf303fac105df0f5c27c178bfbe01b99`; hedefli test/build yok. Başka backend logları ve harici LLM veri aktarımı bu checkpoint’te denetlenmedi.
