@@ -361,3 +361,4 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 - Geliştirici bağımlılık düzeltmesi push doğrulandı: SCS360 `codex/source-sync-20261111` SHA `81195e5722cc42cc38d5567dd2888ea0896cde9a`. WIP; canlı/KVKK kabulü değildir.
 - Nginx asset başlık kalıtımı WIP: `/assets/` alt konumunda `add_header` üst seviye başlıkları düşürebildiği için güvenlik başlıkları bu konuma da eklendi; HSTS `includeSubDomains` ayarı kaynakta. Hedefli backend 18/18, Ruff geçti. Statik metin testi Nginx davranışını/container’ı veya canlı edge’i doğrulamaz; alt alan adlarının HTTPS envanteri ve Nginx runtime testi açık.
 - Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `d4864250ea4de148c0bbe1b0090543f6d3624246`. Canlı dağıtım veya güvenlik kabulü değildir.
+- Devam kaydı SHA: SCS360 `codex/source-sync-20261111` `48596b7bed2a67b4b3b0361c1ef15e9f848b8ce3`. WIP; `nginx -t`, gerçek TLS/edge ve alt alan adı kontrolü bekliyor.
