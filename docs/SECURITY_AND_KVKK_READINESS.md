@@ -20,7 +20,8 @@ Bu belge, uygulamadaki güvenlik kontrollerini işletim ve KVKK sorumlulukların
 
 Rate-limit kaynak checkpoint'i normal push ve `ls-remote` ile SCS360 `codex/source-sync-20261111` SHA `436938cc9e2ea71ff36802885aa3bc3232738306` olarak doğrulandı. Canlıya dağıtım veya güvenlik kabulü değildir.
 
-25 Kasım 2026'da `pip-audit -r backend/requirements.txt` bilinen Python dependency zafiyeti bulmadı. Bu sonuç Compose imajlarını, frontend bağımlılıklarını, canlı image digestlerini veya gelecekteki advisory’leri kapsamaz.
+25 Kasım 2026 dependency taraması ilk backend-dev kontrolünde Black 26.3.1 için CVE-2026-114134 buldu; `requirements-dev.txt` Black 26.10.1'e yükseltildi. Sonraki backend-dev `pip-audit` ve frontend tam `npm audit --package-lock-only` bilinen zafiyet bulmadı. Bu sonuç Compose imajlarını, canlı image digestlerini veya gelecekteki advisory’leri kapsamaz.
+- Black geliştirici bağımlılık güncellemesi SCS360 `codex/source-sync-20261111` SHA `81195e5722cc42cc38d5567dd2888ea0896cde9a` olarak push ve `ls-remote` ile doğrulandı. Bu kaynak checkpoint'i canlıya dağıtım veya uygulama güvenlik kabulü değildir.
 - Web tokenlarının tarayıcı deposunda kalıcı tutulması azaltıldı; ancak XSS, açık oturum adına API işlemi yapabilir. CSP/XSS incelemesi, bağımsız tarayıcı testi ve gerçek HTTPS üzerinde SameSite/CORS/proxy doğrulaması hâlâ gerekli. Cookie oturumu HTTPS ve aynı site üzerinden frontend/API yayın varsayımına dayanır.
 - Veritabanı, özel dosya deposu ve yedekler için aktarımda ve saklamada şifreleme, anahtar kasası, anahtar döndürme, erişim ayrımı, değiştirilemez denetim izi, yedek geri yükleme provası ve silme/yaşam döngüsü doğrulanmalı.
 - Sürüm adayı üzerinde bağımlılık/SBOM taraması, statik ve dinamik güvenlik testi, tenant/rol/şube izolasyonu regresyonu ve bağımsız sızma testi tamamlanmalı. Bulgular kapatılmadan “sızmaya kapalı” veya “canlıya hazır” denmemeli.
