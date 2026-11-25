@@ -1,17 +1,18 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from sqlalchemy.exc import MultipleResultsFound
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy.exc import MultipleResultsFound
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import get_settings
 from app.core.exceptions import AppException
 from app.core.middleware import (
     RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
     app_exception_handler,
     generic_exception_handler,
     http_exception_handler,
@@ -22,8 +23,9 @@ from app.core.rate_limit import limiter
 from app.core.routing import RouterRegistry
 from app.routers import (
     admin_crud,
-    attendance_editor_routes,
+    ai_analytics,
     appointments,
+    attendance_editor_routes,
     auth,
     bus,
     canteen,
@@ -33,19 +35,20 @@ from app.routers import (
     communications,
     consents,
     core_modules,
+    daily_reports,
     dashboard,
     dashboard_reports,
-    daily_reports,
-    devices,
+    data_import,
     debts,
+    devices,
     exams,
     expenses,
     files_receipts,
     guidance,
     hardware,
-    hq,
+    health,
     homework,
-    data_import,
+    hq,
     infirmary,
     inventory,
     library,
@@ -53,29 +56,27 @@ from app.routers import (
     messages,
     operations,
     organizations,
-    platform,
-    public_saas,
-    subscription_payments,
-    school_payment_merchant,
-    school_payment_review,
     outbox,
     parent_notices,
     parent_portal,
     parents,
-    payroll,
     payments,
+    payroll,
     pickup,
+    platform,
+    public_saas,
     rfid_cards,
+    school_payment_merchant,
+    school_payment_review,
     security,
     staff_operations,
+    students,
+    subscription_payments,
     surveys,
     teacher,
     timetable,
     tutoring,
     users,
-    health,
-    ai_analytics,
-    students,
 )
 
 settings = get_settings()
@@ -91,9 +92,9 @@ app = FastAPI(
     title="SCS360 API",
     description="Anaokulu, kreş, etüt ve kurs merkezleri yönetim sistemi",
     version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/docs" if settings.api_docs_enabled else None,
+    redoc_url="/api/redoc" if settings.api_docs_enabled else None,
+    openapi_url="/api/openapi.json" if settings.api_docs_enabled else None,
     lifespan=lifespan,
 )
 
@@ -113,6 +114,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.get("/health", tags=["Health"], include_in_schema=False)

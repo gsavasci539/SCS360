@@ -4,12 +4,12 @@ import uuid
 
 import structlog
 from fastapi import Request, Response
+from fastapi.encoders import jsonable_encoder
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import get_settings
 from app.core.exceptions import AppException
 from app.core.responses import error_response
-from fastapi.encoders import jsonable_encoder
 
 settings = get_settings()
 
@@ -47,6 +47,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms=duration,
         )
         response.headers["X-Request-ID"] = request_id
+        return response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Apply response protections centrally, including API errors and preflights."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
         return response
 
 

@@ -1,10 +1,11 @@
-import os
+import re
 import uuid
-from typing import Optional, Tuple
 from pathlib import Path
-from fastapi import UploadFile, HTTPException
+
+from fastapi import HTTPException, UploadFile
 
 from app.core.config import get_settings
+from app.infrastructure.storage.uploads import read_upload
 
 
 class FileService:
@@ -12,7 +13,7 @@ class FileService:
     
     def __init__(self):
         self.settings = get_settings()
-        self.upload_dir = Path(self.settings.UPLOAD_DIR)
+        self.upload_dir = Path(self.settings.UPLOAD_DIR).resolve()
         self.max_upload_size = self.settings.max_upload_size_bytes
         self.allowed_file_types = self.settings.allowed_file_types_list
         
@@ -23,7 +24,7 @@ class FileService:
         self,
         file: UploadFile,
         subfolder: str = "general"
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """
         Upload a file
         
@@ -34,27 +35,28 @@ class FileService:
         Returns:
             Tuple of (file_path, file_url)
         """
+        components = subfolder.replace("\\", "/").split("/")
+        if len(components) > 8 or any(
+            not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", item) for item in components
+        ):
+            raise HTTPException(status_code=400, detail="Geçersiz dosya klasörü")
+
+        filename, file_content = await read_upload(file)
         # Validate file type
-        file_ext = file.filename.split('.')[-1].lower()
+        file_ext = Path(filename).suffix.removeprefix(".").lower()
         if file_ext not in self.allowed_file_types:
             raise HTTPException(
                 status_code=400,
                 detail=f"İzin verilmeyen dosya türü. İzin verilenler: {', '.join(self.allowed_file_types)}"
             )
         
-        # Validate file size
-        file_content = await file.read()
-        if len(file_content) > self.max_upload_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Dosya boyutu çok büyük. Maksimum: {self.settings.MAX_UPLOAD_SIZE_MB}MB"
-            )
-        
-        # Generate unique filename
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        # Keep untrusted names out of paths and use only a random stored name.
+        unique_filename = f"{uuid.uuid4()}{Path(filename).suffix.lower()}"
         
         # Create subfolder
         subfolder_path = self.upload_dir / subfolder
+        if not subfolder_path.resolve().is_relative_to(self.upload_dir.resolve()):
+            raise HTTPException(status_code=400, detail="Geçersiz dosya klasörü")
         subfolder_path.mkdir(parents=True, exist_ok=True)
         
         # Save file
@@ -63,7 +65,7 @@ class FileService:
             f.write(file_content)
         
         # Generate file URL
-        file_url = f"/uploads/{subfolder}/{unique_filename}"
+        file_url = f"/api/files/{subfolder}/{unique_filename}"
         
         return (str(file_path), file_url)
     
@@ -86,7 +88,7 @@ class FileService:
         except Exception:
             return False
     
-    def get_file(self, file_path: str) -> Optional[Path]:
+    def get_file(self, file_path: str) -> Path | None:
         """
         Get a file
         

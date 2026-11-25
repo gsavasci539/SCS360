@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import model_validator
@@ -82,6 +83,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_security_settings(self) -> "Settings":
         environment = self.APP_ENV.strip().lower()
+        if environment not in {"development", "test", "staging", "production"}:
+            raise ValueError("APP_ENV must be development, test, staging or production")
         try:
             ZoneInfo(self.BUSINESS_TIMEZONE)
         except ZoneInfoNotFoundError as exc:
@@ -106,9 +109,41 @@ class Settings(BaseSettings):
                 raise ValueError("JWT_SECRET_KEY must be a unique secret of at least 32 characters")
             if "*" in self.cors_origins_list:
                 raise ValueError("Wildcard CORS origins are not allowed outside development")
-            if self.NOTIFICATION_DELIVERY_ENABLED and not self.PASSWORD_RESET_URL.startswith("https://"):
+            if not self.cors_origins_list:
+                raise ValueError("At least one HTTPS CORS origin is required in production or staging")
+            for origin in self.cors_origins_list:
+                parsed = urlsplit(origin)
+                host = (parsed.hostname or "").lower()
+                if (
+                    parsed.scheme != "https"
+                    or not host
+                    or parsed.username is not None
+                    or parsed.password is not None
+                    or parsed.path
+                    or parsed.query
+                    or parsed.fragment
+                    or any(character.isspace() for character in origin)
+                    or parsed.netloc != parsed.netloc.lower()
+                    or host == "localhost"
+                    or host.endswith(".localhost")
+                ):
+                    raise ValueError("Production and staging CORS origins must be exact HTTPS origins")
+            reset_url = urlsplit(self.PASSWORD_RESET_URL)
+            if reset_url.scheme != "https" or not reset_url.hostname:
                 raise ValueError("PASSWORD_RESET_URL must use HTTPS in production or staging")
+            if self.IYZICO_PAYMENT_ENABLED:
+                callback = urlsplit(self.SCHOOL_PAYMENT_CALLBACK_URL)
+                if callback.scheme != "https" or not callback.hostname:
+                    raise ValueError("School payment callback URL must use HTTPS when payments are enabled")
+            if self.SAAS_PAYMENT_ENABLED:
+                callback = urlsplit(self.SAAS_IYZICO_CALLBACK_URL)
+                if callback.scheme != "https" or not callback.hostname:
+                    raise ValueError("SaaS payment callback URL must use HTTPS when payments are enabled")
         return self
+
+    @property
+    def api_docs_enabled(self) -> bool:
+        return self.APP_ENV.strip().lower() not in {"production", "staging"}
 
     @property
     def cors_origins_list(self) -> list[str]:
