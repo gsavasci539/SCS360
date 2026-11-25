@@ -10,7 +10,7 @@ import logging
 from typing import List, Dict, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -538,21 +538,11 @@ async def get_parents_overview_analysis(
             "summary": f"Toplam {total_parents} veliden {active_parents} aktif durumda. İletişim oranı %{round(communication_rate, 1)}, Devamsızlık %{round(attendance_rate, 1)}."
         })
         
-    except Exception as e:
-        import traceback
-        print(f"AI Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "total_parents": 0,
-            "active_parents": 0,
-            "communication_rate": 0.0,
-            "payment_compliance": 0.0,
-            "attendance_rate": 0.0,
-            "engagement_score": 0.0,
-            "trend": "error",
-            "recommendations": [f"Hata: {str(e)}"],
-            "summary": f"Error: {str(e)}"
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("parent_engagement_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/parent-analysis/{parent_id}")
@@ -1172,19 +1162,11 @@ async def get_class_analysis(
             "teacher_name": teacher_name
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Class Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "class_id": class_id,
-            "student_count": 0,
-            "attendance_rate": 0,
-            "avg_grade": 0,
-            "performance_trend": "Veri yok",
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("class_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/classes-overview")
@@ -1277,21 +1259,11 @@ async def get_classes_overview_analysis(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Classes Overview Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "total_classes": 0,
-            "total_students": 0,
-            "avg_class_size": 0,
-            "total_capacity": 0,
-            "occupancy_rate": 0,
-            "overall_attendance_rate": 0,
-            "overall_avg_grade": 0,
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("classes_overview_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/student-performance-trends")
@@ -1504,18 +1476,11 @@ async def get_executive_summary(
             "generated_at": datetime.now().isoformat()
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Executive Summary Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "kpis": {},
-            "trends": {},
-            "alerts": [{"type": "error", "severity": "critical", "message": f"Hata: {str(e)}"}],
-            "recommendations": [f"Hata: {str(e)}"],
-            "generated_at": datetime.now().isoformat()
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("executive_summary_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/comparative-analysis")
@@ -1644,17 +1609,11 @@ async def get_comparative_analysis(
             "period2_label": f"Önceki {period2_days - period1_days} gün"
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Comparative Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "period1": {},
-            "period2": {},
-            "comparison": {},
-            "insights": [f"Hata: {str(e)}"]
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("comparative_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/resource-utilization")
@@ -1745,17 +1704,11 @@ async def get_resource_utilization(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Resource Utilization Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "classroom_utilization": {},
-            "staff_utilization": {},
-            "facility_utilization": {},
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("resource_utilization_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/staff-productivity")
@@ -1831,16 +1784,11 @@ async def get_staff_productivity(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Staff Productivity Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "productivity_metrics": {},
-            "performance_by_role": {},
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("staff_productivity_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/risk-management")
@@ -2040,18 +1988,11 @@ async def get_risk_management(
             "assessment_date": datetime.now().isoformat()
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Risk Management Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "risks": [],
-            "risk_summary": {},
-            "mitigation_strategies": [],
-            "recommendations": [f"Hata: {str(e)}"],
-            "assessment_date": datetime.now().isoformat()
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("risk_management_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/operational-metrics")
@@ -2164,19 +2105,11 @@ async def get_operational_metrics(
             "generated_at": datetime.now().isoformat()
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Operational Metrics Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "daily_metrics": {},
-            "weekly_metrics": {},
-            "monthly_metrics": {},
-            "efficiency_indicators": {},
-            "recommendations": [f"Hata: {str(e)}"],
-            "generated_at": datetime.now().isoformat()
-        })
+    except AppException:
+        raise
+    except Exception as exc:
+        logger.error("operational_metrics_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Analiz şu anda kullanılamıyor", status_code=503) from None
 
 
 @router.get("/ai-academic-predictions")
