@@ -37,6 +37,10 @@ Rate-limit kaynak checkpoint'i normal push ve `ls-remote` ile SCS360 `codex/sour
 - Yurt dışı bulut, e-posta, mesaj, analiz, yedek veya yapay zekâ sağlayıcısına aktarım olup olmadığını uçtan uca belirleyin. Aktarım varsa güncel KVKK Kanunu 9. madde mekanizması ve gerekli Kurul bildirimlerini hukuk/uyum sorumlusuyla doğrulayın.
 - İhlal tatbikatı ve iletişim planı oluşturun. Kurulun kararlarına göre Kurula bildirim için en geç 72 saat kuralı ve etkilenen kişilere makul en kısa sürede bildirim süreci işletilebilir olmalı.
 
+## 26 Kasım kaynak incelemesi — hassas debug çıktısı (WIP)
+
+Borç listeleme öğrenci UUID’lerini; sınıf liste/detay ve repository kodu sınıf/öğretmen adlarını ve kimliklerini `print()` ile stdout’a yazıyordu. Bu çağrılar kaldırıldı; API yanıt sözleşmesi değiştirilmedi. Kod SHA `c8c3c33c9623e712a39d0355fec82382fc60351f` olarak normal push ve `ls-remote` ile doğrulandı. Hedefli test çalıştırılmadı; bu değişiklik canlı loglardan eski kayıtları silmez, bütün uygulamadaki logları kapsamaz ve güvenlik/KVKK veya canlıya hazır kabulü değildir. Kalan iş: backend genelinde hassas log taraması ve çalışan Nginx/ingress/container konfigürasyonu ile runtime doğrulama.
+
 ## Durum
 
 25 Kasım 2026'da yapılan salt-okunur GET isteğinde `scs360.com.tr` yanıtı `nginx/1.18.0 (Ubuntu)` gösterdi; `X-Content-Type-Options` dışındaki incelenen başlıklar yoktu. `/iletisim` ve `/.well-known/security.txt` de gerçek iletişim/bildirim içeriği yerine SPA `index.html` döndürdü. Tarama bulguları canlı için doğrulandı. Repo Nginx kaynakları güçlendirildi; sonradan frontend statik `/assets/` konumu için üst vhost başlıkları yinelendi ve HSTS `includeSubDomains` olarak ayarlandı. Bu kaynak değişiklikleri üretime dağıtılmadı; aktif TLS terminatörü ve vhost yapılandırması repo ile eşleşmeyebilir. Alt alan adlarının HTTPS envanteri canlıya çıkmadan doğrulanmalı.

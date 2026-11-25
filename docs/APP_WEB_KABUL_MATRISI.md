@@ -335,6 +335,10 @@ Sınıf/tarih değişince mevcut yoklama sunucudan yeniden yüklenir; eski durum
 
 Remote checkpoint: SCS360 codex/source-sync-20261111 653bcff455f63fc863dd028213e6e19408851fbb (normal push verified).
 
+### 26 Kasım — Backend debug loglarında öğrenci/sınıf verisi
+
+`/api/debts` debug çıktısındaki öğrenci UUID’leri ve `/api/classes` ile class repository içindeki örnek sınıf/öğretmen adları ve kimlikleri kaldırıldı. Yalnız hassas içerikli stdout yazımları silindi; API DTO/payload ve erişim akışı değiştirilmedi. Kod push SHA’sı `c8c3c33c9623e712a39d0355fec82382fc60351f`. Bu statik kaynak değişikliğidir; hedefli test çalıştırılmadı, canlı konteyner loglarında eski kayıtların silindiğini veya uçtan uca KVKK uyumunu kanıtlamaz.
+
 ### 13 Kasım — kütüphane hatırlatma UI WIP
 
 Gerçek notification job oluşturmayan reminder API çağrısı web kütüphane ekranından ve teslim edildi metninden çıkarıldı. Target `library-reminder-availability.test.tsx` **1/1 PASS** (sandbox TEMP rename EPERM'inden sonra workspace temp klasörüyle). Backend endpointi doğrudan çağrıldığında yanıltıcı başarı cevabı vermeyi sürdürüyor; bu API düzeltmesi veya satış kabulü değildir. Sıradaki iş backend endpointini geçici DB ile izole edip, outbox/provider yokken başarı bildirmeyecek şekilde düzeltmek.
