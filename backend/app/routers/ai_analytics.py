@@ -988,57 +988,16 @@ async def get_staff_analysis(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Staff Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "total_staff": 0,
-            "active_staff": 0,
-            "role_distribution": {},
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except Exception as exc:
+        logger.error("staff_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Personel analizi şu anda yüklenemiyor", status_code=503) from None
 
 
 @router.get("/library-analysis")
 async def get_library_analysis(
     tenant: TenantContext = Depends(AnalysisPermission('/library-analysis')),
-    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    """
-    Get AI-powered library analysis
-    """
-    try:
-        organization_id = tenant.organization_id
-        
-        # Generate recommendations based on common library management practices
-        recommendations = [
-            "Kitap okuma oranlarını artırmak için okuma etkinlikleri düzenleyin",
-            "Popüler kategorilere göre yeni kitap alımları yapın",
-            "Zimmet takibi için düzenli kontroller yapın"
-        ]
-        
-        return success_response({
-            "total_books": 0,
-            "available_books": 0,
-            "borrowed_books": 0,
-            "overdue_count": 0,
-            "recommendations": recommendations
-        })
-        
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Library Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "total_books": 0,
-            "available_books": 0,
-            "borrowed_books": 0,
-            "overdue_count": 0,
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    raise AppException("Kütüphane analizi şu anda kullanılamıyor", status_code=503)
 
 
 @router.get("/payroll-analysis")
@@ -1105,41 +1064,8 @@ async def get_clubs_analysis(
 async def get_card_analysis(
     card_number: str,
     tenant: TenantContext = Depends(AnalysisPermission('/card-analysis')),
-    db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    """
-    Get AI-powered card analysis for a specific card
-    """
-    try:
-        organization_id = tenant.organization_id
-        
-        # Generate recommendations based on card usage patterns
-        recommendations = [
-            "Düzenli harcama alışkanlıklarını izleyin",
-            "Günlük limitleri optimize edin",
-            "Bakiye yükleme hatırlatmaları yapın"
-        ]
-        
-        return success_response({
-            "card_number": card_number,
-            "avg_daily_spending": 0,
-            "spending_trend": "stable",
-            "low_balance_alert": False,
-            "recommendations": recommendations
-        })
-        
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Card Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "card_number": card_number,
-            "avg_daily_spending": 0,
-            "spending_trend": "stable",
-            "low_balance_alert": False,
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    raise AppException("Kart analizi şu anda kullanılamıyor", status_code=503)
 
 
 @router.get("/class-analysis/{class_id}")
