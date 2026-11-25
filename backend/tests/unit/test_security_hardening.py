@@ -187,6 +187,15 @@ def test_public_nginx_emits_a_single_authoritative_security_header_set():
         assert config.count(f"proxy_hide_header {header};") == 1
 
 
+def test_public_nginx_rejects_unknown_host_headers():
+    repo_root = Path(__file__).resolve().parents[3]
+    config = (repo_root / "nginx" / "default.conf").read_text(encoding="utf-8")
+
+    assert "listen 80 default_server;" in config
+    assert "server_name _;\n    return 444;" in config
+    assert "server_name scs360.com.tr scs.bytebridge.com.tr;" in config
+
+
 def test_upload_rejects_extension_content_mismatch():
     upload = UploadFile(file=BytesIO(b"not a pdf"), filename="record.pdf")
 
