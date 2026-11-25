@@ -703,31 +703,19 @@ async def get_parent_satisfaction_analysis(
         )
         parents = parent_result.scalars().all()
         
-        # Try to fetch notification jobs, handle if model doesn't exist
-        notifications = []
-        try:
-            notification_result = await db.execute(
-                select(NotificationJob)
-                .where(NotificationJob.organization_id == organization_id)
-                .where(NotificationJob.created_at >= datetime.now() - timedelta(days=30))
-            )
-            notifications = notification_result.scalars().all()
-        except Exception as e:
-            import sys
-            print(f"Notification query skipped: {str(e)}", file=sys.stderr)
-        
-        # Try to fetch announcements, handle if model doesn't exist
-        announcements = []
-        try:
-            announcement_result = await db.execute(
-                select(Announcement)
-                .where(Announcement.organization_id == organization_id)
-                .where(Announcement.created_at >= datetime.now() - timedelta(days=30))
-            )
-            announcements = announcement_result.scalars().all()
-        except Exception as e:
-            import sys
-            print(f"Announcement query skipped: {str(e)}", file=sys.stderr)
+        notification_result = await db.execute(
+            select(NotificationJob)
+            .where(NotificationJob.organization_id == organization_id)
+            .where(NotificationJob.created_at >= datetime.now() - timedelta(days=30))
+        )
+        notifications = notification_result.scalars().all()
+
+        announcement_result = await db.execute(
+            select(Announcement)
+            .where(Announcement.organization_id == organization_id)
+            .where(Announcement.created_at >= datetime.now() - timedelta(days=30))
+        )
+        announcements = announcement_result.scalars().all()
         
         # Calculate communication metrics
         total_notifications = len(notifications)
@@ -814,23 +802,9 @@ async def get_parent_satisfaction_analysis(
         }
         
         return success_response(analysis)
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Parent satisfaction error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "satisfaction_score": 0,
-            "sentiment": "Veri yok",
-            "key_issues": [],
-            "avg_response_time_hours": 0,
-            "total_feedback": 0,
-            "engagement_rate": 0,
-            "communication_success_rate": 0,
-            "total_parents": 0,
-            "active_parents": 0,
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except Exception as exc:
+        logger.error("parent_satisfaction_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("Veli memnuniyet analizi şu anda yüklenemiyor", status_code=503) from None
 
 
 @router.get("/teacher-performance/{teacher_id}")
@@ -956,19 +930,9 @@ async def get_communication_analysis(
             "recommendations": recommendations
         })
         
-    except Exception as e:
-        import traceback
-        import sys
-        print(f"Communication Analysis Error: {str(e)}", file=sys.stderr)
-        traceback.print_exc()
-        return success_response({
-            "total_notifications": 0,
-            "total_announcements": 0,
-            "success_rate": 0,
-            "total_recipients": 0,
-            "channel_distribution": {},
-            "recommendations": [f"Hata: {str(e)}"]
-        })
+    except Exception as exc:
+        logger.error("communication_analysis_failed exception_type=%s", type(exc).__name__)
+        raise AppException("İletişim analizi şu anda yüklenemiyor", status_code=503) from None
 
 
 @router.get("/inventory-analysis")
