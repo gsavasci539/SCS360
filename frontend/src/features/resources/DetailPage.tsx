@@ -6,6 +6,7 @@ import { Badge, ErrorState, LoadingState, PageHeader } from "../../components/ui
 import { CapacityValue } from "../../components/DataTable";
 import { resources } from "../../config/resources";
 import { api, apiMessage } from "../../lib/api";
+import { reportClientError } from "../../lib/diagnostics";
 import { shortDate, titleCase } from "../../lib/format";
 import { useAuthStore } from "../../stores/auth";
 import type { ApiResponse, DataRecord } from "../../types/api";
@@ -53,7 +54,7 @@ export function DetailPage({ resourceKey }: { resourceKey: string }) {
       setAiLoading(true);
       getAnalysis(`/ai/parent-analysis/${id}`)
         .then((r) => setAiAnalysis(r.data.data))
-        .catch((e) => console.error("AI analysis error:", e))
+        .catch((e) => reportClientError("Parent analysis failed", e))
         .finally(() => setAiLoading(false));
     }
   }, [resourceKey, record, id]);
@@ -64,7 +65,7 @@ export function DetailPage({ resourceKey }: { resourceKey: string }) {
       setAiLoading(true);
       getAnalysis(`/ai/class-analysis/${id}`)
         .then((r) => setAiAnalysis(r.data.data))
-        .catch((e) => console.error("AI analysis error:", e))
+        .catch((e) => reportClientError("Class analysis failed", e))
         .finally(() => setAiLoading(false));
     }
   }, [resourceKey, record, id]);
