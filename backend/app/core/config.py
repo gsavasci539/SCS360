@@ -134,6 +134,7 @@ class Settings(BaseSettings):
             if (
                 rate_limit_storage.scheme not in {"redis", "rediss"}
                 or not rate_limit_storage.hostname
+                or (rate_limit_storage.scheme == "redis" and rate_limit_host != "rate-limit-store")
                 or rate_limit_host == "localhost"
                 or rate_limit_host.endswith(".localhost")
                 or rate_limit_storage.hostname in {"127.0.0.1", "::1"}
@@ -142,7 +143,7 @@ class Settings(BaseSettings):
                 or "replace" in rate_limit_storage.password.lower()
             ):
                 raise ValueError(
-                    "Production and staging require authenticated shared Redis rate-limit storage"
+                    "Production and staging require TLS Redis or the private Compose rate-limit store"
                 )
             reset_url = urlsplit(self.PASSWORD_RESET_URL)
             if reset_url.scheme != "https" or not reset_url.hostname:

@@ -37,16 +37,30 @@ def test_production_accepts_strong_jwt_secret():
     assert settings.api_docs_enabled is False
 
 
+def test_production_allows_plain_redis_only_for_private_compose_service():
+    settings = Settings(
+        APP_ENV="production",
+        JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+        CORS_ORIGINS="https://school.example",
+        PASSWORD_RESET_URL="https://school.example/reset-password",
+        RATE_LIMIT_STORAGE_URI="redis://:a-unique-rate-limit-secret-with-more-than-32-characters@rate-limit-store:6379/0",
+        _env_file=None,
+    )
+
+    assert settings.RATE_LIMIT_STORAGE_URI.startswith("redis://")
+
+
 @pytest.mark.parametrize("storage_uri", [
     "memory://",
     "redis://rate-limit-store:6379/0",
+    "redis://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
     "rediss://:REPLACE_WITH_32_PLUS_URL_SAFE_RANDOM_CHARACTERS@redis.example:6379/0",
     "rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@localhost:6379/0",
     "redis://:short@rate-limit-store:6379/0",
     "http://user:password@rate-limit-store:6379/0",
 ])
 def test_production_requires_authenticated_shared_rate_limit_storage(storage_uri):
-    with pytest.raises(ValidationError, match="shared Redis rate-limit storage"):
+    with pytest.raises(ValidationError, match="TLS Redis or the private Compose rate-limit store"):
         Settings(
             APP_ENV="production",
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
