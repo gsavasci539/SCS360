@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response
 from sqlalchemy import String, and_, case, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +17,7 @@ from app.core.dependencies import get_current_user
 from app.core.platform_workspace import WorkspacePrincipal
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
+from app.core.rate_limit import limiter
 
 from app.domain.entities.user import User
 from app.domain.entities.student_teacher import (
