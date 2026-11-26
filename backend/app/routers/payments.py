@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.permissions import require_permission
 from app.core.permissions import PermissionChecker
+from app.core.rate_limit import limiter
 from app.core.tenant import TenantContext
 from app.core.responses import success_response
 from app.domain.entities.user import User
@@ -43,7 +44,7 @@ class PaymentCollectCreate(BaseModel):
 
 
 class ReminderSendCreate(BaseModel):
-    invoice_ids: list[UUID] = Field(..., min_length=1, max_length=500)
+    invoice_ids: list[UUID] = Field(..., min_length=1, max_length=100)
     channel: Literal["SMS", "WHATSAPP", "EMAIL"]
 
 
@@ -389,6 +390,7 @@ async def get_payment_receipt_pdf(
 
 
 @router.post("/finances/reminders/send")
+@limiter.limit("5/minute")
 async def send_payment_reminders(
     reminder: ReminderSendCreate, db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
