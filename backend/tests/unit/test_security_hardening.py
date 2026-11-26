@@ -1,5 +1,8 @@
 from io import BytesIO
 from pathlib import Path
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from uuid import uuid4
 from zipfile import ZipFile
 
 import pytest
@@ -12,6 +15,7 @@ from app.core.database import engine
 from app.core.exceptions import ValidationException
 from app.core.middleware import SecurityHeadersMiddleware
 from app.core.web_session import ACCESS_COOKIE
+from app.application.schemas.organization import OrganizationResponse
 from app.routers.files_receipts import _validate_upload
 
 TEST_ORG_TAX_KEY = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
@@ -19,6 +23,18 @@ TEST_ORG_TAX_KEY = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
 
 def test_database_engine_hides_bound_parameters_from_logs():
     assert engine.sync_engine.hide_parameters is True
+
+
+def test_organization_response_schema_never_serializes_tax_identifier():
+    organization = SimpleNamespace(
+        id=uuid4(), name="Example", tax_number="12345678901",
+        created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc),
+        deleted_at=None,
+    )
+
+    response = OrganizationResponse.model_validate(organization, from_attributes=True)
+
+    assert "tax_number" not in response.model_dump()
 
 
 def test_production_rejects_placeholder_jwt_secret():

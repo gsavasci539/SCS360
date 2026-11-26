@@ -35,8 +35,17 @@ class TaxIdentifierRevealRequest(BaseModel):
     purpose: Literal["BUSINESS_RECORD", "TAX_FILING", "PAYMENT_PROVIDER_SETUP"]
 
 
-class OrganizationResponse(OrganizationBase):
+class OrganizationResponse(BaseModel):
+    """Safe organization response shape; tax identifiers require the audited reveal API."""
+
     id: UUID
+    name: str
+    legal_name: str | None = None
+    tax_office: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    logo_url: str | None = None
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None
