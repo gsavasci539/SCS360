@@ -6,10 +6,11 @@ from dataclasses import dataclass
 SAFE_PROVIDER_RESPONSE_KEYS = ("status", "code", "provider_id", "delivery_status")
 SAFE_PROVIDER_ERROR = "Bildirim sağlayıcısı isteği tamamlayamadı"
 SAFE_PROVIDER_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+SAFE_DELIVERY_STATUSES = {"ACCEPTED", "REJECTED", "PENDING", "DELIVERED", "FAILED"}
 
 
 def _safe_opaque_id(value):
-    return (isinstance(value, str) and SAFE_PROVIDER_ID.fullmatch(value)
+    return bool(isinstance(value, str) and SAFE_PROVIDER_ID.fullmatch(value)
         and (not value.isdigit() or len(value) <= 8))
 
 
@@ -22,9 +23,11 @@ def safe_provider_response(response):
         value = response.get(key)
         if key == "status" and isinstance(value, int) and not isinstance(value, bool) and 100 <= value <= 599:
             safe[key] = value
-        elif key == "delivery_status" and isinstance(value, str) and value in {"ACCEPTED", "REJECTED", "PENDING", "DELIVERED", "FAILED"}:
+        elif (key == "delivery_status" and isinstance(value, str)
+            and value in SAFE_DELIVERY_STATUSES):
             safe[key] = value
-        elif (key == "code" and isinstance(value, str) and SAFE_PROVIDER_ID.fullmatch(value)
+        elif (key == "code" and isinstance(value, str)
+            and SAFE_PROVIDER_ID.fullmatch(value)
             and (not value.isdigit() or len(value) <= 6)):
             safe[key] = value
         elif key == "provider_id" and _safe_opaque_id(value):

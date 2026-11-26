@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from app.core.dependencies import get_current_user
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.integration_config import IntegrationUpdate
 from app.core.permissions import PermissionChecker
+from app.core.rate_limit import limiter
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
 from app.infrastructure.notifications.base import safe_provider_error
@@ -839,29 +840,66 @@ async def delete_announcement(
 
 
 @router.post("/api/notifications/send")
+@limiter.limit("5/minute")
 async def send_notification(
+    request: Request,
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    channel = body.get("channel", "EMAIL")
+    if not isinstance(body, dict):
+        raise ValidationException("Bildirim içeriği geçersiz")
+    try:
+        channel = NotificationChannel(body.get("channel", "EMAIL"))
+    except (TypeError, ValueError) as exc:
+        raise ValidationException("Geçerli bir bildirim kanalı seçin") from exc
+    raw_branch_id = body.get("branch_id")
+    try:
+        branch_id = UUID(str(raw_branch_id)) if raw_branch_id else None
+    except (TypeError, ValueError) as exc:
+        raise ValidationException("Geçerli bir şube seçin") from exc
+    if tenant.branch_ids and branch_id not in tenant.branch_ids:
+        raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
+    if not tenant.organization_id:
+        raise ForbiddenException("Bildirim için kurum bağlamı gerekli")
+    subject = body.get("subject", "")
+    message_body = body.get("body", "")
+    recipients = body.get("recipients")
+    if (not isinstance(subject, str) or len(subject) > 255 or "\r" in subject or "\n" in subject):
+        raise ValidationException("Bildirim başlığı geçersiz")
+    if not isinstance(message_body, str) or not message_body.strip() or len(message_body) > 10000:
+        raise ValidationException("Bildirim metni geçersiz")
+    if not isinstance(recipients, list) or not 1 <= len(recipients) <= 100:
+        raise ValidationException("1 ile 100 arasında alıcı seçin")
+    normalized_recipients = []
+    for recipient in recipients:
+        if not isinstance(recipient, dict):
+            raise ValidationException("Alıcı kaydı geçersiz")
+        address = recipient.get("address")
+        name = recipient.get("name", "")
+        if (not isinstance(address, str) or not address.strip() or len(address) > 255
+            or "\r" in address or "\n" in address):
+            raise ValidationException("Alıcı adresi geçersiz")
+        if not isinstance(name, str) or len(name) > 200:
+            raise ValidationException("Alıcı adı geçersiz")
+        normalized_recipients.append((address.strip(), name.strip()))
     job = NotificationJob(
         organization_id=tenant.organization_id,
-        branch_id=UUID(body["branch_id"]) if body.get("branch_id") else None,
-        channel=NotificationChannel(channel),
-        subject=body.get("subject", ""),
-        body=body.get("body", ""),
+        branch_id=branch_id,
+        channel=channel,
+        subject=subject,
+        body=message_body,
         created_by=user.id,
     )
     db.add(job)
     await db.flush()
-    for recipient in body.get("recipients", []):
+    for address, name in normalized_recipients:
         db.add(
             NotificationRecipient(
                 notification_job_id=job.id,
-                recipient_name=recipient.get("name", ""),
-                recipient_address=recipient["address"],
+                recipient_name=name,
+                recipient_address=address,
             )
         )
     return success_response({"id": str(job.id)}, "Bildirim kuyruğa alındı")
