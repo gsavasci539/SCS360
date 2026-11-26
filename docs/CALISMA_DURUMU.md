@@ -1359,3 +1359,8 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 - Ödeme başlangıç DTO'su kimlik/vergi alanındaki boşluk, nokta ve tire ayraçlarını bellekte temizliyor; sağlayıcıya yalnızca 10/11 ASCII rakam gönderiliyor. Hatalı uzunluk, harf ve Unicode rakamlar API doğrulamasında reddediliyor; UI sayısal klavyeyi öneriyor. Ham değer SaaS DB/audit kaydına eklenmiyor; mevcut ödeme akışı sağlayıcıya iletmeye devam eder.
 - Hedefli geçici SQLite 	est_checkout_rejects_malformed_identity_before_provider_call: **4 PASS, 4 PostgreSQL varyantı SKIP**, provider çağrısı ve checkout kaydı 0. Kod SHA 78b08eecf6121a3b8f5e1294bad95b2a2cd670a9 remote dalda doğrulandı.
 - Bu yalnız biçim filtresidir; kimlik gerçekliği/checksum, hukukî gereklilik, sağlayıcının saklama/işleme koşulları veya KVKK kabulü değildir. Sonraki somut iş: onaylı iş ihtiyacını sağlayıcı sözleşmesiyle teyit etmek ve TCKN'nin tüm log/telemetry/yedek/retention kanallarını ayrıca değerlendirmek.
+
+
+### 26 Kasım 2026 — Regresyon doğrulaması (WIP)
+
+Şube kapsamı için mevcut mesaj listesi/gönderim testi **1 PASS, 1 PostgreSQL SKIP**; TCKN biçim filtresi sonrası mevcut ödeme nonce/tekrar deneme testi **1 PASS, 1 PostgreSQL SKIP**. Testler geçici SQLite ve izole sağlayıcıyla çalıştı; canlı servis, PostgreSQL production veya gerçek TCKN kullanılmadı.

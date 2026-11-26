@@ -627,3 +627,6 @@ Kantin rolünün RFID listesinde kurum/şube filtresini atlayan özel dal kaldı
 ### Güvenlik checkpoint'i — SaaS ödeme kimlik biçimi filtresi (WIP, 26.11.2026)
 
 Ödeme başlangıcında kimlik/vergi alanı boşluk/nokta/tire ayraçlarından temizlenip 10/11 ASCII rakamla sınırlandırılır. Hatalı uzunluk, harf ve Unicode rakamlar provider'a ulaşmadan 422 alır. İzole SQLite testi: 4 PASS, 4 PostgreSQL varyantı SKIP; checkout ve provider çağrısı oluşmadığı doğrulandı. Kod 78b08eecf6121a3b8f5e1294bad95b2a2cd670a9 remote dalda doğrulandı. Bu, numaranın gerçek/geçerli olduğunun doğrulaması veya hukuki/KVKK kabulü değildir; provider ve kurumsal veri yaşam döngüsü açık.
+
+
+Bu checkpoint sonrası hedefli geriye dönük doğrulama: mesaj branch-limit/send akışı 1 PASS + 1 PostgreSQL SKIP; geçerli üyelik ödeme nonce/idempotent retry akışı 1 PASS + 1 PostgreSQL SKIP. Üretim DB/provider testi değildir.
