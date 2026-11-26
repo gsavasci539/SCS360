@@ -643,3 +643,7 @@ Outbox liste, sayaç ve kayıt işlemleri kurum-geneli rol olmayanlarda yalnız 
 ### Güvenlik checkpointi — Dashboard ve rapor şube izolasyonu (WIP, 26.11.2026)
 
 Boş şube atamalı sıradan hesaplarda özet, chart, finans/borç/gecikmiş borç, doluluk, şube performansı, yoklama ve export sorguları kurum geneli metrik döndürmez; kurum geneli roller saklı kapsamı korur. İlişkiyle yetkili öğrenci erişimi korunmuş; private,no-store dosya headerı middleware tarafından ezilmez. Hedefli geçici SQLite backend kümesi 42 PASS, 16 PostgreSQL varyantı SKIP. Kod SHA `5ae0136c758a7b9652addc68114e08c7ee20fee8` remote dala push edildi. Canlı PostgreSQL, production veya KVKK/hukuk kabulü yapılmadı.
+
+### Güvenlik WIP — Kantin ve okul ödeme incelemesi tenant kapsamı (26.11.2026)
+
+Boş şube atamalı sıradan hesaplar kantin cüzdan/ciro özetini veya okul ödeme inceleme kayıtlarını kurum geneline genişletemez. Kurum-geneli roller ve açık branch atamaları korunmuştur. İzole SQLite sonucu **19 PASS, 21 PostgreSQL varyantı SKIP**; kod `caa226210929a287a2fd95a18b5dd62581635955`. Canlı PostgreSQL, ödeme sağlayıcısı, KVKK/hukuk veya üretim kabulü değildir; kalan tenant Core SQL yolları ve TCKN/log/yedek/retention akışları açıktır.
