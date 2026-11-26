@@ -113,3 +113,9 @@ Harici LLM transfer politikası, allowlist + açık opt-in + HTTPS/443 şartlar�
 Bu DNS rebinding/özel IP’ye çözümleme riskini tek başına kapatmaz. Egress firewall, resolver ve canlı ağ yolunun bağımsız doğrulaması; harici LLM veri işleme koşulları ve KVKK incelemesi açık kalır. WIP, canlı kabulü değildir.
 
 Rate-limit export commitinde router seviyesinde `Request` ve `limiter` importları atlanmıştı; takip commitinde eklendi. `git diff --check` geçti, fakat Python import smoke, API testleri ve build çalıştırılmadı. SCS360 SHA `8611f0226c00f17858f2ace1daa5c6fd0ca82bdd` normal push/`ls-remote` ile doğrulandı. Endpoint WIP; izole import/API testinden geçmeden kabul edilmez.
+
+### 26 Kasım 2026 — Chatbot audit metni erişim olayları (WIP)
+
+Ham audit listesi okuma, geri bildirim güncelleme ve dataset dışa aktarımında ortak `audit_logs` tablosuna metin içermeyen olay kaydı eklenir. Kayıt aktörü, seçili kurumu, olay türünü, sayım/format bilgisini ve istemci IP’sini içerir; ham soru/yanıt veya düzeltme metni kopyalanmaz. GET liste 20/dk, geri bildirim PUT 10/dk rate-limit alır. `git diff --check` geçti; test/build çalıştırılmadı. SCS360 `codex/source-sync-20261111` SHA `8d908baa04f58da9378491ba309b4ba17490e4c9` normal push/`ls-remote` ile doğrulandı.
+
+Bu olaylar aynı uygulama DB’sinde tutulur; değiştirilemez log, bağımsız SIEM veya retention politikası değildir. IP kişisel veridir. Erişim izinleri, saklama/silme süresi, yedeklerden silme ve fail-closed davranışı onaylı süreç ve geçici DB testleriyle doğrulanmadı; WIP, KVKK/canlı kabulü değildir.
