@@ -331,3 +331,7 @@ Audit olayında kimlik numarasının yalnız var olup olmadığını belirtmek i
 - Kart numarası, RFID kartı, cihaz ve veri içe aktarma router'larına ortak `require_assigned_branch` dependency eklendi. `owner`, `org_admin`, açık Root workspace ve süper yönetici korunuyor; şubesi olmayan sıradan hesaplar bu dal-bağımlı API'lere giremiyor.
 - Geçici SQLite: `test_branchless_staff_cannot_open_device_configuration` **1 PASS**; `test_branch_isolation.py` + branch lifecycle + student-number import hedef kümesi **12 PASS, 5 PostgreSQL varyantı SKIP**. Canlı DB/cihaz/provider kullanılmadı. Kod SHA `c2787481d8bd4968a02785d0980f6b4f04775bcf` normal push/`ls-remote` ile doğrulandı.
 - Sonraki somut iş: diğer özel Core sorgularında aynı boş-scope varsayımını uçtan uca taramak ve branch-bound read/write kabulünü genişletmek. Bu WIP, tüm uçların kabulü veya KVKK/canlı hazır beyanı değildir.
+
+### 26 Kasım 2026 — Duyuru/bildirim alıcı kapsamı daraltıldı (WIP)
+
+Atanmamış sıradan personel, kurum geneli duyuru/bildirim oluşturamaz veya legacy branchless kuyruk ve alıcı adreslerini okuyamaz; detay, sonuç, tekrar deneme ve silme uçları da dal kapsamına bağlıdır. Kurum yöneticisi, kurum sahibi ve açık Root workspace kurum-geneli erişimi korur. SQLite test sonucu 3 PASS, 3 PostgreSQL varyantı SKIP; provider gönderimi kapalıydı. Kod SHA cc4bb12f03c2b79f11b6ed63ca6df1d165678c8f. Diğer özel SQL yolları, production, TCKN veri yaşam döngüsü ve KVKK/hukuk kabulü halen açık.

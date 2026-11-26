@@ -1364,3 +1364,9 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 ### 26 Kasım 2026 — Regresyon doğrulaması (WIP)
 
 Şube kapsamı için mevcut mesaj listesi/gönderim testi **1 PASS, 1 PostgreSQL SKIP**; TCKN biçim filtresi sonrası mevcut ödeme nonce/tekrar deneme testi **1 PASS, 1 PostgreSQL SKIP**. Testler geçici SQLite ve izole sağlayıcıyla çalıştı; canlı servis, PostgreSQL production veya gerçek TCKN kullanılmadı.
+
+### 26 Kasım 2026 — Duyuru ve bildirim şube kapsamı (WIP)
+
+Şubesi atanmamış sıradan personel artık kurum geneli duyuru/bildirim kuyruğu oluşturamaz; branchless eski duyuru ve bildirimleri, alıcı adreslerini veya sonuç/tekrar/silme işlemlerini de göremez. Duyuru listesi/hedefleri ve bildirim şube seçenekleri erişilebilir dallarla sınırlandı. Tek şubeli kullanıcı için dal otomatik seçilir; birden fazla dalda seçim gerekir. Kurum yöneticisi, kurum sahibi ve açık Root kurum çalışma alanının yetkisi korunur. Aynı regresyonda provider hata ayrıntısının istemciye sızmaması da doğrulandı.
+
+`test_announcement_workspace.py`: **3 PASS, 3 PostgreSQL varyantı SKIP**; testler geçici SQLite ve kapalı bildirim teslimatıyla çalıştı. Kod SHA `cc4bb12f03c2b79f11b6ed63ca6df1d165678c8f` normal push ve `ls-remote` ile doğrulandı. Sıradaki somut iş: özel Core SQL uçlarında boş dal/tenant kapsamı taramasını sürdürmek. Bu checkpoint tüm bildirim kanalları, prod runtime, TCKN yaşam döngüsü veya KVKK/hukuk kabulü değildir.

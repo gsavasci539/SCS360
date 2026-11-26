@@ -630,3 +630,7 @@ Kantin rolünün RFID listesinde kurum/şube filtresini atlayan özel dal kaldı
 
 
 Bu checkpoint sonrası hedefli geriye dönük doğrulama: mesaj branch-limit/send akışı 1 PASS + 1 PostgreSQL SKIP; geçerli üyelik ödeme nonce/idempotent retry akışı 1 PASS + 1 PostgreSQL SKIP. Üretim DB/provider testi değildir.
+
+### Güvenlik checkpointi — Duyuru/bildirim şube izolasyonu (WIP, 26.11.2026)
+
+Şubesi atanmamış sıradan personelin kurum geneli duyuru ve bildirim oluşturması; branchless geçmiş kuyrukları, alıcı adreslerini ve sonuç/tekrar/silme işlemlerini okuması engellendi. Kurum geneli yetkili roller korundu. Geçici SQLite regresyonu: **3 PASS, 3 PostgreSQL varyantı SKIP**. Kod SHA `cc4bb12f03c2b79f11b6ed63ca6df1d165678c8f` remote dala push edildi. Gerçek bildirim/provider teslimi yapılmadı; üretim ve KVKK kabulü açık.
