@@ -22,6 +22,7 @@ export function SchoolCheckoutForm(props: Props) {
 }
 function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComplete, onOpenConflict, storageKey }: Props & { storageKey: string | null }) {
   const [saved] = useState(() => readSchoolCheckout(storageKey));
+  const [showIdentity, setShowIdentity] = useState(false);
   const [attempt, setAttempt] = useState<SchoolCheckoutAttempt | null>(saved.attempt), [error, setError] = useState(saved.error);
   const [storageError, setStorageError] = useState(Boolean(saved.error)), [missing, setMissing] = useState(false), [busy, setBusy] = useState(false);
   const [verifiedTerminal, setVerifiedTerminal] = useState(false);
@@ -110,7 +111,12 @@ function ScopedCheckout({ debtId, amount, purpose = "staff", available, onComple
     {missing && original && !busy && <button className="btn btn-primary" onClick={() => send(original)}>İlk isteği aynı kimlikle tekrar gönder</button>}
     {showForm && <form aria-label="Öğrenci ödeme bilgileri" onSubmit={submit}><fieldset disabled={busy} style={{ display: "grid", gap: 12, border: 0, padding: 0 }}>
       <p>Kart bilgilerinizi yalnız ödeme sağlayıcısının sayfasında girin. Kimlik ve fatura bilgileri tarayıcı depolamasına kaydedilmez.</p>
-      <label>Kimlik / pasaport numarası<input name="identityNumber" required minLength={5} maxLength={50} autoComplete="off" /></label>
+      <label>Kimlik / pasaport numarası<input name="identityNumber" type={showIdentity ? "text" : "password"} required minLength={5} maxLength={50}
+        autoComplete="off" autoCapitalize="off" spellCheck={false} /></label>
+      <button type="button" className="btn btn-secondary" aria-pressed={showIdentity}
+        onClick={() => setShowIdentity((visible) => !visible)}>
+        {showIdentity ? "Kimlik numarasını gizle" : "Kimlik numarasını göster"}
+      </button>
       <label>Ödeme telefonu<input name="gsmNumber" type="tel" required minLength={5} maxLength={30} autoComplete="tel" /></label>
       <label>Fatura adresi<textarea name="registrationAddress" required minLength={5} maxLength={500} autoComplete="street-address" /></label>
       <label>Şehir<input name="city" required maxLength={100} autoComplete="address-level2" /></label>
