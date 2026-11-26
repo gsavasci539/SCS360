@@ -340,3 +340,7 @@ Atanmamış sıradan personel, kurum geneli duyuru/bildirim oluşturamaz veya le
 ### 26 Kasım 2026 — Outbox alıcı geçmişinin dal kapsamı (WIP)
 
 Sıradan personel ve dal/ilişki kapsamındaki kullanıcılar artık kurum geneli branchless outbox job kayıtlarının alıcı adreslerini göremez, tekrar kuyruğa alamaz veya silemez. Kurum-geneli yetki korunur. İzole SQLite sonucu: 2 PASS, 2 PostgreSQL varyantı SKIP. Kod SHA 7004fe20c2fbe118e8d60348221d56c6e4bf5777. Canlı bildirim/provider ve KVKK/hukuk/işletim kabulü yapılmadı.
+
+### 26 Kasım 2026 — Rapor verisi tenant dalına sınırlandı (WIP)
+
+Dashboard ve rapor endpointlerinde sıradan/ilişki kapsamlı hesapların boş branch ataması artık kurum geneli öğrenci, finans ve şube metriklerine eriştirmiyor. Rota tarafından belirlenmiş private,no-store indirme başlıkları merkezi middleware'de korunuyor. Hedefli geçici SQLite testleri 42 PASS, 16 PostgreSQL varyantı SKIP. Kod SHA 5ae0136c758a7b9652addc68114e08c7ee20fee8. İç SQL taraması ve canlı/bağımsız KVKK kabulü devam ediyor.

@@ -639,3 +639,7 @@ Bu checkpoint sonrası hedefli geriye dönük doğrulama: mesaj branch-limit/sen
 ### Güvenlik checkpointi — Outbox geçmişinde şube izolasyonu (WIP, 26.11.2026)
 
 Outbox liste, sayaç ve kayıt işlemleri kurum-geneli rol olmayanlarda yalnız atanmış/ilişki kapsamındaki şubeleri döndürür; eski şubesiz job satırlarının recipient address alanları ve retry/delete işlemleri kapsam dışı kalır. Kurum-geneli yönetici rolleri korunur. Hedefli testler: 2 PASS, 2 PostgreSQL varyantı SKIP; izole SQLite. Kod SHA `7004fe20c2fbe118e8d60348221d56c6e4bf5777` remote dala push edildi; sağlayıcıya gerçek ileti gönderilmedi. Üretim ve KVKK kabulü açık.
+
+### Güvenlik checkpointi — Dashboard ve rapor şube izolasyonu (WIP, 26.11.2026)
+
+Boş şube atamalı sıradan hesaplarda özet, chart, finans/borç/gecikmiş borç, doluluk, şube performansı, yoklama ve export sorguları kurum geneli metrik döndürmez; kurum geneli roller saklı kapsamı korur. İlişkiyle yetkili öğrenci erişimi korunmuş; private,no-store dosya headerı middleware tarafından ezilmez. Hedefli geçici SQLite backend kümesi 42 PASS, 16 PostgreSQL varyantı SKIP. Kod SHA `5ae0136c758a7b9652addc68114e08c7ee20fee8` remote dala push edildi. Canlı PostgreSQL, production veya KVKK/hukuk kabulü yapılmadı.
