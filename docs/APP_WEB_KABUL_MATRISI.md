@@ -422,3 +422,4 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 - Bu kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `867c48278b74ce2f0e68250890fc80bf728123bb` normal push/`ls-remote` ile doğrulandı. Test/build yok; geçmiş verinin saklama/silme kabulü açık.
 
 Chatbot dış LLM hedefleri açık transfer ayarına ek olarak `CHATBOT_EXTERNAL_DATA_TRANSFER_HOSTS` içinde tam host eşleşmesi ve HTTPS/443 gerektirir; allowlist varsayılan boştur. Statik diff kontrolü dışında test/build çalıştırılmadı. Dış ağ egress ve veri işleme şartları ayrıca doğrulanmalı.
+Kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `1f69701d2d656a1374d7ba67b10bb1dd8843f639` push/`ls-remote` ile doğrulandı. Canlı DNS/firewall egress ve sağlayıcı veri işleme kabulü yapılmadı.
