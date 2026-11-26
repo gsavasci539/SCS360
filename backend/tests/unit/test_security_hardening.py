@@ -37,6 +37,29 @@ def test_organization_response_schema_never_serializes_tax_identifier():
     assert "tax_number" not in response.model_dump()
 
 
+async def test_readiness_response_does_not_disclose_database_component():
+    from alembic.script import ScriptDirectory
+    from fastapi import Request
+    from app.routers.health import ready
+
+    repo_root = Path(__file__).resolve().parents[2]
+    migration_head = ScriptDirectory(str(repo_root / "alembic")).get_current_head()
+
+    class Result:
+        def scalars(self):
+            return [migration_head]
+
+    class Session:
+        async def execute(self, _query):
+            return Result()
+
+    request = Request({"type": "http", "method": "GET", "path": "/api/ready", "headers": []})
+    response = await ready(request, Session())
+
+    assert response["success"] is True
+    assert response["data"] == {"status": "ready"}
+
+
 def test_production_rejects_placeholder_jwt_secret():
     with pytest.raises(ValidationError):
         Settings(

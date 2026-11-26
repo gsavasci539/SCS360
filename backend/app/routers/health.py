@@ -22,7 +22,9 @@ async def ready(request: Request, db: AsyncSession = Depends(get_db, scope="func
         versions = set((await db.execute(text("SELECT version_num FROM alembic_version"))).scalars())
         if versions != {expected}:
             raise RuntimeError("Database migration is required")
-        return success_response({"status": "ready", "database": "connected"})
+        # Keep public readiness useful without disclosing which dependency is
+        # available to an unauthenticated caller.
+        return success_response({"status": "ready"})
     except Exception:
         from fastapi.responses import JSONResponse
         return JSONResponse(
