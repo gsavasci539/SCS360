@@ -104,7 +104,7 @@ async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_an
     sentinel = "TCKN-SENSITIVE-SENTINEL"
     path = f'/api/organizations/{data["org"].id}'
     saved = await client.put(path, headers=headers(data["root"]), json={"tax_number": sentinel})
-    assert saved.status_code == 200 and saved.json()["data"]["tax_number"] == sentinel
+    assert saved.status_code == 200 and saved.json()["data"]["tax_number"] is None
 
     listed = await client.get("/api/organizations", headers=headers(data["root"]))
     assert listed.status_code == 200
@@ -129,7 +129,13 @@ async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_an
 
     hidden = await client.get(path, headers=headers(reader))
     assert hidden.status_code == 200 and hidden.json()["data"]["tax_number"] is None
-    revealed = await client.get(path, headers=headers(owner))
+    denied_reveal = await client.post(f"{path}/tax-identifier/reveal", headers=headers(reader), json={"purpose": "TAX_FILING"})
+    assert denied_reveal.status_code == 403
+    invalid_purpose = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={"purpose": "OTHER"})
+    assert invalid_purpose.status_code == 422
+    owner_detail = await client.get(path, headers=headers(owner))
+    assert owner_detail.status_code == 200 and owner_detail.json()["data"]["tax_number"] is None
+    revealed = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={"purpose": "TAX_FILING"})
     assert revealed.status_code == 200 and revealed.json()["data"]["tax_number"] == sentinel
     updated_value = "TCKN-UPDATED-WRITE-SENTINEL"
     updated = await client.put(path, headers=headers(writer), json={"tax_number": updated_value})
@@ -141,6 +147,7 @@ async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_an
         ))).scalars().all()
         assert len(events) == 1
         assert sentinel not in str(events[0].new_values)
+        assert events[0].new_values == {"event": "ORGANIZATION_TAX_IDENTIFIER_REVEALED", "purpose": "TAX_FILING", "value_present": True}
         writes = (await db.execute(select(AuditLog).where(
             AuditLog.entity_type == "organization.tax_identifier",
             AuditLog.entity_id == data["org"].id,

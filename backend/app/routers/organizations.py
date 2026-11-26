@@ -1,15 +1,17 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.application.schemas.common import BranchCreate, BranchUpdate, OrganizationCreate, OrganizationUpdate
+from app.application.schemas.organization import TaxIdentifierRevealRequest
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_tenant_context
 from app.core.exceptions import ForbiddenException, ConflictException
 from app.core.permissions import PermissionChecker
+from app.core.rate_limit import limiter
 from app.core.responses import paginate, success_response
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import AuditAction, AuditLog, Branch, Organization, Student, User
@@ -26,14 +28,15 @@ async def flush_registry(db, message):
         raise ConflictException(message) from None
 
 
-def org_to_dict(o: Organization, *, reveal_tax_number: bool = False) -> dict:
+def org_to_dict(o: Organization) -> dict:
     return {
         "id": str(o.id),
         "name": o.name,
         "legal_name": o.legal_name,
-        # A sole proprietor's tax identifier may be their TCKN. Keep it out of
-        # broad org.read responses; only organization writers/platform admins need it.
-        "tax_number": o.tax_number if reveal_tax_number else None,
+        # A sole proprietor's tax identifier may be their TCKN. All general
+        # organization responses are write-only for this field; use the audited
+        # reveal endpoint for an explicit business purpose.
+        "tax_number": None,
         "tax_office": o.tax_office,
         "phone": o.phone,
         "email": o.email,
@@ -136,13 +139,27 @@ async def get_organization(
 ):
     repo = BaseRepository(db, tenant)
     org = await repo.get_by_id(org_id, Organization)
-    reveal_tax_number = can_read_tax_number(tenant)
-    tax_number = org.tax_number if reveal_tax_number else None
-    if tax_number is not None:
-        db.add(AuditLog(organization_id=org.id, user_id=tenant.user_id,
-            action=AuditAction.OTHER, entity_type="organization.tax_identifier.read", entity_id=org.id,
-            new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_READ"}))
-    return success_response(org_to_dict(org, reveal_tax_number=reveal_tax_number))
+    return success_response(org_to_dict(org))
+
+
+@router.post("/api/organizations/{org_id}/tax-identifier/reveal")
+@limiter.limit("5/minute")
+async def reveal_organization_tax_identifier(
+    org_id: UUID,
+    request: Request,
+    body: TaxIdentifierRevealRequest,
+    tenant: TenantContext = Depends(PermissionChecker("org.read")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    if not can_read_tax_number(tenant):
+        raise ForbiddenException()
+    org = await BaseRepository(db, tenant).get_by_id(org_id, Organization)
+    value = org.tax_number
+    db.add(AuditLog(organization_id=org.id, user_id=tenant.user_id,
+        action=AuditAction.OTHER, entity_type="organization.tax_identifier.read", entity_id=org.id,
+        new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_REVEALED", "purpose": body.purpose,
+                    "value_present": value is not None}))
+    return success_response({"tax_number": value})
 
 
 @router.put("/api/organizations/{org_id}")
@@ -170,7 +187,7 @@ async def update_organization(
             entity_type="organization.tax_identifier", entity_id=org.id,
             new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_UPDATED"}))
     await flush_registry(db, "Bu kurum adı zaten kullanımda")
-    return success_response(org_to_dict(org, reveal_tax_number=can_read_tax_number(tenant)), "Kurum güncellendi")
+    return success_response(org_to_dict(org), "Kurum güncellendi")
 
 
 @router.delete("/api/organizations/{org_id}")

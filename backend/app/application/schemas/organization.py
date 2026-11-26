@@ -1,5 +1,7 @@
 from datetime import datetime
 from uuid import UUID
+from typing import Literal
+
 from pydantic import BaseModel, Field, EmailStr
 
 
@@ -27,6 +29,10 @@ class OrganizationUpdate(BaseModel):
     email: EmailStr | None = None
     logo_url: str | None = Field(None, max_length=500)
     status: str | None = None
+
+
+class TaxIdentifierRevealRequest(BaseModel):
+    purpose: Literal["BUSINESS_RECORD", "TAX_FILING", "PAYMENT_PROVIDER_SETUP"]
 
 
 class OrganizationResponse(OrganizationBase):

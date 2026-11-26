@@ -1614,6 +1614,17 @@ export function ResourceFormPage({
         SelectOption[]
       >
     >({});
+  const [revealedTaxNumber, setRevealedTaxNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRevealedTaxNumber(null);
+  }, [id]);
+
+  useEffect(() => {
+    if (!revealedTaxNumber) return;
+    const timeout = window.setTimeout(() => setRevealedTaxNumber(null), 30_000);
+    return () => window.clearTimeout(timeout);
+  }, [revealedTaxNumber]);
 
   const defaults =
     useMemo(
@@ -1959,6 +1970,20 @@ export function ResourceFormPage({
       }
     };
 
+  const revealTaxNumber = async () => {
+    if (!id || resourceKey !== "organizations") return;
+    if (!window.confirm("Kurumun vergi/kimlik numarası görüntülenecek ve erişim denetim kaydına alınacak. Devam edilsin mi?")) return;
+    setServerError("");
+    try {
+      const response = await api.post<ApiResponse<{ tax_number: string | null }>>(
+        `/organizations/${id}/tax-identifier/reveal`, { purpose: "BUSINESS_RECORD" },
+      );
+      setRevealedTaxNumber(response.data.data.tax_number);
+    } catch (error) {
+      setServerError(apiMessage(error));
+    }
+  };
+
   if (!editing && resourceKey === "organizations") {
     return <div className="card card-pad"><p>Yeni kurum hesaplarını ana yönetici SaaS yönetiminden açar.</p><Link className="btn btn-secondary" to={basePath}>Kurum bilgilerine dön</Link></div>;
   }
@@ -2019,6 +2044,20 @@ export function ResourceFormPage({
           </p>
 
           <div className="form-grid">
+            {editing && resourceKey === "organizations" && (
+              <Field label="Saklanan vergi/kimlik numarası" full>
+                {revealedTaxNumber ? (
+                  <div>
+                    <output aria-live="polite">{revealedTaxNumber}</output>{" "}
+                    <button type="button" className="btn btn-secondary" onClick={() => setRevealedTaxNumber(null)}>Gizle</button>
+                  </div>
+                ) : (
+                  <button type="button" className="btn btn-secondary" onClick={revealTaxNumber} disabled={loading || isSubmitting}>
+                    Denetim kaydıyla görüntüle
+                  </button>
+                )}
+              </Field>
+            )}
             {config.fields
               .filter(
                 (field) =>

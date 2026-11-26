@@ -68,3 +68,16 @@ it("yalnız öğrenci yazma yetkisiyle kayıt sonrası yasak genel listeye yönl
   expect(screen.queryByText("Liste")).not.toBeInTheDocument();
   await waitFor(() => expect(api.get).toHaveBeenCalledWith("/students/student/form", expect.objectContaining({ signal: expect.any(AbortSignal) })));
 });
+
+it("kurum kimlik numarasını yalnız açık, onaylı ve denetimli istekle kısa süre gösterir", async () => {
+  useAuthStore.getState().setSession({ access_token: "token", refresh_token: "refresh", token_type: "bearer", user: { id: "root", is_super_admin: true, organization_id: "school", first_name: "Root", last_name: "Test", email: "root@example.com", roles: [], permissions: [], branch_ids: [] } });
+  vi.mocked(api.get).mockResolvedValue({ data: { data: { id: "school", name: "Kurum", tax_number: null, country: "Türkiye" } } } as never);
+  vi.mocked(api.post).mockResolvedValue({ data: { data: { tax_number: "12345678901" } } } as never);
+  vi.stubGlobal("confirm", vi.fn(() => true));
+  render(<MemoryRouter initialEntries={["/organizations/school/edit"]}><ToastProvider><Routes><Route path="/organizations/:id/edit" element={<ResourceFormPage resourceKey="organizations" />} /><Route path="/organizations" element={<p>Liste</p>} /></Routes></ToastProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Denetim kaydıyla görüntüle" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/organizations/school/tax-identifier/reveal", { purpose: "BUSINESS_RECORD" }));
+  expect(await screen.findByText("12345678901")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Gizle" }));
+  expect(screen.queryByText("12345678901")).not.toBeInTheDocument();
+});
