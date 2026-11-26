@@ -14,7 +14,7 @@ from app.core.responses import error_response
 from app.core.web_session import ACCESS_COOKIE, require_csrf
 
 settings = get_settings()
-_TCKN_PATTERN = re.compile(r"(?<!\d)\d{11}(?!\d)")
+_TCKN_PATTERN = re.compile(r"(?<!\d)(?:\d[\s-]?){10}\d(?!\d)")
 
 
 def redact_tckn(value):

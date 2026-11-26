@@ -56,7 +56,7 @@ async def test_http_exception_keeps_safe_string_detail_compatibility():
     from app.core.middleware import http_exception_handler
 
     request = Request({"type": "http", "method": "GET", "path": "/api/organizations", "headers": []})
-    response = await http_exception_handler(request, HTTPException(404, detail="Kurum 12345678901 bulunamadı"))
+    response = await http_exception_handler(request, HTTPException(404, detail="Kurum 123 456 78901 bulunamadı"))
     body = json.loads(response.body)
     assert response.status_code == 404 and body["message"] == "Kurum [gizlendi] bulunamadı"
     assert body["detail"] == "Kurum [gizlendi] bulunamadı"
@@ -69,11 +69,11 @@ async def test_application_exception_redacts_tckn_from_messages_and_structured_e
     from app.core.middleware import app_exception_handler
 
     request = Request({"type": "http", "method": "POST", "path": "/api/checkout", "headers": []})
-    response = await app_exception_handler(request, AppException("Kimlik 12345678901 doğrulanamadı", errors=[{"received": "12345678901"}]))
+    response = await app_exception_handler(request, AppException("Kimlik 123-456-78901 doğrulanamadı", errors=[{"received": "123 456 78901"}]))
     body = json.loads(response.body)
     assert body["message"] == "Kimlik [gizlendi] doğrulanamadı"
     assert body["errors"] == [{"received": "[gizlendi]"}]
-    assert "12345678901" not in response.body.decode()
+    assert "123-456-78901" not in response.body.decode() and "123 456 78901" not in response.body.decode()
 
 
 async def test_actual_application_handlers_treat_ambiguous_identifiers_as_http_conflicts():
