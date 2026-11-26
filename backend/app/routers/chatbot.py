@@ -1151,25 +1151,15 @@ async def get_audit_logs(
     result = await db.execute(query)
     logs = result.scalars().all()
     
-    # Enrich with user information
+    # Return only fields needed for quality review; keep identity and routing
+    # metadata server-side to reduce exposure of personal identifiers.
     enriched_logs = []
     for log in logs:
-        # Get user details
-        if log.user_id == current_user.id:
-            user = current_user
-        else:
-            user_result = await db.execute(select(UserModel).where(UserModel.id == log.user_id))
-            user = user_result.scalar_one_or_none()
-        
-        sender_name = f"{user.first_name} {user.last_name}" if user else "Bilinmeyen"
         captured_role = (log.meta_data or {}).get("sender_role") if isinstance(log.meta_data, dict) else None
         sender_role = normalize_audit_role(captured_role) if isinstance(captured_role, str) and captured_role.strip() else "UNKNOWN"
         
         log_dict = {
             "id": str(log.id),
-            "session_id": log.session_id,
-            "user_id": str(log.user_id),
-            "organization_id": str(log.organization_id),
             "user_query": log.user_query,
             "ai_response": log.ai_response,
             "detected_intent": log.detected_intent,
@@ -1181,10 +1171,8 @@ async def get_audit_logs(
             "token_count": log.token_count,
             "latency_ms": log.latency_ms,
             "is_fine_tuning_ready": log.is_fine_tuning_ready,
-            "meta_data": log.meta_data,
             "created_at": log.created_at,
             "updated_at": log.updated_at,
-            "sender_name": sender_name,
             "sender_role": sender_role,
         }
         enriched_logs.append(log_dict)

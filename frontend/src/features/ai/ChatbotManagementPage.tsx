@@ -21,9 +21,6 @@ import { api, apiMessage } from "../../lib/api";
 
 interface ChatAuditLog {
   id: string;
-  session_id: string;
-  user_id: string;
-  organization_id: string;
   user_query: string;
   ai_response: string;
   detected_intent: string | null;
@@ -37,7 +34,6 @@ interface ChatAuditLog {
   is_fine_tuning_ready: boolean;
   created_at: string;
   updated_at: string;
-  sender_name: string;
   sender_role: string;
 }
 
@@ -153,7 +149,6 @@ export function ChatbotManagementPage() {
       filtered = filtered.filter(log => 
         log.user_query.toLowerCase().includes(query) ||
         log.ai_response.toLowerCase().includes(query) ||
-        log.sender_name.toLowerCase().includes(query) ||
         (log.topic_category ?? "").toLowerCase().includes(query)
       );
     }
@@ -189,7 +184,7 @@ export function ChatbotManagementPage() {
       const confirmed = await api.get(path, { params: { record_id: log.id, page: 1, page_size: 1 } });
       const rows = confirmed.data?.data?.logs;
       const saved: ChatAuditLog | undefined = Array.isArray(rows) && rows.length === 1 ? rows[0] : undefined;
-      if (confirmed.data?.success !== true || saved?.id !== log.id || saved.organization_id !== log.organization_id ||
+      if (confirmed.data?.success !== true || saved?.id !== log.id ||
         saved.quality_rating !== draft.quality_rating || saved.feedback_status !== draft.feedback_status ||
         (saved.corrected_response ?? null) !== draft.corrected_response || saved.is_fine_tuning_ready !== draft.is_fine_tuning_ready) {
         throw new Error("Kaydedilen geri bildirim doğrulanamadı.");
@@ -387,7 +382,7 @@ export function ChatbotManagementPage() {
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <User size={16} color="#6e7b7d" />
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{log.sender_name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>Gönderen kimliği gizli</span>
                           <span style={{ fontSize: 11, color: "#6e7b7d", background: "#f3f4f6", padding: "2px 6px", borderRadius: 4 }}>
                             {log.sender_role}
                           </span>
@@ -784,7 +779,7 @@ export function ChatbotManagementPage() {
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>
                   <User size={12} style={{ display: "inline", verticalAlign: "middle" }} />
-                  {selectedLog.sender_name} ({selectedLog.sender_role})
+                  {selectedLog.sender_role}
                 </div>
                 <div style={{ fontSize: 12, color: "#6e7b7d", marginBottom: 4 }}>
                   <Calendar size={12} style={{ display: "inline", verticalAlign: "middle" }} />

@@ -86,4 +86,5 @@ Ham audit okuma ve feedback güncelleme `CHATBOT_AUDIT_TEXT_ACCESS_ALLOWED=true`
 Yeni chatbot audit satırlarının ham prompt/yanıt ve kimlik metadatasıyla kaydı `CHATBOT_AUDIT_STORAGE_ALLOWED=true` olmadan yapılmaz; storage kapalıyken audit metrikleri ve kullanıcı geçmişi de 503 verir. Önceden kaydedilmiş veriyi silmez ve log/DB saklama politikasını kurmaz. Test/build yok; yalnız statik diff kontrolü.
 SCS360 `codex/source-sync-20261111` SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` push/`ls-remote` ile doğrulandı. Önceden depolanmış audit kayıtları, yedekler ve loglar için retention/silme ve erişim kanıtı hâlâ gereklidir.
 Yeni audit metadata'sından öğrenci/öğretmen UUID alanları çıkarıldı. Mevcut DB satırları, yedekler veya loglar temizlenmedi.
+Audit listesi API’si ve Web ekranı ad/UUID/session/dahili metadata göndermez; ham soru ve yanıt için varsayılan kapalı audit-text ve tenant-scope kapıları sürer. Statik diff kontrolü; test/build yok.
 SCS360 kaynak SHA `867c48278b74ce2f0e68250890fc80bf728123bb` push/`ls-remote` ile doğrulandı. Sonraki adımda eski kayıt silme/retention süresi belirlenmeli; şu an gerçek politika yok.
