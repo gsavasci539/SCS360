@@ -47,7 +47,7 @@ export function SubscriptionCheckout({ invoice, onClose, onRefresh }: { invoice:
       : <form onSubmit={submit} onChange={() => setRequestId(newRequestId())} aria-label="Üyelik ödeme bilgileri"><fieldset disabled={busy} style={{ display: "grid", gap: 12, border: 0, padding: 0 }}>
         <p>Fatura ve ödeme doğrulaması için bilgilerinizi girin. Kart bilgileri güvenli ödeme sayfasında alınır.</p>
         <label>Kimlik veya vergi numarası<input className="filter-select" name="identity_number" type={showIdentity ? "text" : "password"}
-          required maxLength={50} autoComplete="off" autoCapitalize="off" spellCheck={false} /></label>
+          required maxLength={50} inputMode="numeric" autoComplete="off" autoCapitalize="off" spellCheck={false} /></label>
         <button type="button" className="btn btn-secondary" aria-pressed={showIdentity}
           onClick={() => setShowIdentity((visible) => !visible)}>
           {showIdentity ? "Kimlik numarasını gizle" : "Kimlik numarasını göster"}

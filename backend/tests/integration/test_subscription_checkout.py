@@ -72,6 +72,18 @@ async def start(values):
     return "acceptance-token-" + body["request_id"]
 
 
+@pytest.mark.parametrize("identity_number", ["123456789", "123456789012", "ABCDEFGHIJK", "１２３４５６７８９０１"])
+async def test_checkout_rejects_malformed_identity_before_provider_call(checkout_client, identity_number):
+    from sqlalchemy import func, select
+    client, sessions, data, invoice, body, gateway = checkout_client
+    response = await client.post(f'/api/subscription/invoices/{invoice["id"]}/checkout',
+        headers=headers(data["owner"]), json={**body, "identity_number": identity_number})
+    assert response.status_code == 422, response.text
+    assert gateway.calls == 0
+    async with sessions() as db:
+        assert await db.scalar(select(func.count(SubscriptionCheckout.id))) == 0
+
+
 @pytest.mark.parametrize("channel", ["IOS", "ANDROID"])
 async def test_native_membership_requires_configured_store_billing(checkout_client, channel):
     from sqlalchemy import func, select

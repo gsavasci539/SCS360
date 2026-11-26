@@ -86,6 +86,16 @@ class SubscriptionCheckoutStart(BaseModel):
     country: str = Field(min_length=1, max_length=100)
     client_channel: Literal["WEB", "PWA", "IOS", "ANDROID"] = "WEB"
 
+    @field_validator("identity_number", mode="before")
+    @classmethod
+    def normalize_identity_number(cls, value):
+        if not isinstance(value, str):
+            raise ValueError("Kimlik veya vergi numarası biçimi geçersiz")
+        normalized = "".join(char for char in value if char not in " .-\t\r\n")
+        if not normalized.isascii() or not normalized.isdigit() or len(normalized) not in {10, 11}:
+            raise ValueError("Kimlik veya vergi numarası 10 veya 11 rakam olmalı")
+        return normalized
+
 
 class SubscriptionPaymentReview(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
