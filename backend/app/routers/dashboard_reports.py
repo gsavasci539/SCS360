@@ -49,10 +49,26 @@ from app.infrastructure.repositories.base import BaseRepository
 router = APIRouter(tags=["Dashboard & Reports"])
 
 
-def _require_notification_branch_scope(tenant: TenantContext, job: NotificationJob) -> None:
-    if tenant.branch_ids and job.branch_id not in tenant.branch_ids:
+async def _allowed_branch_ids(db: AsyncSession, tenant: TenantContext) -> set[UUID] | None:
+    if tenant.has_institution_wide_branch_access:
+        return None
+    from app.core.tenant_guard import scope_filters
+
+    branches, _, _, _ = scope_filters(tenant, db.info.get("accessible_student_ids"))
+    return set((await db.scalars(select(Branch.id).where(Branch.id.in_(branches)))).all())
+
+
+async def _require_notification_branch_scope(db: AsyncSession, tenant: TenantContext, job: NotificationJob) -> None:
+    allowed = await _allowed_branch_ids(db, tenant)
+    if allowed is not None and (job.branch_id is None or job.branch_id not in allowed):
         # Hide branchless/foreign jobs because their recipient list may span branches.
         raise NotFoundException("Bildirim bulunamadı")
+
+
+async def _require_announcement_branch_scope(db: AsyncSession, tenant: TenantContext, announcement: Announcement) -> None:
+    allowed = await _allowed_branch_ids(db, tenant)
+    if allowed is not None and (announcement.branch_id is None or announcement.branch_id not in allowed):
+        raise NotFoundException("Duyuru bulunamadı")
 
 
 def _notification_address_key(address: str, channel: NotificationChannel) -> str | None:
@@ -740,6 +756,7 @@ async def get_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    await _require_announcement_branch_scope(db, tenant, announcement)
     jobs = (
         (
             await db.execute(
@@ -793,6 +810,7 @@ async def announcement_results(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    await _require_announcement_branch_scope(db, tenant, announcement)
     jobs = (
         (
             await db.execute(
@@ -835,6 +853,7 @@ async def retry_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    await _require_announcement_branch_scope(db, tenant, announcement)
     now = datetime.now(UTC)
     failed_recipient = select(NotificationRecipient.id).where(
         NotificationRecipient.notification_job_id == NotificationJob.id,
@@ -872,6 +891,7 @@ async def update_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement, for_update=True)
+    await _require_announcement_branch_scope(db, tenant, announcement)
     if announcement.status == AnnouncementStatus.SENT:
         raise ValidationException("Gönderilmiş duyuru düzenlenemez")
     branch_id, class_id, student_id = await announcement_target(db, tenant, body)
@@ -890,6 +910,7 @@ async def delete_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
+    await _require_announcement_branch_scope(db, tenant, announcement)
     announcement.deleted_at = datetime.now(UTC)
     return success_response(message="Duyuru silindi")
 
@@ -914,10 +935,16 @@ async def send_notification(
         branch_id = UUID(str(raw_branch_id)) if raw_branch_id else None
     except (TypeError, ValueError) as exc:
         raise ValidationException("Geçerli bir şube seçin") from exc
-    if tenant.branch_ids and branch_id not in tenant.branch_ids:
-        raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
     if not tenant.organization_id:
         raise ForbiddenException("Bildirim için kurum bağlamı gerekli")
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        if not allowed_branches:
+            raise ForbiddenException("Bildirim göndermek için atanmış bir şube gerekir")
+        if branch_id is None and len(allowed_branches) == 1:
+            branch_id = next(iter(allowed_branches))
+        if branch_id not in allowed_branches:
+            raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
     if branch_id:
         await BaseRepository(db, tenant).require_related(branch_id, Branch)
     subject = body.get("subject", "")
@@ -1112,6 +1139,9 @@ async def list_announcements(
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, Announcement)
     query = repo._branch_filter(query, Announcement)
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Announcement.branch_id.in_(allowed_branches))
     if branch_id is not None:
         await repo.require_related(branch_id, Branch)
         query = query.where(or_(Announcement.branch_id == branch_id, Announcement.branch_id.is_(None)))
@@ -1182,7 +1212,7 @@ async def announcement_target(db: AsyncSession, tenant: TenantContext, body: Ann
     ):
         raise ValidationException("Öğrenci duyuru kapsamıyla eşleşmiyor")
     branch_id = branch.id if branch else student.branch_id if student else classroom.branch_id if classroom else None
-    if branch_id is None and tenant.branch_ids and not (tenant.is_super_admin or tenant.is_organization_owner):
+    if branch_id is None and not tenant.has_institution_wide_branch_access:
         raise ForbiddenException("Kurum geneline duyuru yetkiniz yok. Şube hedefi seçin.")
     return branch_id, classroom.id if classroom else None, student.id if student else None
 
@@ -1195,8 +1225,7 @@ async def send_announcement(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     announcement = await BaseRepository(db, tenant).get_by_id(announcement_id, Announcement)
-    if not announcement.branch_id and tenant.branch_ids and not (tenant.is_super_admin or tenant.is_organization_owner):
-        raise ForbiddenException("Kurum geneline duyuru yetkiniz yok")
+    await _require_announcement_branch_scope(db, tenant, announcement)
 
     async def previously_queued():
         jobs = (await db.execute(select(func.count()).select_from(NotificationJob).where(
@@ -1287,8 +1316,9 @@ async def list_notifications(
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, NotificationJob)
     query = repo._branch_filter(query, NotificationJob)
-    if tenant.branch_ids:
-        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(NotificationJob.branch_id.in_(allowed_branches))
     result = await db.execute(query.order_by(NotificationJob.created_at.desc()).limit(50))
     jobs = result.scalars().all()
     valid_jobs = [job for job in jobs if job is not None]
@@ -1325,10 +1355,13 @@ async def create_notification(
         raise ValidationException("Bildirim oluşturmak için bir kurum seçilmelidir")
 
     branch_id = payload.branch_id
-    if tenant.branch_ids:
-        if branch_id is None and len(tenant.branch_ids) == 1:
-            branch_id = tenant.branch_ids[0]
-        if branch_id not in tenant.branch_ids:
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        if not allowed_branches:
+            raise ForbiddenException("Bildirim göndermek için atanmış bir şube gerekir")
+        if branch_id is None and len(allowed_branches) == 1:
+            branch_id = next(iter(allowed_branches))
+        if branch_id not in allowed_branches:
             raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
     if branch_id:
         await BaseRepository(db, tenant).require_related(branch_id, Branch)
@@ -1437,8 +1470,9 @@ async def notification_branch_options(
         Branch.organization_id == tenant.organization_id,
         Branch.deleted_at.is_(None),
     )
-    if tenant.branch_ids:
-        query = query.where(Branch.id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Branch.id.in_(allowed_branches))
     rows = (await db.execute(query.order_by(Branch.name, Branch.id).limit(200))).all()
     return success_response([{"id": str(row.id), "name": row.name} for row in rows])
 
@@ -1450,7 +1484,7 @@ async def delete_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
-    _require_notification_branch_scope(tenant, job)
+    await _require_notification_branch_scope(db, tenant, job)
     if job.locked_until and job.locked_until.replace(tzinfo=UTC) > datetime.now(UTC):
         from app.core.exceptions import ConflictException
         raise ConflictException("İşlenen gönderim silinemez")
@@ -1471,7 +1505,7 @@ async def retry_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
-    _require_notification_branch_scope(tenant, job)
+    await _require_notification_branch_scope(db, tenant, job)
     from app.core.exceptions import ConflictException
     if job.status == NotificationStatus.SENT:
         raise ConflictException("Gönderilmiş bildirim yeniden gönderilemez")
@@ -1523,7 +1557,7 @@ async def get_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
-    _require_notification_branch_scope(tenant, job)
+    await _require_notification_branch_scope(db, tenant, job)
     recipients = (
         (
             await db.execute(
