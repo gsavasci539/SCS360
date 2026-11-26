@@ -205,3 +205,9 @@ Frontend, opsiyonel branch seçiminin boş stringini API POST öncesi `null`'a �
 Makbuz paylaşım e-posta/SMS/WhatsApp API uçlarında mevcut generic bildirim tercihi kapalıysa veli recipient çözümlemesi reddeder; endpoint başına IP limit 10/dk. Kaynak `e69cccc95780cff11c15a599f2ba5c3da358ecf6` normal push/`ls-remote` ile doğrulandı.
 
 Yalnız `git diff --check`; test, build, gerçek ileti veya provider çağrısı yok. `receive_notifications` tercihinin makbuz/finansal ileti için hukuki yeterliliği ayrıca veri sorumlusu tarafından değerlendirilmelidir; kanal bazlı izin/amaç, retention, provider sözleşmesi ve KVKK/canlı kabul açık. WIP.
+
+### 26 Kasım 2026 — Finansal hatırlatma suistimal sınırı (WIP)
+
+`POST /api/payments/finances/reminders/send` endpointi IP bazında 5/dk; body'deki borç kimlikleri 1–100 aralığına sınırlandı. `finance_compat_service` kayıtlı veli, seçili tenant/şube ve `receive_notifications` koşullarını korur. SCS360 SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` normal push/`ls-remote` ile doğrulandı.
+
+Sadece `git diff --check`; test/build/gerçek sağlayıcı gönderimi yok. Dağıtık rate limit, reverse-proxy IP güven zinciri, finansal bildirimler için kanal/amaç hukuki dayanağı, eski verilerin saklama/silme ve canlı KVKK/güvenlik kabulü açık. WIP.

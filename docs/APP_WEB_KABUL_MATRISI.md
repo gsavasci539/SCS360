@@ -504,3 +504,7 @@ Kurum geneli bildirim formu artık boş branch seçimini `branch_id: null` gönd
 ### 26 Kasım 2026 — Makbuz bildirim endpointleri (WIP)
 
 Makbuz e-posta/SMS/WhatsApp kuyruğu 10/dk rate limit uygular ve ilgili öğrenciye bağlı, `receive_notifications` açık veliyi seçer. Kaynak SHA `e69cccc95780cff11c15a599f2ba5c3da358ecf6` push/`ls-remote` doğrulandı. Yalnız statik diff; test/build/provider/canlı doğrulama yok; WIP.
+
+### 26 Kasım 2026 — Ödeme hatırlatması API sınırı (WIP)
+
+Finansal hatırlatma endpointi 5/dk ve en fazla 100 borç ID'siyle sınırlandırıldı; mevcut kayıtlı veli/tenant tercih kontrolleri korunur. SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` push/`ls-remote` doğrulandı. Yalnız statik diff; test/build/sandbox veya canlı ileti yok.

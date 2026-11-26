@@ -1163,3 +1163,7 @@ Bildirim formu “Kurum geneli” seçeneğindeki boş şube değerini API'ye `b
 ### 26 Kasım 2026 — Makbuz paylaşım bildirim sınırları (WIP)
 
 Makbuz e-posta/SMS/WhatsApp kuyruk uçları IP başına 10/dk ile sınırlandı ve yalnız `receive_notifications=true` olan bağlı veli seçilir. Adres yine veli kaydından alınır; manuel dış adres girişi yoktur. Kaynak SHA `e69cccc95780cff11c15a599f2ba5c3da358ecf6` normal push/`ls-remote` doğrulandı. Sadece statik `git diff --check`; test/build/DB/provider runtime yok. Bu tercih ile finansal zorunlu bildirimlerin hukuki dayanak yorumu kullanıcı/veri sorumlusu onayı olmadan yapılmadı. WIP; rıza, KVKK ve canlı kabul açık.
+
+### 26 Kasım 2026 — Finansal hatırlatma batch/rate sınırı (WIP)
+
+`POST /api/payments/finances/reminders/send` IP başına 5/dk ile sınırlandı; `invoice_ids` uzunluğu 500'den 100'e indirildi. Servisteki mevcut tenant/şube ve bildirim tercihine göre veli seçimi değişmedi. SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` normal push/`ls-remote` ile doğrulandı. Yalnız statik `git diff --check`; test/build/DB/provider runtime yok. WIP; gerçek rate-limit deposu/IP güveni, kanal bazlı hukuki dayanak ve canlı/KVKK kabulü açık.
