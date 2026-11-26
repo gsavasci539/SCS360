@@ -492,3 +492,7 @@ Manuel `POST /api/notifications/send` yalnız seçili kurum/şubedeki kayıtlı 
 ### 26 Kasım 2026 — Borç hatırlatma batch sınırı (WIP)
 
 Gecikmiş borç bildirimi endpointi `5/dk` ile sınırlandı; 100'den çok debt ID reddedilir, tekrar eden kimlikler azaltılır ve geçersiz UUID 500 yerine doğrulama hatası döndürür. Kod SHA `614323aee46b347a1725974f42c8634fc433837c` push/`ls-remote` doğrulandı. Yalnız statik diff kontrolü; test, build, gerçek SMS/DB runtime yok. Canlı/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Bildirim oluşturma şube seçimi (WIP)
+
+Web bildirim modalı, yazma yetkisiyle sınırlı `/notifications/branch-options` API'sinden şube seçenekleri alıp `branch_id` payload alanını gönderir. Çoklu atanmış şubesi olan kullanıcıda seçim zorunlu; backend veri kapsamını tekrar doğrular. Kaynak SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` push/`ls-remote` doğrulandı. Test/build/canlı API kabulü yapılmadı; WIP.

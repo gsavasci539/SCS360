@@ -1151,3 +1151,7 @@ Statik `git diff --check` dışında test/build/DB/provider runtime yok. İzole 
 ### 26 Kasım 2026 — Gecikmiş borç bildirim batch sınırı (WIP)
 
 `POST /api/reports/overdue-debts/remind` IP başına 5/dk ile sınırlandı; `debt_ids` liste biçiminde ve en fazla 100 kayıt kabul eder, yinelenen ID'ler tekilleştirilir, geçersiz UUID kontrollü 4xx doğrulamasına çevrilir. Mevcut tenant/şube/veli bildirim tercihi sorgusu korunur. SCS360 kod SHA `614323aee46b347a1725974f42c8634fc433837c` normal push/`ls-remote` ile doğrulandı. Yalnız statik `git diff --check`; test/build/DB/sağlayıcı runtime yok. Sıradaki iş bildirim oluşturma yollarının geçici DB tenant/consent regressions'ları; WIP, canlı/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Bildirim formu şube DTO/API eşleştirmesi (WIP)
+
+Frontend bildirim formu artık `branch_id` gönderebilir. Backend `GET /api/notifications/branch-options`, yalnız seçili kurumun aktif şubelerini ve varsa aktörün atanmış şubelerini döndürür; yazma izni gerektirir. Çok şubeli kullanıcıya form şube seçimi sunar; backend yine payload şubesini bağımsız doğrular. SCS360 kod SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` normal push/`ls-remote` ile doğrulandı. Yalnız statik diff check; frontend/backend test, build veya live API yok. Sıradaki iş UI/API DTO doğrulaması ve diğer notification uçları; WIP.

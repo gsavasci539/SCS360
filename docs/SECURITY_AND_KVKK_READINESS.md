@@ -191,3 +191,7 @@ Yalnız `git diff --check`; test, build, DB veya sağlayıcı runtime yapılmad�
 Gecikmiş borç hatırlatma POST'u IP başına 5/dk; body yalnız en çok 100 öğeli bir `debt_ids` listesi kabul eder. Duplicate UUID'ler tekilleştirilir, geçersiz ID 4xx validation hatasına çevrilir. Tenant/şube ve kayıtlı veli bildirimi kontrolleri değişmedi. SCS360 SHA `614323aee46b347a1725974f42c8634fc433837c` normal push/`ls-remote` doğrulandı.
 
 Sadece `git diff --check`; test/build/send/provider runtime yok. İzole DB regresyonları, gerçek distributed rate-limit deposu, reverse-proxy IP güven zinciri, kanal rızası/hukuki dayanak, retention/silme ve canlı KVKK/siber güvenlik kabulü açık. WIP; canlıya hazır ilan edilemez.
+
+### 26 Kasım 2026 — Notification branch picker/API kapsamı (WIP)
+
+Web composer için yeni `GET /api/notifications/branch-options` yalnız aktif şube kimlik/adlarını seçili kurum ve kullanıcının atanmış şube kimlikleriyle sınırlar; permission `notification.write`. Frontend modal gerekli durumda branch seçimini zorunlu tutup seçimi `POST /api/notifications` payload'ına ekler; backend scope kontrolü ayrıca kalır. SCS360 SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` normal push/`ls-remote` doğrulandı. Yalnız `git diff --check`; React/API contract testleri ve canlı doğrulama yok. Sıradaki somut iş geçici DB ve frontend DTO regresyonları; KVKK/canlı kabul değildir.
