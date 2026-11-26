@@ -125,3 +125,9 @@ Bu olaylar aynı uygulama DB’sinde tutulur; değiştirilemez log, bağımsız 
 `POST /auth/reset-password` artık ortak rate-limit deposu ile IP başına 5 istek/dakika sınırında. Auth router’da önceden var olan staged olmayan oturum WIP’si bu commit’e alınmadı. `git diff --check` geçti; test/build/Redis runtime yok. SCS360 SHA `ee930a857a335b530ef5ebe046bc752a59ba0427` normal push/`ls-remote` ile doğrulandı.
 
 Rate-limit dağıtık runtime, proxy’nin istemci IP’sini güvenilir biçimde iletmesi, 429 başlıkları, token expiry/tek kullanımlılık, eski reset logları ve retention politikası doğrulanmadı. WIP; canlı veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Reset link proxy access-log azaltımı (WIP)
+
+Public Nginx ve frontend Nginx exact `/reset-password` SPA rotasında access logu kapatır; public vhost `Referrer-Policy: no-referrer` ile URL sızıntı yüzeyini daraltır. Yeni tokenlar fragment’tedir; legacy query-tokenlar geçici uyumlulukta kalır. `git diff --check` geçti; `nginx -t`, container veya TLS edge testi yapılmadı. SCS360 SHA `78ffa647f4347fff43cb1f0bf509971be48a02fb` normal push/`ls-remote` ile doğrulandı.
+
+Nginx error logları, e-posta link tracking/redirectleri, önceden yazılmış loglar ve üretim ingress davranışı bu değişiklikle doğrulanmış ya da temizlenmiş değildir. WIP; canlı ve KVKK kabulü değildir.

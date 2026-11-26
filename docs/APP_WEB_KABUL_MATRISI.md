@@ -448,3 +448,7 @@ Audit metnini listeleme, feedback güncelleme ve eğitim dataset export artık `
 ### 26 Kasım — Parola reset brute-force sınırı (WIP)
 
 `POST /auth/reset-password` ortak rate-limit deposunda IP başına 5/dakika ile sınırlandı. Statik diff kontrolü dışında test/build/runtime yapılmadı. SCS360 `codex/source-sync-20261111` SHA `ee930a857a335b530ef5ebe046bc752a59ba0427` push/`ls-remote` ile doğrulandı. Dağıtık rate limit, 429, proxy IP ve reset token expiry/runtime kabulü açık.
+
+### 26 Kasım — Reset token proxy erişim logları (WIP)
+
+Yeni linkte fragment token HTTP isteğine gitmez; legacy query linki için frontend/public exact `/reset-password` konumlarında access logging kapalı ve public Referrer-Policy no-referrer. Statik diff kontrolü geçti; Nginx runtime/TLS testi yok. SCS360 SHA `78ffa647f4347fff43cb1f0bf509971be48a02fb` push/`ls-remote` ile doğrulandı. Error/mail logs ve eski kayıtlar açık.
