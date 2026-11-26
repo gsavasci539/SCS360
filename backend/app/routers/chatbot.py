@@ -654,8 +654,6 @@ async def _process_chatbot_query(
                     latency_ms=latency_ms,
                     meta_data={
                         "confidence": raw_intent.confidence,
-                        "student_id": str(student_id) if student_id else None,
-                        "teacher_id": str(teacher_id) if teacher_id else None,
                         "operation": raw_intent.operation,
                         "sender_role": sender_role,
                     }

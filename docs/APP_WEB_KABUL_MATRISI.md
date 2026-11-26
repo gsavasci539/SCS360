@@ -416,3 +416,4 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 - Raw audit okumak/düzeltmek `CHATBOT_AUDIT_TEXT_ACCESS_ALLOWED=true`; indirmek ayrıca `CHATBOT_DATASET_EXPORT_ALLOWED=true` gerektirir. SCS360 kaynak SHA `d0d37a234eefbca57c7f989f1c7b1ac8d1a99ea8` normal push ve `ls-remote` ile doğrulandı. Test/build yok; bu KVKK/canlı kabulü değildir.
 - Ham chatbot audit saklama `CHATBOT_AUDIT_STORAGE_ALLOWED=true` gerektirir; ayar kapalıyken audit metrikleri ve kullanıcı konuşma geçmişi 503 döner. Önceden kaydedilen kayıtlar/loglar burada silinmez. Statik diff kontrolü dışında test/build yok.
 - Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` ile doğrulandı. Önceki DB/yedek/log kayıtları için erişim izi, saklama süresi ve doğrulanmış silme akışı açık.
+- Yeni audit metadata'sı öğrenci ve öğretmen UUID alanlarını içermez; geçmiş satırlar temizlenmiş değildir.
