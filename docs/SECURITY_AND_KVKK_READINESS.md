@@ -289,3 +289,7 @@ Development-only reportClientError artık console.error öncesi context ve messa
 ### 26 Kasım 2026 — Hata tanısında biçimli TCKN maskeleme (WIP)
 
 Backend hata yanıtı filtresi ve frontend geliştirme tanısı artık kesintisiz, boşluk veya tire ile ayrılmış 11 haneli sayı desenlerini `[gizlendi]` olarak maskeler. Hedefli geçici regresyonlar: `test_response_errors.py` 7 PASS; `diagnostics.test.ts` 2 PASS. Kod `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` normal push ve `ls-remote` ile doğrulandı. Bu desen filtresi diğer kişisel veriyi, farklı biçimleri, production telemetry/APM'yi, diğer logları veya provider payload'larını kapsamaz; genel PII güvenliği ya da KVKK/live kabulü değildir. Gerçek TCKN/veritabanı/sağlayıcı kullanılmadı.
+
+### 26 Kasım 2026 — SQL debug parametrelerini gizleme (WIP)
+
+SQLAlchemy motoru `hide_parameters=True` kullanıyor; development ortamında statement echo açık kalsa da bağlı değerler loga yazılmaz. Hedefli regresyon `backend/tests/unit/test_database_security.py`: **1 PASS**. Kod SHA `4cf69719f7cdea979a55760e74fc55d485388e7d` normal push/`ls-remote` ile doğrulanacak. Bu koruma uygulama/APM/provider loglarını veya başka veri çıkışlarını kapsamaz; production/KVKK kabulü değildir.

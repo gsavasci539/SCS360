@@ -1296,3 +1296,7 @@ Development-only reportClientError, konsol hata context/message içindeki kesint
 ### 26 Kasım 2026 — Hata tanısında biçimli TCKN maskeleme (WIP)
 
 Backend hata yanıtlarındaki ve frontend development diagnostic context/message alanlarındaki 11 haneli kesintisiz, boşluklu veya tireli sayı desenleri maskeleniyor. Hedefli testler: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod checkpoint `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` `codex/source-sync-20261111` üzerinde normal push/`ls-remote` ile doğrulandı. Önceden mevcut, ilgisiz çalışma ağacı değişiklikleri bu checkpoint'e alınmadı. Kapsam production telemetry, diğer PII biçimleri, log/APM ve provider payload'ları değildir; WIP, KVKK veya canlıya hazır kabulü değildir.
+
+### 26 Kasım 2026 — SQL loglarında parametreleri gizleme (WIP)
+
+Development SQL echo korunarak SQLAlchemy engine için `hide_parameters=True` eklendi; böylece sorgu parametre değerleri debug SQL loglarına yazılmaz. `backend/tests/unit/test_database_security.py`: **1 PASS** (yalnız engine ayarını doğrulayan unit test; DB/provider kullanılmadı). Kod checkpoint `4cf69719f7cdea979a55760e74fc55d485388e7d` normal push/`ls-remote` ile doğrulanacak. Bu tek başına tüm uygulama loglarının güvenli olduğunu veya KVKK/canlı kabulünü göstermez.

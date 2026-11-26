@@ -568,3 +568,7 @@ reportClientError geliştirme konsoluna yazmadan önce 11 haneli dizileri maskel
 ### Güvenlik checkpoint'i — hata metninde biçimli TCKN (WIP, 26.11.2026)
 
 Backend hata filtresi ve frontend development tanısı 11 haneli dizileri kesintisiz/boşluk/tire biçimlerinde maskeliyor. Backend hedefli regresyonu 7 PASS, frontend `diagnostics.test.ts` 2 PASS. Kod SHA `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` remote `codex/source-sync-20261111` dalında doğrulandı. Bu dar kapsamlı korumadır; production log/telemetry/APM, diğer kişisel veri, farklı biçimler ve sağlayıcı gövdeleri ayrıca incelenmeli. KVKK/canlı kabulü değildir.
+
+### Güvenlik checkpoint'i — SQL debug parametre maskeleme (WIP, 26.11.2026)
+
+SQLAlchemy engine `hide_parameters=True` ile oluşturuluyor. Hedefli unit regression 1 PASS; veritabanı/provider işlemi yok. Kod SHA `4cf69719f7cdea979a55760e74fc55d485388e7d` remote dalda doğrulanacak. Diğer log/telemetry çıkışları, prod ayarları ve KVKK/canlı kabulü açık.
