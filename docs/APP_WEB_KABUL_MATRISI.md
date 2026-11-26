@@ -647,3 +647,6 @@ Boş şube atamalı sıradan hesaplarda özet, chart, finans/borç/gecikmiş bor
 ### Güvenlik WIP — Kantin ve okul ödeme incelemesi tenant kapsamı (26.11.2026)
 
 Boş şube atamalı sıradan hesaplar kantin cüzdan/ciro özetini veya okul ödeme inceleme kayıtlarını kurum geneline genişletemez. Kurum-geneli roller ve açık branch atamaları korunmuştur. İzole SQLite sonucu **19 PASS, 21 PostgreSQL varyantı SKIP**; kod `caa226210929a287a2fd95a18b5dd62581635955`. Canlı PostgreSQL, ödeme sağlayıcısı, KVKK/hukuk veya üretim kabulü değildir; kalan tenant Core SQL yolları ve TCKN/log/yedek/retention akışları açıktır.
+### Güvenlik WIP — Şubesiz dosya deposu kapsamı (26.11.2026)
+
+Legacy dosya router helper'ı şubesiz tenant'ın kurum-geneli `all` klasörünü okumasını, silmesini veya upload hedefi olarak seçmesini engeller; kurum-geneli roller korunur. İzole SQLite: **8 PASS, 7 PostgreSQL varyantı SKIP**. Test doğrudan legacy fonksiyon/helper seviyesindedir; router uygulama route listesine eklenmedi ve dış API kabulü yapılmadı. Kod `b2f920332c8136a162af145d18c2187b1f850cce`. Tüm dosya uçları/gerçek depolama ve prod kabulü açık.
