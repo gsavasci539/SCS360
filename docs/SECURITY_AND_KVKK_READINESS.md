@@ -301,3 +301,7 @@ Backend hata yanıtı ve frontend development diagnostic filtresi, boşluk/tire 
 ### 26 Kasım 2026 — Güvenli kurum yanıt DTO'su (WIP)
 
 OrganizationResponse artık create/input şemasından türemiyor ve TCKN/VKN alanı içermez; genel response DTO'suyla yanlışlıkla açık kimlik serileştirme yolu daraltıldı. 	est_security_hardening.py: **25 PASS**. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` normal push/`ls-remote` ile doğrulandı. Canlı API'nin tüm response'ları, diğer PII alanları, retention ve KVKK/hukuki kabulü kapsam dışıdır.
+
+### 26 Kasım 2026 — Tekrar salt okunur canlı başlık kontrolü (WIP)
+
+HTTPS HEAD `https://scs360.com.tr/` 200 yanıtladı; gözlenen başlıklarda `Server: nginx/1.18.0 (Ubuntu)` ve `X-Content-Type-Options: nosniff` vardı. Bu yanıt gözleminde HSTS, CSP, X-Frame-Options, Referrer-Policy veya Permissions-Policy görünmedi. GET `/.well-known/security.txt` yine SPA HTML döndürdü; onaylı izlenen güvenlik iletişim adresi mevcut değil/sağlanmadı. Salt okunur kontrol, yapılandırma/deploy yapılmadı. Bu tek uç nokta gözlemi tam TLS/site kabulü değildir. Uygulanan kaynak başlıklarını production'da doğrulama ve gerçek security.txt yayınlama dış dağıtım/iletişim sahibi bekliyor; canlı ve KVKK kabulü açık.

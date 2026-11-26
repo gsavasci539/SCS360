@@ -580,3 +580,7 @@ Hata yanıtı ve development diagnostics katmanında boşluk, tire ve nokta ayra
 ### Güvenlik checkpoint'i — kurum response DTO'sunda TCKN yok (WIP, 26.11.2026)
 
 Kurum input şemasından ayrı response DTO'su TCKN/VKN alanını hiç tanımlamaz. Güvenlik regresyon grubu 25 PASS. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote branch'te doğrulandı. Bu, tüm API veya KVKK/canlı kabulü değildir.
+
+### Dış kabul engeli — HTTPS başlık/security.txt (26.11.2026, WIP)
+
+Salt okunur kontrol ana sayfada 200, Server sürüm başlığı ve yalnız gözlenen `nosniff` korumasını gösterdi; `/.well-known/security.txt` SPA HTML. Deploy yapılmadı. Onaylı güvenlik iletişim adresi ve yetkili dış dağıtım operatörü olmadan canlı başlık/security.txt kabul edilemez. Gerçek yayın sonrası doğrulama ve TLS/site-wide kapsamı açık.

@@ -1308,3 +1308,7 @@ Backend ve frontend development hata filtresi kesintisiz, boşluklu, tireli ve n
 ### 26 Kasım 2026 — Genel kurum response şemasında TCKN alanı kaldırıldı (WIP)
 
 OrganizationResponse input şemasını miras almıyor; tax_number/TCKN response alanı yok. Hedefli 	est_security_hardening.py: **25 PASS**. Kod checkpoint `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote dalda doğrulandı. Diğer endpoint/PII kapsamı ve KVKK/canlı kabulü ayrıca açık.
+
+### 26 Kasım 2026 — Dış HTTPS başlıkları tekrar kontrol edildi (WIP)
+
+Salt okunur HEAD `https://scs360.com.tr/`: 200, `Server: nginx/1.18.0 (Ubuntu)` sürüm bilgisini açıkladı, `X-Content-Type-Options: nosniff` görüldü; aynı yanıt örneğinde HSTS/CSP/frame/referrer/permissions başlıkları görünmedi. GET `/.well-known/security.txt` SPA HTML döndürdü. Deploy veya değişiklik yapılmadı; onaylı izlenen güvenlik e-posta/adresi bilinmediği için içerik üretilmedi. Somut açık iş: onaylı iletişim sahibi/adresini belirlemek ve yetkili dağıtım operatörünün Nginx başlıkları + gerçek security.txt yayınını uygulayıp dışarıdan doğrulaması. WIP; canlı/KVKK kabulü değildir.
