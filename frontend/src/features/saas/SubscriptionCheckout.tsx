@@ -9,6 +9,7 @@ import { hostedPaymentUrl as subscriptionPaymentUrl } from "../../lib/hostedPaym
 
 export function SubscriptionCheckout({ invoice, onClose, onRefresh }: { invoice: DataRecord; onClose: () => void; onRefresh: () => void }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [url, setUrl] = useState<string | null>(null), [message, setMessage] = useState("");
+  const [showIdentity, setShowIdentity] = useState(false);
   const [requestId, setRequestId] = useState(newRequestId);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
@@ -45,7 +46,12 @@ export function SubscriptionCheckout({ invoice, onClose, onRefresh }: { invoice:
       : invoice.can_resume ? <button className="btn btn-primary" disabled={busy} onClick={() => send("resume")}>Mevcut ödeme sayfasını getir</button>
       : <form onSubmit={submit} onChange={() => setRequestId(newRequestId())} aria-label="Üyelik ödeme bilgileri"><fieldset disabled={busy} style={{ display: "grid", gap: 12, border: 0, padding: 0 }}>
         <p>Fatura ve ödeme doğrulaması için bilgilerinizi girin. Kart bilgileri güvenli ödeme sayfasında alınır.</p>
-        <label>Kimlik veya vergi numarası<input className="filter-select" name="identity_number" required maxLength={50} autoComplete="off" /></label>
+        <label>Kimlik veya vergi numarası<input className="filter-select" name="identity_number" type={showIdentity ? "text" : "password"}
+          required maxLength={50} autoComplete="off" autoCapitalize="off" spellCheck={false} /></label>
+        <button type="button" className="btn btn-secondary" aria-pressed={showIdentity}
+          onClick={() => setShowIdentity((visible) => !visible)}>
+          {showIdentity ? "Kimlik numarasını gizle" : "Kimlik numarasını göster"}
+        </button>
         <label>Telefon<input className="filter-select" type="tel" name="phone" required minLength={5} maxLength={30} autoComplete="tel" /></label>
         <label>Fatura adresi<input className="filter-select" name="address" required minLength={5} maxLength={500} autoComplete="street-address" /></label>
         <label>Şehir<input className="filter-select" name="city" required maxLength={100} autoComplete="address-level2" /></label>

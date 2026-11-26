@@ -256,3 +256,7 @@ Web okul ödeme formu TCKN/pasaport değerini varsayılan maskeler, göster/gizl
 ## Kurum vergi numarasına erişim izi — 26 Kasım 2026 WIP
 
 Organization list response'ları TCKN/VKN içermez. Tekil detayda yalnız platform yönetimi/aktif owner rolü tam değeri alır; gerçek okuma, değeri içermeyen `ORGANIZATION_TAX_IDENTIFIER_READ` audit olayı yazar. Genel `org.write` tek başına mevcut değeri göstermez; boş form alanı update payload'ından çıkarılarak değer silinmeden korunur. API, rol ve UI regresyonları çalıştırılmadı; audit retention/erişim ilkesi ve canlı kabul açık. Kod commit `af0671007f4106e7b11dee5a23522e07813febcd` normal push/`ls-remote` ile doğrulandı.
+
+## SaaS üyelik checkout kimlik alanı — 26 Kasım 2026 WIP
+
+SaaS abonelik ödeme formundaki kimlik/vergi numarası artık varsayılan maskelenir; kullanıcı erişilebilir düğmeyle geçici olarak gösterebilir. `autocomplete`, `autocapitalize` ve `spellCheck` kapalıdır. Bu sunum önlemidir; verinin React/DOM belleğinde bulunmasını, backend'e/ödeme sağlayıcısına aktarılmasını veya sağlayıcıdaki saklamayı engellemez. Kodda yeni bir kalıcı kopya oluşturulmadı. Yalnız `git diff --check`; UI/API/provider/build doğrulaması yok. Değişiklik commit/push SHA'sı çalışma kaydında tutulur. KVKK amacı/dayanak, TCKN'siz alternatif, sağlayıcı sözleşmesi/retention ve canlı kabul açık.
