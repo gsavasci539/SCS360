@@ -1,9 +1,13 @@
 """Fail closed when a chatbot provider could transfer prompt data externally."""
 
+from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 
 _INTERNAL_LLM_HOSTS = {"localhost", "127.0.0.1", "::1", "ollama"}
+_NON_PUBLIC_HOST_SUFFIXES = (
+    ".localhost", ".local", ".internal", ".test", ".home", ".lan", ".invalid", ".example",
+)
 
 
 def enforce_chatbot_transfer_policy(
@@ -32,6 +36,18 @@ def enforce_chatbot_transfer_policy(
         raise ValueError("Chatbot provider endpoint is invalid")
     if internal:
         return
+
+    if "%" in host:
+        raise ValueError("Scoped chatbot provider IP addresses are not allowed")
+    try:
+        address = ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        raise ValueError("Non-public chatbot provider IP addresses are not allowed")
+    if host.endswith(_NON_PUBLIC_HOST_SUFFIXES):
+        raise ValueError("Non-public chatbot provider hostnames are not allowed")
+
     allowed_hosts = {
         item.strip().lower().rstrip(".") for item in (allowed_external_hosts or set())
     }
