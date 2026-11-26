@@ -96,10 +96,10 @@ async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(f
         db.add(restricted_branch)
         await db.flush()
         permissions = []
-        for code in ("receipt.read", "receipt.write"):
+        for code in ("receipt.read", "receipt.write", "finance.write"):
             permission = (await db.execute(select(Permission).where(Permission.code == code))).scalar_one_or_none()
             if permission is None:
-                permission = Permission(code=code, name=code, module="receipt")
+                permission = Permission(code=code, name=code, module=code.split(".")[0])
                 db.add(permission)
                 await db.flush()
             permissions.append(permission)
@@ -108,7 +108,7 @@ async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(f
         foreign_user = User(first_name="Foreign", last_name="Finance", email="foreign-finance@test.invalid",
             password_hash="unused", organization_id=data["other_branch"].organization_id, roles=[foreign_role])
         branch_role = Role(name="Branch finance", slug="accountant", organization_id=data["org"].id,
-            permissions=[permission for permission in permissions if permission.code == "receipt.read"])
+            permissions=[permission for permission in permissions if permission.code in {"receipt.read", "finance.write"}])
         branch_user = User(first_name="Branch", last_name="Finance", email="branch-finance@test.invalid",
             password_hash="unused", organization_id=data["org"].id, roles=[branch_role], branches=[restricted_branch])
         db.add_all([foreign_user, branch_user])
@@ -121,12 +121,33 @@ async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(f
         db.add(Payment(organization_id=data["other_branch"].organization_id, branch_id=data["other_branch"].id,
             student_id=data["children"][0].id, debt_id=corrupt_debt.id, amount=Decimal("1.00"),
             payment_method=PaymentMethod.CASH, received_by=foreign_user.id))
+        corrupt_student_payment = Payment(organization_id=data["org"].id, branch_id=data["branch"].id,
+            student_id=data["stranger"].id, debt_id=UUID(invoice["id"]), amount=Decimal("2.00"),
+            payment_method=PaymentMethod.CASH, received_by=data["accountant"].id, status="completed")
+        db.add(corrupt_student_payment)
+        await db.flush()
+        corrupt_student_payment_id = corrupt_student_payment.id
         await db.commit()
+
+    async with sessions() as db:
+        stored = await db.get(Payment, corrupt_student_payment_id)
+        assert stored is not None and stored.organization_id == data["org"].id
+        assert stored.branch_id == data["branch"].id and stored.student_id == data["stranger"].id
 
     branch_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(branch_user))
     assert branch_list.status_code == 200 and branch_list.json()["data"]["items"] == []
+    branch_debt_options = await client.get("/api/payments/debt-options", headers=auth(branch_user))
+    assert branch_debt_options.status_code == 200 and branch_debt_options.json()["data"]["items"] == []
     foreign_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(foreign_user))
     assert foreign_list.status_code == 200 and foreign_list.json()["data"]["items"] == []
+    payment_list = await client.get("/api/payments?page=1&page_size=100", headers=auth(data["accountant"]))
+    assert payment_list.status_code == 200
+    assert all(row["id"] != str(corrupt_student_payment_id) for row in payment_list.json()["data"]["items"])
+    from app.application.services.cash_payment_service import payment_data
+    async with sessions() as db:
+        stored = await db.get(Payment, corrupt_student_payment_id)
+        normalized = await payment_data(db, [stored])
+        assert normalized[0]["student_name"] is None and normalized[0]["receipt_id"] is None
     student_payments = await client.get(f"/api/students/{data['children'][0].id}/payments", headers=auth(data["accountant"]))
     assert student_payments.status_code == 200
     assert [row["id"] for row in student_payments.json()["data"]] == [payment_id]

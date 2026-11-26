@@ -83,7 +83,12 @@ async def replay(db, tenant, debt, body):
         raise ConflictException("İstek kimliği farklı bir tahsilat içeriğinde kullanılmış")
     if payment.cancelled_at is not None:
         raise ConflictException("Bu isteğin tahsilatı iptal edilmiş; yeni işlem için yeni bir istek kimliği kullanın")
-    receipts = (await db.execute(select(Receipt).where(Receipt.payment_id == payment.id))).scalars().all()
+    receipts = (await db.execute(select(Receipt).where(
+        Receipt.payment_id == payment.id,
+        Receipt.organization_id == debt.organization_id,
+        Receipt.branch_id == debt.branch_id,
+        Receipt.student_id == debt.student_id,
+    ))).scalars().all()
     if len(receipts) != 1:
         raise ConflictException("Tahsilatın makbuz kaydı incelenmeli")
     return response(payment, receipts[0])
@@ -109,9 +114,12 @@ async def collect(db, tenant, body):
     debt.status = DebtCalculator.calculate_status(amount, new_paid, debt.due_date)
     db.add(payment)
     await db.flush()
-    remaining = await db.scalar(select(func.coalesce(func.sum(Debt.amount - Debt.paid_amount), 0)).where(
+    balance_query = select(func.coalesce(func.sum(Debt.amount - Debt.paid_amount), 0)).where(
         Debt.organization_id == debt.organization_id, Debt.student_id == debt.student_id,
-        Debt.deleted_at.is_(None), Debt.status != DebtStatus.CANCELLED))
+        Debt.deleted_at.is_(None), Debt.status != DebtStatus.CANCELLED)
+    if tenant.branch_ids and not tenant.is_super_admin and not tenant.is_organization_owner:
+        balance_query = balance_query.where(or_(Debt.branch_id.in_(tenant.branch_ids), Debt.branch_id.is_(None)))
+    remaining = await db.scalar(balance_query)
     remaining = Decimal(str(remaining))
     if not remaining.is_finite() or not 0 <= remaining <= MAX_MONEY:
         raise ValidationException("Öğrencinin toplam borç bakiyesi incelenmeli")
@@ -134,7 +142,13 @@ async def collect(db, tenant, body):
 async def cancel(db, tenant, identifier, body):
     probe = await BaseRepository(db, tenant).get_by_id(identifier, Payment)
     debt = await locked_debt(db, tenant, probe.debt_id)
-    payment = (await db.execute(select(Payment).where(Payment.id == identifier)
+    payment = (await db.execute(select(Payment).where(
+        Payment.id == identifier,
+        Payment.organization_id == debt.organization_id,
+        Payment.branch_id == debt.branch_id,
+        Payment.student_id == debt.student_id,
+        Payment.debt_id == debt.id,
+    )
         .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
     if payment is None:
         raise NotFoundException("Tahsilat bulunamadı")
@@ -157,7 +171,12 @@ async def cancel(db, tenant, identifier, body):
     debt.paid_amount = new_paid
     if debt.status != DebtStatus.CANCELLED:
         debt.status = DebtCalculator.calculate_status(debt.amount, new_paid, debt.due_date)
-    for receipt in (await db.execute(select(Receipt).where(Receipt.payment_id == payment.id))).scalars():
+    for receipt in (await db.execute(select(Receipt).where(
+        Receipt.payment_id == payment.id,
+        Receipt.organization_id == payment.organization_id,
+        Receipt.branch_id == payment.branch_id,
+        Receipt.student_id == payment.student_id,
+    ))).scalars():
         receipt.status = ReceiptStatus.CANCELLED
     db.add(AuditLog(organization_id=payment.organization_id, branch_id=payment.branch_id, user_id=tenant.user_id,
         action=AuditAction.CANCEL_PAYMENT, entity_type="payment", entity_id=payment.id))
@@ -169,10 +188,13 @@ async def debt_options(db, tenant, page, page_size, search, selected_id):
     if tenant.organization_id is None:
         raise ForbiddenException("Önce kurum çalışma alanını seçin")
     base = select(Debt.id, Debt.amount, Debt.paid_amount, Debt.description, Student.first_name, Student.last_name).join(
-        Student, Student.id == Debt.student_id).where(Debt.organization_id == tenant.organization_id,
+        Student, (Student.id == Debt.student_id) & (Student.organization_id == Debt.organization_id)
+            & (Student.branch_id == Debt.branch_id)).where(Debt.organization_id == tenant.organization_id,
         Student.organization_id == tenant.organization_id, Debt.deleted_at.is_(None), Student.deleted_at.is_(None),
         Debt.status != DebtStatus.CANCELLED, Debt.amount > 0, Debt.amount <= MAX_MONEY,
         Debt.paid_amount >= 0, Debt.paid_amount <= Debt.amount)
+    if tenant.branch_ids and not tenant.is_super_admin and not tenant.is_organization_owner:
+        base = base.where(or_(Debt.branch_id.in_(tenant.branch_ids), Debt.branch_id.is_(None)))
     def data(row):
         return {"id": str(row.id), "name": f"{row.first_name} {row.last_name} · {row.description or 'Borç kaydı'} · Kalan {row.amount - row.paid_amount:.2f} TL"}
     selected = (await db.execute(base.where(Debt.id == selected_id))).first() if selected_id else None
@@ -188,19 +210,29 @@ async def debt_options(db, tenant, page, page_size, search, selected_id):
 
 async def payment_data(db, items):
     identifiers = [row.id for row in items]
-    students = (await db.execute(select(Student.id, Student.first_name, Student.last_name).where(
-        Student.id.in_([row.student_id for row in items])))).all()
-    names = {row.id: " ".join(value for value in (row.first_name, row.last_name) if value) for row in students}
+    students = (await db.execute(select(Student.id, Student.organization_id, Student.branch_id,
+        Student.first_name, Student.last_name).where(
+        Student.id.in_([row.student_id for row in items]), Student.deleted_at.is_(None)))).all()
+    students_by_id = {row.id: row for row in students}
     online = set((await db.execute(select(PaymentCheckout.payment_id).where(
         PaymentCheckout.payment_id.in_(identifiers)))).scalars())
-    receipts = {r.payment_id: r for r in (await db.execute(select(Receipt).where(Receipt.payment_id.in_(identifiers)))).scalars()}
+    receipts = {r.payment_id: r for r in (await db.execute(select(Receipt).where(
+        Receipt.payment_id.in_(identifiers)))).scalars()}
     output = []
     for row in items:
         amount = Decimal(str(row.amount)) if row.amount is not None else None
         valid = amount is not None and amount.is_finite()
         cancelled = row.cancelled_at is not None or str(row.status or "").lower() == "cancelled"
+        student = students_by_id.get(row.student_id)
+        student_name = None
+        if student and student.organization_id == row.organization_id and student.branch_id == row.branch_id:
+            student_name = " ".join(value for value in (student.first_name, student.last_name) if value)
+        receipt = receipts.get(row.id)
+        if receipt and (receipt.organization_id != row.organization_id or receipt.branch_id != row.branch_id
+                or receipt.student_id != row.student_id):
+            receipt = None
         output.append({"id": str(row.id), "student_id": str(row.student_id), "debt_id": str(row.debt_id),
-            "receipt_id": str(receipts[row.id].id) if row.id in receipts else None, "student_name": names.get(row.student_id) or None,
+            "receipt_id": str(receipt.id) if receipt else None, "student_name": student_name or None,
             "amount": format(amount, ".2f") if valid else None, "payment_method": row.payment_method.value,
             "payment_date": row.payment_date.isoformat() if row.payment_date else None,
             "cancelled": cancelled, "status": "CANCELLED" if cancelled else str(row.status or "UNKNOWN").upper(),
