@@ -401,3 +401,7 @@ Parent-engagement ve kurum/sınıf/personel/kaynak/risk/operasyonel analiz catch
 Chatbot route, intent handler, context/history/date servisleri ve OpenAI/Ollama adaptörlerindeki hata ayrıntısı/traceback logları kaldırıldı; sabit işlem etiketi ve exception sınıfı kalıyor. SCS360 SHA `f9107087bf303fac105df0f5c27c178bfbe01b99`; hedefli test/build yok. Başka backend logları ve harici LLM veri aktarımı bu checkpoint’te denetlenmedi.
 
 Chatbot intent sorgusu, beklenmeyen dönem metni ve LLM JSON parse gövdesi de logdan çıkarıldı. SCS360 `codex/source-sync-20261111` SHA `f4a635a9dbe494ff27591b26bfb00d56e673c260`; statik diff kontrolü geçti, test/build yapılmadı. Harici sağlayıcıya gönderilen kişisel verilerin kapsamı hâlâ canlı öncesi açık.
+
+### 26 Kasım — Chatbot prompt veri minimizasyonu
+
+Intent endpoint'ine geçmişteki serbest mesajlar yerine yalnız bilinen intent etiketleri eklenir; mevcut sorgu metni hâlâ LLM'ye gider ve harici sağlayıcı varsayılan kapalıdır. SCS360 SHA `4b7faf049fd1cb083aa0a96fb2e393d3f361f3df`. Test/build yok; bu KVKK veya sağlayıcı kabulü değildir.

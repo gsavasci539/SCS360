@@ -76,3 +76,5 @@ Web analiz hata logu WIP: ayrıntı ekranındaki Axios hata nesnesi yazdırılm�
 Veli memnuniyeti ve iletişim analizi WIP: iç exception/traceback ifşası kaldırıldı; sorgu hataları sahte/kısmi başarı üretmek yerine genel 503’e gider, hata türü dışında bilgi loglanmaz. SHA `494cd631`; hedefli test yok. Analiz router’ındaki kalan uçlar ve canlı log/infra kabulü açık.
 
 Personel analiz hatası WIP: exception ayrıntısı artık kullanıcıya/loga yazılmaz. Gerçek DB verisi kullanmayan kütüphane ve kart analizleri placeholder üretmek yerine 503 verir; card number response’ta echo edilmez. SCS360 SHA `39b92001`; test yok. Gerçek analiz sözleşmeleri ve canlı doğrulama açık.
+
+26 Kasım 2026 chatbot dış LLM veri minimizasyonu (WIP): önceki beş serbest metin mesajı provider prompt'undan çıkarıldı; yalnız bilinen intent etiketleri gönderilir. Mevcut sorgu, rol/tarih ve kişi sayıları hâlâ gönderilir. Dış hedefler ancak `CHATBOT_EXTERNAL_DATA_TRANSFER_ALLOWED=true` ve HTTPS ile çalışır. SCS360 SHA `4b7faf049fd1cb083aa0a96fb2e393d3f361f3df`; test/build yok. KVKK dayanağı, sağlayıcı sözleşmesi/bölgesi, saklama, audit erişimi ve canlı egress ayrıca doğrulanmalı.
