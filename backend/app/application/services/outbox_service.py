@@ -13,6 +13,10 @@ def scoped(tenant, branch_id=None):
     query = repo._branch_filter(repo._org_filter(
         select(NotificationRecipient, NotificationJob).join(NotificationJob,
             NotificationJob.id == NotificationRecipient.notification_job_id), NotificationJob), NotificationJob)
+    # Branchless outbox rows may contain all-organization recipients; do not
+    # treat them as readable by every branch-scoped operator.
+    if tenant.branch_ids:
+        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
     return query.where(NotificationJob.branch_id == branch_id) if branch_id else query
 
 
