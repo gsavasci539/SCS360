@@ -17,7 +17,7 @@ from app.core.dependencies import get_current_user
 from app.core.platform_workspace import WorkspacePrincipal
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
-from app.core.rate_limit import limiter
+from app.core.rate_limit import get_client_ip, limiter
 
 from app.domain.entities.user import User
 from app.domain.entities.student_teacher import (
@@ -33,6 +33,8 @@ from app.domain.entities.ai_chat_audit_log import (
 )
 
 from app.infrastructure.models.models import (
+    AuditAction,
+    AuditLog,
     ChatConversation,
     ChatMessage,
     Student,
@@ -86,6 +88,33 @@ def enforce_chatbot_audit_storage_access(current_user: User) -> None:
         raise HTTPException(status_code=503, detail="Chat audit storage is disabled")
     if not current_user.organization_id:
         raise HTTPException(status_code=403, detail="An institution workspace is required")
+
+
+def _record_chatbot_data_access(
+    db: AsyncSession,
+    current_user: User,
+    request: Request,
+    event: str,
+    *,
+    entity_id: UUID | None = None,
+    record_count: int | None = None,
+    export_format: str | None = None,
+) -> None:
+    """Record who accessed chatbot audit data without copying its contents."""
+    values = {"event": event}
+    if record_count is not None:
+        values["record_count"] = record_count
+    if export_format is not None:
+        values["format"] = export_format
+    db.add(AuditLog(
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        action=AuditAction.OTHER,
+        entity_type="chatbot_data_access",
+        entity_id=entity_id,
+        new_values=values,
+        ip_address=get_client_ip(request),
+    ))
 
 ROLE_PARENT = "parent"
 ROLE_TEACHER = "teacher"
@@ -1108,7 +1137,9 @@ def normalize_audit_role(role: str) -> str:
 
 
 @router.get("/ai/audit-logs")
+@limiter.limit("20/minute")
 async def get_audit_logs(
+    request: Request,
     role: Optional[str] = Query(None, max_length=50, description="Kayıt anındaki gönderici rolü"),
     record_id: UUID | None = None,
     topic: Optional[str] = None,
@@ -1184,6 +1215,11 @@ async def get_audit_logs(
             "sender_role": sender_role,
         }
         enriched_logs.append(log_dict)
+
+    _record_chatbot_data_access(
+        db, current_user, request, "CHAT_AUDIT_TEXT_READ",
+        entity_id=record_id, record_count=len(logs),
+    )
     
     return success_response({
         "success": True,
@@ -1195,9 +1231,11 @@ async def get_audit_logs(
 
 
 @router.put("/ai/audit-logs/{log_id}/verify")
+@limiter.limit("10/minute")
 async def update_audit_log_feedback(
     log_id: str,
     feedback: FeedbackPayload,
+    request: Request,
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(require_ai_workspace_admin),
 ):
@@ -1231,6 +1269,9 @@ async def update_audit_log_feedback(
     log.corrected_response = feedback.corrected_response
     log.is_fine_tuning_ready = feedback.is_fine_tuning_ready
     log.updated_by = current_user.id
+    _record_chatbot_data_access(
+        db, current_user, request, "CHAT_AUDIT_FEEDBACK_UPDATED", entity_id=log.id,
+    )
     
     await db.commit()
     await db.refresh(log)
@@ -1284,6 +1325,10 @@ async def export_fine_tuning_dataset(
         
         if not dataset:
             raise HTTPException(status_code=404, detail="No logs found for export")
+
+        _record_chatbot_data_access(
+            db, current_user, request, "CHAT_AUDIT_DATASET_EXPORTED", export_format=format,
+        )
         
         # Set appropriate content type and filename
         content_type_map = {
