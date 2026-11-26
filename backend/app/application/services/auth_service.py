@@ -334,8 +334,8 @@ class AuthService:
         if user.organization_id:
             from urllib.parse import urlencode
             from app.infrastructure.models.models import NotificationJob, NotificationRecipient, NotificationChannel
-            separator = "&" if "?" in settings.PASSWORD_RESET_URL else "?"
-            url = settings.PASSWORD_RESET_URL + separator + urlencode({"token": token_value})
+            reset_url = settings.PASSWORD_RESET_URL.split("#", 1)[0]
+            url = reset_url + "#" + urlencode({"token": token_value})
             job = NotificationJob(organization_id=user.organization_id, channel=NotificationChannel.EMAIL,
                 subject="SCS360 şifre sıfırlama", body=f"Şifrenizi sıfırlamak için: {url}\nBağlantı 1 saat geçerlidir.",
                 reference_type="PASSWORD_RESET", reference_id=user.id)

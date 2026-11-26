@@ -56,16 +56,21 @@ export function ForgotPasswordPage() {
 
 const resetSchema = z.object({ password: z.string().min(8, "En az 8 karakter yazın."), confirm: z.string() }).refine((v) => v.password === v.confirm, { path: ["confirm"], message: "Şifreler eşleşmiyor." });
 export function ResetPasswordPage() {
-  const [params, setParams] = useSearchParams(); const navigate = useNavigate(); const { showToast } = useToast();
-  const [resetToken] = useState(() => params.get("token"));
+  const [params] = useSearchParams(); const navigate = useNavigate(); const { showToast } = useToast();
+  const [resetToken] = useState(() => {
+    const fragmentParams = new URLSearchParams(window.location.hash.slice(1));
+    return fragmentParams.get("token") ?? params.get("token");
+  });
   useLayoutEffect(() => {
-    if (!params.has("token")) return;
-    setParams((current) => {
-      const sanitized = new URLSearchParams(current);
-      sanitized.delete("token");
-      return sanitized;
-    }, { replace: true });
-  }, [params, setParams]);
+    const cleanUrl = new URL(window.location.href);
+    const fragmentParams = new URLSearchParams(cleanUrl.hash.slice(1));
+    const hasQueryToken = cleanUrl.searchParams.has("token");
+    const hasFragmentToken = fragmentParams.has("token");
+    if (!hasQueryToken && !hasFragmentToken) return;
+    cleanUrl.searchParams.delete("token");
+    if (hasFragmentToken) cleanUrl.hash = "";
+    window.history.replaceState(window.history.state, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+  }, []);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ password: string; confirm: string }>({ resolver: zodResolver(resetSchema) });
   const submit = async (values: { password: string }) => { const token = resetToken; if (!token) return showToast("Geçersiz bağlantı", "Sıfırlama anahtarı bulunamadı.", "error"); try { await api.post("/auth/reset-password", { token, new_password: values.password }); showToast("Şifre güncellendi", "Yeni şifrenizle giriş yapabilirsiniz."); navigate("/login"); } catch (error) { showToast("Şifre güncellenemedi", apiMessage(error), "error"); } };
   return <AuthFrame><div className="eyebrow">Yeni şifre</div><h1>Güçlü bir şifre belirleyin.</h1><p className="login-lead">En az 8 karakterli, yalnızca size ait bir şifre kullanın.</p><form className="login-form" onSubmit={handleSubmit(submit)}><Field label="Yeni şifre" required error={errors.password?.message}><input type="password" {...register("password")} /></Field><Field label="Şifre tekrarı" required error={errors.confirm?.message}><input type="password" {...register("confirm")} /></Field><button className="btn btn-primary login-submit" disabled={isSubmitting}>Şifreyi güncelle</button></form></AuthFrame>;
