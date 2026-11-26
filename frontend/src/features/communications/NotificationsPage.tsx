@@ -175,7 +175,10 @@ function CreateModal({ open, branchRequired, onClose, onSuccess }: {
 
   async function submit(values: any) {
     try {
-      await api.post("/notifications", values);
+      await api.post("/notifications", {
+        ...values,
+        branch_id: values.branch_id || null,
+      });
       showToast("Bildirim oluşturuldu", "Yeni bildirim başarıyla eklendi.");
       onClose();
       onSuccess();
