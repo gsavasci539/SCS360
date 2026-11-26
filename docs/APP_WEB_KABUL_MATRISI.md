@@ -414,3 +414,4 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 - Statik `git diff --check` geçti; test veya derleme yapılmadı.
 - Kaynak commit SCS360 `codex/source-sync-20261111` SHA `245301330cc4dfc7d0d8f0783be543bc2a804c24` normal push ve `ls-remote` ile doğrulandı. Sonraki somut inceleme: tenant audit endpoint'inde tam sohbet metni, operatör erişim izi ve saklama/silme.
 - Raw audit okumak/düzeltmek `CHATBOT_AUDIT_TEXT_ACCESS_ALLOWED=true`; indirmek ayrıca `CHATBOT_DATASET_EXPORT_ALLOWED=true` gerektirir. SCS360 kaynak SHA `d0d37a234eefbca57c7f989f1c7b1ac8d1a99ea8` normal push ve `ls-remote` ile doğrulandı. Test/build yok; bu KVKK/canlı kabulü değildir.
+- Ham chatbot audit saklama `CHATBOT_AUDIT_STORAGE_ALLOWED=true` gerektirir; ayar kapalıyken audit metrikleri ve kullanıcı konuşma geçmişi 503 döner. Önceden kaydedilen kayıtlar/loglar burada silinmez. Statik diff kontrolü dışında test/build yok.

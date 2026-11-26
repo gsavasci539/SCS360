@@ -78,6 +78,14 @@ def enforce_chatbot_audit_text_access(current_user: User) -> None:
     if not current_user.organization_id:
         raise HTTPException(status_code=403, detail="An institution workspace is required")
 
+
+def enforce_chatbot_audit_storage_access(current_user: User) -> None:
+    """Do not report empty analytics as real zero activity when storage is off."""
+    if os.getenv("CHATBOT_AUDIT_STORAGE_ALLOWED", "false").strip().lower() != "true":
+        raise HTTPException(status_code=503, detail="Chat audit storage is disabled")
+    if not current_user.organization_id:
+        raise HTTPException(status_code=403, detail="An institution workspace is required")
+
 ROLE_PARENT = "parent"
 ROLE_TEACHER = "teacher"
 ADMIN_ROLES = {"super_admin", "org_admin", "branch_manager", "manager", "administrator", "owner"}
@@ -607,52 +615,56 @@ async def _process_chatbot_query(
             detail_action = detail_action_for_intent(raw_intent.intent)
             suggested_actions = [detail_action] if detail_action else []
 
-        # Create audit log entry
-        try:
-            # Format session ID as SES-{ROLE}-{USER_ID_SUFFIX} e.g., SES-PAR-882
-            role_prefix_map = {
-                "parent": "PAR",
-                "teacher": "TEA",
-                "super_admin": "SUP",
-                "owner": "OWN",
-                "admin": "ADM",
-                "manager": "MGR",
-                "accountant": "FIN",
-                "canteen_staff": "CAN",
-            }
-            sender_role = get_user_role(current_user)
-            role_code = role_prefix_map.get(sender_role, "USR")
-            session_id = f"SES-{role_code.upper()}-{str(current_user.id)[:3]}"
-            
-            sentiment = analyze_sentiment(request.query)
-            topic_category = map_intent_to_topic_category(raw_intent.intent)
-            token_count = estimate_token_count(request.query + handler_response.message)
-            latency_ms = int(execution_time * 1000)
-
-            audit_log = AiChatAuditLogModel(
-                session_id=session_id,
-                user_id=current_user.id,
-                organization_id=organization_id_of(current_user),
-                user_query=request.query,
-                ai_response=handler_response.message,
-                detected_intent=raw_intent.intent,
-                topic_category=topic_category,
-                sentiment=sentiment,
-                token_count=token_count,
-                latency_ms=latency_ms,
-                meta_data={
-                    "confidence": raw_intent.confidence,
-                    "student_id": str(student_id) if student_id else None,
-                    "teacher_id": str(teacher_id) if teacher_id else None,
-                    "operation": raw_intent.operation,
-                    "sender_role": sender_role,
+        sentiment = analyze_sentiment(request.query)
+        # Audit rows retain raw questions/responses and identifiers; keep
+        # persistence disabled unless the deployment explicitly approves it.
+        audit_storage_allowed = (
+            os.getenv("CHATBOT_AUDIT_STORAGE_ALLOWED", "false").strip().lower() == "true"
+        )
+        if audit_storage_allowed:
+            try:
+                role_prefix_map = {
+                    "parent": "PAR",
+                    "teacher": "TEA",
+                    "super_admin": "SUP",
+                    "owner": "OWN",
+                    "admin": "ADM",
+                    "manager": "MGR",
+                    "accountant": "FIN",
+                    "canteen_staff": "CAN",
                 }
-            )
-            db.add(audit_log)
-            await db.commit()
-        except Exception as log_error:
-            logger.error("chatbot_audit_write_failed exception_type=%s", type(log_error).__name__)
-            # Don't fail the request if audit logging fails
+                sender_role = get_user_role(current_user)
+                role_code = role_prefix_map.get(sender_role, "USR")
+                session_id = f"SES-{role_code.upper()}-{str(current_user.id)[:3]}"
+
+                topic_category = map_intent_to_topic_category(raw_intent.intent)
+                token_count = estimate_token_count(request.query + handler_response.message)
+                latency_ms = int(execution_time * 1000)
+
+                audit_log = AiChatAuditLogModel(
+                    session_id=session_id,
+                    user_id=current_user.id,
+                    organization_id=organization_id_of(current_user),
+                    user_query=request.query,
+                    ai_response=handler_response.message,
+                    detected_intent=raw_intent.intent,
+                    topic_category=topic_category,
+                    sentiment=sentiment,
+                    token_count=token_count,
+                    latency_ms=latency_ms,
+                    meta_data={
+                        "confidence": raw_intent.confidence,
+                        "student_id": str(student_id) if student_id else None,
+                        "teacher_id": str(teacher_id) if teacher_id else None,
+                        "operation": raw_intent.operation,
+                        "sender_role": sender_role,
+                    }
+                )
+                db.add(audit_log)
+                await db.commit()
+            except Exception as log_error:
+                logger.error("chatbot_audit_write_failed exception_type=%s", type(log_error).__name__)
+                # Don't fail the request if audit logging fails
 
         return {
             "intent": raw_intent.intent,
@@ -1317,6 +1329,7 @@ async def get_analytics_overview(
     current_user: User = Depends(require_ai_workspace_admin),
 ):
     """Recorded metrics for the explicitly selected institution; zero is unrated."""
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         log = AiChatAuditLogModel
         scope = log.organization_id == current_user.organization_id
@@ -1359,6 +1372,7 @@ async def get_analytics_trends(
     current_user: User = Depends(require_ai_workspace_admin),
 ):
     """The requested UTC calendar days, including today up to the current instant."""
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         now = datetime.now(UTC)
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days - 1)
@@ -1394,6 +1408,7 @@ async def get_intent_performance(
     current_user: User = Depends(require_ai_workspace_admin),
 ):
     """Measured latency and rated quality by recorded intent, within one institution."""
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         log = AiChatAuditLogModel
         intent = func.coalesce(log.detected_intent, "UNKNOWN")
@@ -1435,6 +1450,7 @@ async def get_conversation_history(
     Get conversation history for a session.
     Accessible by authenticated users for their own sessions.
     """
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         # Verify user has access to this session
         result = await db.execute(
@@ -1480,6 +1496,7 @@ async def get_session_summary(
     Get summary statistics for a conversation session.
     Accessible by authenticated users for their own sessions.
     """
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         # Verify user has access to this session
         result = await db.execute(
@@ -1522,6 +1539,7 @@ async def get_my_conversation_stats(
     Get conversation statistics for the current user.
     Accessible by authenticated users.
     """
+    enforce_chatbot_audit_storage_access(current_user)
     try:
         stats = await conversation_history_service.get_user_conversation_stats(
             db=db,
