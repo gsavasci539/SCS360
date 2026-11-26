@@ -111,3 +111,5 @@ Yeni üretilen sıfırlama bağlantısı tokenı URL fragment’ine yerleştirir
 Harici LLM transfer politikası, allowlist + açık opt-in + HTTPS/443 şartları korunarak non-public IP literal’lerini, scoped IPv6 ve yaygın private/reserved DNS suffix’lerini (`.local`, `.internal`, `.test`, `.home`, `.lan`, `.invalid`, `.example`) reddeder. `git diff --check` geçti; test/build/DNS/runtime yok. SCS360 `codex/source-sync-20261111` SHA `08e14a7948d3bdcb7b0249b6ee8219a554925829` normal push/`ls-remote` ile doğrulandı.
 
 Bu DNS rebinding/özel IP’ye çözümleme riskini tek başına kapatmaz. Egress firewall, resolver ve canlı ağ yolunun bağımsız doğrulaması; harici LLM veri işleme koşulları ve KVKK incelemesi açık kalır. WIP, canlı kabulü değildir.
+
+Rate-limit export commitinde router seviyesinde `Request` ve `limiter` importları atlanmıştı; takip commitinde eklendi. `git diff --check` geçti, fakat Python import smoke, API testleri ve build çalıştırılmadı. SCS360 SHA `8611f0226c00f17858f2ace1daa5c6fd0ca82bdd` normal push/`ls-remote` ile doğrulandı. Endpoint WIP; izole import/API testinden geçmeden kabul edilmez.

@@ -438,3 +438,5 @@ Yeni e-posta linklerinde token `#token=` fragment’inde; istemci fragment veya 
 ### 26 Kasım — Chatbot harici sağlayıcı özel hedef koruması (WIP)
 
 Harici provider URL allowlist doğrulaması artık private/reserved IP literal ve yerel/özel DNS suffix hedeflerini reddediyor; allowlist + opt-in + HTTPS/443 devam ediyor. Statik diff kontrolü; test/build/runtime yok. SCS360 SHA `08e14a7948d3bdcb7b0249b6ee8219a554925829` normal push/`ls-remote` ile doğrulandı. DNS rebinding ve network egress firewall kabulü açık.
+
+Rate-limit route için eksik `Request`/ortak `limiter` importları düzeltildi. Statik diff kontrolü dışında test/build yapılmadı; kaynak SCS360 `codex/source-sync-20261111` SHA `8611f0226c00f17858f2ace1daa5c6fd0ca82bdd`. Import smoke ve endpoint testleri açık; canlı/KVKK kabulü değil.
