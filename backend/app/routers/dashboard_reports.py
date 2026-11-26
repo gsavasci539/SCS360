@@ -1,8 +1,9 @@
-from app.core.dates import school_today
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
+from app.core.dates import school_today
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, update
@@ -52,6 +53,52 @@ def _require_notification_branch_scope(tenant: TenantContext, job: NotificationJ
     if tenant.branch_ids and job.branch_id not in tenant.branch_ids:
         # Hide branchless/foreign jobs because their recipient list may span branches.
         raise NotFoundException("Bildirim bulunamadı")
+
+
+def _notification_address_key(address: str, channel: NotificationChannel) -> str | None:
+    if channel == NotificationChannel.EMAIL:
+        normalized = address.strip().casefold()
+        return f"EMAIL:{normalized}" if normalized else None
+    digits = "".join(character for character in address if character.isdigit())
+    if len(digits) == 12 and digits.startswith("90"):
+        digits = f"0{digits[2:]}"
+    elif len(digits) == 10 and digits.startswith("5"):
+        digits = f"0{digits}"
+    return f"PHONE:{digits}" if len(digits) >= 10 else None
+
+
+async def _allowed_notification_recipients(db, tenant, organization_id, branch_id, channel):
+    from app.core.tenant_guard import scope_filters, staff_scope
+
+    allowed = {}
+
+    def add_contact(address, first_name, last_name):
+        if isinstance(address, str) and (key := _notification_address_key(address, channel)):
+            allowed.setdefault(key, (address.strip(), f"{first_name} {last_name}".strip()))
+
+    parent_query = select(Parent).join(StudentParent, StudentParent.parent_id == Parent.id).join(
+        Student, Student.id == StudentParent.student_id).where(
+            Parent.organization_id == organization_id,
+            Student.organization_id == organization_id,
+            Parent.deleted_at.is_(None), Student.deleted_at.is_(None),
+            Parent.receive_notifications.is_(True))
+    if branch_id:
+        parent_query = parent_query.where(Student.branch_id == branch_id)
+    for parent in (await db.execute(parent_query)).scalars().unique():
+        address = (parent.email if channel == NotificationChannel.EMAIL else
+            (parent.whatsapp_phone or parent.phone) if channel == NotificationChannel.WHATSAPP else
+            (parent.sms_phone or parent.phone))
+        add_contact(address, parent.first_name, parent.last_name)
+
+    scoped_tenant = replace(tenant, branch_ids=[branch_id]) if branch_id else tenant
+    branches, _, _, users = scope_filters(scoped_tenant, None)
+    staff_ids = staff_scope(scoped_tenant, branches, users)
+    staff_query = select(User).where(User.organization_id == organization_id,
+        User.deleted_at.is_(None), User.id.in_(staff_ids))
+    for staff_member in (await db.execute(staff_query)).scalars():
+        address = staff_member.email if channel == NotificationChannel.EMAIL else staff_member.phone
+        add_contact(address, staff_member.first_name, staff_member.last_name)
+    return allowed
 
 
 class NotificationCreate(BaseModel):
@@ -863,6 +910,8 @@ async def send_notification(
         raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
     if not tenant.organization_id:
         raise ForbiddenException("Bildirim için kurum bağlamı gerekli")
+    if branch_id:
+        await BaseRepository(db, tenant).require_related(branch_id, Branch)
     subject = body.get("subject", "")
     message_body = body.get("body", "")
     recipients = body.get("recipients")
@@ -872,7 +921,10 @@ async def send_notification(
         raise ValidationException("Bildirim metni geçersiz")
     if not isinstance(recipients, list) or not 1 <= len(recipients) <= 100:
         raise ValidationException("1 ile 100 arasında alıcı seçin")
+    allowed_recipients = await _allowed_notification_recipients(
+        db, tenant, tenant.organization_id, branch_id, channel)
     normalized_recipients = []
+    seen_addresses = set()
     for recipient in recipients:
         if not isinstance(recipient, dict):
             raise ValidationException("Alıcı kaydı geçersiz")
@@ -883,7 +935,13 @@ async def send_notification(
             raise ValidationException("Alıcı adresi geçersiz")
         if not isinstance(name, str) or len(name) > 200:
             raise ValidationException("Alıcı adı geçersiz")
-        normalized_recipients.append((address.strip(), name.strip()))
+        key = _notification_address_key(address, channel)
+        contact = allowed_recipients.get(key) if key else None
+        if contact is None:
+            raise ForbiddenException("Alıcı seçilen kurum/şubenin kayıtlı iletişim listesinde bulunamadı")
+        if key not in seen_addresses:
+            normalized_recipients.append(contact)
+            seen_addresses.add(key)
     job = NotificationJob(
         organization_id=tenant.organization_id,
         branch_id=branch_id,
