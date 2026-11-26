@@ -409,7 +409,7 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 
 ## Güvenlik kabul durumu — chatbot veri dışa aktarımı (WIP)
 
-- `/api/v1/chatbot/ai/export-dataset` ham sohbet soru/yanıtı içerebildiğinden varsayılan kapalıdır; açık operasyon ayarı `CHATBOT_DATASET_EXPORT_ALLOWED=true` ve seçili kurum çalışma alanı gerektirir.
+- Ham audit okuma/geri bildirim yazma `CHATBOT_AUDIT_TEXT_ACCESS_ALLOWED=true`; dataset export ayrıca `CHATBOT_DATASET_EXPORT_ALLOWED=true` ve seçili kurum çalışma alanı gerektirir. İki ayar da varsayılan kapalıdır.
 - Bu kaynak katmanı kontrolüdür. Sağlayıcı/amaç/hukuki dayanak, aydınlatma ve gerekli izin, alan minimizasyonu, eğitim ortamı, saklama/silme ve canlı yapılandırma doğrulanmadan güvenlik ya da KVKK kabulü sayılmaz.
 - Statik `git diff --check` geçti; test veya derleme yapılmadı.
 - Kaynak commit SCS360 `codex/source-sync-20261111` SHA `245301330cc4dfc7d0d8f0783be543bc2a804c24` normal push ve `ls-remote` ile doğrulandı. Sonraki somut inceleme: tenant audit endpoint'inde tam sohbet metni, operatör erişim izi ve saklama/silme.

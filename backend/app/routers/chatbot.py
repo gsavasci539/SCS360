@@ -70,6 +70,14 @@ async def require_ai_workspace_admin(user: User = Depends(get_current_user)):
         raise HTTPException(403, "Sohbet denetimi için platform yöneticisi kurum seçmelidir")
     return user
 
+
+def enforce_chatbot_audit_text_access(current_user: User) -> None:
+    """Fail closed for routes that read or modify raw chat audit text."""
+    if os.getenv("CHATBOT_AUDIT_TEXT_ACCESS_ALLOWED", "false").strip().lower() != "true":
+        raise HTTPException(status_code=503, detail="Chat audit text access is disabled")
+    if not current_user.organization_id:
+        raise HTTPException(status_code=403, detail="An institution workspace is required")
+
 ROLE_PARENT = "parent"
 ROLE_TEACHER = "teacher"
 ADMIN_ROLES = {"super_admin", "org_admin", "branch_manager", "manager", "administrator", "owner"}
@@ -1098,6 +1106,8 @@ async def get_audit_logs(
     
     Süper Admin: Chat Loglarını ve Niyet İstatistiklerini Getir
     """
+    enforce_chatbot_audit_text_access(current_user)
+
     # Build base query
     query = select(AiChatAuditLogModel).where(
         AiChatAuditLogModel.organization_id == current_user.organization_id
@@ -1191,6 +1201,8 @@ async def update_audit_log_feedback(
     
     Süper Admin: İnsan Düzeltmesi (RLHF) Kaydet
     """
+    enforce_chatbot_audit_text_access(current_user)
+
     try:
         log_uuid = UUID(log_id)
     except ValueError:
@@ -1251,8 +1263,7 @@ async def export_fine_tuning_dataset(
         # the applicable purpose, access, retention, and transfer controls.
         if os.getenv("CHATBOT_DATASET_EXPORT_ALLOWED", "false").strip().lower() != "true":
             raise HTTPException(status_code=503, detail="Dataset export is disabled")
-        if not current_user.organization_id:
-            raise HTTPException(status_code=403, detail="An institution workspace is required")
+        enforce_chatbot_audit_text_access(current_user)
 
         format = format.lower().strip()
         if format not in {"jsonl", "alpaca", "llama", "csv"}:
