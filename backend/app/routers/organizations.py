@@ -26,12 +26,14 @@ async def flush_registry(db, message):
         raise ConflictException(message) from None
 
 
-def org_to_dict(o: Organization) -> dict:
+def org_to_dict(o: Organization, *, reveal_tax_number: bool = False) -> dict:
     return {
         "id": str(o.id),
         "name": o.name,
         "legal_name": o.legal_name,
-        "tax_number": o.tax_number,
+        # A sole proprietor's tax identifier may be their TCKN. Keep it out of
+        # broad org.read responses; only organization writers/platform admins need it.
+        "tax_number": o.tax_number if reveal_tax_number else None,
         "tax_office": o.tax_office,
         "phone": o.phone,
         "email": o.email,
@@ -93,7 +95,8 @@ async def list_organizations(
     query = query.order_by(Organization.name)
     repo = BaseRepository(db, tenant)
     items, total = await repo.paginate(query, page, page_size)
-    return success_response(paginate([org_to_dict(o) for o in items], total, page, page_size))
+    reveal_tax_number = tenant.is_super_admin or tenant.platform_admin or tenant.has_permission("org.write")
+    return success_response(paginate([org_to_dict(o, reveal_tax_number=reveal_tax_number) for o in items], total, page, page_size))
 
 
 @router.post("/api/organizations")
@@ -113,7 +116,7 @@ async def create_organization(
     # new unlimited school account without a platform-configured membership.
     db.add(OrganizationSubscription(organization_id=org.id, admin_status="ACTIVE"))
     await flush_registry(db, "Kurum üyelik kaydı oluşturulamadı")
-    return success_response(org_to_dict(org), "Kurum oluşturuldu")
+    return success_response(org_to_dict(org, reveal_tax_number=True), "Kurum oluşturuldu")
 
 
 @router.get("/api/organizations/{org_id}")
@@ -124,7 +127,8 @@ async def get_organization(
 ):
     repo = BaseRepository(db, tenant)
     org = await repo.get_by_id(org_id, Organization)
-    return success_response(org_to_dict(org))
+    reveal_tax_number = tenant.is_super_admin or tenant.platform_admin or tenant.has_permission("org.write")
+    return success_response(org_to_dict(org, reveal_tax_number=reveal_tax_number))
 
 
 @router.put("/api/organizations/{org_id}")
@@ -147,7 +151,7 @@ async def update_organization(
         setattr(org, k, v)
     org.updated_by = user.id
     await flush_registry(db, "Bu kurum adı zaten kullanımda")
-    return success_response(org_to_dict(org), "Kurum güncellendi")
+    return success_response(org_to_dict(org, reveal_tax_number=True), "Kurum güncellendi")
 
 
 @router.delete("/api/organizations/{org_id}")
