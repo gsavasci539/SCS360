@@ -1880,9 +1880,14 @@ export function ResourceFormPage({
         }
       }
       if (resourceKey === "organizations" || resourceKey === "branches") {
-        for (const name of ["legal_name", "tax_number", "tax_office", "code", "phone", "email", "city", "address"]) {
+        for (const name of ["legal_name", "tax_office", "code", "phone", "email", "city", "address"]) {
           const value = values[name];
           if (typeof value === "string" && (editing || value)) payload[name] = value.trim() || null;
+        }
+        if (resourceKey === "organizations" && typeof values.tax_number === "string") {
+          const value = values.tax_number.trim();
+          if (value) payload.tax_number = value;
+          else delete payload.tax_number; // Hidden values stay unchanged when an editor cannot read them.
         }
       }
       if (editing && resourceKey === "students") {

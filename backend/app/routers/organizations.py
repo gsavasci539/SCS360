@@ -12,7 +12,7 @@ from app.core.exceptions import ForbiddenException, ConflictException
 from app.core.permissions import PermissionChecker
 from app.core.responses import paginate, success_response
 from app.core.tenant import TenantContext
-from app.infrastructure.models.models import Branch, Organization, Student, User
+from app.infrastructure.models.models import AuditAction, AuditLog, Branch, Organization, Student, User
 from app.infrastructure.repositories.base import BaseRepository
 
 router = APIRouter(tags=["Organizations"])
@@ -43,6 +43,10 @@ def org_to_dict(o: Organization, *, reveal_tax_number: bool = False) -> dict:
         "is_active": o.is_active,
         "created_at": o.created_at.isoformat(),
     }
+
+
+def can_read_tax_number(tenant: TenantContext) -> bool:
+    return tenant.is_super_admin or tenant.platform_admin or tenant.is_organization_owner
 
 
 def branch_to_dict(b: Branch, student_count: int) -> dict:
@@ -95,8 +99,9 @@ async def list_organizations(
     query = query.order_by(Organization.name)
     repo = BaseRepository(db, tenant)
     items, total = await repo.paginate(query, page, page_size)
-    reveal_tax_number = tenant.is_super_admin or tenant.platform_admin or tenant.has_permission("org.write")
-    return success_response(paginate([org_to_dict(o, reveal_tax_number=reveal_tax_number) for o in items], total, page, page_size))
+    # Lists never need to disclose TCKN/VKN; use the detail route when an
+    # authorized owner/platform operator needs to inspect it.
+    return success_response(paginate([org_to_dict(o) for o in items], total, page, page_size))
 
 
 @router.post("/api/organizations")
@@ -127,7 +132,12 @@ async def get_organization(
 ):
     repo = BaseRepository(db, tenant)
     org = await repo.get_by_id(org_id, Organization)
-    reveal_tax_number = tenant.is_super_admin or tenant.platform_admin or tenant.has_permission("org.write")
+    reveal_tax_number = can_read_tax_number(tenant)
+    tax_number = org.tax_number if reveal_tax_number else None
+    if tax_number is not None:
+        db.add(AuditLog(organization_id=org.id, user_id=tenant.user_id,
+            action=AuditAction.OTHER, entity_type="organization.tax_identifier.read", entity_id=org.id,
+            new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_READ"}))
     return success_response(org_to_dict(org, reveal_tax_number=reveal_tax_number))
 
 
@@ -142,6 +152,7 @@ async def update_organization(
     repo = BaseRepository(db, tenant)
     org = await repo.get_by_id(org_id, Organization)
     changes = body.model_dump(exclude_unset=True)
+    tax_number_supplied = "tax_number" in changes
     if "is_active" in changes:
         if not (tenant.is_super_admin or tenant.platform_admin):
             raise ForbiddenException("Kurum hesabını yalnız ana platform yöneticisi açıp kapatabilir")
@@ -150,8 +161,13 @@ async def update_organization(
     for k, v in changes.items():
         setattr(org, k, v)
     org.updated_by = user.id
+    if tax_number_supplied:
+        db.add(AuditLog(organization_id=org.id, user_id=user.id, action=AuditAction.UPDATE,
+            entity_type="organization.tax_identifier", entity_id=org.id,
+            new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_UPDATED"}))
     await flush_registry(db, "Bu kurum adı zaten kullanımda")
-    return success_response(org_to_dict(org, reveal_tax_number=True), "Kurum güncellendi")
+    reveal_tax_number = can_read_tax_number(tenant) or (tax_number_supplied and bool(changes["tax_number"]))
+    return success_response(org_to_dict(org, reveal_tax_number=reveal_tax_number), "Kurum güncellendi")
 
 
 @router.delete("/api/organizations/{org_id}")
