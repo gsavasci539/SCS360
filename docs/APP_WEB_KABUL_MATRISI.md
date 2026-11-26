@@ -420,3 +420,5 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 - Audit API/UI gönderen adını, kullanıcı/kurum kimliğini, session ID'yi ve dahili metadata'yı dışarı vermez; soru/yanıt erişimi varsayılan-kapalı audit-text gate ve tenant scope gerektirir. SCS360 SHA `42312556bb7fc68d9bd9c0cfff6060cca35c051b` doğrulandı; eski verinin retention/silme kabulü açık.
 - Audit API/UI gönderen adını, kullanıcı/kurum kimliğini, session ID'yi ve dahili metadata'yı dışarı vermez; soru/yanıt erişimi ayrı varsayılan-kapalı kapı ve tenant scope gerektirir. Statik diff kontrolü; test/build yok.
 - Bu kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `867c48278b74ce2f0e68250890fc80bf728123bb` normal push/`ls-remote` ile doğrulandı. Test/build yok; geçmiş verinin saklama/silme kabulü açık.
+
+Chatbot dış LLM hedefleri açık transfer ayarına ek olarak `CHATBOT_EXTERNAL_DATA_TRANSFER_HOSTS` içinde tam host eşleşmesi ve HTTPS/443 gerektirir; allowlist varsayılan boştur. Statik diff kontrolü dışında test/build çalıştırılmadı. Dış ağ egress ve veri işleme şartları ayrıca doğrulanmalı.

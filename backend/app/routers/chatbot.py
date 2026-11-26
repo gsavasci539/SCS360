@@ -100,17 +100,24 @@ settings = get_settings()
 external_chatbot_transfer_allowed = (
     os.getenv("CHATBOT_EXTERNAL_DATA_TRANSFER_ALLOWED", "false").strip().lower() == "true"
 )
+external_chatbot_transfer_hosts = {
+    host.strip().lower().rstrip(".")
+    for host in os.getenv("CHATBOT_EXTERNAL_DATA_TRANSFER_HOSTS", "").split(",")
+    if host.strip()
+}
 if settings.CHATBOT_LLM_PROVIDER == "ollama":
     enforce_chatbot_transfer_policy(
         "ollama",
         settings.OLLAMA_BASE_URL or "http://localhost:11434/v1",
         external_transfer_allowed=external_chatbot_transfer_allowed,
+        allowed_external_hosts=external_chatbot_transfer_hosts,
     )
 elif settings.CHATBOT_LLM_PROVIDER == "openai":
     enforce_chatbot_transfer_policy(
         "openai",
         settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
         external_transfer_allowed=external_chatbot_transfer_allowed,
+        allowed_external_hosts=external_chatbot_transfer_hosts,
     )
 
 if settings.CHATBOT_LLM_PROVIDER == "ollama":

@@ -11,6 +11,7 @@ def enforce_chatbot_transfer_policy(
     endpoint: str | None,
     *,
     external_transfer_allowed: bool,
+    allowed_external_hosts: set[str] | None = None,
 ) -> None:
     if provider_type == "mock":
         return
@@ -29,7 +30,17 @@ def enforce_chatbot_transfer_policy(
         or parsed.fragment
     ):
         raise ValueError("Chatbot provider endpoint is invalid")
-    if not internal and (not external_transfer_allowed or parsed.scheme != "https"):
+    if internal:
+        return
+    allowed_hosts = {
+        item.strip().lower().rstrip(".") for item in (allowed_external_hosts or set())
+    }
+    if (
+        not external_transfer_allowed
+        or parsed.scheme != "https"
+        or parsed.port not in (None, 443)
+        or host not in allowed_hosts
+    ):
         raise ValueError(
-            "External chatbot transfer requires explicit approval and HTTPS"
+            "External chatbot transfer requires explicit approval, HTTPS and an exact host allowlist"
         )
