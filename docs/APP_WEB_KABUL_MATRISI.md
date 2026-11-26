@@ -468,3 +468,7 @@ Atanmış şubesi bulunan kullanıcılar outbox geçmişinde yalnız kendi şube
 ### 26 Kasım — Bildirim liste/detay/yönetim şube kapsamı (WIP)
 
 Şubeli aktörün bildirim listesi branchless kurum-geneli işleri dışlar; detay, silme ve tekrar kuyruğa alma uçları da işin şubesini atanmış şubelerle karşılaştırır ve eşleşmeyeni 404 ile gizler. Hedefli statik diff kontrolü geçti; test/build/DB runtime yok. SCS360 `201e5af4088fc27f90642981d55e904a35d0044c` push/`ls-remote` doğrulandı. Çoklu şube kullanıcısının kendi branchless işi, izole kurum/şube regressions ve canlı/KVKK kabulü açık.
+
+### 26 Kasım — Broadcast işlerinde tenant/şube hedefi (WIP)
+
+Broadcast list/detail/update/send/cancel/report lookup’ları şubeli aktör için yalnız atanmış şubedeki hedef-şube veya hedef-sınıf işlerine erişir; şube/sınıf hedefi olmayan kurum-geneli kayıtlar görünmez ve değiştirilemez. Statik diff kontrolü dışında test/build/DB runtime yok. SCS360 SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` push/`ls-remote` doğrulandı. Geçici DB tenant regressions ve çok şubeli generic notification akışı açık; WIP, canlı/KVKK kabulü değildir.

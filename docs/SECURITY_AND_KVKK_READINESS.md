@@ -155,3 +155,9 @@ Yalnız `git diff --check` yapıldı; geçici DB/rol/portal senaryoları, üreti
 Dashboard bildirim uçlarında generic repository filtresi `branch_id=NULL` kayıtlarını okunabilir sayıyordu. `/api/notifications` listesi branch-scoped aktörlerde yalnız atanmış şubeleri seçer; detail, delete ve retry yolları da job branch’ini kontrol edip branchless/foreign işleri 404 ile gizler. Böylece bu uçların alıcı adresi okuma ve job değiştirme işlemleri kurum geneli bildirimlere uygulanmaz.
 
 Yalnız `git diff --check` yapıldı; izole DB rol/şube testleri ve canlı runtime yok. SCS360 `codex/source-sync-20261111` SHA `201e5af4088fc27f90642981d55e904a35d0044c` push/`ls-remote` doğrulandı. Çoklu şube aktörünün kendi branchless işi için erişim modeli, geçici DB kabulü, diğer broadcast API’leri ve KVKK süreçleri açık; WIP.
+
+### 26 Kasım 2026 — Broadcast listeleme ve değişiklikte branch scope (WIP)
+
+`broadcast_service` liste/`get` yolları aktörün atanmış şubelerindeki hedef-şube veya hedef-sınıf kayıtlarını seçer. Null branch + null class olan kurum-geneli işler şube-scoped kullanıcıya görünmez; tenant filtresi get üzerinden update/send/cancel ve delivery report job lookup’larına da uygulanır. Kurum sahibi/platform kapsamı korunur.
+
+Yalnız `git diff --check` yapıldı; geçici DB testleri, çok şubeli generic notification UX’i ve canlı runtime yok. SCS360 `codex/source-sync-20261111` SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` normal push/`ls-remote` ile doğrulandı. WIP; canlı veya KVKK kabulü değildir.

@@ -1116,3 +1116,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - `/api/notifications` listesi şubeli aktör için `branch_id=NULL` kayıtları hariç tutar. Detay, silme ve retry uçları da yüklenen işin şube kimliğini aktörün atamalarına karşı doğrular; eşleşmeyen iş 404 döner. Bu, kurum geneli işlerde alıcı adreslerinin okunmasını ve şube dışı bildirimlerin değiştirilmesini engeller.
 - Yalnız hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. Kod SCS360 `codex/source-sync-20261111` SHA `201e5af4088fc27f90642981d55e904a35d0044c` normal push/`ls-remote` ile doğrulandı.
 - Açık: çoklu şubeye atanmış kullanıcıların `branch_id=NULL` oluşturulan kendi bildirim işlerini yönetme akışı daha dar veri modeliyle ele alınmalı; şube/kurum sahibi regressions geçici DB’de doğrulanmalı. Canlı veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 · Broadcast kayıtlarında şube hedefi zorunlu scope (WIP)
+
+- Broadcast servisindeki liste ve `get` sorguları artık aktörün atanmış şubelerindeki hedef-şube veya hedef-sınıf kayıtlarıyla sınırlı. Şube/sınıf hedefi olmayan kurum-geneli işler şube kullanıcılarına listelenmez, gösterilmez; update/send/cancel ve teslim raporu işlemleri de aynı tenant filtresinden geçer.
+- Hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. SCS360 kod SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` normal push/`ls-remote` ile doğrulandı.
+- Açık: geçici DB’de şube/sınıf/branchless/kurum sahibi senaryolarını doğrula. Çok şubeli kullanıcının generic notification oluşturma ve sonradan yönetme deneyimini güvenli biçimde netleştir; canlı/KVKK kabulü değildir.
