@@ -584,3 +584,7 @@ Kurum input şemasından ayrı response DTO'su TCKN/VKN alanını hiç tanımlam
 ### Dış kabul engeli — HTTPS başlık/security.txt (26.11.2026, WIP)
 
 Salt okunur kontrol ana sayfada 200, Server sürüm başlığı ve yalnız gözlenen `nosniff` korumasını gösterdi; `/.well-known/security.txt` SPA HTML. Deploy yapılmadı. Onaylı güvenlik iletişim adresi ve yetkili dış dağıtım operatörü olmadan canlı başlık/security.txt kabul edilemez. Gerçek yayın sonrası doğrulama ve TLS/site-wide kapsamı açık.
+
+### Güvenlik checkpoint'i — readiness bileşen bilgisini azaltma (WIP, 26.11.2026)
+
+`/api/ready` artık DB bileşen durumunu yanıta yazmaz. Sahte DB ile security hardening grubu 26 PASS. Kod SHA `f4d9946443221e34e2f039aab6d8f43e62b8474a` remote dalda doğrulandı; deploy yapılmadı. Canlı header/security.txt ve runtime kabulü açık.

@@ -305,3 +305,7 @@ OrganizationResponse artık create/input şemasından türemiyor ve TCKN/VKN ala
 ### 26 Kasım 2026 — Tekrar salt okunur canlı başlık kontrolü (WIP)
 
 HTTPS HEAD `https://scs360.com.tr/` 200 yanıtladı; gözlenen başlıklarda `Server: nginx/1.18.0 (Ubuntu)` ve `X-Content-Type-Options: nosniff` vardı. Bu yanıt gözleminde HSTS, CSP, X-Frame-Options, Referrer-Policy veya Permissions-Policy görünmedi. GET `/.well-known/security.txt` yine SPA HTML döndürdü; onaylı izlenen güvenlik iletişim adresi mevcut değil/sağlanmadı. Salt okunur kontrol, yapılandırma/deploy yapılmadı. Bu tek uç nokta gözlemi tam TLS/site kabulü değildir. Uygulanan kaynak başlıklarını production'da doğrulama ve gerçek security.txt yayınlama dış dağıtım/iletişim sahibi bekliyor; canlı ve KVKK kabulü açık.
+
+### 26 Kasım 2026 — Public readiness yanıtı veri minimizasyonu (WIP)
+
+`/api/ready` yanıtı artık `database: connected` bileşen bilgisini döndürmez; readiness sonucu genel kalır. `test_security_hardening.py`: **26 PASS**; yeni test sahte DB oturumu kullanır. Kod SHA `f4d9946443221e34e2f039aab6d8f43e62b8474a` remote dalda doğrulandı. Bu kod production'a deploy edilmedi; dış Nginx/HTTPS ve security.txt canlı açığı sürüyor. WIP/KVKK kabulü değildir.

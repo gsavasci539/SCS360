@@ -1312,3 +1312,7 @@ OrganizationResponse input şemasını miras almıyor; tax_number/TCKN response 
 ### 26 Kasım 2026 — Dış HTTPS başlıkları tekrar kontrol edildi (WIP)
 
 Salt okunur HEAD `https://scs360.com.tr/`: 200, `Server: nginx/1.18.0 (Ubuntu)` sürüm bilgisini açıkladı, `X-Content-Type-Options: nosniff` görüldü; aynı yanıt örneğinde HSTS/CSP/frame/referrer/permissions başlıkları görünmedi. GET `/.well-known/security.txt` SPA HTML döndürdü. Deploy veya değişiklik yapılmadı; onaylı izlenen güvenlik e-posta/adresi bilinmediği için içerik üretilmedi. Somut açık iş: onaylı iletişim sahibi/adresini belirlemek ve yetkili dağıtım operatörünün Nginx başlıkları + gerçek security.txt yayınını uygulayıp dışarıdan doğrulaması. WIP; canlı/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Readiness yanıtı altyapı ayrıntısını göstermiyor (WIP)
+
+Backend `/api/ready` başarılı yanıtından `database: connected` alanı çıkarıldı; readiness kontrolü korunuyor. Sahte DB oturumlu hedefli `test_security_hardening.py`: **26 PASS**. Kod checkpoint `f4d9946443221e34e2f039aab6d8f43e62b8474a` normal push/`ls-remote` ile doğrulandı. Deploy olmadığı için public origin'de etkili olduğu varsayılmamalı; canlı Nginx/security.txt kabulleri açık.
