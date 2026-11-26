@@ -57,6 +57,11 @@ class TenantContext:
         return bool(self.organization_id is not None and not self.is_super_admin and not self.platform_admin
                     and "owner" in self.role_slugs)
 
+    @property
+    def has_institution_wide_branch_access(self) -> bool:
+        """Only explicit institution/platform administrators inherit all branches."""
+        return self.is_super_admin or self.platform_admin or self.is_organization_owner
+
     def has_permission(self, permission: str) -> bool:
         if permission == "super_admin":
             return self.is_super_admin
@@ -75,12 +80,12 @@ class TenantContext:
         return any(self.has_permission(permission) for permission in permissions)
 
     def can_access_branch(self, branch_id: UUID | None) -> bool:
-        if self.is_super_admin or self.is_organization_owner:
+        if self.has_institution_wide_branch_access:
             return True
         if branch_id is None:
             return True
         if not self.branch_ids:
-            return True
+            return False
         return branch_id in self.branch_ids
 
     def can_access_organization(self, organization_id: UUID | None) -> bool:

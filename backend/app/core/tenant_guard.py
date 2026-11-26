@@ -17,8 +17,22 @@ def scope_filters(tenant, student_ids):
     tables = Base.metadata.tables
     branches, students, classes, users = [tables[name] for name in ("branches", "students", "classes", "users")]
     branch_query = select(branches.c.id).where(branches.c.organization_id == tenant.organization_id, branches.c.deleted_at.is_(None))
-    if tenant.branch_ids:
-        branch_query = branch_query.where(branches.c.id.in_(tenant.branch_ids))
+    if not tenant.has_institution_wide_branch_access:
+        if tenant.branch_ids:
+            branch_query = branch_query.where(branches.c.id.in_(tenant.branch_ids))
+        elif student_ids is not None:
+            # Relationship-scoped parents/teachers may span branches, but only
+            # those containing their explicitly accessible students.
+            branch_query = branch_query.where(branches.c.id.in_(
+                select(students.c.branch_id).where(
+                    students.c.id.in_(student_ids),
+                    students.c.organization_id == tenant.organization_id,
+                    students.c.deleted_at.is_(None),
+                )
+            ))
+        else:
+            # An empty assignment set is not an implicit institution-wide grant.
+            branch_query = branch_query.where(False)
     student_query = select(students.c.id).where(students.c.organization_id == tenant.organization_id,
         students.c.branch_id.in_(branch_query), students.c.deleted_at.is_(None))
     if student_ids is not None:
@@ -44,7 +58,7 @@ def references(column, query):
 
 def staff_scope(tenant, branches, users):
     """Payroll rows inherit the staff member's actual branch assignments."""
-    if not tenant.branch_ids:
+    if tenant.has_institution_wide_branch_access:
         return users
     tables = Base.metadata.tables
     links, classes, teaching, lessons = [tables[name] for name in ("user_branches", "classes", "class_teachers", "classroom_assignments")]
@@ -73,7 +87,7 @@ def criteria(model, tenant, student_ids):
         filters.append(expression)
     if table.name == "branches":
         filters.append(model.id.in_(branch_query))
-    if table.name == "users" and tenant.branch_ids:
+    if table.name == "users" and (tenant.branch_ids or not tenant.has_institution_wide_branch_access):
         links = Base.metadata.tables["user_branches"]
         classroom = Base.metadata.tables["classes"]
         teaching = Base.metadata.tables["class_teachers"]

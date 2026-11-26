@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import false, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenException, NotFoundException
@@ -42,7 +42,25 @@ class BaseRepository:
 
     def _branch_filter(self, query, model=None):
         model = model or self.model
-        if self.tenant.is_super_admin or self.tenant.is_organization_owner or not self.tenant.branch_ids:
+        if self.tenant.has_institution_wide_branch_access:
+            return query
+        if not self.tenant.branch_ids:
+            student_ids = self.db.info.get("accessible_student_ids")
+            if student_ids is not None:
+                from app.infrastructure.models.models import Student
+                students = Student.__table__
+                student_branches = select(students.c.branch_id).where(
+                    students.c.id.in_(student_ids), students.c.organization_id == self.tenant.organization_id,
+                    students.c.deleted_at.is_(None), students.c.branch_id.is_not(None),
+                )
+                if getattr(model, "__tablename__", None) == "branches":
+                    return query.where(model.id.in_(student_branches))
+                if hasattr(model, "branch_id"):
+                    return query.where(or_(model.branch_id.in_(student_branches), model.branch_id.is_(None)))
+            if getattr(model, "__tablename__", None) == "branches":
+                return query.where(false())
+            if hasattr(model, "branch_id"):
+                return query.where(model.branch_id.is_(None))
             return query
         if getattr(model, "__tablename__", None) == "branches":
             return query.where(model.id.in_(self.tenant.branch_ids))
