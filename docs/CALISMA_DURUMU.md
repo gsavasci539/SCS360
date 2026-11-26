@@ -1352,3 +1352,10 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 - RFID liste rotasında kantin rolüne özel kurum/şube filtresi bypass'ı kaldırıldı. Hedefli SQLite regresyonu **1 PASS**; kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b remote dalda doğrulandı.
 - Mesaj alıcı sorgusunda şubesiz sıradan personel için boş şube ataması artık kurum geneli alıcı listesine dönüşmüyor; sonuç boş. org_admin, kurum sahibi ve diğer açık kurum-geneli rollerin kapsamı korunuyor. Hedefli SQLite regresyonu **1 PASS, 1 PostgreSQL varyantı SKIP**; kod SHA 7469853b9a61abc7f5c15c70539e21c54ac47cc3 remote dalda doğrulandı.
 - Sıradaki somut iş: branch scope kullanan kalan özel/Core SQL endpoint'lerini inceleyip yetkisiz alıcı/öğrenci/şube erişimleri için izole regresyon eklemek. WIP; tüm uçlar, TCKN veri yaşam döngüsü, production runtime, KVKK/hukuk veya canlı kabulü değildir.
+
+
+### 26 Kasım 2026 — Üyelik ödeme kimlik alanı biçim filtresi (WIP)
+
+- Ödeme başlangıç DTO'su kimlik/vergi alanındaki boşluk, nokta ve tire ayraçlarını bellekte temizliyor; sağlayıcıya yalnızca 10/11 ASCII rakam gönderiliyor. Hatalı uzunluk, harf ve Unicode rakamlar API doğrulamasında reddediliyor; UI sayısal klavyeyi öneriyor. Ham değer SaaS DB/audit kaydına eklenmiyor; mevcut ödeme akışı sağlayıcıya iletmeye devam eder.
+- Hedefli geçici SQLite 	est_checkout_rejects_malformed_identity_before_provider_call: **4 PASS, 4 PostgreSQL varyantı SKIP**, provider çağrısı ve checkout kaydı 0. Kod SHA 78b08eecf6121a3b8f5e1294bad95b2a2cd670a9 remote dalda doğrulandı.
+- Bu yalnız biçim filtresidir; kimlik gerçekliği/checksum, hukukî gereklilik, sağlayıcının saklama/işleme koşulları veya KVKK kabulü değildir. Sonraki somut iş: onaylı iş ihtiyacını sağlayıcı sözleşmesiyle teyit etmek ve TCKN'nin tüm log/telemetry/yedek/retention kanallarını ayrıca değerlendirmek.
