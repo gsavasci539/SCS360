@@ -6,7 +6,7 @@ from sqlalchemy import select
 from test_saas_platform import platform_client  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
-from app.infrastructure.models.models import Branch, Permission, Role, Student, User
+from app.infrastructure.models.models import Branch, Permission, RfidCard, Role, Student, User
 from app.core.tenant import TenantContext
 from app.core.exceptions import ValidationException
 
@@ -32,6 +32,31 @@ async def test_branchless_staff_cannot_open_device_configuration(platform_client
 
     response = await client.get("/api/devices", headers=headers(reader))
     assert response.status_code == 403, response.text
+
+
+async def test_canteen_rfid_list_stays_inside_assigned_branch(platform_client):
+    client, sessions, data = platform_client
+    async with sessions() as db:
+        permission = (await db.execute(select(Permission).where(Permission.code == "canteen.read"))).scalar_one_or_none()
+        if permission is None:
+            permission = Permission(code="canteen.read", name="Read canteen", module="canteen")
+            db.add(permission)
+            await db.flush()
+        role = Role(name="Canteen", slug="canteen", organization_id=data["org"].id,
+            permissions=[permission])
+        reader = User(organization_id=data["org"].id, email="canteen-branch-reader@test.invalid",
+            first_name="Canteen", last_name="Reader", password_hash="unused", roles=[role], branches=[data["branch"]])
+        local = RfidCard(organization_id=str(data["org"].id), branch_id=str(data["branch"].id),
+            card_number="LOCAL-RFID", card_type="STUDENT", holder_id="local", holder_name="Local")
+        foreign = RfidCard(organization_id=str(data["other_branch"].organization_id),
+            branch_id=str(data["other_branch"].id), card_number="FOREIGN-RFID", card_type="STUDENT",
+            holder_id="foreign", holder_name="Foreign")
+        db.add_all([reader, local, foreign])
+        await db.commit()
+
+    response = await client.get("/api/rfid-cards", headers=headers(reader))
+    assert response.status_code == 200, response.text
+    assert {row["card_number"] for row in response.json()["data"]} == {"LOCAL-RFID"}
 
 
 async def test_populated_branch_cannot_be_deleted_and_deactivation_keeps_its_history_visible(platform_client):

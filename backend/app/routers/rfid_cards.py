@@ -57,7 +57,6 @@ def card_to_dict(card: RfidCard) -> dict:
 @router.get("")
 async def list_rfid_cards(
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("canteen.read"))
 ):
     """List all RFID cards"""
@@ -67,11 +66,7 @@ async def list_rfid_cards(
     org_id = str(tenant.organization_id) if tenant.organization_id else None
     branch_id = str(tenant.branch_ids[0]) if tenant.branch_ids else None
     
-    # For canteen users, return all active cards without org/branch filtering
-    if any(role.slug == "canteen" for role in current_user.roles):
-        cards = await repo.list_all()
-    else:
-        cards = await repo.list_all(organization_id=org_id, branch_id=branch_id)
+    cards = await repo.list_all(organization_id=org_id, branch_id=branch_id)
     
     return success_response([card_to_dict(card) for card in cards], "RFID kartları listelendi")
 
