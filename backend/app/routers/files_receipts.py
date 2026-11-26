@@ -4,7 +4,7 @@ from io import BytesIO
 from uuid import UUID
 from zipfile import BadZipFile, ZipFile
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.core.exceptions import NotFoundException, ValidationException
 from app.core.permissions import PermissionChecker
+from app.core.rate_limit import limiter
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import (
@@ -666,7 +667,9 @@ async def _queue_receipt_notification(
 
 
 @router.post("/api/receipts/{receipt_id}/send-email")
+@limiter.limit("10/minute")
 async def send_receipt_email(
+    request: Request,
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
@@ -691,7 +694,11 @@ async def send_receipt_email(
         await db.execute(
             select(Parent)
             .join(StudentParent, StudentParent.parent_id == Parent.id)
-            .where(StudentParent.student_id == payment.student_id, Parent.email.isnot(None))
+            .where(
+                StudentParent.student_id == payment.student_id,
+                Parent.email.isnot(None),
+                Parent.receive_notifications.is_(True),
+            )
             .limit(1)
         )
     ).scalar_one_or_none()
@@ -709,7 +716,9 @@ async def send_receipt_email(
 
 
 @router.post("/api/receipts/{receipt_id}/send-sms")
+@limiter.limit("10/minute")
 async def send_receipt_sms(
+    request: Request,
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
@@ -734,7 +743,10 @@ async def send_receipt_sms(
         await db.execute(
             select(Parent)
             .join(StudentParent, StudentParent.parent_id == Parent.id)
-            .where(StudentParent.student_id == payment.student_id)
+            .where(
+                StudentParent.student_id == payment.student_id,
+                Parent.receive_notifications.is_(True),
+            )
             .limit(1)
         )
     ).scalar_one_or_none()
@@ -753,7 +765,9 @@ async def send_receipt_sms(
 
 
 @router.post("/api/receipts/{receipt_id}/send-whatsapp")
+@limiter.limit("10/minute")
 async def send_receipt_whatsapp(
+    request: Request,
     receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.write")),
     user: User = Depends(get_current_user),
@@ -778,7 +792,10 @@ async def send_receipt_whatsapp(
         await db.execute(
             select(Parent)
             .join(StudentParent, StudentParent.parent_id == Parent.id)
-            .where(StudentParent.student_id == payment.student_id)
+            .where(
+                StudentParent.student_id == payment.student_id,
+                Parent.receive_notifications.is_(True),
+            )
             .limit(1)
         )
     ).scalar_one_or_none()
