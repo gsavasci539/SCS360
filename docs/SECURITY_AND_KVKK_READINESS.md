@@ -217,3 +217,9 @@ Sadece `git diff --check`; test/build/gerçek sağlayıcı gönderimi yok. Dağ�
 `POST /api/communications/broadcast-jobs` ve `.../{job_id}/send` endpointleri IP başına 5/dk ile sınırlandı; send service mevcut tenant/branch hedef, kayıtlı adres ve veli tercih kontrollerini sürdürür. Kod `ed27badba35691b58d8d4c2cf6f13ef80934f9af` normal push/`ls-remote` ile doğrulandı.
 
 Yalnız `git diff --check`; test/build/gerçek provider yok. Paylaşılan limiter deposu, reverse proxy IP zinciri, yüksek alıcı sayısı davranışı, kanal rızası ve retention/silme kabulü açık. WIP, KVKK veya canlı hazırlık kararı değildir.
+
+### 26 Kasım 2026 — Dış uç güvenlik yanıtı gözlemi (WIP)
+
+Read-only HTTPS HEAD on `/` returned 200 with `Server: nginx/1.18.0 (Ubuntu)` and `X-Content-Type-Options: nosniff`; no HSTS, CSP, X-Frame-Options, Referrer-Policy, or Permissions-Policy appeared in this response. GET `/.well-known/security.txt` returned the SPA HTML rather than a security contact document. This is a single-path observation, not full TLS/runtime/KVKK acceptance. No credentials, messages, or state-changing requests were sent. Source branch SHA remained `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; no deploy occurred.
+
+The publisher working tree still has uncommitted Nginx/rate-limit WIP that removes HSTS/upstream Server hiding and forces an in-memory limiter; it was not staged or pushed. Next: resolve that WIP and identify an approved security contact before preparing deployable headers/security.txt. WIP; live protection/KVKK not accepted.

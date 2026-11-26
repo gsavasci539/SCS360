@@ -1171,3 +1171,9 @@ Makbuz e-posta/SMS/WhatsApp kuyruk uçları IP başına 10/dk ile sınırlandı 
 ### 26 Kasım 2026 — Broadcast queue endpoint rate limit (WIP)
 
 Toplu ileti taslağı oluşturma ve gönderim-kuyruğa-alma endpointleri IP başına 5/dk ile sınırlandı. Mevcut draft/idempotency ve tenant/branch hedef kontrolleri değişmedi. SHA `ed27badba35691b58d8d4c2cf6f13ef80934f9af` normal push/`ls-remote` ile doğrulandı. Yalnız statik `git diff --check`; test/build/provider runtime yok. Dağıtık rate limiter/proxy IP kabulü ve izin/retention süreçleri açık; WIP.
+
+### 26 Kasım 2026 — Canlı HTTP başlık gözlemi (WIP, salt okunur)
+
+Salt okunur `HEAD https://scs360.com.tr/` yanıtı HTTP 200 verdi; `Server: nginx/1.18.0 (Ubuntu)` ve `X-Content-Type-Options: nosniff` görüldü. Bu yanıtta HSTS, CSP, X-Frame-Options, Referrer-Policy ve Permissions-Policy görünmedi. `GET /.well-known/security.txt` HTTP 200 verdi fakat içerik güvenlik iletişim kaydı değil, SPA `index.html` belgesiydi; dolayısıyla security.txt yayında sayılmaz. Bu tek gözlem TLS sertifika zincirini veya tüm alt yanıt yollarını doğrulamaz ve canlı kabul değildir. Şifre, hesap veya veri gönderilmedi; istekler yalnızca HEAD ve GET'tir.
+
+Kod HEAD `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; remote ile eşit. Üretim Nginx/CDN ve gerçek site dosyası düzeltmesi/dağıtımı yapılmadı. Yerel publish checkout'ındaki uncommitted Nginx farkları HSTS/proxy Server gizleme direktiflerini kaldırdığı için stage edilmedi. Sonraki somut iş: aktif Nginx/security.txt WIP'sini koruyarak başlıkları ve geçerli sorumlu iletişim adresini belirlemek; deployment yetkisi olmadan canlı değişiklik uygulamamak. WIP, siber güvenlik veya KVKK kabulü değildir.

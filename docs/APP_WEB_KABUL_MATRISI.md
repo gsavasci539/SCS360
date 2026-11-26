@@ -512,3 +512,7 @@ Finansal hatırlatma endpointi 5/dk ve en fazla 100 borç ID'siyle sınırlandı
 ### 26 Kasım 2026 — Broadcast oluştur/gönder hız sınırı (WIP)
 
 Toplu ileti taslak oluşturma ve send uçlarında 5/dk IP rate limit eklendi; tenant/şube kontrolleri korunur. SHA `ed27badba35691b58d8d4c2cf6f13ef80934f9af` push/`ls-remote` doğrulandı. Statik diff dışında test/build/canlı gönderim yok.
+
+### 26 Kasım 2026 — Canlı web başlık kontrolü (WIP)
+
+Salt okunur HEAD `https://scs360.com.tr/` HTTP 200 yanıtında `Server: nginx/1.18.0 (Ubuntu)` ve `X-Content-Type-Options: nosniff` görüldü; HSTS/CSP/frame/referrer/permissions başlıkları görünmedi. `/.well-known/security.txt` 200 dönüyor ancak security.txt değil SPA HTML'i. Bu tek yol gözlemi sertifika zincirini veya tam canlı kabulü doğrulamaz. Kod SHA `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; site/deploy değişmedi.
