@@ -490,14 +490,7 @@ async def _process_chatbot_query(
             conversation_history=[message.model_dump() for message in request.conversation_history],
         )
 
-        logger.info(
-            "Chatbot request | user_id=%s | role=%s | "
-            "organization_id=%s | query=%r",
-            current_user.id,
-            context.role,
-            context.organization_id,
-            request.query,
-        )
+        logger.info("chatbot_request_started")
 
         # A client-selected student is useful for parents with more than one
         # child, but it must be constrained to the context built from the
@@ -512,13 +505,9 @@ async def _process_chatbot_query(
                 if str(requested_student_id) in accessible_student_ids:
                     student_id = requested_student_id
                 else:
-                    logger.warning(
-                        "Ignoring inaccessible chatbot student_id | user_id=%s | student_id=%s",
-                        current_user.id,
-                        request.student_id,
-                    )
+                    logger.warning("chatbot_student_reference_inaccessible")
             except ValueError:
-                logger.warning("Ignoring invalid chatbot student_id: %s", request.student_id)
+                logger.warning("chatbot_student_reference_invalid")
 
         # Detect intent using LLM
         raw_intent = await intent_service.detect_intent_with_fallback(
@@ -526,12 +515,7 @@ async def _process_chatbot_query(
             context=context,
         )
 
-        logger.info(
-            "Intent detected | user_id=%s | intent=%s | confidence=%.2f",
-            current_user.id,
-            raw_intent.intent,
-            raw_intent.confidence,
-        )
+        logger.info("chatbot_intent_resolved intent=%s", raw_intent.intent)
 
         # Resolve references (student, teacher)
         teacher_id = None
@@ -546,7 +530,7 @@ async def _process_chatbot_query(
                     else:
                         logger.warning("Ignoring inaccessible student_id from LLM")
                 except ValueError:
-                    logger.warning(f"Invalid student_id from LLM: {raw_intent.student_id}")
+                    logger.warning("chatbot_llm_student_reference_invalid")
             else:
                 # Resolve from search text
                 resolved_student_id = await context_service.resolve_student_reference(
@@ -561,7 +545,7 @@ async def _process_chatbot_query(
                 try:
                     teacher_id = UUID(raw_intent.teacher_id)
                 except ValueError:
-                    logger.warning(f"Invalid teacher_id from LLM: {raw_intent.teacher_id}")
+                    logger.warning("chatbot_llm_teacher_reference_invalid")
             else:
                 teacher_id = await context_service.resolve_teacher_reference(
                     search_text=raw_intent.search_text,
@@ -593,13 +577,7 @@ async def _process_chatbot_query(
             raw_intent=raw_intent,
         )
 
-        logger.info(
-            "Intent resolved | user_id=%s | student_id=%s | teacher_id=%s | date_range=%s",
-            current_user.id,
-            student_id,
-            teacher_id,
-            date_range.description if date_range else None,
-        )
+        logger.info("chatbot_intent_resolved intent=%s", resolved_intent.intent)
 
         # Dispatch to handler
         handler_response = await handler_dispatcher.dispatch(
@@ -611,8 +589,7 @@ async def _process_chatbot_query(
         execution_time = time.time() - start_time
 
         logger.info(
-            "Chatbot response | user_id=%s | intent=%s | execution_time=%.2fs | success=True",
-            current_user.id,
+            "chatbot_response_sent intent=%s execution_time=%.2fs",
             raw_intent.intent,
             execution_time,
         )
