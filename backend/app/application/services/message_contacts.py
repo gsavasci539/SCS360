@@ -20,7 +20,7 @@ async def message_branches(db: AsyncSession, tenant: TenantContext, branch_id: U
     if branch_id is not None:
         await BaseRepository(db, tenant).get_by_id(branch_id, Branch)
         return [branch_id]
-    return [] if tenant.is_organization_owner else tenant.branch_ids
+    return [] if tenant.has_institution_wide_branch_access else tenant.branch_ids
 
 
 async def recipient_query(db: AsyncSession, tenant: TenantContext, branch_id: UUID | None, *, for_history: bool = False):
@@ -41,7 +41,9 @@ async def recipient_query(db: AsyncSession, tenant: TenantContext, branch_id: UU
     relationship_scope = not for_history and uses_relationship_scope(tenant)
     is_parent = relationship_scope and "parent" in tenant.role_slugs
     if not relationship_scope and not branch_ids:
-        return query
+        # Empty assignments never imply access to every contact. Explicit
+        # institution-wide roles retain their organization-wide recipient list.
+        return query if tenant.has_institution_wide_branch_access else query.where(False)
 
     students = select(pupils.id, pupils.class_id, pupils.branch_id).where(
         pupils.organization_id == organization, pupils.deleted_at.is_(None),

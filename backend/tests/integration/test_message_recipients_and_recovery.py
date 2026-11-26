@@ -64,6 +64,36 @@ async def test_recipients_apply_relationship_and_branch_limits_to_list_and_send(
     })).status_code == 404
 
 
+async def test_unassigned_staff_cannot_enumerate_message_recipients(materials_client):
+    client, sessions, fixture = materials_client
+    async with sessions() as db:
+        permission = await db.scalar(select(Permission).where(Permission.code == "messaging.send"))
+        if permission is None:
+            permission = Permission(code="messaging.send", name="Send messages", module="messaging")
+            db.add(permission)
+            await db.flush()
+        role = Role(name="Unassigned staff", slug="unassigned-message-staff",
+            organization_id=fixture["org"].id, permissions=[permission])
+        actor = User(email="unassigned-message-staff@test.invalid", password_hash="unused",
+            first_name="Unassigned", last_name="Staff", organization_id=fixture["org"].id, roles=[role])
+        wide_role = Role(name="Organization admin", slug="org_admin",
+            organization_id=fixture["org"].id, permissions=[permission])
+        wide_actor = User(email="wide-message-admin@test.invalid", password_hash="unused",
+            first_name="Wide", last_name="Admin", organization_id=fixture["org"].id, roles=[wide_role])
+        db.add_all([role, actor, wide_role, wide_actor])
+        await db.commit()
+
+    response = await client.get("/api/messages/recipients", headers=auth(actor))
+    assert response.status_code == 200, response.text
+    assert response.json()["data"]["total"] == 0
+    assert response.json()["data"]["items"] == []
+
+    wide_response = await client.get("/api/messages/recipients", headers=auth(wide_actor))
+    assert wide_response.status_code == 200, wide_response.text
+    wide_ids = {row["id"] for row in wide_response.json()["data"]["items"]}
+    assert {str(fixture["teacher"].id), str(fixture["user"].id)}.issubset(wide_ids)
+
+
 async def test_message_receipt_recovers_persisted_send_and_replay_is_idempotent(materials_client):
     client, sessions, fixture = materials_client
     teacher, parent = fixture["teacher"], fixture["user"]
