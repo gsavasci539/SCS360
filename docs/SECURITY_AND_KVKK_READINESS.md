@@ -300,7 +300,7 @@ Backend hata yanıtı ve frontend development diagnostic filtresi, boşluk/tire 
 
 ### 26 Kasım 2026 — Güvenli kurum yanıt DTO'su (WIP)
 
-OrganizationResponse artık create/input şemasından türemiyor ve TCKN/VKN alanı içermez; genel response DTO'suyla yanlışlıkla açık kimlik serileştirme yolu daraltıldı. 	est_security_hardening.py: **25 PASS**. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` normal push/`ls-remote` ile doğrulandı. Canlı API'nin tüm response'ları, diğer PII alanları, retention ve KVKK/hukuki kabulü kapsam dışıdır.
+OrganizationResponse artık create/input şemasından türemiyor ve TCKN/VKN alanı içermez; genel response DTO'suyla yanlışlıkla açık kimlik serileştirme yolu daraltıldı. test_security_hardening.py: **25 PASS**. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` normal push/`ls-remote` ile doğrulandı. Canlı API'nin tüm response'ları, diğer PII alanları, retention ve KVKK/hukuki kabulü kapsam dışıdır.
 
 ### 26 Kasım 2026 — Tekrar salt okunur canlı başlık kontrolü (WIP)
 

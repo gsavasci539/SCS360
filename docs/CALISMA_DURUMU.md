@@ -1307,7 +1307,7 @@ Backend ve frontend development hata filtresi kesintisiz, boşluklu, tireli ve n
 
 ### 26 Kasım 2026 — Genel kurum response şemasında TCKN alanı kaldırıldı (WIP)
 
-OrganizationResponse input şemasını miras almıyor; tax_number/TCKN response alanı yok. Hedefli 	est_security_hardening.py: **25 PASS**. Kod checkpoint `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote dalda doğrulandı. Diğer endpoint/PII kapsamı ve KVKK/canlı kabulü ayrıca açık.
+OrganizationResponse input şemasını miras almıyor; tax_number/TCKN response alanı yok. Hedefli test_security_hardening.py: **25 PASS**. Kod checkpoint `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote dalda doğrulandı. Diğer endpoint/PII kapsamı ve KVKK/canlı kabulü ayrıca açık.
 
 ### 26 Kasım 2026 — Dış HTTPS başlıkları tekrar kontrol edildi (WIP)
 
