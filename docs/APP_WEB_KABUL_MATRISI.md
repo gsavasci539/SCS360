@@ -556,3 +556,7 @@ Açık kimlik numarası isteği route değişiminde iptal edilir; bu UI düzeltm
 ### HTTP hata yanıtında yapılandırılmış veri sızıntısı azaltımı (WIP, 26.11.2026)
 
 HTTPException nesne tipindeki detail değerleri API'den genel hata olarak döner; sabit string mesajlar korunur. test_response_errors.py 6 PASS; code SHA fc454354fcba46a2e1ace7008be7579ae27abe5a remote doğrulandı. Serbest metin PII, sağlayıcı ve log/telemetri kontrolleri açık.
+
+### Hata yanıtında TCKN desenini maskeleme (WIP, 26.11.2026)
+
+API hata mesajları/error alanlarındaki kesintisiz 11 haneli diziler maskeleniyor; structured HTTPException detayları genel hata olarak kalıyor. Hedefli test_response_errors.py 7 PASS; code SHA 260ef123963351300b1d5eb123604c08643ce3b7 remote doğrulandı. Formatlı TCKN, diğer PII ve log/telemetri kabulü açık.

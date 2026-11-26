@@ -277,3 +277,7 @@ Read-only public check remains HTTP 200 with an exposed `nginx/1.18.0 (Ubuntu)` 
 ### 26 Kasım 2026 — Yapılandırılmış HTTP hata ayrıntılarında veri minimizasyonu (WIP)
 
 Özel/FastAPI HTTP hata ayrıntısı string değilse API artık nesne/sağlayıcı gövdesini yanıt içinde serileştirmez; genel hata metni döndürür. Sabit, metinsel HTTP hata mesajları mevcut istemci uyumluluğu için korunur. TCKN sentineli içeren yapılandırılmış hata testi ve metin uyumluluk testi dahil backend/tests/unit/test_response_errors.py 6 PASS. Kaynak SHA fc454354fcba46a2e1ace7008be7579ae27abe5a normal push/ls-remote ile doğrulandı. Bu sınırlı filtre serbest metin hatalarının PII içermediğini kanıtlamaz; sağlayıcı/hata işleme incelemesi ve tüm log/telemetri retention kontrolü açık kalır.
+
+### 26 Kasım 2026 — Hata metinlerinde TCKN deseni maskeleme (WIP)
+
+API hata işleyicileri string mesajların içindeki kesintisiz 11 haneli sayı dizilerini ve yapılandırılmış AppException error alanlarındaki aynı dizileri [gizlendi] biçiminde maskeler; nesne biçimli HTTPException detail zaten genel mesaja indirgenir. test_response_errors.py 7 PASS. Code SHA 260ef123963351300b1d5eb123604c08643ce3b7 normal push/ls-remote ile doğrulandı. Bu yalnız biçimsel bir hata-yanıtı filtresidir; aralıklı/formatlı kimlikler, diğer kişisel veri, serbest metin log/telemetri ve sağlayıcı payload'ları ayrıca denetlenmelidir.

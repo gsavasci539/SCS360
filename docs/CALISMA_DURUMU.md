@@ -1284,3 +1284,7 @@ Açık kimlik numarası isteği için frontend artık route değişiminde bekley
 ### 26 Kasım 2026 — Yapılandırılmış hata yanıtı PII azaltımı (WIP)
 
 HTTPException detail alanı string dışı bir nesneyse artık ham içerik (buyer, sağlayıcı yanıtı vb.) API yanıtına yansıtılmaz; genel hata verilir. Mevcut sabit metinli hata mesajları korunur. Hedefli test_response_errors.py: 6 PASS; sentetik TCKN sentineli, geçici istek nesnesi kullanıldı. Code SHA fc454354fcba46a2e1ace7008be7579ae27abe5a remote branch'te doğrulandı. Test/build/gerçek API sağlayıcısı yok. Serbest metin hata içeriği, log ve telemetri veri sınıflandırması ayrıca denetlenmelidir; WIP/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — API hata metninde TCKN azaltımı (WIP)
+
+HTTPException ve AppException mesaj/error alanlarında kesintisiz 11 haneli diziler API yanıtına verilmeden önce [gizlendi] ile değiştiriliyor; structured HTTP detail genel kalıyor. Hedefli test_response_errors.py: 7 PASS, sentetik değer. Kaynak SHA 260ef123963351300b1d5eb123604c08643ce3b7 remote branch'te doğrulandı. Bu filtre formatlı/ayrılmış TCKN, diğer PII veya log/telemetri koruması değildir; KVKK/live kabulü değildir.
