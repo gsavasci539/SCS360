@@ -161,3 +161,9 @@ Yalnız `git diff --check` yapıldı; izole DB rol/şube testleri ve canlı runt
 `broadcast_service` liste/`get` yolları aktörün atanmış şubelerindeki hedef-şube veya hedef-sınıf kayıtlarını seçer. Null branch + null class olan kurum-geneli işler şube-scoped kullanıcıya görünmez; tenant filtresi get üzerinden update/send/cancel ve delivery report job lookup’larına da uygulanır. Kurum sahibi/platform kapsamı korunur.
 
 Yalnız `git diff --check` yapıldı; geçici DB testleri, çok şubeli generic notification UX’i ve canlı runtime yok. SCS360 `codex/source-sync-20261111` SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` normal push/`ls-remote` ile doğrulandı. WIP; canlı veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Bildirim provider ve hata verisinin API'den azaltılması (WIP)
+
+Ortak notification helper, sağlayıcı JSON yanıtından yalnız sınırlandırılmış HTTP durum/kısa kod, onaylı teslim durumları ve karakter/uzunluk kontrolünden geçen opak kimlikleri tutar. Başarısız gönderimde sağlayıcı gövdesi yerine sabit genel hata mesajı kullanılır. Worker yazma yolu ile outbox, iletişim teslim raporu, duyuru sonuçları ve bildirim detayının okuma yanıtları aynı filtreyi kullanır; eski DB satırlarından ham gövde/hata metni API'den tekrar sunulmaz.
+
+Bu işlem eski DB/yedek/log içeriğini silmez. Yalnız `git diff --check` yapıldı; test/build/DB/provider/runtime doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` normal push/`ls-remote` ile doğrulandı. Güvenli izin-listesi davranışı, retry ve tenant regresyonları, eski kayıtların retention/silmesi, sağlayıcı sözleşmeleri ve KVKK süreçleri açık; WIP.

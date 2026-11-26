@@ -1122,3 +1122,10 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - Broadcast servisindeki liste ve `get` sorguları artık aktörün atanmış şubelerindeki hedef-şube veya hedef-sınıf kayıtlarıyla sınırlı. Şube/sınıf hedefi olmayan kurum-geneli işler şube kullanıcılarına listelenmez, gösterilmez; update/send/cancel ve teslim raporu işlemleri de aynı tenant filtresinden geçer.
 - Hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. SCS360 kod SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` normal push/`ls-remote` ile doğrulandı.
 - Açık: geçici DB’de şube/sınıf/branchless/kurum sahibi senaryolarını doğrula. Çok şubeli kullanıcının generic notification oluşturma ve sonradan yönetme deneyimini güvenli biçimde netleştir; canlı/KVKK kabulü değildir.
+
+### 26 Kasım 2026 · Bildirim tanı verilerini API okumasında süzme (WIP)
+
+- Ortak bildirim yardımcıları sağlayıcı sonuçlarından yalnız sınırlı durum/kısa kod/biçim kontrollü opak kimlikleri kabul eder; genel hata yanıtı kullanır. Worker aynı süzgeci yazarken uygular.
+- Outbox, delivery report, announcement results ve notification detail yanıtları da eski DB kayıtlarındaki ham hata/sağlayıcı gövdelerini API'den döndürmez. Eski DB/yedek/log satırları silinmedi; yeni response minimize edilir.
+- Hedefli `git diff --check` geçti; test/build/DB/provider runtime yok. SCS360 kod SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` normal push/`ls-remote` ile doğrulandı.
+- Açık: izin listesi/PII regresyonu ve retry davranışı geçici DB testleri, API erişim kapsamı, eski kayıtlar için onaylı retention/silme, provider ve canlı runtime kabulü. WIP, KVKK veya canlı onayı değildir.

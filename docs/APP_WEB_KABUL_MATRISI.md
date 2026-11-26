@@ -472,3 +472,7 @@ Atanmış şubesi bulunan kullanıcılar outbox geçmişinde yalnız kendi şube
 ### 26 Kasım — Broadcast işlerinde tenant/şube hedefi (WIP)
 
 Broadcast list/detail/update/send/cancel/report lookup’ları şubeli aktör için yalnız atanmış şubedeki hedef-şube veya hedef-sınıf işlerine erişir; şube/sınıf hedefi olmayan kurum-geneli kayıtlar görünmez ve değiştirilemez. Statik diff kontrolü dışında test/build/DB runtime yok. SCS360 SHA `8af46648f30ba7af404f8e8119d26ddf2ea180e8` push/`ls-remote` doğrulandı. Geçici DB tenant regressions ve çok şubeli generic notification akışı açık; WIP, canlı/KVKK kabulü değildir.
+
+### 26 Kasım — Bildirim provider response ve eski hata metni API filtreleme (WIP)
+
+Yeni ve geçmiş bildirim kayıtlarının response’ları ortak güvenli alıcıdan geçirilir: serbest provider gövdesi/hata mesajı yerine sınırlı operasyonel metadata ve sabit genel hata metni döner. Bu, eski kayıtları/yedekleri/logları geriye dönük silmez. Statik diff kontrolü dışında test/build/DB/provider runtime yok. SCS360 SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` push/`ls-remote` doğrulandı. İzin listesi, tenant API ve retry regresyonları; retention/silme ve canlı/KVKK kabulü açık.
