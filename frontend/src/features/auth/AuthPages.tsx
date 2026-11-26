@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Brand } from "../../components/Brand";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -58,7 +58,7 @@ const resetSchema = z.object({ password: z.string().min(8, "En az 8 karakter yaz
 export function ResetPasswordPage() {
   const [params, setParams] = useSearchParams(); const navigate = useNavigate(); const { showToast } = useToast();
   const [resetToken] = useState(() => params.get("token"));
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!params.has("token")) return;
     setParams((current) => {
       const sanitized = new URLSearchParams(current);
