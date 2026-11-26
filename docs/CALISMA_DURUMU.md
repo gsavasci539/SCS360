@@ -1098,3 +1098,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - Sağlayıcı/worker istisnalarında traceback, iş kimliği ve exception mesajı loglanmaz; yalnız sabit olay etiketi ve exception sınıfı yazılır. Mevcut DB satırları, yedekler, API erişim kapsamı ve önceden oluşmuş loglar bu değişiklikle temizlenmedi.
 - Yalnız `git diff --check` yapıldı; test, build, sağlayıcı veya canlı runtime çalıştırılmadı. Kod SCS360 `codex/source-sync-20261111` SHA `f8947cf9bb0061394d25d5cbb3858c8d8cd265e8` normal push/`ls-remote` ile doğrulandı.
 - WIP: bu dar değişiklik canlı güvenlik/KVKK kabulü değildir. Sıradaki iş izole testte sağlayıcı yanıtının PII içermediğini ve retry/durum kurtarma akışının korunduğunu doğrulamak; ayrıca bildirim alıcısı/API yetkisi, geçmiş log/DB retention-silme, sağlayıcı sözleşmesi ve üretim Nginx/HTTPS kontrolleri açık.
+
+### 26 Kasım 2026 · Bildirim raporlarında şube alıcısı sınırı (WIP)
+
+- `/communications/delivery-reports` sorgusu, şube ataması bulunan kullanıcılar için `NotificationJob.branch_id` alanını kendi atanmış şubeleriyle kesiştirir. Şube bilgisi olmayan kurum geneli yayınların bütün alıcı listesi artık bu personel rapor sorgusuna girmez. Kurum sahibi/platform kapsamı değişmedi.
+- Hedefli `git diff --check` geçti; test, build veya DB runtime çalıştırılmadı. SCS360 kod SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` normal push/`ls-remote` ile doğrulandı.
+- WIP: tenant/şube regresyonu izole DB testinde doğrulanmalı; başka endpointler, geçmiş log/DB kayıtları ve canlı yetki konfigürasyonu bu değişiklikle kabul edilmedi. Sıradaki somut iş: aynı ileti raporunun şube ve kurum sahibi scope davranışını geçici DB senaryosunda doğrulamak, sonra diğer recipient payload endpointlerini denetlemek.

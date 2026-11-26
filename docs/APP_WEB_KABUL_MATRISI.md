@@ -456,3 +456,7 @@ Yeni linkte fragment token HTTP isteğine gitmez; legacy query linki için front
 ### 26 Kasım — Bildirim sağlayıcısı hata verisi (WIP)
 
 Outbox worker artık kalıcı `provider_response` alanına allowlist ile süzülmüş sınırlı durum/kod/opaque mesaj kimliği yazar ve başarısız gönderimde sabit genel hata döndürür. Traceback, iş kimliği ve istisna mesajı loglanmaz. `git diff --check` dışında test/build/runtime yok. SCS360 `codex/source-sync-20261111` SHA `f8947cf9bb0061394d25d5cbb3858c8d8cd265e8` push/`ls-remote` doğrulandı. İzole test, API alıcı scope incelemesi, geçmiş kayıt/log retention-silme, sağlayıcı ve canlı ingress kabulü açık; canlı/KVKK onayı değildir.
+
+### 26 Kasım — Bildirim raporu alıcılarının şube kapsamı (WIP)
+
+Atanmış şubeleri bulunan `communications.read` kullanıcılarının teslim raporları yalnız o şubelerin bildirim işlerini sorgular; `branch_id=NULL` kurum geneli yayın alıcı listeleri kapsam dışında kalır. Kurum/platform yöneticisi davranışı değişmez. Statik `git diff --check` dışında test/build/DB runtime yok. SCS360 SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` push/`ls-remote` doğrulandı. İzole tenant regressions ve API endpointlerin ayrı kontrolü açık; WIP, canlı/KVKK kabulü değildir.

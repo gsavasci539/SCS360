@@ -137,3 +137,9 @@ Nginx error logları, e-posta link tracking/redirectleri, önceden yazılmış l
 Outbox katmanı sağlayıcının serbest `response` nesnesini doğrudan kalıcılaştırmaz; yalnız HTTP status, kısa kod, izin verilen teslim durumu ve biçim kontrollü opaque provider/message ID alanları tutulur. Başarısız gönderimde sağlayıcı hata gövdesi yerine sabit genel hata mesajı saklanır. Sağlayıcı ve worker hata yolları traceback, iş kimliği veya exception metni yazmaz; yalnız sabit olay etiketi ile exception sınıfı kalır. Bu, yeni log/yanıt üretimini daraltır; eski DB/yedek/log kayıtlarını silmez ve API yetkisini/retention politikasını değiştirmez.
 
 Yalnız `git diff --check` yapıldı; test/build/provider/runtime doğrulaması yok. SCS360 `codex/source-sync-20261111` SHA `f8947cf9bb0061394d25d5cbb3858c8d8cd265e8` normal push ve `ls-remote` ile doğrulandı. İzole testte hata/yanıt sızıntısı ve retry/durum kurtarma, bildirim API alıcı kapsamı, retention/silme, üretim logları, sağlayıcı sözleşmesi ve KVKK süreçleri açık kalır. WIP; canlıya hazır, sızdırmaz veya KVKK uyumlu kabulü değildir.
+
+### 26 Kasım 2026 — Teslim raporu alıcılarının şube kapsamı (WIP)
+
+`GET /api/communications/delivery-reports` önce sadece kurumdaki yayınları seçiyordu; genel ORM tenant guard’ı `branch_id=NULL` kayıtlarına izin verdiğinden, şube atanmış personel kurum geneli yayınların telefon/ad listesini görebilirdi. Kaynak düzeltmesi şube listesi bulunan aktörlerde `NotificationJob.branch_id` değerini atanmış şubelerle ayrıca sınırlar; kurum geneli (`NULL`) yayınların alıcıları bu rapor sorgusundan çıkar. Kurum sahibi/platform yönetici akışı korunur.
+
+Yalnız `git diff --check` yapıldı; izole tenant testleri, başka recipient endpoint incelemesi ve canlı konfigürasyon doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` push/`ls-remote` ile doğrulandı. WIP; tenant scope, üretim güvenliği veya KVKK kabulü değildir.
