@@ -319,3 +319,9 @@ Audit olayında kimlik numarasının yalnız var olup olmadığını belirtmek i
 - Şube ataması olmayan sıradan hesaplarda boş `branch_ids` artık tüm şubeleri açmıyor. ORM tenant guard, repository kapsamı ve doğrudan dal kontrolü aynı ilkeyi uyguluyor. Root için kurum çalışma alanı seçimi ve `owner` açıkça kurum geneli kalıyor; veli/öğretmen bağlamı yalnız erişilebilir öğrenci ilişkilerinin şubelerine daraltılıyor.
 - Hedefli `test_branch_isolation.py` + `test_permission_contract.py`: **9 PASS**, gerçek DB/sağlayıcı yok. SCS360 `codex/source-sync-20261111` kod SHA `22a45fa759ac498f769f59b426fc6b4b80ec5ef4` normal push ve `ls-remote` ile doğrulandı. Sonraki somut iş: Core SQL kullanan eski uçlarda boş atama dal kapsamını ayrıca tarayıp ilgili regresyonları eklemek; bu checkpoint tüm rotaların kabulü değildir.
 - WIP: Nginx/Docker/TLS/Redis runtime, üretim logları, yedek/retention ve bağımsız KVKK/hukuk/operasyon kabulü halen açık. Canlıya hazır veya KVKK uyumlu ilan edilmez.
+
+### 26 Kasım 2026 — Şubesiz Core rapor erişimi kapatıldı (WIP)
+
+- `org_admin`, `owner` ve Root'un açık kurum workspace'i kurum geneli şube kapsamını koruyor; `branch_manager` boş atamada tüm şubeye açılmıyor. Şubesiz normal kullanıcının branchless toplu ileti alıcı raporu boş dönüyor; kullanıcı-şube Core sorgusu da yetkili dal kümesini uyguluyor. Veli/öğretmen ilişki kapsamı önceki checkpoint'teki erişilebilir öğrenci dallarına bağlı.
+- İzole SQLite hedefli küme `test_branch_isolation.py`, `test_permission_contract.py`, `test_broadcast_outbox.py`: **15 PASS, 5 PostgreSQL varyantı SKIP**; gerçek sağlayıcı/üretim ortamı yok. Kod SHA `90a689e028032f7beba87b7f5ff7e8577e1a0d6f` normal push/`ls-remote` ile doğrulandı.
+- Sıradaki somut iş: Core SQL kullanan diğer API yollarını şube kapsamı açısından taramak; tüm uygulama/kabul kapsamı tamamlanmadı. WIP, KVKK veya canlı kabulü değildir.
