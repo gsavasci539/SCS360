@@ -163,9 +163,16 @@ async def test_tax_identifier_writes_do_not_echo_values_and_write_audit_is_value
     key = Fernet.generate_key().decode("ascii")
     monkeypatch.setattr(model_module, "get_settings", lambda: SimpleNamespace(ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=key))
     sentinel = "TCKN-WRITE-RESPONSE-SENTINEL"
+    tax_number_property = Organization.tax_number
+
+    def reject_identifier_read(_organization):
+        raise AssertionError("Organization creation must not decrypt the tax identifier")
+
+    monkeypatch.setattr(Organization, "tax_number", property(reject_identifier_read, tax_number_property.fset))
     created = await client.post("/api/organizations", headers=headers(data["root"]), json={
         "name": "Tax response acceptance", "tax_number": sentinel,
     })
+    monkeypatch.setattr(Organization, "tax_number", tax_number_property)
     assert created.status_code == 200, created.text
     assert created.json()["data"]["tax_number"] is None
     org_id = UUID(created.json()["data"]["id"])
