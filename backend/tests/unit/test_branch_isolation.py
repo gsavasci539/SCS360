@@ -64,3 +64,12 @@ def test_platform_workspace_and_owner_are_explicit_institution_wide_branch_scope
     assert platform.has_institution_wide_branch_access
     assert owner.can_access_branch(uuid.uuid4())
     assert platform.can_access_branch(uuid.uuid4())
+
+
+def test_institution_admin_is_wide_but_branch_manager_without_assignments_is_not():
+    admin = TenantContext(user_id=uuid.uuid4(), organization_id=uuid.uuid4(),
+        branch_ids=[], role_slugs={"org_admin"})
+    branch_manager = TenantContext(user_id=uuid.uuid4(), organization_id=uuid.uuid4(),
+        branch_ids=[], role_slugs={"branch_manager"})
+    assert admin.can_access_branch(uuid.uuid4())
+    assert not branch_manager.can_access_branch(uuid.uuid4())

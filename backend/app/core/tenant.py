@@ -59,8 +59,10 @@ class TenantContext:
 
     @property
     def has_institution_wide_branch_access(self) -> bool:
-        """Only explicit institution/platform administrators inherit all branches."""
-        return self.is_super_admin or self.platform_admin or self.is_organization_owner
+        """Only explicit institution/platform administrator roles inherit all branches."""
+        legacy_institution_admins = {"org_admin", "admin", "administrator", "school_admin", "manager", "principal"}
+        return (self.is_super_admin or self.platform_admin or self.is_organization_owner
+                or bool(self.role_slugs & legacy_institution_admins))
 
     def has_permission(self, permission: str) -> bool:
         if permission == "super_admin":

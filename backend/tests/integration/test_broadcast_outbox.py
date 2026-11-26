@@ -88,6 +88,28 @@ async def test_broadcast_deduplicates_real_contacts_and_queues_without_claiming_
     assert (await client.delete(path, headers=auth(data["manager"]))).status_code == 409
 
 
+async def test_unassigned_reader_cannot_read_branchless_broadcast_contacts(broadcast_client):
+    client, sessions, data = broadcast_client
+    async with sessions() as db:
+        permission = (await db.execute(select(Permission).where(
+            Permission.code == "communications.read"))).scalar_one()
+        role = Role(name="Unassigned reader", slug="staff", organization_id=data["org"].id,
+            permissions=[permission])
+        reader = User(first_name="Unassigned", last_name="Reader", email="unassigned-reader@test.invalid",
+            password_hash="unused", organization_id=data["org"].id, roles=[role])
+        job = NotificationJob(organization_id=data["org"].id, branch_id=None,
+            channel=NotificationChannel.EMAIL, subject="Institution broadcast", body="Private recipient data",
+            status=NotificationStatus.PENDING, reference_type="BROADCAST", reference_id=uuid4())
+        job.recipients = [NotificationRecipient(recipient_address="private-contact@test.invalid",
+            recipient_name="Private Contact", status=NotificationStatus.PENDING)]
+        db.add_all([reader, job])
+        await db.commit()
+
+    response = await client.get("/api/communications/delivery-reports", headers=auth(reader))
+    assert response.status_code == 200, response.text
+    assert response.json()["data"] == []
+
+
 async def test_outbox_selected_branch_pagination_and_active_lease(broadcast_client):
     client, sessions, data = broadcast_client
     async with sessions() as db:

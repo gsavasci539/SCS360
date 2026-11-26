@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as SchemaValidationError
-from sqlalchemy import select, and_, func, update
+from sqlalchemy import false, select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -238,8 +238,12 @@ async def get_delivery_reports(
     # A branchless broadcast can contain recipients from every branch; the
     # generic tenant guard permits NULL branch rows for organization-wide data.
     # Do not expose those recipient addresses to branch-scoped report readers.
-    if tenant.branch_ids:
-        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
+    if not tenant.has_institution_wide_branch_access:
+        if tenant.branch_ids:
+            query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
+        else:
+            # Branchless broadcasts may mix recipients across the whole school.
+            query = query.where(false())
     if broadcast_job_id:
         await broadcast_service.get(db, broadcast_job_id, tenant, branch_id)
         query = query.where(NotificationJob.reference_id == broadcast_job_id)

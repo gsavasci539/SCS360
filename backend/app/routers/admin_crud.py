@@ -111,7 +111,7 @@ async def get_user_branches(
     branches, links = Branch.__table__, UserBranch.__table__
     query = select(branches.c.id, branches.c.name, branches.c.code).join(links, links.c.branch_id == branches.c.id).where(
         links.c.user_id == user_id, branches.c.organization_id == user.organization_id, branches.c.deleted_at.is_(None))
-    if tenant.branch_ids:
+    if not tenant.has_institution_wide_branch_access:
         query = query.where(branches.c.id.in_(tenant.branch_ids))
     rows = (await db.execute(query.order_by(branches.c.name, branches.c.id))).all()
     return success_response([{"id": str(branch.id), "name": branch.name, "code": branch.code} for branch in rows])
