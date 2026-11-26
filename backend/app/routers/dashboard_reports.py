@@ -46,6 +46,12 @@ from app.infrastructure.repositories.base import BaseRepository
 router = APIRouter(tags=["Dashboard & Reports"])
 
 
+def _require_notification_branch_scope(tenant: TenantContext, job: NotificationJob) -> None:
+    if tenant.branch_ids and job.branch_id not in tenant.branch_ids:
+        # Hide branchless/foreign jobs because their recipient list may span branches.
+        raise NotFoundException("Bildirim bulunamadı")
+
+
 class NotificationCreate(BaseModel):
     """Payload used by the notification management screen."""
 
@@ -1176,6 +1182,8 @@ async def list_notifications(
     repo = BaseRepository(db, tenant)
     query = repo._org_filter(query, NotificationJob)
     query = repo._branch_filter(query, NotificationJob)
+    if tenant.branch_ids:
+        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
     result = await db.execute(query.order_by(NotificationJob.created_at.desc()).limit(50))
     jobs = result.scalars().all()
     valid_jobs = [job for job in jobs if job is not None]
@@ -1290,6 +1298,7 @@ async def delete_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
+    _require_notification_branch_scope(tenant, job)
     if job.locked_until and job.locked_until.replace(tzinfo=UTC) > datetime.now(UTC):
         from app.core.exceptions import ConflictException
         raise ConflictException("İşlenen gönderim silinemez")
@@ -1310,6 +1319,7 @@ async def retry_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
+    _require_notification_branch_scope(tenant, job)
     from app.core.exceptions import ConflictException
     if job.status == NotificationStatus.SENT:
         raise ConflictException("Gönderilmiş bildirim yeniden gönderilemez")
@@ -1361,6 +1371,7 @@ async def get_notification(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     job = await BaseRepository(db, tenant).get_by_id(job_id, NotificationJob)
+    _require_notification_branch_scope(tenant, job)
     recipients = (
         (
             await db.execute(
