@@ -180,15 +180,16 @@ async def dashboard_summary(
         payment_q = payment_q.where(Payment.organization_id == tenant.organization_id)
         debt_q = debt_q.where(Debt.organization_id == tenant.organization_id)
         overdue_q = overdue_q.where(Debt.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        student_q = student_q.where(Student.branch_id.in_(tenant.branch_ids))
-        active_student_q = active_student_q.where(Student.branch_id.in_(tenant.branch_ids))
-        branch_q = branch_q.where(Branch.id.in_(tenant.branch_ids))
-        class_q = class_q.where(ClassRoom.branch_id.in_(tenant.branch_ids))
-        absent_q = absent_q.where(AttendanceRecord.branch_id.in_(tenant.branch_ids))
-        payment_q = payment_q.where(Payment.branch_id.in_(tenant.branch_ids))
-        debt_q = debt_q.where(Debt.branch_id.in_(tenant.branch_ids))
-        overdue_q = overdue_q.where(Debt.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        student_q = student_q.where(Student.branch_id.in_(allowed_branches))
+        active_student_q = active_student_q.where(Student.branch_id.in_(allowed_branches))
+        branch_q = branch_q.where(Branch.id.in_(allowed_branches))
+        class_q = class_q.where(ClassRoom.branch_id.in_(allowed_branches))
+        absent_q = absent_q.where(AttendanceRecord.branch_id.in_(allowed_branches))
+        payment_q = payment_q.where(Payment.branch_id.in_(allowed_branches))
+        debt_q = debt_q.where(Debt.branch_id.in_(allowed_branches))
+        overdue_q = overdue_q.where(Debt.branch_id.in_(allowed_branches))
 
     return success_response(
         {
@@ -233,6 +234,9 @@ async def dashboard_charts(
     )
     collection_query = repo._org_filter(collection_query, Payment)
     collection_query = repo._branch_filter(collection_query, Payment)
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        collection_query = collection_query.where(Payment.branch_id.in_(allowed_branches))
     collection = (await db.execute(collection_query)).scalar() or 0
     pending_query = select(func.coalesce(func.sum(Debt.amount - Debt.paid_amount), 0)).where(
         Debt.deleted_at.is_(None),
@@ -240,6 +244,8 @@ async def dashboard_charts(
     )
     pending_query = repo._org_filter(pending_query, Debt)
     pending_query = repo._branch_filter(pending_query, Debt)
+    if allowed_branches is not None:
+        pending_query = pending_query.where(Debt.branch_id.in_(allowed_branches))
     pending = (await db.execute(pending_query)).scalar() or 0
 
     return success_response(
@@ -282,8 +288,9 @@ async def monthly_payments_report(
         query = query.where(Payment.branch_id == branch_id)
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(Payment.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(Payment.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Payment.branch_id.in_(allowed_branches))
 
     rows = (await db.execute(query)).all()
     return success_response(
@@ -330,8 +337,9 @@ async def debts_report(
         query = query.where(Debt.debt_type == type.upper())
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(Debt.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(Debt.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Debt.branch_id.in_(allowed_branches))
 
     rows = (await db.execute(query)).all()
     return success_response(
@@ -379,8 +387,9 @@ async def overdue_debts_report(
         query = query.where(Debt.branch_id == branch_id)
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(Debt.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(Debt.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Debt.branch_id.in_(allowed_branches))
 
     rows = (await db.execute(query)).all()
     data = []
@@ -448,8 +457,9 @@ async def remind_overdue_debts(
     )
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(Debt.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(Debt.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Debt.branch_id.in_(allowed_branches))
 
     rows = (await db.execute(query)).all()
     seen_debts: set[UUID] = set()
@@ -511,8 +521,9 @@ async def class_occupancy_report(
         query = query.where(ClassRoom.academic_year == academic_year)
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(ClassRoom.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(ClassRoom.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(ClassRoom.branch_id.in_(allowed_branches))
     classes = (await db.execute(query)).all()
     data = []
     for c, branch in classes:
@@ -550,8 +561,9 @@ async def branch_performance_report(
     query = select(Branch).where(Branch.deleted_at.is_(None))
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(Branch.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(Branch.id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(Branch.id.in_(allowed_branches))
     branches = (await db.execute(query)).scalars().all()
     data = []
     for b in branches:
@@ -654,8 +666,9 @@ async def attendance_report(
         query = query.where(AttendanceRecord.student_id == student_id)
     if not tenant.is_super_admin and tenant.organization_id:
         query = query.where(AttendanceRecord.organization_id == tenant.organization_id)
-    if tenant.branch_ids:
-        query = query.where(AttendanceRecord.branch_id.in_(tenant.branch_ids))
+    allowed_branches = await _allowed_branch_ids(db, tenant)
+    if allowed_branches is not None:
+        query = query.where(AttendanceRecord.branch_id.in_(allowed_branches))
     rows = (await db.execute(query)).all()
     return success_response(
         [

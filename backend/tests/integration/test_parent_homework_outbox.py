@@ -238,6 +238,31 @@ async def test_outbox_hides_branchless_recipients_from_non_wide_users(portal_db)
 
 
 @pytest.mark.asyncio
+async def test_unassigned_user_dashboard_reports_are_empty_and_wide_role_is_preserved(portal_db):
+    from app.routers import dashboard_reports
+
+    sessions, data = portal_db
+    unassigned = TenantContext(user_id=uuid4(), organization_id=data["org"].id)
+    branch_user = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+        branch_ids=[data["branch"].id])
+    institution_admin = TenantContext(user_id=data["user"].id, organization_id=data["org"].id,
+        role_slugs={"org_admin"})
+    async with sessions() as db:
+        restricted = (await dashboard_reports.dashboard_summary(unassigned, db))["data"]
+        assert restricted == {
+            "total_students": 0, "active_students": 0, "total_branches": 0, "total_classes": 0,
+            "today_absent": 0, "monthly_collection": "0", "pending_debt": "0", "overdue_debt": "0",
+        }
+        assert (await dashboard_reports.dashboard_charts(unassigned, db))["data"]["class_occupancy"] == []
+        assert (await dashboard_reports.branch_performance_report(tenant=unassigned, db=db))["data"] == []
+
+        assigned = (await dashboard_reports.dashboard_summary(branch_user, db))["data"]
+        assert assigned["total_students"] == 2 and assigned["total_branches"] == 1
+        wide = (await dashboard_reports.dashboard_summary(institution_admin, db))["data"]
+        assert wide["total_students"] == 2 and wide["total_branches"] == 1
+
+
+@pytest.mark.asyncio
 async def test_checkout_verifies_provider_result_and_callback_is_idempotent(portal_db):
     import hashlib
     import hmac
@@ -277,6 +302,9 @@ async def test_checkout_verifies_provider_result_and_callback_is_idempotent(port
             return self.result
     gateway = Gateway()
     async with sessions() as db:
+        from app.core.student_access import accessible_student_ids
+
+        db.info["accessible_student_ids"] = await accessible_student_ids(db, tenant)
         child = data["children"][0]
         debt = Debt(organization_id=data["org"].id, branch_id=data["branch"].id, student_id=child.id,
             debt_type=DebtType.EDUCATION, amount=100, paid_amount=0, due_date=date.today())
@@ -453,6 +481,9 @@ async def test_appointment_availability_uses_school_timezone(portal_db):
                 slot_datetime=datetime(2026, 11, 3, 7, tzinfo=UTC), duration_minutes=30, status="CONFIRMED")])
         await db.commit()
     async with sessions() as db:
+        from app.core.student_access import accessible_student_ids
+
+        db.info["accessible_student_ids"] = await accessible_student_ids(db, tenant)
         result = await get_teacher_available_slots(teacher_id=data["teacher"].id, date=day, db=db, tenant=tenant)
         assert [slot["start_time"] for slot in result["data"]] == ["11:00"]
         from app.application.services import appointment_service
@@ -553,7 +584,8 @@ async def test_notification_retry_resets_failed_recipients_but_preserves_sent(po
     from app.routers.dashboard_reports import retry_notification
     from app.core.exceptions import ConflictException
     sessions, data = portal_db
-    tenant = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id)
+    tenant = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+        role_slugs={"org_admin"})
     async with sessions() as db:
         job = NotificationJob(organization_id=data["org"].id, channel=NotificationChannel.EMAIL,
             body="Test", status=NotificationStatus.FAILED, retry_count=3)

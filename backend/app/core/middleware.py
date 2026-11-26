@@ -99,7 +99,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if request.url.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store, max-age=0"
+            cache_control = response.headers.get("Cache-Control", "")
+            directives = {part.split("=", 1)[0].strip().casefold() for part in cache_control.split(",")}
+            if "no-store" not in directives:
+                response.headers["Cache-Control"] = "no-store, max-age=0"
             response.headers["Pragma"] = "no-cache"
         return response
 

@@ -10,8 +10,8 @@ from app.infrastructure.models.models import ClassRoom, ClassTeacher, Homework, 
 from app.infrastructure.repositories.base import BaseRepository
 
 
-def class_scope(tenant, branch_id=None):
-    repo = BaseRepository(None, tenant)
+def class_scope(db, tenant, branch_id=None):
+    repo = BaseRepository(db, tenant)
     query = repo._branch_filter(repo._org_filter(select(ClassRoom.id), ClassRoom), ClassRoom)
     if branch_id is not None:
         query = query.where(ClassRoom.branch_id == branch_id)
@@ -27,7 +27,7 @@ async def scoped_query(db, tenant, branch_id=None):
         query = query.where(Homework.status == "ACTIVE",
             Homework.class_id.in_(select(Student.class_id).where(Student.id.in_(ids or set()))))
     else:
-        query = query.where(or_(Homework.class_id.in_(class_scope(tenant)),
+        query = query.where(or_(Homework.class_id.in_(class_scope(db, tenant)),
             (Homework.class_id.is_(None)) & (Homework.created_by == tenant.user_id)))
     if branch_id is not None:
         query = query.where(Homework.class_id.in_(select(ClassRoom.id).where(ClassRoom.branch_id == branch_id)))
@@ -65,7 +65,7 @@ async def save(db, tenant, body, record=None, *, branch_id=None):
     values = body.model_dump(exclude_unset=record is not None, exclude={"request_id"})
     target = values.get("class_id", record.class_id if record else None)
     if target is not None:
-        allowed = (await db.execute(class_scope(tenant, branch_id).where(ClassRoom.id == target))).scalar_one_or_none()
+        allowed = (await db.execute(class_scope(db, tenant, branch_id).where(ClassRoom.id == target))).scalar_one_or_none()
         if allowed is None:
             raise ForbiddenException("Bu sınıfa ödev atama yetkiniz yok")
     elif branch_id is not None:

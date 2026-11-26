@@ -11,13 +11,13 @@ from app.infrastructure.models.models import Branch, Student
 from app.infrastructure.repositories.base import BaseRepository
 
 
-def query(tenant):
-    repo = BaseRepository(None, tenant)
+def query(db, tenant):
+    repo = BaseRepository(db, tenant)
     return repo._branch_filter(repo._org_filter(select(BusRoute).join(Branch, Branch.id == BusRoute.branch_id), Branch), BusRoute)
 
 
 async def get(db, tenant, route_id):
-    row = (await db.execute(query(tenant).where(BusRoute.id == identifier(route_id)))).scalar_one_or_none()
+    row = (await db.execute(query(db, tenant).where(BusRoute.id == identifier(route_id)))).scalar_one_or_none()
     if row is None:
         raise NotFoundException("Güzergah bulunamadı")
     return row
@@ -41,7 +41,7 @@ async def serialize(db, row):
 
 
 async def records(db, tenant, branch_id=None):
-    statement = query(tenant)
+    statement = query(db, tenant)
     if branch_id:
         statement = statement.where(BusRoute.branch_id == identifier(branch_id))
     return [await serialize(db, row) for row in (await db.execute(statement)).scalars()]

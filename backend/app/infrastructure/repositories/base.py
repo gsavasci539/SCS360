@@ -45,7 +45,7 @@ class BaseRepository:
         if self.tenant.has_institution_wide_branch_access:
             return query
         if not self.tenant.branch_ids:
-            student_ids = self.db.info.get("accessible_student_ids")
+            student_ids = self.db.info.get("accessible_student_ids") if self.db is not None else None
             if student_ids is not None:
                 from app.infrastructure.models.models import Student
                 students = Student.__table__
@@ -81,7 +81,12 @@ class BaseRepository:
         if not item:
             raise NotFoundException()
         if hasattr(item, "branch_id") and not self.tenant.can_access_branch(item.branch_id):
-            raise ForbiddenException()
+            accessible_student_ids = self.db.info.get("accessible_student_ids") if self.db is not None else None
+            student_id = getattr(item, "student_id", None)
+            if student_id is None and getattr(model, "__tablename__", None) == "students":
+                student_id = item.id
+            if accessible_student_ids is None or student_id not in accessible_student_ids:
+                raise ForbiddenException()
         if getattr(model, "__tablename__", None) == "branches" and not self.tenant.can_access_branch(item.id):
             raise ForbiddenException()
         return item
