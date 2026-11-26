@@ -140,7 +140,8 @@ async def get_broadcast_jobs(
     db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    return success_response(await broadcast_service.records(db, status, created_by, start_date, end_date, limit, offset, branch_id=branch_id))
+    return success_response(await broadcast_service.records(db, status, created_by, start_date, end_date, limit, offset,
+        tenant=tenant, branch_id=branch_id))
 
 
 @router.get("/broadcast-options")
@@ -163,7 +164,7 @@ async def get_broadcast_job(
     job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    job = await broadcast_service.get(db, job_id, branch_id)
+    job = await broadcast_service.get(db, job_id, tenant, branch_id)
     config = await broadcast_service.configuration(db, job)
     return success_response({**await broadcast_service.serialize(db, job),
         "target_role": config.data.get("target_role") if config else None})
@@ -184,7 +185,7 @@ async def update_broadcast_job(
     job_id: UUID, job: BroadcastJobUpdate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    current = await broadcast_service.get(db, job_id, branch_id)
+    current = await broadcast_service.get(db, job_id, tenant, branch_id)
     config = await broadcast_service.configuration(db, current)
     values = {key: getattr(current, key) for key in ("title", "message_content", "target_audience",
         "target_class_id", "target_branch_id", "channel", "scheduled_for")}
@@ -215,7 +216,7 @@ async def cancel_broadcast_job(
     job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
-    return success_response(await broadcast_service.cancel(db, job_id, branch_id), "Toplu ileti iptal edildi")
+    return success_response(await broadcast_service.cancel(db, tenant, job_id, branch_id), "Toplu ileti iptal edildi")
 
 @router.get("/delivery-reports")
 async def get_delivery_reports(
@@ -234,7 +235,7 @@ async def get_delivery_reports(
     if tenant.branch_ids:
         query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
     if broadcast_job_id:
-        await broadcast_service.get(db, broadcast_job_id, branch_id)
+        await broadcast_service.get(db, broadcast_job_id, tenant, branch_id)
         query = query.where(NotificationJob.reference_id == broadcast_job_id)
     elif branch_id:
         query = query.where(NotificationJob.branch_id == branch_id)
@@ -257,7 +258,7 @@ async def get_delivery_summary(
     job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.read")),
 ):
-    await broadcast_service.get(db, job_id, branch_id)
+    await broadcast_service.get(db, job_id, tenant, branch_id)
     rows = await broadcast_service.delivery_rows(db, job_id)
     from app.infrastructure.models.models import NotificationStatus
     sent = sum(row.status == NotificationStatus.SENT for row in rows)

@@ -2,7 +2,7 @@
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import and_, or_, select, update
 
 from app.core.config import get_settings
 from app.core.exceptions import ConflictException, NotFoundException, ValidationException
@@ -36,8 +36,20 @@ def branch_filter(branch_id):
         (BroadcastJob.target_branch_id.is_(None)) & BroadcastJob.target_class_id.in_(classes))
 
 
-async def get(db, identifier, branch_id=None):
-    job = (await db.execute(select(BroadcastJob).where(BroadcastJob.id == identifier, branch_filter(branch_id)))).scalar_one_or_none()
+def tenant_branch_filter(tenant):
+    if not tenant.branch_ids:
+        return True
+    classes = select(ClassRoom.id).where(ClassRoom.branch_id.in_(tenant.branch_ids))
+    branch_target = and_(BroadcastJob.target_branch_id.is_not(None),
+        BroadcastJob.target_branch_id.in_(tenant.branch_ids),
+        or_(BroadcastJob.target_class_id.is_(None), BroadcastJob.target_class_id.in_(classes)))
+    class_target = and_(BroadcastJob.target_branch_id.is_(None), BroadcastJob.target_class_id.in_(classes))
+    return or_(branch_target, class_target)
+
+
+async def get(db, identifier, tenant, branch_id=None):
+    job = (await db.execute(select(BroadcastJob).where(BroadcastJob.id == identifier,
+        branch_filter(branch_id), tenant_branch_filter(tenant)))).scalar_one_or_none()
     if job is None:
         raise NotFoundException("Toplu ileti bulunamadı")
     return job
@@ -148,11 +160,13 @@ async def serialize(db, job, preloaded=None):
         "sent_at": delivery.processed_at.isoformat() if delivery and delivery.status == NotificationStatus.SENT and delivery.processed_at else None}
 
 
-async def records(db, status=None, created_by=None, start_date=None, end_date=None, limit=100, offset=0, *, branch_id=None):
+async def records(db, status=None, created_by=None, start_date=None, end_date=None, limit=100, offset=0, *, tenant,
+    branch_id=None):
     from collections import defaultdict
     from datetime import time, timedelta
     query = select(BroadcastJob).outerjoin(NotificationJob,
-        (NotificationJob.reference_type == "BROADCAST") & (NotificationJob.reference_id == BroadcastJob.id)).where(branch_filter(branch_id))
+        (NotificationJob.reference_type == "BROADCAST") & (NotificationJob.reference_id == BroadcastJob.id)).where(
+            branch_filter(branch_id), tenant_branch_filter(tenant))
     if status:
         requested = status.upper()
         equivalent = {"COMPLETED": NotificationStatus.SENT, "QUEUED": NotificationStatus.PENDING,
@@ -244,7 +258,7 @@ async def create(db, tenant, values):
 
 async def send(db, tenant, job_id, branch_id=None):
     from types import SimpleNamespace
-    job = await get(db, job_id, branch_id)
+    job = await get(db, job_id, tenant, branch_id)
     config = await configuration(db, job)
     if config is None:
         raise ValidationException("Eski toplu ileti doğrulanamıyor; yeni bir taslak oluşturun")
@@ -269,8 +283,8 @@ async def send(db, tenant, job_id, branch_id=None):
     return await serialize(db, job)
 
 
-async def cancel(db, job_id, branch_id=None):
-    job = await get(db, job_id, branch_id)
+async def cancel(db, tenant, job_id, branch_id=None):
+    job = await get(db, job_id, tenant, branch_id)
     delivery = await notification(db, job_id)
     if delivery:
         updated = await db.execute(update(NotificationJob).where(NotificationJob.id == delivery.id,
