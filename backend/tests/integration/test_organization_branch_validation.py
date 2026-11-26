@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from test_saas_platform import platform_client  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
+from app.core.security import hash_password
 from app.infrastructure.models.models import AuditAction, AuditLog, Branch, Organization, Permission, Role, Student, User
 
 
@@ -120,7 +121,7 @@ async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_an
         owner_role = Role(organization_id=data["org"].id, slug="owner", name="Owner",
             permissions=[read_permission])
         owner = User(organization_id=data["org"].id, email="tax-owner@test.invalid", first_name="Tax",
-            last_name="Owner", password_hash="unused", roles=[owner_role])
+            last_name="Owner", password_hash=hash_password("owner-current-password"), roles=[owner_role])
         writer_role = Role(organization_id=data["org"].id, slug="clerk", name="Clerk",
             permissions=[read_permission, write_permission])
         writer = User(organization_id=data["org"].id, email="tax-writer@test.invalid", first_name="Tax",
@@ -129,13 +130,25 @@ async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_an
 
     hidden = await client.get(path, headers=headers(reader))
     assert hidden.status_code == 200 and hidden.json()["data"]["tax_number"] is None
-    denied_reveal = await client.post(f"{path}/tax-identifier/reveal", headers=headers(reader), json={"purpose": "TAX_FILING"})
+    denied_reveal = await client.post(f"{path}/tax-identifier/reveal", headers=headers(reader), json={"purpose": "TAX_FILING", "current_password": "irrelevant"})
     assert denied_reveal.status_code == 403
-    invalid_purpose = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={"purpose": "OTHER"})
+    invalid_purpose = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={
+        "purpose": "OTHER", "current_password": "owner-current-password",
+    })
     assert invalid_purpose.status_code == 422
+    extra_field = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={
+        "purpose": "TAX_FILING", "current_password": "owner-current-password", "tax_number": sentinel,
+    })
+    assert extra_field.status_code == 422
     owner_detail = await client.get(path, headers=headers(owner))
     assert owner_detail.status_code == 200 and owner_detail.json()["data"]["tax_number"] is None
-    revealed = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={"purpose": "TAX_FILING"})
+    wrong_password = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={
+        "purpose": "TAX_FILING", "current_password": "wrong-password",
+    })
+    assert wrong_password.status_code == 403 and sentinel not in wrong_password.text
+    revealed = await client.post(f"{path}/tax-identifier/reveal", headers=headers(owner), json={
+        "purpose": "TAX_FILING", "current_password": "owner-current-password",
+    })
     assert revealed.status_code == 200 and revealed.json()["data"]["tax_number"] == sentinel
     updated_value = "TCKN-UPDATED-WRITE-SENTINEL"
     updated = await client.put(path, headers=headers(writer), json={"tax_number": updated_value})

@@ -1401,4 +1401,4 @@ Dosya kapsamı helper'ı `all` klasörüne erişimi kurum-geneli tenant rollerin
 
 ### 26 Kasım 2026 — TCKN görüntülemede parola doğrulaması (WIP)
 
-Kurum TCKN/VKN reveal isteği, owner/platform yetkisi ve 5/dk sınırına ek olarak oturum sahibinin güncel parolasını doğrular; istek şeması beklenmeyen alanları reddeder. Web ekranı geçici password input'u kullanır, istek bitince alanı temizler ve görüntüleme isteği kapatılırsa iptal eder. Regresyon testleri çalıştırılmadı; bu nedenle davranış kabul edilmiş sayılmaz. Sağlayıcı/provider gerekliliği, TCKN işleme şartı, canlı HTTPS/edge, KVKK ve bağımsız güvenlik değerlendirmesi açık.
+Kurum TCKN/VKN reveal isteği, owner/platform yetkisi ve 5/dk sınırına ek olarak oturum sahibinin güncel parolasını doğrular; istek şeması beklenmeyen alanları reddeder. Web ekranı geçici password input'u kullanır, istek bitince alanı temizler ve görüntüleme isteği kapatılırsa iptal eder. Hedefli backend SQLite entegrasyon testi **1 PASS, 1 PostgreSQL varyantı SKIP**; frontend Vitest **1 PASS, 4 hedef dışı SKIP**.  Sağlayıcı/provider gerekliliği, TCKN işleme şartı, canlı HTTPS/edge, KVKK ve bağımsız güvenlik değerlendirmesi açık.
