@@ -6,7 +6,7 @@ from datetime import datetime, date
 from typing import Optional, List, Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from pydantic import ValidationError as SchemaValidationError
 from sqlalchemy import select, and_, func, update
@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
+from app.core.rate_limit import limiter
 from app.infrastructure.notifications.base import safe_provider_error, safe_provider_response
 from app.domain.entities import User, Branch, Class
 from app.application.services import broadcast_service
@@ -172,7 +173,9 @@ async def get_broadcast_job(
 
 
 @router.post("/broadcast-jobs")
+@limiter.limit("5/minute")
 async def create_broadcast_job(
+    request: Request,
     job: BroadcastJobCreate, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
@@ -205,7 +208,9 @@ async def update_broadcast_job(
 
 
 @router.post("/broadcast-jobs/{job_id}/send")
+@limiter.limit("5/minute")
 async def send_broadcast_job(
+    request: Request,
     job_id: UUID, branch_id: UUID | None = None, db: AsyncSession = Depends(get_db, scope="function"),
     tenant: TenantContext = Depends(PermissionChecker("communications.write")),
 ):
