@@ -1203,3 +1203,9 @@ Route'ın kullandığı `communications/AppointmentsPage` create modalı zaten g
 ### 26 Kasım 2026 — Randevu dış toplantı bağlantısı güvenli açılış (WIP)
 
 Frontend randevu ekranı toplantı URL'sini artık yalnız mutlak HTTPS ve kullanıcı adı/parolası içermiyorsa bağlantı olarak gösterir; yeni sekmede `noopener noreferrer` ve `no-referrer` uygular. Güvenilmeyen/bozuk/HTTPS olmayan URL için katıl bağlantısı çizilmez. Kaynak SHA `31afdcc12754efd94a945c691bd512ea7e926205` normal push/`ls-remote` ile doğrulandı. Yalnız hedefli `git diff --check`; test/build/API runtime yok. WIP.
+
+### 26 Kasım 2026 — TCKN içeren ödeme parmak izi (WIP)
+
+Okul ödeme oturumunda TCKN/pasaport numarasını da içeren `request_digest` önceden anahtarsız SHA-256 olarak saklanıyordu; yalnız DB özeti ele geçirilse bile tahmin saldırısına elverişliydi. Yeni özet, JWT anahtarından amaç ayrımlı HMAC-SHA-256 üretir. Aynı tenant/işlem sahibi eski açık oturumu aynı fatura gövdesiyle yetkili olarak tekrar gönderirse eski özet karşılaştırılıp yeni HMAC ile yükseltilir. Form değeri sağlayıcıya gönderilir; tarayıcı `sessionStorage` yalnız işlem/borç/tutar/durum whitelist'ini tutar. Mevcut DB/yedeklerdeki eski özetler bu kod değişikliğiyle silinmez. Salt-okunur kaynak incelemesi yapıldı; test/build/DB/provider çalıştırılmadı. SCS360 kaynak checkpoint'i normal push ve `ls-remote` ile SHA doğrulaması bekliyor.
+
+WIP: HMAC anahtarının işletimsel gizliliği ve rotasyonu, mevcut eski özetlerin retention/imhası, ödeme sağlayıcısının TCKN gerekliliği ve sözleşmesi/aktarımı, gerçek veri sorumlusu hukuki sebebi ve aydınlatması ayrıca doğrulanmalı. KVKK'nın TCKN rehberi TCKN'yi kişisel veri olarak ele alır ve daha az müdahaleci yöntemi tercih etmeyi önerir; TCKN tek başına Kanun'daki özel nitelikli veri listesinde değildir. Bu kaynak incelemesi hukuki görüş, KVKK uyum kararı veya canlı güvenlik kabulü değildir.

@@ -13,6 +13,7 @@ from sqlalchemy import select, update
 from app.application.services.cash_payment_service import locked_debt, state
 from app.application.services.platform_service import lock_organization
 from app.application.services import school_payment_merchant as merchants
+from app.core.config import get_settings
 from app.core.exceptions import AppException, ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.student_access import require_parent_child_access, require_student_access
 from app.domain.services.debt_calculator import DebtCalculator
@@ -126,6 +127,16 @@ def payer_values(body):
 def digest(tenant, body, buyer):
     value = {"actor": str(tenant.user_id), "organization": str(tenant.organization_id), "debt": str(body.debt_id),
         "amount": format(body.amount, ".2f"), "currency": body.currency, "buyer": buyer}
+    message = b"scs360-school-checkout-request-v1\0" + json.dumps(
+        value, sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    return hmac.new(get_settings().JWT_SECRET_KEY.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
+def _legacy_digest(tenant, body, buyer):
+    """Recognize and upgrade pre-HMAC idempotency rows on authorized retries only."""
+    value = {"actor": str(tenant.user_id), "organization": str(tenant.organization_id), "debt": str(body.debt_id),
+        "amount": format(body.amount, ".2f"), "currency": body.currency, "buyer": buyer}
     return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -141,8 +152,13 @@ async def initialize(db, tenant, user, body, ip):
     row = (await db.execute(select(PaymentCheckout).where(PaymentCheckout.id == identifier)
         .execution_options(populate_existing=True))).scalar_one_or_none()
     if row:
-        if row.organization_id != debt.organization_id or row.created_by != tenant.user_id or not row.request_digest or not hmac.compare_digest(row.request_digest, request_digest):
+        if row.organization_id != debt.organization_id or row.created_by != tenant.user_id or not row.request_digest:
             raise ConflictException("İstek kimliği farklı bir ödeme oturumunda kullanılmış")
+        if not hmac.compare_digest(row.request_digest, request_digest):
+            if not hmac.compare_digest(row.request_digest, _legacy_digest(tenant, body, buyer)):
+                raise ConflictException("İstek kimliği farklı bir ödeme oturumunda kullanılmış")
+            row.request_digest = request_digest
+            await db.flush()
         return view(row, tenant, True)
     raw = PaymentCheckout.__table__
     if (await db.execute(select(raw.c.id).where(raw.c.id == identifier))).first():
@@ -151,8 +167,14 @@ async def initialize(db, tenant, user, body, ip):
         PaymentCheckout.organization_id == debt.organization_id, PaymentCheckout.status.in_(OPEN))
         .execution_options(populate_existing=True))).scalars().all()
     if active:
-        if not body.request_id and len(active) == 1 and active[0].created_by == tenant.user_id and active[0].request_digest == request_digest:
-            return view(active[0], tenant, True)
+        if not body.request_id and len(active) == 1 and active[0].created_by == tenant.user_id and active[0].request_digest:
+            active_row = active[0]
+            if hmac.compare_digest(active_row.request_digest, request_digest):
+                return view(active_row, tenant, True)
+            if hmac.compare_digest(active_row.request_digest, _legacy_digest(tenant, body, buyer)):
+                active_row.request_digest = request_digest
+                await db.flush()
+                return view(active_row, tenant, True)
         raise AppException(
             "Bu borç için açık bir ödeme işlemi var.",
             status_code=409,
