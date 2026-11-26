@@ -1194,6 +1194,12 @@ Randevu toplantı linki frontend'de yalnız mutlak HTTPS URL, kullanıcı bilgis
 
 Sıradaki frontend işi: `AppointmentsPage` create formu sabit örnek kullanıcı alanları ve backend `AppointmentCreate` DTO'sundan farklı payload gönderiyor; status güncellemesi de API'nin `PUT /{id}/status` metoduyla eşleşmiyor. DTO'ya bağlı gerçek öğrenci/öğretmen/slot seçenekleriyle düzelt; mevcut role/tenant/parent semantiğini koru ve izole doğrulamayı test izni/kullanım hakkı elverdiğinde yap.
 
+### 26 Kasım 2026 — Randevu UI/API metod eşleştirmesi (WIP)
+
+Route'ın kullandığı `communications/AppointmentsPage` create modalı zaten gerçek `/appointments/options`, `/teacher-slots` ve `/request` DTO'larını kullanıyordu; önceki incelemede bulduğum sabit örnek kullanıcı `operations/OperationPages.tsx` içindeki route edilmeyen kopyadaydı. Bu kopya artık gerçek sayfayı re-export eder. Aktif status çağrısı backend `PUT /{id}/status` ile eşleşecek şekilde düzeltildi; ilgili mevcut assertion güncellendi. Kaynak SHA `6723edbf14bce088ba1ca800c6c8a7e4051bb6f7` normal push/`ls-remote` ile doğrulandı. Test/build çalıştırılmadı. WIP: non-parent kullanıcının create akışında servis `parent_id` alanını actor'dan türetiyor; bu semantik DB testleri ve açık rol kararıyla incelenmeli.
+
+Önceki `31afdcc1` HTTPS toplantı-linki düzeltmesi yalnız route edilmeyen legacy bileşendeydi, canlı UI davranışını değiştirmiyordu. Bu checkpoint o legacy UI'yı kaldırdı; aktif backend DTO'su toplantı linki/type alanı sunmuyor.
+
 ### 26 Kasım 2026 — Randevu dış toplantı bağlantısı güvenli açılış (WIP)
 
 Frontend randevu ekranı toplantı URL'sini artık yalnız mutlak HTTPS ve kullanıcı adı/parolası içermiyorsa bağlantı olarak gösterir; yeni sekmede `noopener noreferrer` ve `no-referrer` uygular. Güvenilmeyen/bozuk/HTTPS olmayan URL için katıl bağlantısı çizilmez. Kaynak SHA `31afdcc12754efd94a945c691bd512ea7e926205` normal push/`ls-remote` ile doğrulandı. Yalnız hedefli `git diff --check`; test/build/API runtime yok. WIP.
