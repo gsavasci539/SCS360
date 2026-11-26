@@ -134,17 +134,14 @@ class IntentDetectionService:
             # Parse and validate response
             intent = ChatbotIntent(**response)
 
-            logger.info(
-                f"Intent detected: {intent.intent} (confidence: {intent.confidence}) "
-                f"for query: '{query}'"
-            )
+            logger.info("chatbot_intent_detected intent=%s", intent.intent)
 
             return intent
 
         except Exception as e:
             # The caller owns the deterministic fallback. Returning GENERAL here
             # made detect_intent_with_fallback treat LLM failures as successes.
-            logger.warning("Intent detection failed for query %r: %s", query, e)
+            logger.warning("chatbot_intent_detection_failed exception_type=%s", type(e).__name__)
             raise
 
     async def detect_intent_with_fallback(
