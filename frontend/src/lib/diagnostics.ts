@@ -1,7 +1,7 @@
 import { isAxiosError } from "axios";
 
 function redactTckn(value: string) {
-  return value.replace(/(^|\D)(?:\d[\s-]?){10}\d(?=\D|$)/g, "$1[gizlendi]");
+  return value.replace(/(^|\D)(?:\d[\s.-]?){10}\d(?=\D|$)/g, "$1[gizlendi]");
 }
 
 export function reportClientError(context: string, reason?: unknown) {
