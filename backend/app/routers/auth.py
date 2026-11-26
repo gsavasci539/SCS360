@@ -152,7 +152,12 @@ async def forgot_password(
 
 
 @router.post("/reset-password")
-async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db, scope="function")):
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
     service = AuthService(db)
     await service.reset_password(body.token, body.new_password)
     return success_response(message="Şifre başarıyla güncellendi")
