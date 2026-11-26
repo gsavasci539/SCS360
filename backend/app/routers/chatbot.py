@@ -1244,8 +1244,6 @@ async def update_audit_log_feedback(
 @router.get("/ai/export-dataset")
 async def export_fine_tuning_dataset(
     format: str = "jsonl",
-    feedback_status: Optional[str] = None,
-    is_fine_tuning_ready: Optional[bool] = None,
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(require_ai_workspace_admin),
 ):
@@ -1269,6 +1267,8 @@ async def export_fine_tuning_dataset(
         if os.getenv("CHATBOT_DATASET_EXPORT_ALLOWED", "false").strip().lower() != "true":
             raise HTTPException(status_code=503, detail="Dataset export is disabled")
         enforce_chatbot_audit_text_access(current_user)
+        if not current_user.organization_id:
+            raise HTTPException(status_code=403, detail="Select an organization workspace")
 
         format = format.lower().strip()
         if format not in {"jsonl", "alpaca", "llama", "csv"}:
@@ -1277,8 +1277,6 @@ async def export_fine_tuning_dataset(
             db=db,
             format=format,
             organization_id=current_user.organization_id,
-            feedback_status=feedback_status,
-            is_fine_tuning_ready=is_fine_tuning_ready,
         )
         
         if not dataset:

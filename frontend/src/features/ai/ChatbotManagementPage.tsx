@@ -211,7 +211,6 @@ export function ChatbotManagementPage() {
     try {
       const params = new URLSearchParams();
       params.append("format", exportFormat);
-      if (feedbackFilter) params.append("feedback_status", feedbackFilter);
       
       const response = await api.get(`/v1/chatbot/ai/export-dataset?${params.toString()}`, {
         responseType: 'blob'
@@ -615,7 +614,7 @@ export function ChatbotManagementPage() {
               <div className="card-head">
                 <div>
                   <h2>LLM Fine-Tuning Dataset Export</h2>
-                  <p>Chatbot verilerini farklı formatlarda dışa aktararak LLM modellerini eğitin</p>
+                  <p>Yalnızca seçili kurumda doğrulanmış ve eğitim için onaylanmış kayıtlar dışa aktarılır.</p>
                 </div>
               </div>
               <div style={{ padding: 16 }}>

@@ -3,7 +3,6 @@
 import json
 import csv
 from io import StringIO
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,21 +17,14 @@ class DatasetExportService:
     @staticmethod
     async def get_logs_for_export(
         db: AsyncSession,
-        organization_id: Optional[UUID] = None,
-        feedback_status: Optional[str] = None,
-        is_fine_tuning_ready: Optional[bool] = None,
+        organization_id: UUID,
     ):
-        """Get audit logs that are ready for export."""
-        query = select(AiChatAuditLogModel)
-        
-        if organization_id:
-            query = query.where(AiChatAuditLogModel.organization_id == organization_id)
-        
-        if feedback_status:
-            query = query.where(AiChatAuditLogModel.feedback_status == feedback_status)
-        
-        if is_fine_tuning_ready is not None:
-            query = query.where(AiChatAuditLogModel.is_fine_tuning_ready == is_fine_tuning_ready)
+        """Return only reviewed training rows from the explicitly selected tenant."""
+        query = select(AiChatAuditLogModel).where(
+            AiChatAuditLogModel.organization_id == organization_id,
+            AiChatAuditLogModel.feedback_status == "VERIFIED",
+            AiChatAuditLogModel.is_fine_tuning_ready.is_(True),
+        )
         
         result = await db.execute(query)
         return result.scalars().all()
@@ -136,16 +128,12 @@ class DatasetExportService:
     async def export_dataset(
         db: AsyncSession,
         format: str,
-        organization_id: Optional[UUID] = None,
-        feedback_status: Optional[str] = None,
-        is_fine_tuning_ready: Optional[bool] = None,
+        organization_id: UUID,
     ):
-        """Export dataset in the specified format."""
+        """Export only verified, training-ready records for one selected tenant."""
         logs = await DatasetExportService.get_logs_for_export(
             db=db,
             organization_id=organization_id,
-            feedback_status=feedback_status,
-            is_fine_tuning_ready=is_fine_tuning_ready,
         )
         
         if not logs:
