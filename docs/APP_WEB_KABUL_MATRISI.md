@@ -430,3 +430,7 @@ Kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `1f69701d2d656a1374d7b
 Dışa aktarım artık seçili kurum kapsamından yalnız onaylanmış (`VERIFIED`) ve eğitim için hazır işaretlenmiş (`is_fine_tuning_ready=true`) kayıtları verir; API, UI parametrelerinden bağımsız olarak bu filtreleri uygular. Kurum seçilmemiş istek reddedilir. Statik `git diff --check` geçti; test/build yok. SCS360 `codex/source-sync-20261111` SHA `670122f94b9c2b46576b2802e5c4adb50b20aecc` normal push ve `ls-remote` ile doğrulandı. Canlı dağıtım, hukuki/KVKK ya da sağlayıcı kabulü değildir; erişim izi ve veri saklama/silme çalışması açık.
 
 Chatbot dataset export uç noktası ortak rate-limit deposunda IP başına `2/minute` ile sınırlandı. Statik diff kontrolü; test/derleme/runtime yok. SCS360 SHA `31b346722baebd049590ef02d714999c2e9c96ea`. WIP; rate-limit deposunun dağıtık runtime ve 429 güvenlik başlıkları doğrulanmalı.
+
+### 26 Kasım — Parola reset tokenının fragment kullanması (WIP)
+
+Yeni e-posta linklerinde token `#token=` fragment’inde; istemci fragment veya eski query tokenını ilk aşamada belleğe alıp URL geçmişini temizliyor. Query fallback yalnız eski link uyumluluğu içindir ve eski ilk istek/log kayıtlarındaki tokenları geri silemez. Statik diff kontrolü geçti; test/build yapılmadı. SCS360 `codex/source-sync-20261111` SHA `0b9e091a0ed09a863f08899d315c4753ff4ab564` normal push/`ls-remote` ile doğrulandı. E-posta/ingress runtime ve KVKK kabulü açık.

@@ -1080,3 +1080,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - Üç değişen kaynak dosyasında `git diff --check` geçti. Test/derleme çalıştırılmadı. SCS360 `codex/source-sync-20261111` normal push/`ls-remote` SHA: `670122f94b9c2b46576b2802e5c4adb50b20aecc`.
 - Sıradaki somut iş: geçici DB'de verified+ready, unreviewed, corrected ve başka kurum kayıtlarıyla filtre/tenant/red durumlarını hedefli doğrula; sonra export hacim sınırı, operatör erişim kaydı ve geçmiş kayıtların retention/silme akışını değerlendir. Canlı, sağlayıcı veya KVKK kabulü değildir.
 - Ek kaynak koruması: `/ai/export-dataset` ortak yapılandırılabilir rate-limit deposunda IP başına `2/minute` ile sınırlandı. Yalnız statik `git diff --check` yapıldı; test/derleme/Redis runtime yok. Kod SHA `31b346722baebd049590ef02d714999c2e9c96ea`; sonraki iş 2/minute sınırını ve 429 güvenlik başlıklarını hedefli ortamda doğrulamak.
+
+## 26 Kasım 2026 — Parola sıfırlama tokenını HTTP isteğinden çıkarma (WIP)
+
+- Yeni parola sıfırlama e-postaları tokenı `?token=` yerine URL fragment’inde (`#token=`) taşır. Fragment sunucuya ilk istekle gönderilmez. Web sayfası fragment’i ilk render sırasında belleğe alıp history’den çıkarır; eski query linkleri bir geçiş dönemi için çalışır ve istemcide temizlenir.
+- Eski query bağlantılarının ilk isteği ve mevcut ingress/mail tracking kayıtları bu değişiklikle geriye dönük temizlenmez; yalnız yeni link formatı bunların yeni kopyalarını önlemeyi hedefler. Tokenın uygulamaya POST edilmesi, kısa ömrü/tek kullanımlılığı, referrer ve eski log koşulları ayrıca doğrulanmalı.
+- `git diff --check` geçti; test/build çalıştırılmadı. SCS360 `codex/source-sync-20261111` normal push/`ls-remote` SHA: `0b9e091a0ed09a863f08899d315c4753ff4ab564`. WIP; e-posta sağlayıcısı, canlı ingress ve KVKK kabulü yok.

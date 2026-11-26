@@ -99,3 +99,9 @@ Backend export servisi tenant kimliğini zorunlu alır ve kendi sorgusunda yaln�
 Bu, mevcut ayrı varsayılan-kapalı export ve audit-text ayarlarına ek kaynak filtresidir. Eğitim amacı/hukuki dayanak, bilgilendirme/izin, sağlayıcı sözleşmeleri ve aktarım, gerçek operatör audit izi, saklama/silme, log/veritabanı/yedek, canlı konfigürasyon ve bağımsız güvenlik incelemesi açık kalır. KVKK veya canlı güvenlik kabulü değildir.
 
 Dataset export endpoint’i istek/IP başına 2 dakika sınırına alındı; mevcut ortak rate-limit deposu ayarını kullanır. Statik `git diff --check` dışında test/build/Redis runtime yapılmadı. Kaynak SHA `31b346722baebd049590ef02d714999c2e9c96ea`; 429 davranışı, çoklu worker sayacı ve Redis kesinti politikası canlı/runtime olarak açık.
+
+### 26 Kasım 2026 — Parola sıfırlama tokenı fragment taşıma (WIP)
+
+Yeni üretilen sıfırlama bağlantısı tokenı URL fragment’ine yerleştirir; browser fragment’i ilk HTTP isteğinde sunucuya göndermez. React tokenı ilk renderda belleğe alıp adres/geçmişten temizler; eski query formatı uyumluluk için okunur ve istemcide silinir. `git diff --check` geçti; test/build yok. SCS360 `codex/source-sync-20261111` SHA `0b9e091a0ed09a863f08899d315c4753ff4ab564` normal push/`ls-remote` ile doğrulandı.
+
+Önceden üretilmiş query URL’leri, ingress/e-posta tracking logları veya eski tarayıcı geçmişi bu değişiklikle temizlenmez. E-posta sağlayıcısı davranışı, canlı ingress log formatı/saklama, reset akışının test kabulü ve tokenın erişim izi hâlâ açık. Bu WIP; canlı veya KVKK kabulü değildir.
