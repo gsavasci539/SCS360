@@ -281,3 +281,7 @@ Read-only public check remains HTTP 200 with an exposed `nginx/1.18.0 (Ubuntu)` 
 ### 26 Kasım 2026 — Hata metinlerinde TCKN deseni maskeleme (WIP)
 
 API hata işleyicileri string mesajların içindeki kesintisiz 11 haneli sayı dizilerini ve yapılandırılmış AppException error alanlarındaki aynı dizileri [gizlendi] biçiminde maskeler; nesne biçimli HTTPException detail zaten genel mesaja indirgenir. test_response_errors.py 7 PASS. Code SHA 260ef123963351300b1d5eb123604c08643ce3b7 normal push/ls-remote ile doğrulandı. Bu yalnız biçimsel bir hata-yanıtı filtresidir; aralıklı/formatlı kimlikler, diğer kişisel veri, serbest metin log/telemetri ve sağlayıcı payload'ları ayrıca denetlenmelidir.
+
+### Frontend geliştirme tanısında TCKN azaltımı (WIP)
+
+Development-only reportClientError artık console.error öncesi context ve message içindeki kesintisiz 11 haneli dizileri maskeler; Axios header/response gövdesi yazılmama davranışı korunur. diagnostics.test.ts 2 PASS. Code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee normal push/ls-remote doğrulandı. Bu yalnız frontend geliştirme konsolunu kapsar; production telemetry SDK, sunucu logları ve formatlı TCKN ayrıca denetlenmelidir.

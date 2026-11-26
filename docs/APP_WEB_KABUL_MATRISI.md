@@ -560,3 +560,7 @@ HTTPException nesne tipindeki detail değerleri API'den genel hata olarak döner
 ### Hata yanıtında TCKN desenini maskeleme (WIP, 26.11.2026)
 
 API hata mesajları/error alanlarındaki kesintisiz 11 haneli diziler maskeleniyor; structured HTTPException detayları genel hata olarak kalıyor. Hedefli test_response_errors.py 7 PASS; code SHA 260ef123963351300b1d5eb123604c08643ce3b7 remote doğrulandı. Formatlı TCKN, diğer PII ve log/telemetri kabulü açık.
+
+### Frontend dev tanısında TCKN maskeleme (WIP, 26.11.2026)
+
+reportClientError geliştirme konsoluna yazmadan önce 11 haneli dizileri maskeler. diagnostics.test.ts 2 PASS; code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee remote doğrulandı. Production logging/telemetry ve diğer PII kabulü açık.

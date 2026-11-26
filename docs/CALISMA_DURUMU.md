@@ -1288,3 +1288,7 @@ HTTPException detail alanı string dışı bir nesneyse artık ham içerik (buye
 ### 26 Kasım 2026 — API hata metninde TCKN azaltımı (WIP)
 
 HTTPException ve AppException mesaj/error alanlarında kesintisiz 11 haneli diziler API yanıtına verilmeden önce [gizlendi] ile değiştiriliyor; structured HTTP detail genel kalıyor. Hedefli test_response_errors.py: 7 PASS, sentetik değer. Kaynak SHA 260ef123963351300b1d5eb123604c08643ce3b7 remote branch'te doğrulandı. Bu filtre formatlı/ayrılmış TCKN, diğer PII veya log/telemetri koruması değildir; KVKK/live kabulü değildir.
+
+### 26 Kasım 2026 — Frontend hata tanısında TCKN gizleme (WIP)
+
+Development-only reportClientError, konsol hata context/message içindeki kesintisiz 11 haneli dizileri maskeler. Axios header/yanıt gövdesini loglamama davranışı sürer. Hedefli diagnostics.test.ts: 2 PASS. Code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee remote branch'te doğrulandı. Production telemetri, sunucu logları ve başka biçimli kişisel veri kapsanmıyor.
