@@ -313,3 +313,9 @@ HTTPS HEAD `https://scs360.com.tr/` 200 yanıtladı; gözlenen başlıklarda `Se
 ### 26 Kasım 2026 — Kurum oluştururken TCKN çözümlemesini atlama (WIP)
 
 Audit olayında kimlik numarasının yalnız var olup olmadığını belirtmek için yeni yazılmış şifreli değeri tekrar çözme kaldırıldı; istek DTO'sundaki presence kontrolü yeterli. Regresyon, kurum oluşturma sırasında Organization.tax_number getter'ını bilerek hata verecek şekilde monkeypatch edip endpoint'in buna başvurmadığını doğruluyor. Geçici test: **1 PASS, 1 PostgreSQL varyantı SKIP**. Kod `7a68b6feaeb142990a70d2a841d429d0263f3a8c`, test `d8e219da4827f78ec3e6497fb27fd994621fb92b` normal push/`ls-remote` ile doğrulandı. Bu, diğer TCKN okuma yolları, migration/yedek/anahtar ve KVKK kabulünü kapsamaz.
+
+### 26 Kasım 2026 — Boş şube atamalarında kapalı varsayılan (WIP)
+
+- Şube ataması olmayan sıradan hesaplarda boş `branch_ids` artık tüm şubeleri açmıyor. ORM tenant guard, repository kapsamı ve doğrudan dal kontrolü aynı ilkeyi uyguluyor. Root için kurum çalışma alanı seçimi ve `owner` açıkça kurum geneli kalıyor; veli/öğretmen bağlamı yalnız erişilebilir öğrenci ilişkilerinin şubelerine daraltılıyor.
+- Hedefli `test_branch_isolation.py` + `test_permission_contract.py`: **9 PASS**, gerçek DB/sağlayıcı yok. SCS360 `codex/source-sync-20261111` kod SHA `22a45fa759ac498f769f59b426fc6b4b80ec5ef4` normal push ve `ls-remote` ile doğrulandı. Sonraki somut iş: Core SQL kullanan eski uçlarda boş atama dal kapsamını ayrıca tarayıp ilgili regresyonları eklemek; bu checkpoint tüm rotaların kabulü değildir.
+- WIP: Nginx/Docker/TLS/Redis runtime, üretim logları, yedek/retention ve bağımsız KVKK/hukuk/operasyon kabulü halen açık. Canlıya hazır veya KVKK uyumlu ilan edilmez.

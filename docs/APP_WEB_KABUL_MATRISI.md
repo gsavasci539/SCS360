@@ -592,3 +592,9 @@ Salt okunur kontrol ana sayfada 200, Server sürüm başlığı ve yalnız gözl
 ### Güvenlik checkpoint'i — create audit'te TCKN çözülmüyor (WIP, 26.11.2026)
 
 Kurum oluşturma audit'i artık şifreli vergi kimlik değerini çözmeden input varlığıyla üretiliyor; test getter'ın hiç okunmadığını doğruladı: 1 PASS, 1 PostgreSQL SKIP. Kod `7a68b6feaeb142990a70d2a841d429d0263f3a8c`, test `d8e219da4827f78ec3e6497fb27fd994621fb92b` remote dalda doğrulandı. KVKK veya tam TCKN akışı kabulü değildir.
+
+### 26 Kasım 2026 — Boş şube atamalarında kapalı varsayılan (WIP)
+
+- Şube ataması olmayan sıradan hesaplarda boş `branch_ids` artık tüm şubeleri açmıyor. ORM tenant guard, repository kapsamı ve doğrudan dal kontrolü aynı ilkeyi uyguluyor. Root için kurum çalışma alanı seçimi ve `owner` açıkça kurum geneli kalıyor; veli/öğretmen bağlamı yalnız erişilebilir öğrenci ilişkilerinin şubelerine daraltılıyor.
+- Hedefli `test_branch_isolation.py` + `test_permission_contract.py`: **9 PASS**, gerçek DB/sağlayıcı yok. SCS360 `codex/source-sync-20261111` kod SHA `22a45fa759ac498f769f59b426fc6b4b80ec5ef4` normal push ve `ls-remote` ile doğrulandı. Sonraki somut iş: Core SQL kullanan eski uçlarda boş atama dal kapsamını ayrıca tarayıp ilgili regresyonları eklemek; bu checkpoint tüm rotaların kabulü değildir.
+- WIP: Nginx/Docker/TLS/Redis runtime, üretim logları, yedek/retention ve bağımsız KVKK/hukuk/operasyon kabulü halen açık. Canlıya hazır veya KVKK uyumlu ilan edilmez.
