@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
+from zipfile import BadZipFile, ZipFile
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -170,6 +171,17 @@ async def import_students_excel(
         contents = await file.read(max_upload_size + 1)
         if len(contents) > max_upload_size:
             raise HTTPException(status_code=413, detail="İçe aktarma dosyası boyut sınırını aşıyor")
+        if (file.filename or "").lower().endswith(".xlsx"):
+            try:
+                with ZipFile(io.BytesIO(contents)) as workbook:
+                    members = workbook.infolist()
+                    expanded_size = sum(member.file_size for member in members)
+                    if len(members) > 1024 or expanded_size > 64 * 1024 * 1024:
+                        raise HTTPException(status_code=413, detail="Excel arşivi işleme sınırını aşıyor")
+            except HTTPException:
+                raise
+            except (BadZipFile, OSError, ValueError):
+                raise HTTPException(status_code=400, detail="Excel dosyası okunamadı") from None
         try:
             df = pd.read_excel(io.BytesIO(contents))
         except Exception as exc:
