@@ -228,6 +228,11 @@ async def get_delivery_reports(
     from app.infrastructure.models.models import NotificationJob, NotificationRecipient
     query = select(NotificationRecipient, NotificationJob).join(NotificationJob,
         NotificationJob.id == NotificationRecipient.notification_job_id).where(NotificationJob.reference_type == "BROADCAST")
+    # A branchless broadcast can contain recipients from every branch; the
+    # generic tenant guard permits NULL branch rows for organization-wide data.
+    # Do not expose those recipient addresses to branch-scoped report readers.
+    if tenant.branch_ids:
+        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
     if broadcast_job_id:
         await broadcast_service.get(db, broadcast_job_id, branch_id)
         query = query.where(NotificationJob.reference_id == broadcast_job_id)
