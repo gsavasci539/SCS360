@@ -428,3 +428,5 @@ Kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `1f69701d2d656a1374d7b
 ### 26 Kasım — Chatbot veri export filtresi (WIP)
 
 Dışa aktarım artık seçili kurum kapsamından yalnız onaylanmış (`VERIFIED`) ve eğitim için hazır işaretlenmiş (`is_fine_tuning_ready=true`) kayıtları verir; API, UI parametrelerinden bağımsız olarak bu filtreleri uygular. Kurum seçilmemiş istek reddedilir. Statik `git diff --check` geçti; test/build yok. SCS360 `codex/source-sync-20261111` SHA `670122f94b9c2b46576b2802e5c4adb50b20aecc` normal push ve `ls-remote` ile doğrulandı. Canlı dağıtım, hukuki/KVKK ya da sağlayıcı kabulü değildir; erişim izi ve veri saklama/silme çalışması açık.
+
+Chatbot dataset export uç noktası ortak rate-limit deposunda IP başına `2/minute` ile sınırlandı. Statik diff kontrolü; test/derleme/runtime yok. SCS360 SHA `31b346722baebd049590ef02d714999c2e9c96ea`. WIP; rate-limit deposunun dağıtık runtime ve 429 güvenlik başlıkları doğrulanmalı.

@@ -97,3 +97,5 @@ Parola yenileme tokenı paint öncesi component state'e alınıp query/history'd
 Backend export servisi tenant kimliğini zorunlu alır ve kendi sorgusunda yalnız `VERIFIED` + `is_fine_tuning_ready=true` satırlarını seçer; endpoint tenant yoksa 403 döndürür. İstemci kayıt durumuna göre bu sınırı gevşetemez. Üç kaynak dosyası için statik `git diff --check` geçmiştir; test/build çalıştırılmadı. SCS360 normal push/`ls-remote`: `670122f94b9c2b46576b2802e5c4adb50b20aecc`.
 
 Bu, mevcut ayrı varsayılan-kapalı export ve audit-text ayarlarına ek kaynak filtresidir. Eğitim amacı/hukuki dayanak, bilgilendirme/izin, sağlayıcı sözleşmeleri ve aktarım, gerçek operatör audit izi, saklama/silme, log/veritabanı/yedek, canlı konfigürasyon ve bağımsız güvenlik incelemesi açık kalır. KVKK veya canlı güvenlik kabulü değildir.
+
+Dataset export endpoint’i istek/IP başına 2 dakika sınırına alındı; mevcut ortak rate-limit deposu ayarını kullanır. Statik `git diff --check` dışında test/build/Redis runtime yapılmadı. Kaynak SHA `31b346722baebd049590ef02d714999c2e9c96ea`; 429 davranışı, çoklu worker sayacı ve Redis kesinti politikası canlı/runtime olarak açık.
