@@ -1242,7 +1242,9 @@ async def update_audit_log_feedback(
 
 
 @router.get("/ai/export-dataset")
+@limiter.limit("2/minute")
 async def export_fine_tuning_dataset(
+    request: Request,
     format: str = "jsonl",
     db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(require_ai_workspace_admin),
