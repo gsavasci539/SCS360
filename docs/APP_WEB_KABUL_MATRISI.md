@@ -610,3 +610,8 @@ Kurum oluşturma audit'i artık şifreli vergi kimlik değerini çözmeden input
 - Kart numarası, RFID kartı, cihaz ve veri içe aktarma router'larına ortak `require_assigned_branch` dependency eklendi. `owner`, `org_admin`, açık Root workspace ve süper yönetici korunuyor; şubesi olmayan sıradan hesaplar bu dal-bağımlı API'lere giremiyor.
 - Geçici SQLite: `test_branchless_staff_cannot_open_device_configuration` **1 PASS**; `test_branch_isolation.py` + branch lifecycle + student-number import hedef kümesi **12 PASS, 5 PostgreSQL varyantı SKIP**. Canlı DB/cihaz/provider kullanılmadı. Kod SHA `c2787481d8bd4968a02785d0980f6b4f04775bcf` normal push/`ls-remote` ile doğrulandı.
 - Sonraki somut iş: diğer özel Core sorgularında aynı boş-scope varsayımını uçtan uca taramak ve branch-bound read/write kabulünü genişletmek. Bu WIP, tüm uçların kabulü veya KVKK/canlı hazır beyanı değildir.
+
+
+### Güvenlik checkpoint'i — Kantin RFID şube izolasyonu (WIP, 26.11.2026)
+
+Kantin rolünün RFID listesinde kurum/şube filtresini atlayan özel dal kaldırıldı. Regresyon: 	est_canteen_rfid_list_stays_inside_assigned_branch (izole SQLite) **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b remote dalda doğrulandı. Tüm SQL/API erişimleri veya KVKK/canlı kabulü değildir; kalan Core sorguları ve prod dağıtımındaki dış güvenlik başlıkları açık.

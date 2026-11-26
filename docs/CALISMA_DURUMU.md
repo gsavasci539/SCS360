@@ -1338,3 +1338,10 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 - Kart numarası, RFID kartı, cihaz ve veri içe aktarma router'larına ortak `require_assigned_branch` dependency eklendi. `owner`, `org_admin`, açık Root workspace ve süper yönetici korunuyor; şubesi olmayan sıradan hesaplar bu dal-bağımlı API'lere giremiyor.
 - Geçici SQLite: `test_branchless_staff_cannot_open_device_configuration` **1 PASS**; `test_branch_isolation.py` + branch lifecycle + student-number import hedef kümesi **12 PASS, 5 PostgreSQL varyantı SKIP**. Canlı DB/cihaz/provider kullanılmadı. Kod SHA `c2787481d8bd4968a02785d0980f6b4f04775bcf` normal push/`ls-remote` ile doğrulandı.
 - Sonraki somut iş: diğer özel Core sorgularında aynı boş-scope varsayımını uçtan uca taramak ve branch-bound read/write kabulünü genişletmek. Bu WIP, tüm uçların kabulü veya KVKK/canlı hazır beyanı değildir.
+
+
+### 26 Kasım 2026 — Kantin RFID listesi şube kapsamına alındı (WIP)
+
+- RFID kart listeleme rotasındaki canteen rol istisnası kaldırıldı; tüm roller repository çağrısında organization_id ve ranch_id filtresini kullanıyor. Şubeye atanmış kantin hesabı için kurum/şube dışı kartı döndürmeyen regresyon eklendi.
+- Hedefli SQLite testi 	est_canteen_rfid_list_stays_inside_assigned_branch: **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b, uzak codex/source-sync-20261111 dalında doğrulandı.
+- Bu dar endpoint kontrolü tüm Core sorgularının, diğer PII akışlarının veya prod ortamının kabulü değildir. Sonraki somut iş: kalan özel Core sorgularını ve branch-bound read/write yollarını taramak; dış TLS/header/security.txt ve runtime kontrollerini gerçek dağıtım sonrası doğrulamak.
