@@ -124,7 +124,9 @@ async def create_organization(
     # new unlimited school account without a platform-configured membership.
     db.add(OrganizationSubscription(organization_id=org.id, admin_status="ACTIVE"))
     await flush_registry(db, "Kurum üyelik kaydı oluşturulamadı")
-    if org.tax_number:
+    # The input value's presence is enough for a value-free audit event; do
+    # not decrypt the newly stored identifier for this boolean check.
+    if body.tax_number:
         db.add(AuditLog(organization_id=org.id, user_id=user.id, action=AuditAction.CREATE,
             entity_type="organization.tax_identifier", entity_id=org.id,
             new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_CREATED"}))
