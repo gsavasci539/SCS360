@@ -30,7 +30,8 @@ CREATE TABLE organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     legal_name VARCHAR(255),
-    tax_number VARCHAR(50),
+    tax_number_ciphertext TEXT,
+    tax_number_fingerprint VARCHAR(64),
     tax_office VARCHAR(100),
     phone VARCHAR(20),
     email VARCHAR(255),
@@ -45,7 +46,8 @@ CREATE TABLE organizations (
     deleted_at TIMESTAMPTZ,
     created_by UUID,
     updated_by UUID,
-    CONSTRAINT uq_organizations_name UNIQUE (name)
+    CONSTRAINT uq_organizations_name UNIQUE (name),
+    CONSTRAINT uq_organizations_tax_number_fingerprint UNIQUE (tax_number_fingerprint)
 );
 
 CREATE INDEX idx_organizations_active ON organizations (is_active) WHERE deleted_at IS NULL;

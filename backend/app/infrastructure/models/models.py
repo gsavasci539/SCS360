@@ -26,6 +26,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from app.core.database import Base
+from app.core.config import get_settings
+from app.core.tax_identifier import (
+    decrypt_tax_identifier,
+    encrypt_tax_identifier,
+    tax_identifier_fingerprint,
+)
 
 
 from app.core.uuid_type import CustomUUID
@@ -202,11 +208,13 @@ class SoftDeleteMixin:
 
 class Organization(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "organizations"
+    __table_args__ = (Index("uq_organizations_tax_number_fingerprint", "tax_number_fingerprint", unique=True),)
 
     id: Mapped[uuid.UUID] = mapped_column(CustomUUID, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     legal_name: Mapped[str | None] = mapped_column(String(255))
-    tax_number: Mapped[str | None] = mapped_column(String(50))
+    tax_number_ciphertext: Mapped[str | None] = mapped_column(Text)
+    tax_number_fingerprint: Mapped[str | None] = mapped_column(String(64))
     tax_office: Mapped[str | None] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(20))
     email: Mapped[str | None] = mapped_column(String(255))
@@ -220,6 +228,23 @@ class Organization(Base, TimestampMixin, SoftDeleteMixin):
     updated_by: Mapped[uuid.UUID | None] = mapped_column(CustomUUID)
 
     branches: Mapped[list["Branch"]] = relationship(back_populates="organization")
+
+    @property
+    def tax_number(self) -> str | None:
+        if not self.tax_number_ciphertext:
+            return None
+        key = get_settings().ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY
+        return decrypt_tax_identifier(self.tax_number_ciphertext, key)
+
+    @tax_number.setter
+    def tax_number(self, value: str | None) -> None:
+        if value is None or not value.strip():
+            self.tax_number_ciphertext = None
+            self.tax_number_fingerprint = None
+            return
+        key = get_settings().ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY
+        self.tax_number_ciphertext = encrypt_tax_identifier(value, key)
+        self.tax_number_fingerprint = tax_identifier_fingerprint(value, key)
 
 
 class Branch(Base, TimestampMixin, SoftDeleteMixin):

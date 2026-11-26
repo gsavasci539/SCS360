@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     IYZICO_ORGANIZATION_ID: str = ""
     # Independent key for school merchant snapshots; never the SaaS/JWT secret.
     SCHOOL_PAYMENT_ENCRYPTION_KEY: str = ""
+    # Dedicated Fernet key for organization TCKN/VKN values stored at rest.
+    ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY: str = ""
     SCHOOL_PAYMENT_CALLBACK_URL: str = ""
     SCHOOL_PAYMENT_PORTAL_URL: str = ""
     # Platform subscriptions must not charge through a school's tuition account.
@@ -108,6 +110,20 @@ class Settings(BaseSettings):
             }
             if len(self.JWT_SECRET_KEY) < 32 or self.JWT_SECRET_KEY in insecure_secrets:
                 raise ValueError("JWT_SECRET_KEY must be a unique secret of at least 32 characters")
+            try:
+                from cryptography.fernet import Fernet
+
+                Fernet(self.ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY.encode("ascii"))
+            except (UnicodeEncodeError, ValueError):
+                raise ValueError(
+                    "ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY must be a dedicated valid Fernet key"
+                ) from None
+            if self.ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY in {
+                self.JWT_SECRET_KEY,
+                self.SCHOOL_PAYMENT_ENCRYPTION_KEY,
+                self.SAAS_CHECKOUT_ENCRYPTION_KEY,
+            }:
+                raise ValueError("Organization tax identifier key must not be reused")
             if "*" in self.cors_origins_list:
                 raise ValueError("Wildcard CORS origins are not allowed outside development")
             if not self.cors_origins_list:

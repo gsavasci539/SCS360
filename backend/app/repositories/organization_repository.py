@@ -2,6 +2,8 @@ from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.core.config import get_settings
+from app.core.tax_identifier import tax_identifier_fingerprint
 
 from app.domain.entities.organization import Organization
 from app.repositories.base_repository import BaseRepository
@@ -11,8 +13,11 @@ class OrganizationRepository(BaseRepository[Organization]):
     async def get_by_tax_number(
         self, db: AsyncSession, tax_number: str
     ) -> Optional[Organization]:
+        fingerprint = tax_identifier_fingerprint(
+            tax_number, get_settings().ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY
+        )
         result = await db.execute(
-            select(Organization).where(Organization.tax_number == tax_number)
+            select(Organization).where(Organization.tax_number_fingerprint == fingerprint)
         )
         return result.scalar_one_or_none()
 
