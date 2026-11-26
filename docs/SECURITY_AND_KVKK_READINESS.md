@@ -167,3 +167,9 @@ Yalnız `git diff --check` yapıldı; geçici DB testleri, çok şubeli generic 
 Ortak notification helper, sağlayıcı JSON yanıtından yalnız sınırlandırılmış HTTP durum/kısa kod, onaylı teslim durumları ve karakter/uzunluk kontrolünden geçen opak kimlikleri tutar. Başarısız gönderimde sağlayıcı gövdesi yerine sabit genel hata mesajı kullanılır. Worker yazma yolu ile outbox, iletişim teslim raporu, duyuru sonuçları ve bildirim detayının okuma yanıtları aynı filtreyi kullanır; eski DB satırlarından ham gövde/hata metni API'den tekrar sunulmaz.
 
 Bu işlem eski DB/yedek/log içeriğini silmez. Yalnız `git diff --check` yapıldı; test/build/DB/provider/runtime doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` normal push/`ls-remote` ile doğrulandı. Güvenli izin-listesi davranışı, retry ve tenant regresyonları, eski kayıtların retention/silmesi, sağlayıcı sözleşmeleri ve KVKK süreçleri açık; WIP.
+
+### 26 Kasım 2026 — Manuel bildirim gönderim endpointi (WIP)
+
+Legacy `POST /api/notifications/send` artık IP bazında `5/minute` rate-limit uygular. Şube ataması olan aktör `branch_id` olarak sadece atanmış şubeyi verebilir; başlık (255), ileti (10.000), alıcı adedi (1–100), adres (255) ve ad (200) sınırlandırılır; subject/address CR/LF içeriği reddedilir. SCS360 `codex/source-sync-20261111` SHA `3f6cf3da93273f22f9ff207af309966d282e6713` normal push/`ls-remote` ile doğrulandı. Sadece statik diff kontrolü; test/build/provider/runtime yok.
+
+Önemli açık risk: endpoint, adreslerin aynı tenant/branch içindeki kayıtlı veli/personel iletişim adresleri olduğunu kontrol etmiyor; `notification.write` yetkilisi hâlâ dış adrese serbest bildirim oluşturabilir. Canlı öncesi alıcıları veritabanı kaydı ve onay tercihleriyle eşleştir ya da bu legacy ucu kapat. Rate-limit, hukuki dayanak/izin veya KVKK kabulü değildir.

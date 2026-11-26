@@ -1129,3 +1129,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - Outbox, delivery report, announcement results ve notification detail yanıtları da eski DB kayıtlarındaki ham hata/sağlayıcı gövdelerini API'den döndürmez. Eski DB/yedek/log satırları silinmedi; yeni response minimize edilir.
 - Hedefli `git diff --check` geçti; test/build/DB/provider runtime yok. SCS360 kod SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` normal push/`ls-remote` ile doğrulandı.
 - Açık: izin listesi/PII regresyonu ve retry davranışı geçici DB testleri, API erişim kapsamı, eski kayıtlar için onaylı retention/silme, provider ve canlı runtime kabulü. WIP, KVKK veya canlı onayı değildir.
+
+### 26 Kasım 2026 · Legacy manuel bildirim gönderim sınırları (WIP)
+
+- `/api/notifications/send` IP başına `5/minute` rate-limit alır. Şube atamalı kullanıcı için açık atanmış şube zorunlu; başlık, gövde ve alıcı sayısı/adı/adresi sınırlandırılır, adres ve başlıktaki CR/LF reddedilir.
+- Statik `git diff --check` dışında test/build/send/provider runtime çalıştırılmadı. SCS360 kod SHA `3f6cf3da93273f22f9ff207af309966d282e6713` normal push/`ls-remote` ile doğrulandı.
+- Açık güvenlik riski: yetkili kullanıcının payload’daki adreslerinin gerçekten aynı kurum/şubedeki izinli veli/personel iletişim noktası olduğu bu endpointte doğrulanmıyor. Bu uç canlı kabulünden önce kayıtlı ve amaç/izinli alıcılarla eşleştirilmeli ya da kaldırılmalı; rate limit veri aktarım yetkisi sağlamaz. WIP/KVKK kabulü değildir.

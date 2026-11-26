@@ -476,3 +476,7 @@ Broadcast list/detail/update/send/cancel/report lookup’ları şubeli aktör i�
 ### 26 Kasım — Bildirim provider response ve eski hata metni API filtreleme (WIP)
 
 Yeni ve geçmiş bildirim kayıtlarının response’ları ortak güvenli alıcıdan geçirilir: serbest provider gövdesi/hata mesajı yerine sınırlı operasyonel metadata ve sabit genel hata metni döner. Bu, eski kayıtları/yedekleri/logları geriye dönük silmez. Statik diff kontrolü dışında test/build/DB/provider runtime yok. SCS360 SHA `16fd01b035551cc7be856b16a8c40cd5a442d2e0` push/`ls-remote` doğrulandı. İzin listesi, tenant API ve retry regresyonları; retention/silme ve canlı/KVKK kabulü açık.
+
+### 26 Kasım — Manuel bildirim endpointi sınırları (WIP)
+
+`POST /api/notifications/send` IP başına 5/dk ile sınırlandı; şubeli kullanıcıya atanmış şube zorunlu, başlık/gövde/alıcı adet ve alan uzunlukları sınırlı, CR/LF reddedilir. `git diff --check` dışında test veya sağlayıcı çağrısı yok. SCS360 SHA `3f6cf3da93273f22f9ff207af309966d282e6713` push/`ls-remote` doğrulandı. Alıcı adresinin kurumun izinli kayıtlı kontağı olduğunu doğrulama açık; canlı gönderim/KVKK kabulü değildir.
