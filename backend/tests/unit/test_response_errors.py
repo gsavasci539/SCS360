@@ -34,6 +34,34 @@ async def test_unhandled_exception_log_does_not_include_sensitive_exception_mess
     assert "RuntimeError" in caplog.text and "test-request" in caplog.text
 
 
+async def test_http_exception_does_not_echo_structured_sensitive_detail():
+    import json
+    from fastapi import HTTPException
+    from starlette.requests import Request
+    from app.core.middleware import http_exception_handler
+
+    request = Request({"type": "http", "method": "POST", "path": "/api/checkout", "headers": []})
+    request.state.request_id = "test-request"
+    response = await http_exception_handler(request, HTTPException(502, detail={"buyer": "TCKN-SENSITIVE-SENTINEL"}))
+    body = json.loads(response.body)
+    assert response.status_code == 502
+    assert body["message"] == "İstek tamamlanamadı" and body["detail"] == "İstek tamamlanamadı"
+    assert "TCKN-SENSITIVE-SENTINEL" not in response.body.decode()
+
+
+async def test_http_exception_keeps_safe_string_detail_compatibility():
+    import json
+    from fastapi import HTTPException
+    from starlette.requests import Request
+    from app.core.middleware import http_exception_handler
+
+    request = Request({"type": "http", "method": "GET", "path": "/api/organizations", "headers": []})
+    response = await http_exception_handler(request, HTTPException(404, detail="Kurum bulunamadı"))
+    body = json.loads(response.body)
+    assert response.status_code == 404 and body["message"] == "Kurum bulunamadı"
+    assert body["detail"] == "Kurum bulunamadı"
+
+
 async def test_actual_application_handlers_treat_ambiguous_identifiers_as_http_conflicts():
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient

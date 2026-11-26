@@ -103,8 +103,11 @@ async def app_exception_handler(request: Request, exc: AppException) -> Response
 async def http_exception_handler(request: Request, exc) -> Response:
     from fastapi.responses import JSONResponse
     message = exc.detail if isinstance(exc.detail, str) else "İstek tamamlanamadı"
+    # Framework/custom HTTPException details may be structured provider or
+    # validation payloads. Never serialize those objects back to the caller.
+    safe_detail = message if isinstance(exc.detail, str) else "İstek tamamlanamadı"
     return JSONResponse(status_code=exc.status_code, headers=exc.headers,
-        content=jsonable_encoder({**error_response(message), "detail": exc.detail,
+        content=jsonable_encoder({**error_response(message), "detail": safe_detail,
             "request_id": getattr(request.state, "request_id", None)}))
 
 
