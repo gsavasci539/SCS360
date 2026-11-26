@@ -1393,3 +1393,7 @@ Dosya kapsamı helper'ı `all` klasörüne erişimi kurum-geneli tenant rollerin
 ### 26 Kasım 2026 — Eski veli adaptöründe sağlık kayıtları öğretmen ilişkisine göre (WIP)
 
 `/api/parent/notices` altındaki ilaç kayıtları artık tenant'ın açık branch kapsamı ve `accessible_student_ids` ilişkisiyle sınırlandırılır; eski adaptör aynı şubedeki ilişkisiz öğrenci ilaç talebini göstermez. Hedefli `test_infirmary_workflow.py` regresyon kümesi: **3 PASS, 3 PostgreSQL varyantı SKIP**; izole SQLite. Kod SHA `ae0cb270c048e0c53fba5db43ce96ed7109e0494` normal push ve uzak SHA ile doğrulandı. Sıradaki iş: kalan öğrenci/sağlık verisi üreten özel sorguları denetlemek. Bu WIP'tir; tam sağlık verisi yüzeyi, production PostgreSQL veya KVKK/hukuk kabulü değildir.
+
+### 26 Kasım 2026 — API yanıtlarında dar CSP (WIP)
+
+`SecurityHeadersMiddleware`, `/api/` başarı ve hata yanıtlarına `default-src 'none'`, `frame-ancestors 'none'`, `base-uri 'none'`, `form-action 'none'` ve `object-src 'none'` CSP uygular. CSRF reddi yanıtı da kapsanır. Frontend/edge Nginx kaynak başlıkları mevcut; önceki canlı gözlem bunların dış hostta görünmediğini gösterdi. Test veya canlı yeniden kontrol/deploy yapılmadı. WIP; canlı başlıklar, Server sürümünün gizlenmesi, onaylı security.txt iletişim bilgisi, TCKN yaşam döngüsü ve KVKK/operasyon kabulü açıktır.

@@ -344,3 +344,8 @@ Sıradan personel ve dal/ilişki kapsamındaki kullanıcılar artık kurum genel
 ### 26 Kasım 2026 — Rapor verisi tenant dalına sınırlandı (WIP)
 
 Dashboard ve rapor endpointlerinde sıradan/ilişki kapsamlı hesapların boş branch ataması artık kurum geneli öğrenci, finans ve şube metriklerine eriştirmiyor. Rota tarafından belirlenmiş private,no-store indirme başlıkları merkezi middleware'de korunuyor. Hedefli geçici SQLite testleri 42 PASS, 16 PostgreSQL varyantı SKIP. Kod SHA 5ae0136c758a7b9652addc68114e08c7ee20fee8. İç SQL taraması ve canlı/bağımsız KVKK kabulü devam ediyor.
+
+
+## 26 Kasım 2026 — API yanıt CSP kapsamı (WIP)
+
+FastAPI `SecurityHeadersMiddleware` şimdi `/api/` yanıtlarına ve CSRF reddi yanıtlarına `default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'` gönderir. Bu, JSON/API yüzeyinde tarayıcı içeriği çalıştırmayı kapatan savunma katmanıdır; frontend CSP ve public edge Nginx yapılandırmasının yerini almaz. Bu değişiklik için test/build çalıştırılmadı ve canlı alan adı tekrar ölçülmedi. Daha önce kaydedilen canlı gözlemde güvenlik başlıkları görünmüyordu ve `security.txt` SPA HTML dönüyordu. Onaylı güvenlik iletişim adresi olmadan `security.txt` uydurulmayacak; edge sunucu başlıklarının gerçek dağıtımı ayrıca doğrulanmalı. Bu WIP, güvenlik garantisi veya KVKK uyum beyanı değildir.

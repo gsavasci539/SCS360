@@ -15,6 +15,7 @@ from app.core.web_session import ACCESS_COOKIE, require_csrf
 
 settings = get_settings()
 _TCKN_PATTERN = re.compile(r"(?<!\d)(?:\d[\s.-]?){10}\d(?!\d)")
+_API_CONTENT_SECURITY_POLICY = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
 
 
 def redact_tckn(value):
@@ -85,6 +86,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
                 response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
                 if request.url.path.startswith("/api/"):
+                    response.headers["Content-Security-Policy"] = _API_CONTENT_SECURITY_POLICY
                     response.headers["Cache-Control"] = "no-store, max-age=0"
                     response.headers["Pragma"] = "no-cache"
                 origin = request.headers.get("origin")
@@ -99,6 +101,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if request.url.path.startswith("/api/"):
+            response.headers["Content-Security-Policy"] = _API_CONTENT_SECURITY_POLICY
             cache_control = response.headers.get("Cache-Control", "")
             directives = {part.split("=", 1)[0].strip().casefold() for part in cache_control.split(",")}
             if "no-store" not in directives:

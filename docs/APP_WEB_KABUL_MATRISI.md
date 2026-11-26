@@ -653,3 +653,7 @@ Legacy dosya router helper'ı şubesiz tenant'ın kurum-geneli `all` klasörün�
 ### Güvenlik WIP — Eski ilaç bildirimi adaptöründe öğretmen ilişkisi (26.11.2026)
 
 Eski `/api/parent/notices` adaptörü teacher rolünü yalnız şubeyle sınırlandırıp aynı şubedeki ilişkisiz öğrencilerin ilaç kayıtlarını döndürmüyordur; şimdi yalnız atanmış/ilişkili öğrenci kapsamı kullanır. Hedefli geçici SQLite testleri **3 PASS, 3 PostgreSQL varyantı SKIP**. Kod `ae0cb270c048e0c53fba5db43ce96ed7109e0494`. Sağlık modülü bütünü, canlı veritabanı ve KVKK/hukuk kabulü açık.
+
+### Güvenlik WIP — Backend API CSP (26.11.2026)
+
+API başarı ve hata yanıtları ile CSRF ret yanıtlarına içerik çalıştırmayan CSP eklendi (`default-src 'none'`, `frame-ancestors 'none'`, `base-uri 'none'`, `form-action 'none'`, `object-src 'none'`). Uygulama içi ve Nginx kaynak ayarları canlı edge başlıklarının dağıtıldığını kanıtlamaz. Test/build/deploy yapılmadı; canlı header/security.txt kontrolü ve KVKK/TCKN operasyon kabulleri açık.
