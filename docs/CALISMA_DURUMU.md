@@ -1058,3 +1058,7 @@ Chatbot route, intent handler, konuşma geçmişi/context/date servisleri ve Ope
 ### Chatbot prompt loglarının daraltılması
 
 Intent detection prompt/query metni, tanınmayan tarih/dönem girdisi ve LLM JSON parse response gövdesi loglanmıyor. SCS360 `codex/source-sync-20261111` SHA `f4a635a9dbe494ff27591b26bfb00d56e673c260` normal push/`ls-remote` ile doğrulandı; statik `git diff --check` dışında test/build yok. Dış LLM veri işleme/aktarımının envanteri ve KVKK dayanağı belirlenmeden bu kod değişiklikleri KVKK uyumu veya canlı güvenliği göstermez.
+
+### 26 Kasım — Chatbot dataset dışa aktarımı (WIP)
+
+`/api/v1/chatbot/ai/export-dataset` seçili kurumun kullanıcı soruları ve asistan yanıtlarını ham biçimde indirebildiği için varsayılan olarak kapatıldı. Yalnız dağıtım operatörü `CHATBOT_DATASET_EXPORT_ALLOWED=true` ayarını açıkça verirse kullanılabilir; ayrıca açık kurum çalışma alanı gerekir. Bu ayar hukuki dayanak, veri sahibi bilgilendirmesi/izni, minimizasyon veya güvenli eğitim ortamı yerine geçmez. Statik `git diff --check` geçti; test/build çalıştırılmadı. WIP; tenant-admin audit metinleri, saklama/silme ve KVKK süreçleri açık.

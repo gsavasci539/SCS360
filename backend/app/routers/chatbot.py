@@ -1245,6 +1245,15 @@ async def export_fine_tuning_dataset(
     - csv: Tabular CSV format for BI and Excel
     """
     try:
+        # This export contains raw user questions and assistant responses, which
+        # may include personal or sensitive school information. Keep it disabled
+        # unless an operator explicitly enables the deployment after reviewing
+        # the applicable purpose, access, retention, and transfer controls.
+        if os.getenv("CHATBOT_DATASET_EXPORT_ALLOWED", "false").strip().lower() != "true":
+            raise HTTPException(status_code=503, detail="Dataset export is disabled")
+        if not current_user.organization_id:
+            raise HTTPException(status_code=403, detail="An institution workspace is required")
+
         format = format.lower().strip()
         if format not in {"jsonl", "alpaca", "llama", "csv"}:
             raise HTTPException(status_code=400, detail="Unsupported export format")

@@ -406,3 +406,9 @@ Chatbot intent sorgusu, beklenmeyen dönem metni ve LLM JSON parse gövdesi de l
 
 Intent endpoint'ine geçmişteki serbest mesajlar yerine yalnız bilinen intent etiketleri eklenir; mevcut sorgu metni hâlâ LLM'ye gider ve harici sağlayıcı varsayılan kapalıdır. SCS360 SHA `4b7faf049fd1cb083aa0a96fb2e393d3f361f3df`. Test/build yok; bu KVKK veya sağlayıcı kabulü değildir.
 Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kurum UUID'leri artık yoktur; test/build yapılmadı. SHA `dd386dd1c4e12778ce7ddfb1ac467e9d899116b7`; eski canlı loglar ve audit ekranı erişimi ayrı doğrulanacak.
+
+## Güvenlik kabul durumu — chatbot veri dışa aktarımı (WIP)
+
+- `/api/v1/chatbot/ai/export-dataset` ham sohbet soru/yanıtı içerebildiğinden varsayılan kapalıdır; açık operasyon ayarı `CHATBOT_DATASET_EXPORT_ALLOWED=true` ve seçili kurum çalışma alanı gerektirir.
+- Bu kaynak katmanı kontrolüdür. Sağlayıcı/amaç/hukuki dayanak, aydınlatma ve gerekli izin, alan minimizasyonu, eğitim ortamı, saklama/silme ve canlı yapılandırma doğrulanmadan güvenlik ya da KVKK kabulü sayılmaz.
+- Statik `git diff --check` geçti; test veya derleme yapılmadı.
