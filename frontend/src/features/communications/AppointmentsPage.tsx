@@ -115,7 +115,7 @@ function ScopedAppointmentsPage() {
     let received = false;
     try {
       if (!verifyOnly) {
-        const { data } = await api.patch<ApiResponse<DataRecord>>(`${url}/status`, edit, config);
+        const { data } = await api.put<ApiResponse<DataRecord>>(`${url}/status`, edit, config);
         received = true;
         if (!data.success || data.data.id !== detail.id || data.data.status !== edit.status) {
           throw new Error("Randevu yanıtı doğrulanamadı.");

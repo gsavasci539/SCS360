@@ -40,7 +40,7 @@ it("reads back an approval after a lost response, preserves the note, then verif
   fireEvent.click(retry);
   await screen.findByText("Değişiklik sunucuda doğrulandı.");
   expect(api.patch).toHaveBeenCalledTimes(1);
-  expect(api.patch).toHaveBeenCalledWith("/appointments/meeting/status", { status: "APPROVED" }, expect.any(Object));
+  expect(api.put).toHaveBeenCalledWith("/appointments/meeting/status", { status: "APPROVED" }, expect.any(Object));
   expect(screen.getByText("Kayıtlı not")).toBeInTheDocument();
   vi.mocked(api.patch).mockImplementationOnce(async () => ({
     data: { success: true, data: update({ feedback_notes: "Güncel öğretmen notu" }) },
@@ -49,7 +49,7 @@ it("reads back an approval after a lost response, preserves the note, then verif
   fireEvent.change(screen.getByLabelText("Öğretmen notu"), { target: { value: "Güncel öğretmen notu" } });
   fireEvent.click(screen.getByRole("button", { name: "Notu kaydet" }));
   await screen.findByText("Güncel öğretmen notu");
-  expect(api.patch).toHaveBeenLastCalledWith("/appointments/meeting/status", {
+  expect(api.put).toHaveBeenLastCalledWith("/appointments/meeting/status", {
     status: "APPROVED", feedback_notes: "Güncel öğretmen notu",
   }, expect.any(Object));
 });
@@ -62,5 +62,5 @@ it("shows cancellation as the only parent status action", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "İptal et" }));
   await screen.findByText("İptal edildi");
   expect(screen.queryByRole("button", { name: /Onayla|Reddet|Notu düzenle/ })).toBeNull();
-  expect(api.patch).toHaveBeenCalledWith("/appointments/meeting/status", { status: "CANCELLED" }, expect.any(Object));
+  expect(api.put).toHaveBeenCalledWith("/appointments/meeting/status", { status: "CANCELLED" }, expect.any(Object));
 });
