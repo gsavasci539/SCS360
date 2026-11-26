@@ -1304,3 +1304,7 @@ Development SQL echo korunarak SQLAlchemy engine için `hide_parameters=True` ek
 ### 26 Kasım 2026 — Noktalı TCKN hata metinlerinde maskeleniyor (WIP)
 
 Backend ve frontend development hata filtresi kesintisiz, boşluklu, tireli ve noktalı 11 haneli sayı dizilerini maskeler. Hedefli testler: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod checkpoint `65ca3da993e76c7840245b4724541fb885d9049a` remote dalda doğrulandı. Diğer PII, production telemetry/APM, log ve provider payload'ları için kabul değildir.
+
+### 26 Kasım 2026 — Genel kurum response şemasında TCKN alanı kaldırıldı (WIP)
+
+OrganizationResponse input şemasını miras almıyor; tax_number/TCKN response alanı yok. Hedefli 	est_security_hardening.py: **25 PASS**. Kod checkpoint `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote dalda doğrulandı. Diğer endpoint/PII kapsamı ve KVKK/canlı kabulü ayrıca açık.

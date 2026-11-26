@@ -576,3 +576,7 @@ SQLAlchemy engine `hide_parameters=True` ile oluşturuluyor. `test_security_hard
 ### Güvenlik checkpoint'i — noktalı TCKN hata filtresi (WIP, 26.11.2026)
 
 Hata yanıtı ve development diagnostics katmanında boşluk, tire ve nokta ayraçlı 11 haneli diziler de maskeleniyor. Backend 7 PASS, frontend 2 PASS. Kaynak SHA `65ca3da993e76c7840245b4724541fb885d9049a` remote `codex/source-sync-20261111` dalında doğrulandı. Production log/telemetry/APM, diğer kişisel veriler ve provider payload'ları ayrıca kabul edilmeli; bu değişiklik KVKK/canlı kabulü değildir.
+
+### Güvenlik checkpoint'i — kurum response DTO'sunda TCKN yok (WIP, 26.11.2026)
+
+Kurum input şemasından ayrı response DTO'su TCKN/VKN alanını hiç tanımlamaz. Güvenlik regresyon grubu 25 PASS. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` remote branch'te doğrulandı. Bu, tüm API veya KVKK/canlı kabulü değildir.

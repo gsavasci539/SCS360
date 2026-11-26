@@ -297,3 +297,7 @@ SQLAlchemy motoru `hide_parameters=True` kullanıyor; development ortamında sta
 ### 26 Kasım 2026 — Noktalı TCKN hata metni filtresi (WIP)
 
 Backend hata yanıtı ve frontend development diagnostic filtresi, boşluk/tire biçimlerine ek olarak nokta ile gruplandırılmış 11 haneli dizileri de maskeler. Hedefli regresyonlar: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod SHA `65ca3da993e76c7840245b4724541fb885d9049a` normal push/`ls-remote` ile doğrulandı. Farklı kimlik yazımları, genel PII, production telemetry/APM, diğer loglar ve provider payload'ları kapsam dışıdır; WIP, KVKK veya canlı kabulü değildir.
+
+### 26 Kasım 2026 — Güvenli kurum yanıt DTO'su (WIP)
+
+OrganizationResponse artık create/input şemasından türemiyor ve TCKN/VKN alanı içermez; genel response DTO'suyla yanlışlıkla açık kimlik serileştirme yolu daraltıldı. 	est_security_hardening.py: **25 PASS**. Kod SHA `d6b39237963b8ff80e3f3bd87502ca169f9a6440` normal push/`ls-remote` ile doğrulandı. Canlı API'nin tüm response'ları, diğer PII alanları, retention ve KVKK/hukuki kabulü kapsam dışıdır.
