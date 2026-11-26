@@ -235,3 +235,5 @@ The `.xlsx` path also checks ZIP metadata before pandas parsing: no more than 1,
 ### 26 Nov 2026 — Safe external meeting links (WIP)
 
 Frontend only renders an appointment meeting link when it parses as an absolute HTTPS URL without embedded user information. The new-tab link sets `noopener noreferrer` and `no-referrer`; invalid or non-HTTPS values are not rendered as links. Source checkpoint `31afdcc12754efd94a945c691bd512ea7e926205` was pushed normally and verified with `ls-remote`. No tests/build/API runtime were run; WIP.
+
+Static review also found the appointment create form is not aligned with the backend DTO and contains fixed example identity fields; the status action uses `PATCH` while the backend route is `PUT /{id}/status`. This was not changed in this checkpoint. Align the UI with tenant-scoped student/teacher/time-slot options before accepting the workflow; do not treat it as verified security or feature behavior.

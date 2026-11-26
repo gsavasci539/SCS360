@@ -524,3 +524,5 @@ Salt okunur HEAD `https://scs360.com.tr/` HTTP 200 yanıtında `Server: nginx/1.
 Öğrenci `.xlsx` yükleme yoluna ZIP üye sayısı (`<= 1.024`) ve toplam açılmış içerik (`<= 64 MiB`) sınırı da eklendi. Kaynak SHA `041dad12cb04e67514bdc8bc3f2cc925f79977a8` remote branch'te doğrulandı. Test/build yok; sıkıştırma bombası örnekleri, eşzamanlı yükleme kaynak sınırları ve canlı/KVKK kabulü açık.
 
 Randevu toplantı linki frontend'de yalnız kullanıcı bilgisi içermeyen HTTPS URL olduğunda görünür; yeni sekme `noopener noreferrer`, referrer `no-referrer` kullanır. Kaynak SHA `31afdcc12754efd94a945c691bd512ea7e926205` remote branch'te doğrulandı. Yalnız statik diff check; test/build/API runtime yok, WIP.
+
+Randevu DTO'su henüz WIP: UI create payload'u sabit örnek kullanıcı ve backend alan adlarıyla uyuşmayan `date/time_slot` içeriyor; status update `PATCH` kullanırken backend `PUT /{id}/status` sunuyor. Canlı kabul öncesi gerçek options/slot API'siyle eşleştirilmeli; statik gözlem, API runtime/test yok.

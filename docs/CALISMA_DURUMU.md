@@ -1188,6 +1188,12 @@ Yalnız `git diff --check` yapıldı; test/build/DB runtime yok. WIP: tenant/bra
 
 Öğrenci Excel içe aktarımı `.xlsx` ZIP merkez dizinini açmadan önce en fazla 1.024 üye ve toplam 64 MiB açılmış içerik şartı uygular; sınır aşımı 413, bozuk arşiv genel 400 yanıtı alır. Böylece sıkıştırılmış küçük ama açılmış boyutu yüksek çalışma kitaplarına karşı uygulama katmanı sınırı eklendi. Kaynak SHA `041dad12cb04e67514bdc8bc3f2cc925f79977a8` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check`; kötü niyetli workbook ve eşzamanlı kaynak tüketimi test edilmedi; WIP.
 
+### 26 Kasım 2026 — Randevu toplantı bağlantısı (WIP)
+
+Randevu toplantı linki frontend'de yalnız mutlak HTTPS URL, kullanıcı bilgisi içermeyen URL için gösterilir; yeni sekme `noopener noreferrer`, referrer `no-referrer` kullanır. Kod SHA `31afdcc12754efd94a945c691bd512ea7e926205` normal push/`ls-remote` ile doğrulandı. Test/build/API runtime yok.
+
+Sıradaki frontend işi: `AppointmentsPage` create formu sabit örnek kullanıcı alanları ve backend `AppointmentCreate` DTO'sundan farklı payload gönderiyor; status güncellemesi de API'nin `PUT /{id}/status` metoduyla eşleşmiyor. DTO'ya bağlı gerçek öğrenci/öğretmen/slot seçenekleriyle düzelt; mevcut role/tenant/parent semantiğini koru ve izole doğrulamayı test izni/kullanım hakkı elverdiğinde yap.
+
 ### 26 Kasım 2026 — Randevu dış toplantı bağlantısı güvenli açılış (WIP)
 
 Frontend randevu ekranı toplantı URL'sini artık yalnız mutlak HTTPS ve kullanıcı adı/parolası içermiyorsa bağlantı olarak gösterir; yeni sekmede `noopener noreferrer` ve `no-referrer` uygular. Güvenilmeyen/bozuk/HTTPS olmayan URL için katıl bağlantısı çizilmez. Kaynak SHA `31afdcc12754efd94a945c691bd512ea7e926205` normal push/`ls-remote` ile doğrulandı. Yalnız hedefli `git diff --check`; test/build/API runtime yok. WIP.
