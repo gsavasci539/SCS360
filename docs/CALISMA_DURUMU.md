@@ -1292,3 +1292,7 @@ HTTPException ve AppException mesaj/error alanlarında kesintisiz 11 haneli dizi
 ### 26 Kasım 2026 — Frontend hata tanısında TCKN gizleme (WIP)
 
 Development-only reportClientError, konsol hata context/message içindeki kesintisiz 11 haneli dizileri maskeler. Axios header/yanıt gövdesini loglamama davranışı sürer. Hedefli diagnostics.test.ts: 2 PASS. Code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee remote branch'te doğrulandı. Production telemetri, sunucu logları ve başka biçimli kişisel veri kapsanmıyor.
+
+### 26 Kasım 2026 — Hata tanısında biçimli TCKN maskeleme (WIP)
+
+Backend hata yanıtlarındaki ve frontend development diagnostic context/message alanlarındaki 11 haneli kesintisiz, boşluklu veya tireli sayı desenleri maskeleniyor. Hedefli testler: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod checkpoint `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` `codex/source-sync-20261111` üzerinde normal push/`ls-remote` ile doğrulandı. Önceden mevcut, ilgisiz çalışma ağacı değişiklikleri bu checkpoint'e alınmadı. Kapsam production telemetry, diğer PII biçimleri, log/APM ve provider payload'ları değildir; WIP, KVKK veya canlıya hazır kabulü değildir.

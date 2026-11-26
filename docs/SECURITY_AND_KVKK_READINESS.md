@@ -285,3 +285,7 @@ API hata işleyicileri string mesajların içindeki kesintisiz 11 haneli sayı d
 ### Frontend geliştirme tanısında TCKN azaltımı (WIP)
 
 Development-only reportClientError artık console.error öncesi context ve message içindeki kesintisiz 11 haneli dizileri maskeler; Axios header/response gövdesi yazılmama davranışı korunur. diagnostics.test.ts 2 PASS. Code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee normal push/ls-remote doğrulandı. Bu yalnız frontend geliştirme konsolunu kapsar; production telemetry SDK, sunucu logları ve formatlı TCKN ayrıca denetlenmelidir.
+
+### 26 Kasım 2026 — Hata tanısında biçimli TCKN maskeleme (WIP)
+
+Backend hata yanıtı filtresi ve frontend geliştirme tanısı artık kesintisiz, boşluk veya tire ile ayrılmış 11 haneli sayı desenlerini `[gizlendi]` olarak maskeler. Hedefli geçici regresyonlar: `test_response_errors.py` 7 PASS; `diagnostics.test.ts` 2 PASS. Kod `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` normal push ve `ls-remote` ile doğrulandı. Bu desen filtresi diğer kişisel veriyi, farklı biçimleri, production telemetry/APM'yi, diğer logları veya provider payload'larını kapsamaz; genel PII güvenliği ya da KVKK/live kabulü değildir. Gerçek TCKN/veritabanı/sağlayıcı kullanılmadı.

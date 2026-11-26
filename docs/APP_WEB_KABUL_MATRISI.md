@@ -564,3 +564,7 @@ API hata mesajları/error alanlarındaki kesintisiz 11 haneli diziler maskeleniy
 ### Frontend dev tanısında TCKN maskeleme (WIP, 26.11.2026)
 
 reportClientError geliştirme konsoluna yazmadan önce 11 haneli dizileri maskeler. diagnostics.test.ts 2 PASS; code SHA 57bb398cc0be970e2f8afd3ab09e351987b628ee remote doğrulandı. Production logging/telemetry ve diğer PII kabulü açık.
+
+### Güvenlik checkpoint'i — hata metninde biçimli TCKN (WIP, 26.11.2026)
+
+Backend hata filtresi ve frontend development tanısı 11 haneli dizileri kesintisiz/boşluk/tire biçimlerinde maskeliyor. Backend hedefli regresyonu 7 PASS, frontend `diagnostics.test.ts` 2 PASS. Kod SHA `f2cb5d4d55c1b5636ed63e01116ca8b72e02532f` remote `codex/source-sync-20261111` dalında doğrulandı. Bu dar kapsamlı korumadır; production log/telemetry/APM, diğer kişisel veri, farklı biçimler ve sağlayıcı gövdeleri ayrıca incelenmeli. KVKK/canlı kabulü değildir.
