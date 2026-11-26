@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Optional
@@ -47,6 +48,9 @@ from app.application.services.chatbot.handlers import HandlerDispatcher
 from app.application.services.chatbot.intent_schemas import ResolvedIntent
 from app.application.services.chatbot.intent_service import IntentDetectionService
 from app.application.services.chatbot.llm_provider import get_llm_provider
+from app.application.services.chatbot.transfer_policy import (
+    enforce_chatbot_transfer_policy,
+)
 from app.application.services.chatbot.role_config import get_role_config
 from app.application.services.chatbot.dataset_export import DatasetExportService
 from app.application.services.chatbot.sentiment_analysis import analyze_sentiment
@@ -75,6 +79,24 @@ STAFF_ROLES = {"accountant", "staff", "canteen_staff"}
 settings = get_settings()
 
 # Configure LLM provider based on settings
+# Prompt text can contain personal and sensitive school information. External
+# endpoints stay disabled unless the deployment explicitly opts in.
+external_chatbot_transfer_allowed = (
+    os.getenv("CHATBOT_EXTERNAL_DATA_TRANSFER_ALLOWED", "false").strip().lower() == "true"
+)
+if settings.CHATBOT_LLM_PROVIDER == "ollama":
+    enforce_chatbot_transfer_policy(
+        "ollama",
+        settings.OLLAMA_BASE_URL or "http://localhost:11434/v1",
+        external_transfer_allowed=external_chatbot_transfer_allowed,
+    )
+elif settings.CHATBOT_LLM_PROVIDER == "openai":
+    enforce_chatbot_transfer_policy(
+        "openai",
+        settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
+        external_transfer_allowed=external_chatbot_transfer_allowed,
+    )
+
 if settings.CHATBOT_LLM_PROVIDER == "ollama":
     llm_provider = get_llm_provider(
         provider_type="ollama",
