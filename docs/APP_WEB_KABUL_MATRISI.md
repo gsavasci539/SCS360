@@ -424,3 +424,7 @@ Chatbot request loglarında sorgu metni ve kullanıcı/öğrenci/öğretmen/kuru
 Chatbot dış LLM hedefleri açık transfer ayarına ek olarak `CHATBOT_EXTERNAL_DATA_TRANSFER_HOSTS` içinde tam host eşleşmesi ve HTTPS/443 gerektirir; allowlist varsayılan boştur. Statik diff kontrolü dışında test/build çalıştırılmadı. Dış ağ egress ve veri işleme şartları ayrıca doğrulanmalı.
 Parola sıfırlama tokenı paint öncesi component state'e alınır ve history replace ile URL'den çıkarılır. SCS360 SHA `798d7f1521f8b4e150e70f4c9fbcf9948141335a` push/`ls-remote` ile doğrulandı; statik diff dışında test/build yok. Mail/ingress logları ayrıca incelenmeli.
 Kaynak checkpoint SCS360 `codex/source-sync-20261111` SHA `1f69701d2d656a1374d7ba67b10bb1dd8843f639` push/`ls-remote` ile doğrulandı. Canlı DNS/firewall egress ve sağlayıcı veri işleme kabulü yapılmadı.
+
+### 26 Kasım — Chatbot veri export filtresi (WIP)
+
+Dışa aktarım artık seçili kurum kapsamından yalnız onaylanmış (`VERIFIED`) ve eğitim için hazır işaretlenmiş (`is_fine_tuning_ready=true`) kayıtları verir; API, UI parametrelerinden bağımsız olarak bu filtreleri uygular. Kurum seçilmemiş istek reddedilir. Statik `git diff --check` geçti; test/build yok. SCS360 `codex/source-sync-20261111` SHA `670122f94b9c2b46576b2802e5c4adb50b20aecc` normal push ve `ls-remote` ile doğrulandı. Canlı dağıtım, hukuki/KVKK ya da sağlayıcı kabulü değildir; erişim izi ve veri saklama/silme çalışması açık.

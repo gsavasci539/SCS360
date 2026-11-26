@@ -91,3 +91,9 @@ Audit listesi API/UI gönderen adını, kullanıcı/kurum kimliğini, session ID
 Audit listesi API’si ve Web ekranı ad/UUID/session/dahili metadata göndermez; ham soru ve yanıt için varsayılan kapalı audit-text ve tenant-scope kapıları sürer. Statik diff kontrolü; test/build yok.
 SCS360 kaynak SHA `867c48278b74ce2f0e68250890fc80bf728123bb` push/`ls-remote` ile doğrulandı. Sonraki adımda eski kayıt silme/retention süresi belirlenmeli; şu an gerçek politika yok.
 Parola yenileme tokenı paint öncesi component state'e alınıp query/history'den çıkarılır; POST gövdesiyle gönderilir. Eski browser history, mail click tracking ve ilk HTTP access logları temizlenmez. SCS360 SHA `798d7f1521f8b4e150e70f4c9fbcf9948141335a` push/`ls-remote` doğrulandı; test/build yok.
+
+### 26 Kasım 2026 — Dataset export yalnız incelenmiş kayıtları alır (WIP)
+
+Backend export servisi tenant kimliğini zorunlu alır ve kendi sorgusunda yalnız `VERIFIED` + `is_fine_tuning_ready=true` satırlarını seçer; endpoint tenant yoksa 403 döndürür. İstemci kayıt durumuna göre bu sınırı gevşetemez. Üç kaynak dosyası için statik `git diff --check` geçmiştir; test/build çalıştırılmadı. SCS360 normal push/`ls-remote`: `670122f94b9c2b46576b2802e5c4adb50b20aecc`.
+
+Bu, mevcut ayrı varsayılan-kapalı export ve audit-text ayarlarına ek kaynak filtresidir. Eğitim amacı/hukuki dayanak, bilgilendirme/izin, sağlayıcı sözleşmeleri ve aktarım, gerçek operatör audit izi, saklama/silme, log/veritabanı/yedek, canlı konfigürasyon ve bağımsız güvenlik incelemesi açık kalır. KVKK veya canlı güvenlik kabulü değildir.
