@@ -1345,3 +1345,10 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 - RFID kart listeleme rotasındaki canteen rol istisnası kaldırıldı; tüm roller repository çağrısında organization_id ve ranch_id filtresini kullanıyor. Şubeye atanmış kantin hesabı için kurum/şube dışı kartı döndürmeyen regresyon eklendi.
 - Hedefli SQLite testi 	est_canteen_rfid_list_stays_inside_assigned_branch: **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b, uzak codex/source-sync-20261111 dalında doğrulandı.
 - Bu dar endpoint kontrolü tüm Core sorgularının, diğer PII akışlarının veya prod ortamının kabulü değildir. Sonraki somut iş: kalan özel Core sorgularını ve branch-bound read/write yollarını taramak; dış TLS/header/security.txt ve runtime kontrollerini gerçek dağıtım sonrası doğrulamak.
+
+
+### 26 Kasım 2026 — Şubesiz kantin RFID ve mesaj alıcı sızıntısı kapatıldı (WIP)
+
+- RFID liste rotasında kantin rolüne özel kurum/şube filtresi bypass'ı kaldırıldı. Hedefli SQLite regresyonu **1 PASS**; kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b remote dalda doğrulandı.
+- Mesaj alıcı sorgusunda şubesiz sıradan personel için boş şube ataması artık kurum geneli alıcı listesine dönüşmüyor; sonuç boş. org_admin, kurum sahibi ve diğer açık kurum-geneli rollerin kapsamı korunuyor. Hedefli SQLite regresyonu **1 PASS, 1 PostgreSQL varyantı SKIP**; kod SHA 7469853b9a61abc7f5c15c70539e21c54ac47cc3 remote dalda doğrulandı.
+- Sıradaki somut iş: branch scope kullanan kalan özel/Core SQL endpoint'lerini inceleyip yetkisiz alıcı/öğrenci/şube erişimleri için izole regresyon eklemek. WIP; tüm uçlar, TCKN veri yaşam döngüsü, production runtime, KVKK/hukuk veya canlı kabulü değildir.

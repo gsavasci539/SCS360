@@ -615,3 +615,10 @@ Kurum oluşturma audit'i artık şifreli vergi kimlik değerini çözmeden input
 ### Güvenlik checkpoint'i — Kantin RFID şube izolasyonu (WIP, 26.11.2026)
 
 Kantin rolünün RFID listesinde kurum/şube filtresini atlayan özel dal kaldırıldı. Regresyon: 	est_canteen_rfid_list_stays_inside_assigned_branch (izole SQLite) **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b remote dalda doğrulandı. Tüm SQL/API erişimleri veya KVKK/canlı kabulü değildir; kalan Core sorguları ve prod dağıtımındaki dış güvenlik başlıkları açık.
+
+
+### Güvenlik checkpoint'i — Şubesiz alıcı listesi ve RFID (WIP, 26.11.2026)
+
+- Kantin RFID listesi artık her rolde tenant kurum/şube filtresini uygular; SQLite regresyonu 1 PASS, kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b.
+- Mesaj alıcısı keşfinde atanmamış normal personel boş kurum-geneli liste alır; geniş kurum rolleri korunur. Hedefli SQLite regresyonu 1 PASS, 1 PostgreSQL varyantı SKIP; kod SHA 7469853b9a61abc7f5c15c70539e21c54ac47cc3.
+- Bu testler izole yerel SQLite kullanır. Diğer SQL/API yolları, TCKN/PII tüm kanalları ve deploy sonrası internet yüzeyi ayrıca kabul edilmelidir; WIP, KVKK veya canlı kabulü değildir.
