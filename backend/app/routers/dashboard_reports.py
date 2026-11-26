@@ -1426,6 +1426,23 @@ async def create_notification(
     )
 
 
+@router.get("/api/notifications/branch-options")
+async def notification_branch_options(
+    tenant: TenantContext = Depends(PermissionChecker("notification.write")),
+    db: AsyncSession = Depends(get_db, scope="function"),
+):
+    if not tenant.organization_id:
+        raise ForbiddenException("Şube seçimi için bir kurum seçilmelidir")
+    query = select(Branch.id, Branch.name).where(
+        Branch.organization_id == tenant.organization_id,
+        Branch.deleted_at.is_(None),
+    )
+    if tenant.branch_ids:
+        query = query.where(Branch.id.in_(tenant.branch_ids))
+    rows = (await db.execute(query.order_by(Branch.name, Branch.id).limit(200))).all()
+    return success_response([{"id": str(row.id), "name": row.name} for row in rows])
+
+
 @router.delete("/api/notifications/{job_id}")
 async def delete_notification(
     job_id: UUID,

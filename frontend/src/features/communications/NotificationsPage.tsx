@@ -21,6 +21,7 @@ export function NotificationsPage() {
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const { showToast } = useToast();
   const can = useAuthStore((s) => s.can);
+  const assignedBranchIds = useAuthStore((s) => s.user?.branch_ids ?? []);
 
   async function load(page = data.page) {
     setLoading(true);
@@ -136,14 +137,41 @@ export function NotificationsPage() {
         />
       )}
 
-      <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} onSuccess={() => load()} />
+      <CreateModal
+        open={createOpen}
+        branchRequired={assignedBranchIds.length > 1}
+        onClose={() => setCreateOpen(false)}
+        onSuccess={() => load()}
+      />
     </>
   );
 }
 
-function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
+function CreateModal({ open, branchRequired, onClose, onSuccess }: {
+  open: boolean;
+  branchRequired: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const { showToast } = useToast();
+  const [branches, setBranches] = useState<Array<{ id: string; name: string }>>([]);
+  const [branchError, setBranchError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    setBranchError("");
+    api.get<ApiResponse<Array<{ id: string; name: string }>>>(
+      "/notifications/branch-options",
+      { params: { limit: 200 } },
+    ).then((response) => {
+      if (active) setBranches(response.data.data);
+    }).catch((error) => {
+      if (active) setBranchError(apiMessage(error));
+    });
+    return () => { active = false; };
+  }, [open]);
 
   async function submit(values: any) {
     try {
@@ -186,6 +214,17 @@ function CreateModal({ open, onClose, onSuccess }: { open: boolean; onClose: () 
             <option value="STUDENTS">Öğrenciler</option>
           </select>
         </Field>
+        {(branchRequired || branches.length > 0) && (
+          <Field label="Şube" required={branchRequired} error={errors.branch_id?.message as string}>
+            <select {...register("branch_id", {
+              required: branchRequired ? "Şube seçimi zorunludur." : false,
+            })}>
+              <option value="">{branchRequired ? "Şube seçin" : "Kurum geneli"}</option>
+              {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+            </select>
+            {branchRequired && branchError && <small role="alert">Şubeler yüklenemedi: {branchError}</small>}
+          </Field>
+        )}
         <Field label="Planlanan tarih" error={errors.scheduled_for?.message as string}>
           <input type="datetime-local" {...register("scheduled_for")} />
         </Field>
