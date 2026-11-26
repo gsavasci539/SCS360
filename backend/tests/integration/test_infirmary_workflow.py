@@ -8,7 +8,9 @@ from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.dates import school_today, school_day_bounds
 from app.domain.entities.health import HealthRecord, MedicationLog, MedicationSchedule
-from app.infrastructure.models.models import Permission, Role, RolePermission, User, ClassTeacher
+from app.infrastructure.models.models import Permission, Role, RolePermission, Student, User, ClassTeacher
+from app.core.tenant import TenantContext
+from app.routers.operations import live_parent_notices
 
 
 @pytest.fixture
@@ -215,3 +217,23 @@ async def test_teacher_medication_reader_includes_direct_student_assignment_with
     foreign = await client.get("/api/teacher/medicine-requests", headers=headers(data["teacher"]),
         params={"branch_id": str(data["other_branch"].id)})
     assert foreign.status_code == 200 and foreign.json()["data"] == []
+
+
+async def test_legacy_notice_adapter_honors_teacher_student_relationship_scope(infirmary_client):
+    _, sessions, data = infirmary_client
+    async with sessions() as db:
+        unrelated = Student(first_name="Unassigned", last_name="Clinic", organization_id=data["org"].id,
+            branch_id=data["branch"].id, class_id=data["other_class"].id)
+        db.add(unrelated)
+        await db.flush()
+        db.add_all([MedicationSchedule(student_id=data["children"][0].id, medication_name="Related clinic record",
+                dosage="Test instruction", frequency="10:00", start_date=school_today()),
+            MedicationSchedule(student_id=unrelated.id, medication_name="Unrelated clinic record",
+                dosage="Test instruction", frequency="10:00", start_date=school_today())])
+        await db.commit()
+        tenant = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+            branch_ids=[data["branch"].id], permissions={"health.read"}, role_slugs={"teacher"})
+        db.info["tenant_context"] = tenant
+        notices = await live_parent_notices(db, tenant)
+    assert {item["student_id"] for item in notices} == {str(data["children"][0].id)}
+    assert "Unrelated clinic record" not in {item["details"]["medicine_name"] for item in notices}

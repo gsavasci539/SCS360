@@ -65,11 +65,18 @@ async def live_parent_notices(db: AsyncSession, tenant: TenantContext) -> list[d
     from app.domain.entities.health import MedicationSchedule
     from app.infrastructure.models.models import Student
 
-    conditions = []
+    from app.core.student_access import accessible_student_ids
+    from app.core.tenant_guard import scope_filters
+
+    ids = await accessible_student_ids(db, tenant)
+    branches, _, _, _ = scope_filters(tenant, ids)
+    conditions = [Student.branch_id.in_(branches)]
     if tenant.organization_id:
         conditions.append(Student.organization_id == tenant.organization_id)
     if tenant.branch_ids:
         conditions.append(Student.branch_id.in_(tenant.branch_ids))
+    if ids is not None:
+        conditions.append(Student.id.in_(ids))
 
     query = (
         select(MedicationSchedule, Student)
