@@ -1223,3 +1223,9 @@ Yalnız `git diff --check` ve kaynak incelemesi; test/build/migration/DB/API/pro
 ### 26 Kasım 2026 — Checkout kimlik alanını varsayılan maskeleme (WIP)
 
 Ödeme formundaki TCKN/pasaport alanı varsayılan password maskesine alındı; kullanıcı isterse göster/gizle kontrolüyle geçici görünür yapabilir. Tarayıcı `autocomplete` kapalı. Bu yalnız ekrandan omuz üstü görünürlüğü azaltır; DOM/React belleğindeki değeri veya ödeme isteğinin sağlayıcıya aktarımını ortadan kaldırmaz. Yalnız statik `git diff --check`; UI testi/build/provider çağrısı yok. SCS360 kod SHA `da315d1e336bac6f4d05269ea842600b56379e1b` normal push ile `codex/source-sync-20261111` dalında doğrulandı. Sonraki somut iş migration ve PII görünürlük sözleşmesinin geçici DB/API doğrulaması; WIP, güvenlik/KVKK kabulü değil.
+
+### 26 Kasım 2026 — Kurum TCKN/VKN okuma yetkisi ve erişim izi (WIP)
+
+Kurum listesi artık vergi numarasını hiç döndürmez. Tekil kurum detayında tam değer yalnız platform yöneticisi veya aktif kurum sahibi rolüne verilir; her gerçek görüntüleme, değer içermeyen `ORGANIZATION_TAX_IDENTIFIER_READ` audit olayı üretir. `org.write` kullanıcısı yeni numara gönderirse yalnız gönderdiği değer response'a yansır; ilgisiz kurum düzenlemesi mevcut değeri açığa çıkarmaz. Web formunda boş/gizli alan payload'dan çıkarılır ve mevcut değer korunur.
+
+Yalnız değişen dosyalarda `git diff --check`; API/tenant/audit/frontend test veya build çalıştırılmadı. Audit izin/retention politikası, rol matrisi ve form geri okuması geçici DB'de doğrulanmalı. SCS360 kod SHA `af0671007f4106e7b11dee5a23522e07813febcd` normal push ve `ls-remote` ile `codex/source-sync-20261111` dalında doğrulandı. WIP; canlı/KVKK kabulü değildir.

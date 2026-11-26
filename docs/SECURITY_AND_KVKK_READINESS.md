@@ -252,3 +252,7 @@ Bu koruma eski dump/yedekleri, logları, PDF/receipt kayıtlarını veya ödeme 
 ## Checkout kimlik alanı maskesi — 26 Kasım 2026 WIP
 
 Web okul ödeme formu TCKN/pasaport değerini varsayılan maskeler, göster/gizle düğmesini sunar ve `autocomplete="off"` kullanır. Değer işlem hazırlanana kadar form/React belleğindedir ve gerekli ödeme isteğiyle sunucuya/provider'a gider; bu maske şifreleme veya aktarımın hukuki dayanak/onay kanıtı değildir. Yalnız `git diff --check`, UI/API testi ve provider runtime yok. Kaynak SHA `da315d1e336bac6f4d05269ea842600b56379e1b` normal push/`ls-remote` ile doğrulandı. Canlı kabul açık.
+
+## Kurum vergi numarasına erişim izi — 26 Kasım 2026 WIP
+
+Organization list response'ları TCKN/VKN içermez. Tekil detayda yalnız platform yönetimi/aktif owner rolü tam değeri alır; gerçek okuma, değeri içermeyen `ORGANIZATION_TAX_IDENTIFIER_READ` audit olayı yazar. Genel `org.write` tek başına mevcut değeri göstermez; boş form alanı update payload'ından çıkarılarak değer silinmeden korunur. API, rol ve UI regresyonları çalıştırılmadı; audit retention/erişim ilkesi ve canlı kabul açık. Kod commit `af0671007f4106e7b11dee5a23522e07813febcd` normal push/`ls-remote` ile doğrulandı.
