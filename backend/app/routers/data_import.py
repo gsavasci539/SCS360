@@ -50,8 +50,12 @@ async def parse_excel_file(file: UploadFile) -> list[dict]:
         return cleaned_data
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Dosya okuma hatası: {str(e)}")
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "import_file_parse_failed exception_type=%s", type(exc).__name__
+        )
+        raise HTTPException(status_code=400, detail="İçe aktarma dosyası okunamadı") from None
 
 
 @router.post("/students")

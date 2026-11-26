@@ -1351,8 +1351,9 @@ async def export_fine_tuning_dataset(
     
     except HTTPException:
         raise
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        logger.warning("chatbot_dataset_export_rejected invalid_data")
+        raise HTTPException(status_code=400, detail="Dışa aktarım isteği doğrulanamadı") from None
     except Exception as e:
         logger.error("chatbot_dataset_export_failed exception_type=%s", type(e).__name__)
         raise HTTPException(status_code=500, detail="Dataset export failed")

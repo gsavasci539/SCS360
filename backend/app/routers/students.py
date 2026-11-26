@@ -14,7 +14,7 @@ from app.core.permissions import require_permission, PermissionChecker
 from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
-from app.infrastructure.models.models import Student
+from app.infrastructure.models.models import Student, Branch, ClassRoom
 from app.core.student_access import accessible_student_ids, require_student_access
 
 router = APIRouter(prefix="/api/students", tags=["Students"])
@@ -153,20 +153,36 @@ async def delete_student(
 async def import_students_excel(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db, scope="function"),
-    current_user: User = Depends(get_current_user)
+    tenant: TenantContext = Depends(get_tenant_context),
 ):
     """Import students from Excel file"""
     import pandas as pd
     import io
     
     # Validate file type
-    if not file.filename.endswith(('.xlsx', '.xls')):
+    if not (file.filename or "").lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Sadece Excel dosyaları (.xlsx, .xls) yüklenebilir")
     
     try:
-        # Read Excel file
-        contents = await file.read()
-        df = pd.read_excel(io.BytesIO(contents))
+        from app.core.config import get_settings
+
+        max_upload_size = get_settings().max_upload_size_bytes
+        contents = await file.read(max_upload_size + 1)
+        if len(contents) > max_upload_size:
+            raise HTTPException(status_code=413, detail="İçe aktarma dosyası boyut sınırını aşıyor")
+        try:
+            df = pd.read_excel(io.BytesIO(contents))
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "student_excel_parse_failed exception_type=%s", type(exc).__name__
+            )
+            raise HTTPException(status_code=400, detail="Excel dosyası okunamadı") from None
+
+        if len(df) > 5000:
+            raise HTTPException(status_code=413, detail="Bir dosyada en fazla 5000 satır içe aktarılabilir")
+        if not tenant.organization_id:
+            raise HTTPException(status_code=403, detail="Önce kurum çalışma alanı seçilmelidir")
         
         # Validate required columns
         required_columns = ['student_number', 'first_name', 'last_name', 'class_id']
@@ -184,22 +200,51 @@ async def import_students_excel(
         
         for index, row in df.iterrows():
             try:
-                new_student = Student(
-                    student_number=str(row['student_number']),
-                    first_name=str(row['first_name']),
-                    last_name=str(row['last_name']),
-                    class_id=UUID(str(row['class_id'])) if pd.notna(row['class_id']) else None,
-                    organization_id=current_user.organization_id,
-                    branch_id=UUID(str(row['branch_id'])) if 'branch_id' in row and pd.notna(row['branch_id']) else None,
-                    birth_date=pd.to_datetime(row['birth_date']) if 'birth_date' in row and pd.notna(row['birth_date']) else None,
-                    blood_group=str(row['blood_group']) if 'blood_group' in row and pd.notna(row['blood_group']) else None,
-                    allergies=str(row['allergies']) if 'allergies' in row and pd.notna(row['allergies']) else None,
-                    gender=str(row['gender']) if 'gender' in row and pd.notna(row['gender']) else None,
-                    status="ACTIVE",
-                    created_by=current_user.id
-                )
-                db.add(new_student)
-                await db.flush()
+                async with db.begin_nested():
+                    class_id = UUID(str(row["class_id"])) if pd.notna(row["class_id"]) else None
+                    classroom = (await db.execute(select(ClassRoom).where(
+                        ClassRoom.id == class_id,
+                        ClassRoom.organization_id == tenant.organization_id,
+                        ClassRoom.deleted_at.is_(None),
+                        ClassRoom.is_active.is_(True),
+                    ))).scalar_one_or_none() if class_id else None
+                    if classroom is None:
+                        raise ValueError("class_unavailable")
+
+                    requested_branch_id = (
+                        UUID(str(row["branch_id"]))
+                        if "branch_id" in row and pd.notna(row["branch_id"])
+                        else classroom.branch_id
+                    )
+                    branch = (await db.execute(select(Branch).where(
+                        Branch.id == requested_branch_id,
+                        Branch.organization_id == tenant.organization_id,
+                        Branch.deleted_at.is_(None),
+                        Branch.is_active.is_(True),
+                    ))).scalar_one_or_none()
+                    if (
+                        branch is None
+                        or classroom.branch_id != branch.id
+                        or (tenant.branch_ids and branch.id not in tenant.branch_ids)
+                    ):
+                        raise ValueError("branch_unavailable")
+
+                    new_student = Student(
+                        student_number=str(row["student_number"]),
+                        first_name=str(row["first_name"]),
+                        last_name=str(row["last_name"]),
+                        class_id=classroom.id,
+                        organization_id=tenant.organization_id,
+                        branch_id=branch.id,
+                        birth_date=pd.to_datetime(row["birth_date"]) if "birth_date" in row and pd.notna(row["birth_date"]) else None,
+                        blood_group=str(row["blood_group"]) if "blood_group" in row and pd.notna(row["blood_group"]) else None,
+                        allergies=str(row["allergies"]) if "allergies" in row and pd.notna(row["allergies"]) else None,
+                        gender=str(row["gender"]) if "gender" in row and pd.notna(row["gender"]) else None,
+                        status="ACTIVE",
+                        created_by=tenant.user_id,
+                    )
+                    db.add(new_student)
+                    await db.flush()
                 imported_students.append({
                     "row": index + 2,  # Excel row number (1-indexed + header)
                     "student_id": str(new_student.id),
@@ -207,11 +252,10 @@ async def import_students_excel(
                     "name": f"{new_student.first_name} {new_student.last_name}",
                     "status": "SUCCESS"
                 })
-            except Exception as e:
+            except Exception:
                 errors.append({
                     "row": index + 2,
-                    "student_number": str(row['student_number']) if 'student_number' in row else "N/A",
-                    "error": str(e)
+                    "error": "Kayıt doğrulanamadı veya işlenemedi",
                 })
         
         await db.commit()
@@ -224,9 +268,12 @@ async def import_students_excel(
             "errors": errors
         }, f"{len(imported_students)} öğrenci başarıyla içe aktarıldı")
         
-    except Exception as e:
+    except HTTPException:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Excel işleme hatası: {str(e)}")
+        raise
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Excel içe aktarma işlemi tamamlanamadı") from None
 
 
 @router.get("/export-excel")
