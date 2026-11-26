@@ -173,3 +173,9 @@ Bu işlem eski DB/yedek/log içeriğini silmez. Yalnız `git diff --check` yapı
 Legacy `POST /api/notifications/send` artık IP bazında `5/minute` rate-limit uygular. Şube ataması olan aktör `branch_id` olarak sadece atanmış şubeyi verebilir; başlık (255), ileti (10.000), alıcı adedi (1–100), adres (255) ve ad (200) sınırlandırılır; subject/address CR/LF içeriği reddedilir. SCS360 `codex/source-sync-20261111` SHA `3f6cf3da93273f22f9ff207af309966d282e6713` normal push/`ls-remote` ile doğrulandı. Sadece statik diff kontrolü; test/build/provider/runtime yok.
 
 Önemli açık risk: endpoint, adreslerin aynı tenant/branch içindeki kayıtlı veli/personel iletişim adresleri olduğunu kontrol etmiyor; `notification.write` yetkilisi hâlâ dış adrese serbest bildirim oluşturabilir. Canlı öncesi alıcıları veritabanı kaydı ve onay tercihleriyle eşleştir ya da bu legacy ucu kapat. Rate-limit, hukuki dayanak/izin veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Manuel bildirim dış alıcı engeli (WIP)
+
+Legacy manuel gönderim endpointi, dışarıdan girilen e-posta/telefon adreslerinin kurum/şube içindeki kayıtlı iletişimlerle eşleşmesini zorunlu kılar. Veli tarafında `receive_notifications` kontrol edilir; personel kayıtlı şube scope'unda aranır. Kayıtlı iletişim adı esas alınır, normalizasyondan sonra tekrar adresler kaldırılır; açık şubedeki personel listesi kurum geneline genişlemez. Kod SHA `56d4dba1ce50eff716e7a8f68e7c593259717e69` push/`ls-remote` ile doğrulandı.
+
+Yalnız statik `git diff --check`; test/build veya sağlayıcı gönderimi yapılmadı. Diğer iletişim/broadcast/ödeme uyumluluk uçları, kanal bazlı hukuki dayanak/rıza, veri retention ve silme, canlı HTTPS/proxy ayarı ve KVKK uyum değerlendirmesi kabul edilmedi. WIP; canlıya hazır veya KVKK uyumlu ilan edilemez. Sonraki somut iş diğer bildirim alıcı uçlarını denetlemek ve izole geçici DB regresyonlarıdır.

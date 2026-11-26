@@ -480,3 +480,7 @@ Yeni ve geçmiş bildirim kayıtlarının response’ları ortak güvenli alıc�
 ### 26 Kasım — Manuel bildirim endpointi sınırları (WIP)
 
 `POST /api/notifications/send` IP başına 5/dk ile sınırlandı; şubeli kullanıcıya atanmış şube zorunlu, başlık/gövde/alıcı adet ve alan uzunlukları sınırlı, CR/LF reddedilir. `git diff --check` dışında test veya sağlayıcı çağrısı yok. SCS360 SHA `3f6cf3da93273f22f9ff207af309966d282e6713` push/`ls-remote` doğrulandı. Alıcı adresinin kurumun izinli kayıtlı kontağı olduğunu doğrulama açık; canlı gönderim/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Manuel bildirim alıcı allowlist'i (WIP)
+
+Manuel `POST /api/notifications/send` yalnız seçili kurum/şubedeki kayıtlı veli/personel iletişim adreslerini kabul eder; veli kayıtlarında bildirim tercihi aranır, kişi adı DB kaydından alınır ve normalize tekrarlar tekilleştirilir. Seçili şube, personel scope'una da uygulanır. Kod SHA `56d4dba1ce50eff716e7a8f68e7c593259717e69` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check` yapıldı; test/build/provider/DB runtime ve KVKK/canlı kabul yok. Sıradaki iş diğer bildirim üretim uçlarında alıcı allowlist ve kanal opt-in incelemesi; sonra geçici DB regresyonları.
