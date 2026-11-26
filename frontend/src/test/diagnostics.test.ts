@@ -7,7 +7,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 it("geliştirme hatasında erişim anahtarını ve öğrenci verisini konsola yazmaz", () => {
   vi.stubEnv("DEV", true);
   const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-  const error = new AxiosError("Request failed with status code 403");
+  const error = new AxiosError("Request failed with status code 403 for 12345678901");
   error.config = { headers: new AxiosHeaders({ Authorization: "Bearer hidden-token" }) };
   error.response = { status: 403, statusText: "Forbidden", config: error.config,
     headers: { "x-request-id": "test-request-123" }, data: { child: "Gizli Öğrenci" } };
@@ -15,7 +15,8 @@ it("geliştirme hatasında erişim anahtarını ve öğrenci verisini konsola ya
   const output = JSON.stringify(spy.mock.calls);
   expect(output).toContain("403");
   expect(output).toContain("test-request-123");
-  expect(output).not.toMatch(/hidden-token|Gizli Öğrenci|Authorization/);
+  expect(output).toContain("[gizlendi]");
+  expect(output).not.toMatch(/hidden-token|Gizli Öğrenci|Authorization|12345678901/);
 });
 
 it("üretim ortamında ham hata nesnesini konsola yazmaz", () => {
