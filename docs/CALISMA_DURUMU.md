@@ -1183,3 +1183,7 @@ Kod HEAD `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; remote ile eşit. Üretim N
 `POST /api/students/import-excel` dosyayı yapılandırılmış upload boyut sınırı +1 bayt kontrolüyle okur, 5.000 satırla sınırlar ve seçili tenant kurumunda aktif sınıf/şube eşleşmesini doğrular; atanmış şube kapsamı varsa uygular. Satır başına savepoint ile hatalı satır diğer kayıtların transaction'ını bozmaz. İçe aktarma parser/işleme hataları ham exception, öğrenci numarası veya ortam ayrıntısını istemciye döndürmez. Ortak `POST /api/import/*` parser'ı ve chatbot dataset export da ham hata metnini gizler. Kod SHA `5ff948a3c02f01fd94cd8166132cc41fc62c4e4b` normal push/`ls-remote` ile doğrulandı.
 
 Yalnız `git diff --check` yapıldı; test/build/DB runtime yok. WIP: tenant/branch, büyük dosya, bozuk xlsx ve savepoint davranışı geçici DB testlerinde doğrulanmalı; canlı konfigürasyon, sınıf/şube politikası, sağlık verisi amaç/erişim/retention ve KVKK kabulü açık.
+
+### 26 Kasım 2026 — XLSX arşiv açılım sınırı (WIP)
+
+Öğrenci Excel içe aktarımı `.xlsx` ZIP merkez dizinini açmadan önce en fazla 1.024 üye ve toplam 64 MiB açılmış içerik şartı uygular; sınır aşımı 413, bozuk arşiv genel 400 yanıtı alır. Böylece sıkıştırılmış küçük ama açılmış boyutu yüksek çalışma kitaplarına karşı uygulama katmanı sınırı eklendi. Kaynak SHA `041dad12cb04e67514bdc8bc3f2cc925f79977a8` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check`; kötü niyetli workbook ve eşzamanlı kaynak tüketimi test edilmedi; WIP.

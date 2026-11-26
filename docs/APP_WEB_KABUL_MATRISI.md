@@ -520,3 +520,5 @@ Salt okunur HEAD `https://scs360.com.tr/` HTTP 200 yanıtında `Server: nginx/1.
 ### Backend import/export hata ve tenant kontrolleri (WIP)
 
 Öğrenci Excel içe aktarımına upload-byte ve 5.000 satır sınırı, tenant'a bağlı aktif sınıf/şube kontrolü ve satır savepoint'i eklendi; başarısız kayıtlarda öğrenci numarası/ham istisna metni saklandı/döndürülmedi. Ortak dosya parser'ı ve chatbot dataset export hataları da iç exception ayrıntısını dışarı vermiyor. Kaynak SHA `5ff948a3c02f01fd94cd8166132cc41fc62c4e4b` remote branch'te doğrulandı. Yalnız statik diff check; test, build veya DB runtime yok. Geçici DB regressions, upload kötüye kullanım doğrulaması, sağlık verisi süreçleri ve canlı/KVKK kabulü açık.
+
+Öğrenci `.xlsx` yükleme yoluna ZIP üye sayısı (`<= 1.024`) ve toplam açılmış içerik (`<= 64 MiB`) sınırı da eklendi. Kaynak SHA `041dad12cb04e67514bdc8bc3f2cc925f79977a8` remote branch'te doğrulandı. Test/build yok; sıkıştırma bombası örnekleri, eşzamanlı yükleme kaynak sınırları ve canlı/KVKK kabulü açık.
