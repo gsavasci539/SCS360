@@ -1342,8 +1342,8 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 
 ### 26 Kasım 2026 — Kantin RFID listesi şube kapsamına alındı (WIP)
 
-- RFID kart listeleme rotasındaki canteen rol istisnası kaldırıldı; tüm roller repository çağrısında organization_id ve ranch_id filtresini kullanıyor. Şubeye atanmış kantin hesabı için kurum/şube dışı kartı döndürmeyen regresyon eklendi.
-- Hedefli SQLite testi 	est_canteen_rfid_list_stays_inside_assigned_branch: **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b, uzak codex/source-sync-20261111 dalında doğrulandı.
+- RFID kart listeleme rotasındaki canteen rol istisnası kaldırıldı; tüm roller repository çağrısında organization_id ve branch_id filtresini kullanıyor. Şubeye atanmış kantin hesabı için kurum/şube dışı kartı döndürmeyen regresyon eklendi.
+- Hedefli SQLite testi test_canteen_rfid_list_stays_inside_assigned_branch: **1 PASS**. Kod SHA 2e49322c3b34d53b73a5491b5a16546945d2f17b, uzak codex/source-sync-20261111 dalında doğrulandı.
 - Bu dar endpoint kontrolü tüm Core sorgularının, diğer PII akışlarının veya prod ortamının kabulü değildir. Sonraki somut iş: kalan özel Core sorgularını ve branch-bound read/write yollarını taramak; dış TLS/header/security.txt ve runtime kontrollerini gerçek dağıtım sonrası doğrulamak.
 
 
@@ -1357,7 +1357,7 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 ### 26 Kasım 2026 — Üyelik ödeme kimlik alanı biçim filtresi (WIP)
 
 - Ödeme başlangıç DTO'su kimlik/vergi alanındaki boşluk, nokta ve tire ayraçlarını bellekte temizliyor; sağlayıcıya yalnızca 10/11 ASCII rakam gönderiliyor. Hatalı uzunluk, harf ve Unicode rakamlar API doğrulamasında reddediliyor; UI sayısal klavyeyi öneriyor. Ham değer SaaS DB/audit kaydına eklenmiyor; mevcut ödeme akışı sağlayıcıya iletmeye devam eder.
-- Hedefli geçici SQLite 	est_checkout_rejects_malformed_identity_before_provider_call: **4 PASS, 4 PostgreSQL varyantı SKIP**, provider çağrısı ve checkout kaydı 0. Kod SHA 78b08eecf6121a3b8f5e1294bad95b2a2cd670a9 remote dalda doğrulandı.
+- Hedefli geçici SQLite test_checkout_rejects_malformed_identity_before_provider_call: **4 PASS, 4 PostgreSQL varyantı SKIP**, provider çağrısı ve checkout kaydı 0. Kod SHA 78b08eecf6121a3b8f5e1294bad95b2a2cd670a9 remote dalda doğrulandı.
 - Bu yalnız biçim filtresidir; kimlik gerçekliği/checksum, hukukî gereklilik, sağlayıcının saklama/işleme koşulları veya KVKK kabulü değildir. Sonraki somut iş: onaylı iş ihtiyacını sağlayıcı sözleşmesiyle teyit etmek ve TCKN'nin tüm log/telemetry/yedek/retention kanallarını ayrıca değerlendirmek.
 
 
