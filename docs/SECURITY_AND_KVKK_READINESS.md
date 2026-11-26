@@ -185,3 +185,9 @@ Yalnız statik `git diff --check`; test/build veya sağlayıcı gönderimi yapı
 `POST /api/notifications` recipient çözümlemesi tenant'a bağlandı. İstemciden kurum fallback'i kaldırıldı; explicit seçili kurum gerekli. Belirli şube, hem veli-öğrenci ilişki sorgusuna hem branch-aware staff scope'una uygulanır; çoklu şubeye atanmış aktör şubesiz kurum-geneli iş açamaz. Veli tercihi korunur, adresler tekilleştirilir ve iş boyutu 500 alıcı/10.000 karakter/5 istek-dk ile sınırlandırılır. Kaynak `2e82c25dd1f8db7f437aaddc50d5e4872897ac01` normal push/`ls-remote` ile doğrulandı.
 
 Yalnız `git diff --check`; test, build, DB veya sağlayıcı runtime yapılmadı. Oluşan kuyruk işlerinde tenant/branch regressions ve planlanmış dispatch, ayrıca alternatif bildirim uçları ve kanal rızası incelemesi yapılmalı. Hukuki dayanak, aydınlatma, retention/silme, canlı altyapı ve KVKK uyumu kabul edilmedi; WIP, canlıya hazır ilan edilemez.
+
+### 26 Kasım 2026 — Borç hatırlatma API'si abuse sınırı (WIP)
+
+Gecikmiş borç hatırlatma POST'u IP başına 5/dk; body yalnız en çok 100 öğeli bir `debt_ids` listesi kabul eder. Duplicate UUID'ler tekilleştirilir, geçersiz ID 4xx validation hatasına çevrilir. Tenant/şube ve kayıtlı veli bildirimi kontrolleri değişmedi. SCS360 SHA `614323aee46b347a1725974f42c8634fc433837c` normal push/`ls-remote` doğrulandı.
+
+Sadece `git diff --check`; test/build/send/provider runtime yok. İzole DB regresyonları, gerçek distributed rate-limit deposu, reverse-proxy IP güven zinciri, kanal rızası/hukuki dayanak, retention/silme ve canlı KVKK/siber güvenlik kabulü açık. WIP; canlıya hazır ilan edilemez.

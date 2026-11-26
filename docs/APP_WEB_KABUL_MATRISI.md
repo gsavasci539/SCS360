@@ -488,3 +488,7 @@ Manuel `POST /api/notifications/send` yalnız seçili kurum/şubedeki kayıtlı 
 ### 26 Kasım 2026 — Bildirim kuyruğu tenant/şube kapsamı (WIP)
 
 `POST /api/notifications` açık kurum bağlamı ister; şube kullanıcılarında tek atanmış şube varsayılanı veya çoklu atamada seçili atanmış şube kullanılır. Veli alıcıları aktif kurum öğrenci bağı ve bildirim tercihinden, personel alıcıları branch-aware staff scope'tan çözülür; 500 alıcı ve 10.000 karakter sınırı, 5/dk IP limiti uygulanır. SCS360 kod SHA `2e82c25dd1f8db7f437aaddc50d5e4872897ac01` push/`ls-remote` ile doğrulandı. Test/build/provider/canlı doğrulama yok; WIP.
+
+### 26 Kasım 2026 — Borç hatırlatma batch sınırı (WIP)
+
+Gecikmiş borç bildirimi endpointi `5/dk` ile sınırlandı; 100'den çok debt ID reddedilir, tekrar eden kimlikler azaltılır ve geçersiz UUID 500 yerine doğrulama hatası döndürür. Kod SHA `614323aee46b347a1725974f42c8634fc433837c` push/`ls-remote` doğrulandı. Yalnız statik diff kontrolü; test, build, gerçek SMS/DB runtime yok. Canlı/KVKK kabulü değildir.
