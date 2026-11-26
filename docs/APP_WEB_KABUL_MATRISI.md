@@ -460,3 +460,7 @@ Outbox worker artık kalıcı `provider_response` alanına allowlist ile süzül
 ### 26 Kasım — Bildirim raporu alıcılarının şube kapsamı (WIP)
 
 Atanmış şubeleri bulunan `communications.read` kullanıcılarının teslim raporları yalnız o şubelerin bildirim işlerini sorgular; `branch_id=NULL` kurum geneli yayın alıcı listeleri kapsam dışında kalır. Kurum/platform yöneticisi davranışı değişmez. Statik `git diff --check` dışında test/build/DB runtime yok. SCS360 SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` push/`ls-remote` doğrulandı. İzole tenant regressions ve API endpointlerin ayrı kontrolü açık; WIP, canlı/KVKK kabulü değildir.
+
+### 26 Kasım — Outbox geçmişi şube sınırı (WIP)
+
+Atanmış şubesi bulunan kullanıcılar outbox geçmişinde yalnız kendi şube kimliklerine bağlı `NotificationJob` kayıtlarını görür. Branchless kurum-geneli bildirimlerde alıcı/mesaj içeriği liste, detay, retry ve silme sorgularından çıkar. Statik `git diff --check` dışında test/build/runtime yok. SCS360 SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` push/`ls-remote` doğrulandı. Geçici DB tenant regressions ve kurum sahibi/portal rol kabulü açık; WIP, KVKK/canlı kabulü değildir.

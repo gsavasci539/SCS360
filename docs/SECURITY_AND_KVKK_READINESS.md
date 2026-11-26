@@ -143,3 +143,9 @@ Yalnız `git diff --check` yapıldı; test/build/provider/runtime doğrulaması 
 `GET /api/communications/delivery-reports` önce sadece kurumdaki yayınları seçiyordu; genel ORM tenant guard’ı `branch_id=NULL` kayıtlarına izin verdiğinden, şube atanmış personel kurum geneli yayınların telefon/ad listesini görebilirdi. Kaynak düzeltmesi şube listesi bulunan aktörlerde `NotificationJob.branch_id` değerini atanmış şubelerle ayrıca sınırlar; kurum geneli (`NULL`) yayınların alıcıları bu rapor sorgusundan çıkar. Kurum sahibi/platform yönetici akışı korunur.
 
 Yalnız `git diff --check` yapıldı; izole tenant testleri, başka recipient endpoint incelemesi ve canlı konfigürasyon doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` push/`ls-remote` ile doğrulandı. WIP; tenant scope, üretim güvenliği veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Outbox geçmişi şube kapsamı (WIP)
+
+`outbox_service.scoped()` ortak repository filtresine ek olarak, şube listesi bulunan aktörlerde `NotificationJob.branch_id IN (atanmış şubeler)` koşulu uygular. Önceki generic filtre `branch_id=NULL` satırlarını kabul ediyordu; bu satırlar kurum geneli bildirim alıcılarını ve mesaj içeriğini içerebildiğinden branch-scoped outbox list/detail/retry/delete işlemlerinde dışarıda bırakılır. Kurum sahibi ve platform kapsamı değişmez.
+
+Yalnız `git diff --check` yapıldı; geçici DB/rol/portal senaryoları, üretim ayarları ve eski log/DB retention-silme doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` push/`ls-remote` ile doğrulandı. WIP; canlıya hazır veya KVKK uyumlu kabulü değildir.

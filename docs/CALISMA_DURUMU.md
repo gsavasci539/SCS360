@@ -1104,3 +1104,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - `/communications/delivery-reports` sorgusu, şube ataması bulunan kullanıcılar için `NotificationJob.branch_id` alanını kendi atanmış şubeleriyle kesiştirir. Şube bilgisi olmayan kurum geneli yayınların bütün alıcı listesi artık bu personel rapor sorgusuna girmez. Kurum sahibi/platform kapsamı değişmedi.
 - Hedefli `git diff --check` geçti; test, build veya DB runtime çalıştırılmadı. SCS360 kod SHA `ae2e4f54d49a21ea9a0b6dcca1c8dd4090c660f7` normal push/`ls-remote` ile doğrulandı.
 - WIP: tenant/şube regresyonu izole DB testinde doğrulanmalı; başka endpointler, geçmiş log/DB kayıtları ve canlı yetki konfigürasyonu bu değişiklikle kabul edilmedi. Sıradaki somut iş: aynı ileti raporunun şube ve kurum sahibi scope davranışını geçici DB senaryosunda doğrulamak, sonra diğer recipient payload endpointlerini denetlemek.
+
+### 26 Kasım 2026 · Outbox geçmişinde şube scope daraltması (WIP)
+
+- `outbox_service.scoped()` artık atanmış şubesi bulunan kullanıcılar için `NotificationJob.branch_id` değerini atanmış şubelerle sınırlar. Ortak repository filtresinin `branch_id=NULL` kurumsal satırlara izin vermesi nedeniyle oluşabilecek alıcı/mesaj görünürlüğü engellenir; liste, detay, tekrar kuyruğa alma ve silme ortak sorgu scope'undan yararlanır.
+- Hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. SCS360 kod SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` normal push/`ls-remote` ile doğrulandı.
+- Sıradaki somut iş: outbox ve delivery report için şubeler arası, branchless kurumsal yayın, kurum sahibi ve erişilemeyen branch_id senaryolarını yalnız geçici DB’de doğrula; ilgili portal/rol davranışını ayrıca gözden geçir. WIP; canlı veya KVKK kabulü değildir.
