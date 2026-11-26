@@ -231,3 +231,7 @@ The legacy student spreadsheet import now reads only up to the configured upload
 Only `git diff --check` was run; no tests/build/database runtime. Temporary-DB tenant/branch/savepoint regressions, malicious workbook testing, special-category health data purpose/access/retention review, and live/KVKK acceptance remain open.
 
 The `.xlsx` path also checks ZIP metadata before pandas parsing: no more than 1,024 members and no more than 64 MiB total uncompressed content. Oversized archives are rejected; malformed archives receive a generic client error. Source checkpoint `041dad12cb04e67514bdc8bc3f2cc925f79977a8` was pushed normally and verified with `ls-remote`. This is an application bound, not proof against every parser/resource-exhaustion case; malicious-file and concurrent-upload tests remain open.
+
+### 26 Nov 2026 — Safe external meeting links (WIP)
+
+Frontend only renders an appointment meeting link when it parses as an absolute HTTPS URL without embedded user information. The new-tab link sets `noopener noreferrer` and `no-referrer`; invalid or non-HTTPS values are not rendered as links. Source checkpoint `31afdcc12754efd94a945c691bd512ea7e926205` was pushed normally and verified with `ls-remote`. No tests/build/API runtime were run; WIP.
