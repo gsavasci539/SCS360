@@ -228,14 +228,10 @@ export function StudentPaymentsPage() {
                 payment_type: "Ödeme",
                 student_name: `${student.first_name} ${student.last_name}`,
                 student_number: student.student_number as string | undefined,
-                class_name: student.class_name as string | undefined,
-                branch_name: (student.branch_name as string | undefined) || "Ana Şube",
-                organization_name: "SCS360",
-                organization_tax_number: "1234567890",
-                organization_address: "İstanbul, Türkiye",
-                organization_phone: "+90 212 123 4567",
+                class_name: textValue(student.class_name, "") || undefined,
+                branch_name: textValue(student.branch_name, "Şube bilgisi yok"),
+                organization_name: textValue(student.organization_name, "Kurum bilgisi yok"),
                 description: selectedPayment.notes,
-                processed_by: "Muhasebe Personeli"
               }}
               onClose={() => setShowReceipt(false)} 
             />
