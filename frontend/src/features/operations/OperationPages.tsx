@@ -11,6 +11,25 @@ import { useToast } from "../../components/Toast";
 import { EmptyState, ErrorState, Field, LoadingState, Modal, PageHeader, StatCard } from "../../components/ui";
 import { api } from "../../lib/api";
 
+function SafeMeetingLink({ value }: { value: unknown }) {
+  if (typeof value !== "string") return null;
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" || url.username || url.password) return null;
+
+  return (
+    <a href={url.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
+      className="btn btn-secondary" style={{ justifyContent: "center" }}>
+      <Video size={16} /> Meet Görüşmesine Katıl
+    </a>
+  );
+}
+
 // ==================== 1. RANDEVU VE PTC GÖRÜŞMELERİ ====================
 export function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -125,11 +144,7 @@ export function AppointmentsPage() {
                 {apt.notes && <div style={{ marginTop: 4, color: "#475569" }}><em>"{apt.notes}"</em></div>}
               </div>
 
-              {apt.meeting_link && apt.type === "ONLINE_MEET" && (
-                <a href={apt.meeting_link} target="_blank" rel="noreferrer" className="btn btn-secondary" style={{ justifyContent: "center" }}>
-                  <Video size={16} /> Meet Görüşmesine Katıl
-                </a>
-              )}
+              {apt.type === "ONLINE_MEET" && <SafeMeetingLink value={apt.meeting_link} />}
 
               <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
                 {apt.status === "CONFIRMED" && (
