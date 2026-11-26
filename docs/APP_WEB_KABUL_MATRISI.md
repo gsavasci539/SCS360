@@ -650,3 +650,6 @@ Boş şube atamalı sıradan hesaplar kantin cüzdan/ciro özetini veya okul öd
 ### Güvenlik WIP — Şubesiz dosya deposu kapsamı (26.11.2026)
 
 Legacy dosya router helper'ı şubesiz tenant'ın kurum-geneli `all` klasörünü okumasını, silmesini veya upload hedefi olarak seçmesini engeller; kurum-geneli roller korunur. İzole SQLite: **8 PASS, 7 PostgreSQL varyantı SKIP**. Test doğrudan legacy fonksiyon/helper seviyesindedir; router uygulama route listesine eklenmedi ve dış API kabulü yapılmadı. Kod `b2f920332c8136a162af145d18c2187b1f850cce`. Tüm dosya uçları/gerçek depolama ve prod kabulü açık.
+### Güvenlik WIP — Eski ilaç bildirimi adaptöründe öğretmen ilişkisi (26.11.2026)
+
+Eski `/api/parent/notices` adaptörü teacher rolünü yalnız şubeyle sınırlandırıp aynı şubedeki ilişkisiz öğrencilerin ilaç kayıtlarını döndürmüyordur; şimdi yalnız atanmış/ilişkili öğrenci kapsamı kullanır. Hedefli geçici SQLite testleri **3 PASS, 3 PostgreSQL varyantı SKIP**. Kod `ae0cb270c048e0c53fba5db43ce96ed7109e0494`. Sağlık modülü bütünü, canlı veritabanı ve KVKK/hukuk kabulü açık.
