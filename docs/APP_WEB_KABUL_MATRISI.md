@@ -516,3 +516,7 @@ Toplu ileti taslak oluşturma ve send uçlarında 5/dk IP rate limit eklendi; te
 ### 26 Kasım 2026 — Canlı web başlık kontrolü (WIP)
 
 Salt okunur HEAD `https://scs360.com.tr/` HTTP 200 yanıtında `Server: nginx/1.18.0 (Ubuntu)` ve `X-Content-Type-Options: nosniff` görüldü; HSTS/CSP/frame/referrer/permissions başlıkları görünmedi. `/.well-known/security.txt` 200 dönüyor ancak security.txt değil SPA HTML'i. Bu tek yol gözlemi sertifika zincirini veya tam canlı kabulü doğrulamaz. Kod SHA `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; site/deploy değişmedi.
+
+### Backend import/export hata ve tenant kontrolleri (WIP)
+
+Öğrenci Excel içe aktarımına upload-byte ve 5.000 satır sınırı, tenant'a bağlı aktif sınıf/şube kontrolü ve satır savepoint'i eklendi; başarısız kayıtlarda öğrenci numarası/ham istisna metni saklandı/döndürülmedi. Ortak dosya parser'ı ve chatbot dataset export hataları da iç exception ayrıntısını dışarı vermiyor. Kaynak SHA `5ff948a3c02f01fd94cd8166132cc41fc62c4e4b` remote branch'te doğrulandı. Yalnız statik diff check; test, build veya DB runtime yok. Geçici DB regressions, upload kötüye kullanım doğrulaması, sağlık verisi süreçleri ve canlı/KVKK kabulü açık.

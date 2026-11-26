@@ -223,3 +223,9 @@ Yalnız `git diff --check`; test/build/gerçek provider yok. Paylaşılan limite
 Read-only HTTPS HEAD on `/` returned 200 with `Server: nginx/1.18.0 (Ubuntu)` and `X-Content-Type-Options: nosniff`; no HSTS, CSP, X-Frame-Options, Referrer-Policy, or Permissions-Policy appeared in this response. GET `/.well-known/security.txt` returned the SPA HTML rather than a security contact document. This is a single-path observation, not full TLS/runtime/KVKK acceptance. No credentials, messages, or state-changing requests were sent. Source branch SHA remained `b42384bfbf3d05bc7dd7669ef8ecc3906a711cc3`; no deploy occurred.
 
 The publisher working tree still has uncommitted Nginx/rate-limit WIP that removes HSTS/upstream Server hiding and forces an in-memory limiter; it was not staged or pushed. Next: resolve that WIP and identify an approved security contact before preparing deployable headers/security.txt. WIP; live protection/KVKK not accepted.
+
+### 26 Nov 2026 — Spreadsheet import/export error and tenant bounds (WIP)
+
+The legacy student spreadsheet import now reads only up to the configured upload limit plus one byte, caps rows at 5,000, and binds active class/branch records to the selected organization and the actor's assigned branches when present. Each row uses a savepoint. Parse and processing errors no longer expose raw exception text or student numbers in failure responses. The shared import parser and chatbot dataset export also return generic errors. Source checkpoint `5ff948a3c02f01fd94cd8166132cc41fc62c4e4b` was pushed normally and verified with `ls-remote`.
+
+Only `git diff --check` was run; no tests/build/database runtime. Temporary-DB tenant/branch/savepoint regressions, malicious workbook testing, special-category health data purpose/access/retention review, and live/KVKK acceptance remain open.
