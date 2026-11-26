@@ -76,7 +76,7 @@ it("kurum kimlik numarasını yalnız açık, onaylı ve denetimli istekle kısa
   vi.stubGlobal("confirm", vi.fn(() => true));
   render(<MemoryRouter initialEntries={["/organizations/school/edit"]}><ToastProvider><Routes><Route path="/organizations/:id/edit" element={<ResourceFormPage resourceKey="organizations" />} /><Route path="/organizations" element={<p>Liste</p>} /></Routes></ToastProvider></MemoryRouter>);
   fireEvent.click(await screen.findByRole("button", { name: "Denetim kaydıyla görüntüle" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/organizations/school/tax-identifier/reveal", { purpose: "BUSINESS_RECORD" }));
+  await waitFor(() => expect(api.post).toHaveBeenCalledWith("/organizations/school/tax-identifier/reveal", { purpose: "BUSINESS_RECORD" }, expect.objectContaining({ signal: expect.any(AbortSignal) })));
   expect(await screen.findByText("12345678901")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Gizle" }));
   expect(screen.queryByText("12345678901")).not.toBeInTheDocument();

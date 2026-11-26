@@ -1615,10 +1615,15 @@ export function ResourceFormPage({
       >
     >({});
   const [revealedTaxNumber, setRevealedTaxNumber] = useState<string | null>(null);
+  const revealRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    revealRequest.current?.abort();
+    revealRequest.current = null;
     setRevealedTaxNumber(null);
   }, [id]);
+
+  useEffect(() => () => revealRequest.current?.abort(), []);
 
   useEffect(() => {
     if (!revealedTaxNumber) return;
@@ -1974,13 +1979,18 @@ export function ResourceFormPage({
     if (!id || resourceKey !== "organizations") return;
     if (!window.confirm("Kurumun vergi/kimlik numarası görüntülenecek ve erişim denetim kaydına alınacak. Devam edilsin mi?")) return;
     setServerError("");
+    revealRequest.current?.abort();
+    const controller = new AbortController();
+    revealRequest.current = controller;
     try {
       const response = await api.post<ApiResponse<{ tax_number: string | null }>>(
-        `/organizations/${id}/tax-identifier/reveal`, { purpose: "BUSINESS_RECORD" },
+        `/organizations/${id}/tax-identifier/reveal`, { purpose: "BUSINESS_RECORD" }, { signal: controller.signal },
       );
-      setRevealedTaxNumber(response.data.data.tax_number);
+      if (!controller.signal.aborted) setRevealedTaxNumber(response.data.data.tax_number);
     } catch (error) {
-      setServerError(apiMessage(error));
+      if (!controller.signal.aborted) setServerError(apiMessage(error));
+    } finally {
+      if (revealRequest.current === controller) revealRequest.current = null;
     }
   };
 
