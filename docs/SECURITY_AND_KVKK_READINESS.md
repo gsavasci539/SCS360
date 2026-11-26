@@ -260,3 +260,7 @@ Organization list response'ları TCKN/VKN içermez. Tekil detayda yalnız platfo
 ## SaaS üyelik checkout kimlik alanı — 26 Kasım 2026 WIP
 
 SaaS abonelik ödeme formundaki kimlik/vergi numarası artık varsayılan maskelenir; kullanıcı erişilebilir düğmeyle geçici olarak gösterebilir. `autocomplete`, `autocapitalize` ve `spellCheck` kapalıdır. Bu sunum önlemidir; verinin React/DOM belleğinde bulunmasını, backend'e/ödeme sağlayıcısına aktarılmasını veya sağlayıcıdaki saklamayı engellemez. Kodda yeni bir kalıcı kopya oluşturulmadı. Yalnız `git diff --check`; UI/API/provider/build doğrulaması yok. Değişiklik commit/push SHA'sı çalışma kaydında tutulur. KVKK amacı/dayanak, TCKN'siz alternatif, sağlayıcı sözleşmesi/retention ve canlı kabul açık.
+
+## Beklenmeyen backend hatalarında log minimizasyonu — 26 Kasım 2026 WIP
+
+Global 500 hata yolunda traceback ve exception metni yerine yalnız hata sınıfı, path ve request ID loglanır. SQL/provider exception metinleri hassas alan veya sağlayıcı payload parçaları içerebileceğinden bu log minimizasyonu riski azaltır; log platformu erişimi/retention'ı, APM ve diğer logger'lar ayrıca incelenmelidir. Test çalıştırılmadı; WIP.

@@ -128,7 +128,9 @@ async def generic_exception_handler(request: Request, exc: Exception) -> Respons
         return JSONResponse(status_code=409, content={
             **error_response("Birden fazla eski kayıt aynı kimlikle eşleşiyor; veri eşleştirmesi gerekli"), "request_id": request_id,
         }, headers={"X-Request-ID": request_id} if request_id else None)
-    logger.exception("unhandled_exception", path=request.url.path, request_id=request_id)
+    # Exception strings and tracebacks can contain SQL parameters or provider
+    # payload fragments (including identity data). Keep production logs opaque.
+    logger.error("unhandled_exception", error_type=type(exc).__name__, path=request.url.path, request_id=request_id)
     return JSONResponse(status_code=500, content={
         **error_response("Beklenmeyen bir hata oluştu"), "request_id": request_id,
     }, headers={"X-Request-ID": request_id} if request_id else None)
