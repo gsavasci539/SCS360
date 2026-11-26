@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 import uuid
 
@@ -13,6 +14,19 @@ from app.core.responses import error_response
 from app.core.web_session import ACCESS_COOKIE, require_csrf
 
 settings = get_settings()
+_TCKN_PATTERN = re.compile(r"(?<!\d)\d{11}(?!\d)")
+
+
+def redact_tckn(value):
+    if isinstance(value, str):
+        return _TCKN_PATTERN.sub("[gizlendi]", value)
+    if isinstance(value, dict):
+        return {redact_tckn(key): redact_tckn(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [redact_tckn(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_tckn(item) for item in value)
+    return value
 
 
 def setup_logging() -> None:
@@ -95,14 +109,14 @@ async def app_exception_handler(request: Request, exc: AppException) -> Response
 
     return JSONResponse(
         status_code=exc.status_code,
-        content={**error_response(exc.message, exc.errors), "request_id": getattr(request.state, "request_id", None)},
+        content={**error_response(redact_tckn(exc.message), redact_tckn(exc.errors)), "request_id": getattr(request.state, "request_id", None)},
         headers={"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None,
     )
 
 
 async def http_exception_handler(request: Request, exc) -> Response:
     from fastapi.responses import JSONResponse
-    message = exc.detail if isinstance(exc.detail, str) else "İstek tamamlanamadı"
+    message = redact_tckn(exc.detail) if isinstance(exc.detail, str) else "İstek tamamlanamadı"
     # Framework/custom HTTPException details may be structured provider or
     # validation payloads. Never serialize those objects back to the caller.
     safe_detail = message if isinstance(exc.detail, str) else "İstek tamamlanamadı"
@@ -113,7 +127,7 @@ async def http_exception_handler(request: Request, exc) -> Response:
 
 async def request_validation_handler(request: Request, exc) -> Response:
     from fastapi.responses import JSONResponse
-    errors = [{"loc": list(error["loc"]), "msg": error["msg"], "type": error["type"]} for error in exc.errors()]
+    errors = [{"loc": list(error["loc"]), "msg": redact_tckn(error["msg"]), "type": error["type"]} for error in exc.errors()]
     return JSONResponse(status_code=422, content={
         **error_response("Gönderilen bilgileri kontrol edin", errors), "detail": errors,
         "request_id": getattr(request.state, "request_id", None),

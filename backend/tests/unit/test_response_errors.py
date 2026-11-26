@@ -56,10 +56,24 @@ async def test_http_exception_keeps_safe_string_detail_compatibility():
     from app.core.middleware import http_exception_handler
 
     request = Request({"type": "http", "method": "GET", "path": "/api/organizations", "headers": []})
-    response = await http_exception_handler(request, HTTPException(404, detail="Kurum bulunamadı"))
+    response = await http_exception_handler(request, HTTPException(404, detail="Kurum 12345678901 bulunamadı"))
     body = json.loads(response.body)
-    assert response.status_code == 404 and body["message"] == "Kurum bulunamadı"
-    assert body["detail"] == "Kurum bulunamadı"
+    assert response.status_code == 404 and body["message"] == "Kurum [gizlendi] bulunamadı"
+    assert body["detail"] == "Kurum [gizlendi] bulunamadı"
+
+
+async def test_application_exception_redacts_tckn_from_messages_and_structured_errors():
+    import json
+    from starlette.requests import Request
+    from app.core.exceptions import AppException
+    from app.core.middleware import app_exception_handler
+
+    request = Request({"type": "http", "method": "POST", "path": "/api/checkout", "headers": []})
+    response = await app_exception_handler(request, AppException("Kimlik 12345678901 doğrulanamadı", errors=[{"received": "12345678901"}]))
+    body = json.loads(response.body)
+    assert body["message"] == "Kimlik [gizlendi] doğrulanamadı"
+    assert body["errors"] == [{"received": "[gizlendi]"}]
+    assert "12345678901" not in response.body.decode()
 
 
 async def test_actual_application_handlers_treat_ambiguous_identifiers_as_http_conflicts():
