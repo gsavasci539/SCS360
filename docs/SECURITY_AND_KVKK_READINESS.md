@@ -293,3 +293,7 @@ Backend hata yanıtı filtresi ve frontend geliştirme tanısı artık kesintisi
 ### 26 Kasım 2026 — SQL debug parametrelerini gizleme (WIP)
 
 SQLAlchemy motoru `hide_parameters=True` kullanıyor; development ortamında statement echo açık kalsa da bağlı değerler loga yazılmaz. `backend/tests/unit/test_security_hardening.py`: **24 PASS**. Kod SHA `525667eef329d5d5ede988d5b818ab51d064acb7` normal push/`ls-remote` ile doğrulandı. Bu koruma uygulama/APM/provider loglarını veya başka veri çıkışlarını kapsamaz; production/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Noktalı TCKN hata metni filtresi (WIP)
+
+Backend hata yanıtı ve frontend development diagnostic filtresi, boşluk/tire biçimlerine ek olarak nokta ile gruplandırılmış 11 haneli dizileri de maskeler. Hedefli regresyonlar: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod SHA `65ca3da993e76c7840245b4724541fb885d9049a` normal push/`ls-remote` ile doğrulandı. Farklı kimlik yazımları, genel PII, production telemetry/APM, diğer loglar ve provider payload'ları kapsam dışıdır; WIP, KVKK veya canlı kabulü değildir.

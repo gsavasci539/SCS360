@@ -1300,3 +1300,7 @@ Backend hata yanıtlarındaki ve frontend development diagnostic context/message
 ### 26 Kasım 2026 — SQL loglarında parametreleri gizleme (WIP)
 
 Development SQL echo korunarak SQLAlchemy engine için `hide_parameters=True` eklendi; böylece sorgu parametre değerleri debug SQL loglarına yazılmaz. `backend/tests/unit/test_security_hardening.py`: **24 PASS** (DB/provider kullanılmadı). Kod checkpoint `525667eef329d5d5ede988d5b818ab51d064acb7` normal push/`ls-remote` ile doğrulandı. Bu tek başına tüm uygulama loglarının güvenli olduğunu veya KVKK/canlı kabulünü göstermez.
+
+### 26 Kasım 2026 — Noktalı TCKN hata metinlerinde maskeleniyor (WIP)
+
+Backend ve frontend development hata filtresi kesintisiz, boşluklu, tireli ve noktalı 11 haneli sayı dizilerini maskeler. Hedefli testler: backend `test_response_errors.py` 7 PASS; frontend `diagnostics.test.ts` 2 PASS. Kod checkpoint `65ca3da993e76c7840245b4724541fb885d9049a` remote dalda doğrulandı. Diğer PII, production telemetry/APM, log ve provider payload'ları için kabul değildir.
