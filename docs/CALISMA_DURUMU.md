@@ -1159,3 +1159,7 @@ Frontend bildirim formu artık `branch_id` gönderebilir. Backend `GET /api/noti
 ### 26 Kasım 2026 — Opsiyonel şube payload düzeltmesi (WIP)
 
 Bildirim formu “Kurum geneli” seçeneğindeki boş şube değerini API'ye `branch_id: null` olarak gönderir; backend'in `UUID | null` DTO'suyla uyumlu kalır. SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check`, UI/API testi çalıştırılmadı; WIP.
+
+### 26 Kasım 2026 — Makbuz paylaşım bildirim sınırları (WIP)
+
+Makbuz e-posta/SMS/WhatsApp kuyruk uçları IP başına 10/dk ile sınırlandı ve yalnız `receive_notifications=true` olan bağlı veli seçilir. Adres yine veli kaydından alınır; manuel dış adres girişi yoktur. Kaynak SHA `e69cccc95780cff11c15a599f2ba5c3da358ecf6` normal push/`ls-remote` doğrulandı. Sadece statik `git diff --check`; test/build/DB/provider runtime yok. Bu tercih ile finansal zorunlu bildirimlerin hukuki dayanak yorumu kullanıcı/veri sorumlusu onayı olmadan yapılmadı. WIP; rıza, KVKK ve canlı kabul açık.

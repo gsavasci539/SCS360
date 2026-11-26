@@ -500,3 +500,7 @@ Web bildirim modalı, yazma yetkisiyle sınırlı `/notifications/branch-options
 ### 26 Kasım 2026 — Opsiyonel şube DTO düzeltmesi (WIP)
 
 Kurum geneli bildirim formu artık boş branch seçimini `branch_id: null` gönderir; backend UUID/null payload ile uyumludur. Kaynak SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` ile doğrulandı. Test/build/canlı API yok.
+
+### 26 Kasım 2026 — Makbuz bildirim endpointleri (WIP)
+
+Makbuz e-posta/SMS/WhatsApp kuyruğu 10/dk rate limit uygular ve ilgili öğrenciye bağlı, `receive_notifications` açık veliyi seçer. Kaynak SHA `e69cccc95780cff11c15a599f2ba5c3da358ecf6` push/`ls-remote` doğrulandı. Yalnız statik diff; test/build/provider/canlı doğrulama yok; WIP.

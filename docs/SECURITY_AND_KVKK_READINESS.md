@@ -199,3 +199,9 @@ Web composer için yeni `GET /api/notifications/branch-options` yalnız aktif ş
 ### 26 Kasım 2026 — Bildirim branch payload null uyumu (WIP)
 
 Frontend, opsiyonel branch seçiminin boş stringini API POST öncesi `null`'a çevirerek `UUID | null` backend DTO'suna uyar. SCS360 SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` doğrulandı. Statik diff dışında test/build/API runtime yapılmadı; WIP.
+
+### 26 Kasım 2026 — Makbuz ileti kuyruğu opt-in/rate-limit (WIP)
+
+Makbuz paylaşım e-posta/SMS/WhatsApp API uçlarında mevcut generic bildirim tercihi kapalıysa veli recipient çözümlemesi reddeder; endpoint başına IP limit 10/dk. Kaynak `e69cccc95780cff11c15a599f2ba5c3da358ecf6` normal push/`ls-remote` ile doğrulandı.
+
+Yalnız `git diff --check`; test, build, gerçek ileti veya provider çağrısı yok. `receive_notifications` tercihinin makbuz/finansal ileti için hukuki yeterliliği ayrıca veri sorumlusu tarafından değerlendirilmelidir; kanal bazlı izin/amaç, retention, provider sözleşmesi ve KVKK/canlı kabul açık. WIP.
