@@ -107,8 +107,9 @@ class NotificationCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     type: NotificationChannel
     target_audience: str = Field(pattern="^(ALL|PARENTS|STAFF|STUDENTS)$")
-    content: str = Field(min_length=1)
+    content: str = Field(min_length=1, max_length=10000)
     scheduled_for: datetime | None = None
+    branch_id: UUID | None = None
 
 
 @router.get("/api/dashboard/summary")
@@ -1303,24 +1304,94 @@ async def list_notifications(
 
 
 @router.post("/api/notifications")
+@limiter.limit("5/minute")
 async def create_notification(
+    request: Request,
     payload: NotificationCreate,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Queue a manually created notification and resolve its intended recipients."""
-    organization_id = tenant.organization_id or user.organization_id
+    organization_id = tenant.organization_id
     if not organization_id:
         raise ValidationException("Bildirim oluşturmak için bir kurum seçilmelidir")
+
+    branch_id = payload.branch_id
+    if tenant.branch_ids:
+        if branch_id is None and len(tenant.branch_ids) == 1:
+            branch_id = tenant.branch_ids[0]
+        if branch_id not in tenant.branch_ids:
+            raise ForbiddenException("Yalnız atanmış şubeye bildirim gönderebilirsiniz")
+    if branch_id:
+        await BaseRepository(db, tenant).require_related(branch_id, Branch)
 
     scheduled_at = payload.scheduled_for or datetime.now(UTC)
     if scheduled_at.tzinfo is None:
         scheduled_at = scheduled_at.replace(tzinfo=UTC)
 
+    recipients: dict[str, tuple[UUID | None, UUID | None, str, str]] = {}
+    include_parents = payload.target_audience in {"ALL", "PARENTS", "STUDENTS"}
+    include_staff = payload.target_audience in {"ALL", "STAFF"}
+
+    if include_parents:
+        parent_query = select(Parent).join(
+            StudentParent, StudentParent.parent_id == Parent.id
+        ).join(Student, Student.id == StudentParent.student_id).where(
+            Parent.organization_id == organization_id,
+            Student.organization_id == organization_id,
+            Parent.deleted_at.is_(None),
+            Student.deleted_at.is_(None),
+            Parent.receive_notifications.is_(True),
+        )
+        if branch_id:
+            parent_query = parent_query.where(Student.branch_id == branch_id)
+        for parent in (await db.execute(parent_query)).scalars():
+            address = (
+                parent.email
+                if payload.type == NotificationChannel.EMAIL
+                else parent.whatsapp_phone
+                if payload.type == NotificationChannel.WHATSAPP
+                else parent.sms_phone or parent.phone
+            )
+            key = _notification_address_key(address, payload.type) if address else None
+            if key:
+                recipients.setdefault(key, (
+                    parent.id, None, f"{parent.first_name} {parent.last_name}", address
+                ))
+
+    if include_staff:
+        from app.core.tenant_guard import scope_filters, staff_scope
+
+        scoped_tenant = replace(tenant, branch_ids=[branch_id]) if branch_id else tenant
+        branches, _, _, users = scope_filters(scoped_tenant, None)
+        staff_ids = staff_scope(scoped_tenant, branches, users)
+        staff_query = select(User).where(
+            User.organization_id == organization_id,
+            User.deleted_at.is_(None),
+            User.id.in_(staff_ids),
+        )
+        for staff_member in (await db.execute(staff_query)).scalars():
+            address = (
+                staff_member.email
+                if payload.type == NotificationChannel.EMAIL
+                else staff_member.phone
+            )
+            key = _notification_address_key(address, payload.type) if address else None
+            if key:
+                recipients.setdefault(key, (
+                    None, staff_member.id,
+                    f"{staff_member.first_name} {staff_member.last_name}", address
+                ))
+
+    if not recipients:
+        raise ValidationException("Seçilen hedef kitle için bu kanalın iletişim bilgisi bulunamadı")
+    if len(recipients) > 500:
+        raise ValidationException("Tek seferde en fazla 500 alıcı seçilebilir")
+
     job = NotificationJob(
         organization_id=organization_id,
-        branch_id=tenant.branch_ids[0] if len(tenant.branch_ids) == 1 else None,
+        branch_id=branch_id,
         channel=payload.type,
         subject=payload.title,
         body=payload.content,
@@ -1330,57 +1401,17 @@ async def create_notification(
     )
     db.add(job)
     await db.flush()
-
-    recipients: list[NotificationRecipient] = []
-    include_parents = payload.target_audience in {"ALL", "PARENTS", "STUDENTS"}
-    include_staff = payload.target_audience in {"ALL", "STAFF"}
-
-    if include_parents:
-        parent_query = select(Parent).where(
-            Parent.organization_id == organization_id,
-            Parent.deleted_at.is_(None),
-            Parent.receive_notifications.is_(True),
+    db.add_all([
+        NotificationRecipient(
+            notification_job_id=job.id,
+            parent_id=parent_id,
+            user_id=user_id,
+            recipient_name=name,
+            recipient_address=address,
         )
-        for parent in (await db.execute(parent_query)).scalars():
-            address = (
-                parent.email
-                if payload.type == NotificationChannel.EMAIL
-                else parent.whatsapp_phone
-                if payload.type == NotificationChannel.WHATSAPP
-                else parent.sms_phone or parent.phone
-            )
-            if address:
-                recipients.append(
-                    NotificationRecipient(
-                        notification_job_id=job.id,
-                        parent_id=parent.id,
-                        recipient_name=f"{parent.first_name} {parent.last_name}",
-                        recipient_address=address,
-                    )
-                )
+        for parent_id, user_id, name, address in recipients.values()
+    ])
 
-    if include_staff:
-        staff_query = select(User).where(
-            User.organization_id == organization_id,
-            User.deleted_at.is_(None),
-        )
-        for staff_member in (await db.execute(staff_query)).scalars():
-            address = staff_member.email if payload.type == NotificationChannel.EMAIL else staff_member.phone
-            if address:
-                recipients.append(
-                    NotificationRecipient(
-                        notification_job_id=job.id,
-                        user_id=staff_member.id,
-                        recipient_name=f"{staff_member.first_name} {staff_member.last_name}",
-                        recipient_address=address,
-                    )
-                )
-
-    if not recipients:
-        await db.rollback()
-        raise ValidationException("Seçilen hedef kitle için bu kanalın iletişim bilgisi bulunamadı")
-
-    db.add_all(recipients)
     await db.commit()
     return success_response(
         {"id": str(job.id), "recipient_count": len(recipients)},
