@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 from io import BytesIO
+from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
@@ -14,10 +15,13 @@ from app.core.exceptions import ValidationException
 from app.core.security import create_access_token
 from app.domain.entities.materials import CourseMaterial
 from app.infrastructure.models.models import Branch, User
+from app.infrastructure.storage import FileService
 from app.infrastructure.storage.local_storage import LocalFileStorage
 from app.infrastructure.storage.uploads import read_upload
 from app.main import app
 from app.core.rate_limit import limiter
+from app.core.tenant import TenantContext
+from app.routers.files import _resolve_scoped_file, upload_file as legacy_upload_file
 
 
 @pytest.fixture
@@ -192,6 +196,31 @@ async def test_public_material_is_available_to_other_classes_and_legacy_files_st
     downloaded = await client.get(child_path + f"/{material_id}/download", headers=headers(data["user"]))
     assert downloaded.status_code == 200 and downloaded.content == b"%PDF-1.4 legacy"
     assert (await client.get("/uploads/materials/legacy.pdf")).status_code == 404
+
+
+async def test_unassigned_staff_cannot_upload_or_access_organization_wide_files(materials_client):
+    client, sessions, data = materials_client
+    _, file_url = await FileService().upload_file(
+        UploadFile(filename="internal.pdf", file=BytesIO(b"%PDF-1.4\nprivate")),
+        subfolder=f"{data['org'].id}/all/finance")
+    unassigned = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+        branch_ids=[], permissions={"files.upload", "files.delete"}, role_slugs={"staff"})
+    wide = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+        branch_ids=[], permissions={"files.upload", "files.delete"}, role_slugs={"owner"})
+    async with sessions() as db:
+        before = len(list(Path(get_settings().UPLOAD_DIR).rglob("*.*")))
+        with pytest.raises(HTTPException) as denied_upload:
+            await legacy_upload_file(UploadFile(filename="attempt.pdf", file=BytesIO(b"%PDF-1.4\nattempt")),
+                tenant=unassigned, db=db)
+        with pytest.raises(HTTPException) as denied_read:
+            _resolve_scoped_file(file_url.removeprefix("/api/files/"), unassigned, Path(get_settings().UPLOAD_DIR))
+        with pytest.raises(HTTPException) as denied_delete:
+            _resolve_scoped_file(file_url.removeprefix("/api/files/"), unassigned, Path(get_settings().UPLOAD_DIR))
+        owner_file = _resolve_scoped_file(file_url.removeprefix("/api/files/"), wide, Path(get_settings().UPLOAD_DIR))
+        after = len(list(Path(get_settings().UPLOAD_DIR).rglob("*.*")))
+    assert denied_upload.value.status_code == 403
+    assert denied_read.value.status_code == denied_delete.value.status_code == 404
+    assert before == after and owner_file.is_file()
 
 
 async def test_storage_rejects_sibling_prefix_and_absolute_escape(tmp_path):

@@ -39,7 +39,7 @@ def _resolve_scoped_file(file_path: str, tenant: TenantContext, upload_dir: Path
         raise HTTPException(status_code=404, detail="Dosya bulunamadı")
 
     if parts[1] == "all":
-        if tenant.branch_ids and not tenant.is_organization_owner and not tenant.is_super_admin:
+        if not tenant.has_institution_wide_branch_access:
             raise HTTPException(status_code=404, detail="Dosya bulunamadı")
     else:
         try:
@@ -72,10 +72,12 @@ async def upload_file(
         ))).scalar_one_or_none()
         if branch is None or not tenant.can_access_branch(branch_id):
             raise HTTPException(status_code=404, detail="Şube bulunamadı")
-    elif tenant.branch_ids and not tenant.is_organization_owner and not tenant.is_super_admin:
+    elif not tenant.has_institution_wide_branch_access and tenant.branch_ids:
         if len(tenant.branch_ids) != 1:
             raise HTTPException(status_code=400, detail="Şube seçimi gerekli")
         branch_id = tenant.branch_ids[0]
+    elif not tenant.has_institution_wide_branch_access:
+        raise HTTPException(status_code=403, detail="Atanmış şube kapsamı gerekli")
     file_service = FileService()
     
     try:
