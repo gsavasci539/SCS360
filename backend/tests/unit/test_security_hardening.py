@@ -8,12 +8,17 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.core.database import engine
 from app.core.exceptions import ValidationException
 from app.core.middleware import SecurityHeadersMiddleware
 from app.core.web_session import ACCESS_COOKIE
 from app.routers.files_receipts import _validate_upload
 
 TEST_ORG_TAX_KEY = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
+
+
+def test_database_engine_hides_bound_parameters_from_logs():
+    assert engine.sync_engine.hide_parameters is True
 
 
 def test_production_rejects_placeholder_jwt_secret():

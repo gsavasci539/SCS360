@@ -16,6 +16,9 @@ is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
 engine_kwargs = {
     "echo": settings.APP_ENV == "development",
+    # SQL echo is useful in development, but bound values can contain identity
+    # and other personal data. Keep statements visible without logging values.
+    "hide_parameters": True,
     "pool_pre_ping": True,
 }
 
