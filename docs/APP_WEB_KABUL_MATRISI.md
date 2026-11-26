@@ -464,3 +464,7 @@ Atanmış şubeleri bulunan `communications.read` kullanıcılarının teslim ra
 ### 26 Kasım — Outbox geçmişi şube sınırı (WIP)
 
 Atanmış şubesi bulunan kullanıcılar outbox geçmişinde yalnız kendi şube kimliklerine bağlı `NotificationJob` kayıtlarını görür. Branchless kurum-geneli bildirimlerde alıcı/mesaj içeriği liste, detay, retry ve silme sorgularından çıkar. Statik `git diff --check` dışında test/build/runtime yok. SCS360 SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` push/`ls-remote` doğrulandı. Geçici DB tenant regressions ve kurum sahibi/portal rol kabulü açık; WIP, KVKK/canlı kabulü değildir.
+
+### 26 Kasım — Bildirim liste/detay/yönetim şube kapsamı (WIP)
+
+Şubeli aktörün bildirim listesi branchless kurum-geneli işleri dışlar; detay, silme ve tekrar kuyruğa alma uçları da işin şubesini atanmış şubelerle karşılaştırır ve eşleşmeyeni 404 ile gizler. Hedefli statik diff kontrolü geçti; test/build/DB runtime yok. SCS360 `201e5af4088fc27f90642981d55e904a35d0044c` push/`ls-remote` doğrulandı. Çoklu şube kullanıcısının kendi branchless işi, izole kurum/şube regressions ve canlı/KVKK kabulü açık.

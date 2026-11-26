@@ -149,3 +149,9 @@ Yalnız `git diff --check` yapıldı; izole tenant testleri, başka recipient en
 `outbox_service.scoped()` ortak repository filtresine ek olarak, şube listesi bulunan aktörlerde `NotificationJob.branch_id IN (atanmış şubeler)` koşulu uygular. Önceki generic filtre `branch_id=NULL` satırlarını kabul ediyordu; bu satırlar kurum geneli bildirim alıcılarını ve mesaj içeriğini içerebildiğinden branch-scoped outbox list/detail/retry/delete işlemlerinde dışarıda bırakılır. Kurum sahibi ve platform kapsamı değişmez.
 
 Yalnız `git diff --check` yapıldı; geçici DB/rol/portal senaryoları, üretim ayarları ve eski log/DB retention-silme doğrulanmadı. SCS360 `codex/source-sync-20261111` SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` push/`ls-remote` ile doğrulandı. WIP; canlıya hazır veya KVKK uyumlu kabulü değildir.
+
+### 26 Kasım 2026 — Bildirim liste/detay/yönetim şube kontrolü (WIP)
+
+Dashboard bildirim uçlarında generic repository filtresi `branch_id=NULL` kayıtlarını okunabilir sayıyordu. `/api/notifications` listesi branch-scoped aktörlerde yalnız atanmış şubeleri seçer; detail, delete ve retry yolları da job branch’ini kontrol edip branchless/foreign işleri 404 ile gizler. Böylece bu uçların alıcı adresi okuma ve job değiştirme işlemleri kurum geneli bildirimlere uygulanmaz.
+
+Yalnız `git diff --check` yapıldı; izole DB rol/şube testleri ve canlı runtime yok. SCS360 `codex/source-sync-20261111` SHA `201e5af4088fc27f90642981d55e904a35d0044c` push/`ls-remote` doğrulandı. Çoklu şube aktörünün kendi branchless işi için erişim modeli, geçici DB kabulü, diğer broadcast API’leri ve KVKK süreçleri açık; WIP.

@@ -1110,3 +1110,9 @@ Kaynak SHA `e309e80f87bd3e67d05a1d07cca7325f41d2c13c` normal push/`ls-remote` il
 - `outbox_service.scoped()` artık atanmış şubesi bulunan kullanıcılar için `NotificationJob.branch_id` değerini atanmış şubelerle sınırlar. Ortak repository filtresinin `branch_id=NULL` kurumsal satırlara izin vermesi nedeniyle oluşabilecek alıcı/mesaj görünürlüğü engellenir; liste, detay, tekrar kuyruğa alma ve silme ortak sorgu scope'undan yararlanır.
 - Hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. SCS360 kod SHA `b020cb2c8f18e4f9ebbf552adc6333aa955588fc` normal push/`ls-remote` ile doğrulandı.
 - Sıradaki somut iş: outbox ve delivery report için şubeler arası, branchless kurumsal yayın, kurum sahibi ve erişilemeyen branch_id senaryolarını yalnız geçici DB’de doğrula; ilgili portal/rol davranışını ayrıca gözden geçir. WIP; canlı veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 · Bildirim ayrıntı ve işlem uçlarında şube sınırı (WIP)
+
+- `/api/notifications` listesi şubeli aktör için `branch_id=NULL` kayıtları hariç tutar. Detay, silme ve retry uçları da yüklenen işin şube kimliğini aktörün atamalarına karşı doğrular; eşleşmeyen iş 404 döner. Bu, kurum geneli işlerde alıcı adreslerinin okunmasını ve şube dışı bildirimlerin değiştirilmesini engeller.
+- Yalnız hedefli `git diff --check` geçti; test/build/DB runtime yapılmadı. Kod SCS360 `codex/source-sync-20261111` SHA `201e5af4088fc27f90642981d55e904a35d0044c` normal push/`ls-remote` ile doğrulandı.
+- Açık: çoklu şubeye atanmış kullanıcıların `branch_id=NULL` oluşturulan kendi bildirim işlerini yönetme akışı daha dar veri modeliyle ele alınmalı; şube/kurum sahibi regressions geçici DB’de doğrulanmalı. Canlı veya KVKK kabulü değildir.
