@@ -397,14 +397,21 @@ async def overdue_debts_report(
 
 
 @router.post("/api/reports/overdue-debts/remind")
+@limiter.limit("5/minute")
 async def remind_overdue_debts(
+    request: Request,
     body: dict,
     tenant: TenantContext = Depends(PermissionChecker("notification.write")),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     raw_ids = body.get("debt_ids", [])
-    debt_ids = [UUID(str(value)) for value in raw_ids]
+    if not isinstance(raw_ids, list) or len(raw_ids) > 100:
+        raise ValidationException("En fazla 100 borç seçilebilir")
+    try:
+        debt_ids = list(dict.fromkeys(UUID(str(value)) for value in raw_ids))
+    except (TypeError, ValueError) as exc:
+        raise ValidationException("Borç kimliği geçersiz") from exc
     if not debt_ids:
         return success_response(
             {"jobs_created": 0, "recipients": 0}, "Hatırlatılacak borç bulunamadı"
