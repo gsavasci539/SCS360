@@ -546,3 +546,7 @@ Makbuz detail/PDF/print/notification queue uçları tenant-scoped yüklemeye ge�
 Finansal ilişki taraması ayrıca öğrenci ödeme geçmişinde tenant ve öğrenci şubesi filtresi olmayan satır sorgusunu buldu; kanonik ödeme/öğrenci bağının tutarsız olduğu durumda satırın gösterilmesi engellendi. Aynı iki hedefli testte yerel öğrenciye yabancı kurumdan bağlı sentetik Payment satırı sonuçta yer almadı; 2 PASS/2 PG skip. Bu test geniş finansal CRUD veya tüm veritabanı tutarlılık kısıtlarının kabulü değildir.
 
 Borç seçenekleri/öğrenci etiketleri, kalan borç toplamı ve iptal edilen makbuz ilişkileri için ikinci tenant+branch tutarlılık katmanı eklendi. Hedefli geçici SQLite API/service doğrulaması aynı iki test fonksiyonunda **2 PASS, 2 PostgreSQL SKIP**; sayı önceki receipt/tenant testlerinin üzerine ek vaka sayısı değildir. Ödeme sağlayıcı, canlı ödeme ve canlı DB kullanılmadı; WIP.
+
+### TCKN rutin API yanıtlarında gizli (WIP, 26.11.2026)
+
+Kurum listesi/detayı ve create/update yanıtları vergi/kimlik numarasını artık açık taşımıyor. Ayrı, owner/platform-admin yetkili, sabit amaç kodlu ve 5/dakika sınırlı reveal POST'u numarayı ayrı döndürüyor; audit kaydı yalnız amaç ve değer bulunma bilgisini içeriyor. Yönetim formu kullanıcı onayı ister, açık değeri en fazla 30 saniye gösterir ve gizleme kontrolü sunar. İzole backend testi 2 PASS/2 PostgreSQL SKIP; frontend davranış testi 5 PASS. Canlı veri, gerçek numara veya sağlayıcı kullanılmadı. WIP; yasal dayanak, aydınlatma, retention/erasure, sağlayıcı veri aktarımı ve canlı kabul ayrı açık maddelerdir.
