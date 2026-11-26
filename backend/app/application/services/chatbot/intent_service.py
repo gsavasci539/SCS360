@@ -106,17 +106,28 @@ class IntentDetectionService:
             },
         ]
 
-        # Add conversation history if available
-        if context.conversation_history:
-            history_text = "\n".join([
-                f"{msg.get('role', 'user')}: {msg.get('content', '')}"
-                for msg in context.conversation_history[-5:]  # Last 5 messages
-            ])
+        # Keep follow-up context useful without exporting prior free-text messages.
+        known_intents = {
+            "GENERAL", "STUDENT_INFO", "ATTENDANCE", "GRADES", "HOMEWORK",
+            "PAYMENTS", "PAYMENT_SUMMARY", "DEBT", "EXPENSES", "CANTEEN",
+            "CANTEEN_BALANCE", "ANNOUNCEMENTS", "NOTIFICATIONS", "CONNECT_TEACHER",
+            "TEACHER_INFO", "CLASS_INFO", "USER_INFO", "REPORTS", "SYSTEM_STATUS",
+        }
+        recent_intents = [
+            value
+            for message in context.conversation_history[-5:]
+            if isinstance(message, dict)
+            and isinstance((value := message.get("intent")), str)
+            and value.strip().upper() in known_intents
+        ]
+        if recent_intents:
             messages.insert(
                 -1,
                 {
                     "role": "system",
-                    "content": f"Recent conversation history:\n{history_text}",
+                    "content": "Recent intent labels only: " + ", ".join(
+                        value.strip().upper() for value in recent_intents
+                    ),
                 }
             )
 
