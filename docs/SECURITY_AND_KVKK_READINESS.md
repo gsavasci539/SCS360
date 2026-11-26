@@ -105,3 +105,9 @@ Dataset export endpoint’i istek/IP başına 2 dakika sınırına alındı; mev
 Yeni üretilen sıfırlama bağlantısı tokenı URL fragment’ine yerleştirir; browser fragment’i ilk HTTP isteğinde sunucuya göndermez. React tokenı ilk renderda belleğe alıp adres/geçmişten temizler; eski query formatı uyumluluk için okunur ve istemcide silinir. `git diff --check` geçti; test/build yok. SCS360 `codex/source-sync-20261111` SHA `0b9e091a0ed09a863f08899d315c4753ff4ab564` normal push/`ls-remote` ile doğrulandı.
 
 Önceden üretilmiş query URL’leri, ingress/e-posta tracking logları veya eski tarayıcı geçmişi bu değişiklikle temizlenmez. E-posta sağlayıcısı davranışı, canlı ingress log formatı/saklama, reset akışının test kabulü ve tokenın erişim izi hâlâ açık. Bu WIP; canlı veya KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Chatbot dış hedeflerinde özel ağ reddi (WIP)
+
+Harici LLM transfer politikası, allowlist + açık opt-in + HTTPS/443 şartları korunarak non-public IP literal’lerini, scoped IPv6 ve yaygın private/reserved DNS suffix’lerini (`.local`, `.internal`, `.test`, `.home`, `.lan`, `.invalid`, `.example`) reddeder. `git diff --check` geçti; test/build/DNS/runtime yok. SCS360 `codex/source-sync-20261111` SHA `08e14a7948d3bdcb7b0249b6ee8219a554925829` normal push/`ls-remote` ile doğrulandı.
+
+Bu DNS rebinding/özel IP’ye çözümleme riskini tek başına kapatmaz. Egress firewall, resolver ve canlı ağ yolunun bağımsız doğrulaması; harici LLM veri işleme koşulları ve KVKK incelemesi açık kalır. WIP, canlı kabulü değildir.

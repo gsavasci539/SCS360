@@ -434,3 +434,7 @@ Chatbot dataset export uç noktası ortak rate-limit deposunda IP başına `2/mi
 ### 26 Kasım — Parola reset tokenının fragment kullanması (WIP)
 
 Yeni e-posta linklerinde token `#token=` fragment’inde; istemci fragment veya eski query tokenını ilk aşamada belleğe alıp URL geçmişini temizliyor. Query fallback yalnız eski link uyumluluğu içindir ve eski ilk istek/log kayıtlarındaki tokenları geri silemez. Statik diff kontrolü geçti; test/build yapılmadı. SCS360 `codex/source-sync-20261111` SHA `0b9e091a0ed09a863f08899d315c4753ff4ab564` normal push/`ls-remote` ile doğrulandı. E-posta/ingress runtime ve KVKK kabulü açık.
+
+### 26 Kasım — Chatbot harici sağlayıcı özel hedef koruması (WIP)
+
+Harici provider URL allowlist doğrulaması artık private/reserved IP literal ve yerel/özel DNS suffix hedeflerini reddediyor; allowlist + opt-in + HTTPS/443 devam ediyor. Statik diff kontrolü; test/build/runtime yok. SCS360 SHA `08e14a7948d3bdcb7b0249b6ee8219a554925829` normal push/`ls-remote` ile doğrulandı. DNS rebinding ve network egress firewall kabulü açık.
