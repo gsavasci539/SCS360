@@ -11,7 +11,7 @@ describe("SCS360 uygulama iskeleti", () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
-    useAuthStore.setState({ authMode: null, authenticated: false, accessToken: null, refreshToken: null, csrfToken: null, user: null, hydrated: true });
+    useAuthStore.setState({ accessToken: null, refreshToken: null, user: null, hydrated: true });
   });
 
   it("korumalı sayfadan giriş ekranına yönlendirir", async () => {
@@ -35,10 +35,11 @@ describe("SCS360 uygulama iskeleti", () => {
 
   it("doğrudan URL ile yetkisiz modüle erişimi engeller", async () => {
     useAuthStore.setState({
-      accessToken: "access",
-      refreshToken: "refresh",
-      authMode: "bearer",
+      authMode: "cookie",
       authenticated: true,
+      accessToken: null,
+      refreshToken: null,
+      csrfToken: null,
       hydrated: true,
       user: {
         id: "1", email: "user@example.com", first_name: "Test", last_name: "Kullanıcı",

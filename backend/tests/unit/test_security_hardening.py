@@ -13,6 +13,8 @@ from app.core.middleware import SecurityHeadersMiddleware
 from app.core.web_session import ACCESS_COOKIE
 from app.routers.files_receipts import _validate_upload
 
+TEST_ORG_TAX_KEY = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
+
 
 def test_production_rejects_placeholder_jwt_secret():
     with pytest.raises(ValidationError):
@@ -27,6 +29,7 @@ def test_production_accepts_strong_jwt_secret():
     settings = Settings(
         APP_ENV="production",
         JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+        ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
         CORS_ORIGINS="https://school.example",
         PASSWORD_RESET_URL="https://school.example/reset-password",
         RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
@@ -41,6 +44,7 @@ def test_production_allows_plain_redis_only_for_private_compose_service():
     settings = Settings(
         APP_ENV="production",
         JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+        ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
         CORS_ORIGINS="https://school.example",
         PASSWORD_RESET_URL="https://school.example/reset-password",
         RATE_LIMIT_STORAGE_URI="redis://:a-unique-rate-limit-secret-with-more-than-32-characters@rate-limit-store:6379/0",
@@ -64,6 +68,7 @@ def test_production_requires_authenticated_shared_rate_limit_storage(storage_uri
         Settings(
             APP_ENV="production",
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+            ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
             CORS_ORIGINS="https://school.example",
             PASSWORD_RESET_URL="https://school.example/reset-password",
             RATE_LIMIT_STORAGE_URI=storage_uri,
@@ -82,6 +87,7 @@ def test_production_rejects_non_exact_or_insecure_cors_origins(origin):
         Settings(
             APP_ENV="production",
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+            ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
             CORS_ORIGINS=origin,
             PASSWORD_RESET_URL="https://school.example/reset-password",
             _env_file=None,
@@ -93,6 +99,7 @@ def test_production_requires_https_password_reset_url_even_without_mail_delivery
         Settings(
             APP_ENV="production",
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+            ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
             CORS_ORIGINS="https://school.example",
             PASSWORD_RESET_URL="http://school.example/reset-password",
             RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
@@ -106,6 +113,7 @@ def test_production_requires_https_payment_callbacks_when_enabled():
         Settings(
             APP_ENV="production",
             JWT_SECRET_KEY="a-unique-production-secret-with-more-than-32-characters",
+            ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=TEST_ORG_TAX_KEY,
             CORS_ORIGINS="https://school.example",
             PASSWORD_RESET_URL="https://school.example/reset-password",
             RATE_LIMIT_STORAGE_URI="rediss://:a-unique-rate-limit-secret-with-more-than-32-characters@redis.example:6379/0",
