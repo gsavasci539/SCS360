@@ -662,3 +662,8 @@ API başarı ve hata yanıtları ile CSRF ret yanıtlarına içerik çalıştır
 ### Güvenlik WIP — TCKN görüntülemede yeniden doğrulama (26.11.2026)
 
 Kurum vergi/kimlik numarası API reveal'u her defasında mevcut parolayı doğrular; Web formu parolayı maskeleyip istek sonrası temizler, kapanma sırasında açık isteği iptal eder. İstek şeması unknown field kabul etmez. Hedefli geçici SQLite backend **1 PASS, 1 PostgreSQL varyantı SKIP**; frontend **1 PASS, 4 hedef dışı SKIP**. Build çalıştırılmadı; bu kabul değildir. Eski istemci çağrısı uyumluluğu doğrulanmadı. KVKK işleme amacı/dayanağı, provider/HTTPS ve production kabulü açık.
+
+
+### Güvenlik WIP — API CSP header regresyonu (27.11.2026)
+
+API başarı ve CSRF ret yanıtlarında içerik çalıştırmayan CSP’yi doğrulayan hedefli testler **2/2 PASS**. Yalnız uygulama middleware’i kabul edildi; Nginx/container ve canlı yanıt doğrulanmadı.

@@ -354,3 +354,8 @@ FastAPI `SecurityHeadersMiddleware` şimdi `/api/` yanıtlarına ve CSRF reddi y
 ## 26 Kasım 2026 — TCKN reveal için parola yeniden doğrulaması (WIP)
 
 `/api/organizations/{id}/tax-identifier/reveal` owner/platform yetkisi ve hız sınırına ek olarak isteği yapan kullanıcının güncel parolasını doğrular. Pydantic şeması ek alanları reddeder. Web parolayı type=password alanında alır, bu işlemin body’siyle gönderir, istek tamamlanınca alanı temizler; pencere kapatılınca bekleyen fetch'i iptal eder. Audit kaydı yalnız görüntüleme olayı/amaç/değer varlığı tutar, parola ve numarayı içermez. Hedefli geçici SQLite backend entegrasyon testi **1 PASS, 1 PostgreSQL varyantı SKIP**; frontend Vitest **1 PASS, 4 hedef dışı SKIP**. Build ve canlı kontrol yapılmadı; değişiklik WIP'tir ve eski istemcilerin request body uyumluluğu doğrulanmadı. Parola yeniden doğrulaması çalınmış/aktif oturum riskini azaltır, XSS veya istemci belleği riskini tamamen kaldırmaz.
+
+
+## 27 Kasım 2026 — API CSP regresyon testleri (WIP)
+
+`test_security_hardening.py` içindeki başarı yanıtı ve cookie-CSRF ret kontrolleri artık CSP header değerini doğrular; hedefli çalıştırma **2 PASS**. Test istemcisi geçici/in-process olup frontend Nginx, public ingress, TLS veya canlı alan adını doğrulamaz. Canlı tarayıcı başlıkları, security.txt iletişim kaydı, KVKK/operasyon ve bağımsız güvenlik kabulü açık.

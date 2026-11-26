@@ -181,6 +181,7 @@ def test_security_headers_protect_api_responses_from_caching_and_sniffing():
     assert response.headers["pragma"] == "no-cache"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["content-security-policy"] == "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
 
 
 def test_csrf_rejection_keeps_api_security_headers():
@@ -200,6 +201,7 @@ def test_csrf_rejection_keeps_api_security_headers():
     assert response.headers["cache-control"] == "no-store, max-age=0"
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["content-security-policy"] == "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'"
 
 
 def test_frontend_nginx_keeps_security_headers_on_immutable_assets():
