@@ -508,3 +508,7 @@ Makbuz e-posta/SMS/WhatsApp kuyruğu 10/dk rate limit uygular ve ilgili öğrenc
 ### 26 Kasım 2026 — Ödeme hatırlatması API sınırı (WIP)
 
 Finansal hatırlatma endpointi 5/dk ve en fazla 100 borç ID'siyle sınırlandırıldı; mevcut kayıtlı veli/tenant tercih kontrolleri korunur. SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` push/`ls-remote` doğrulandı. Yalnız statik diff; test/build/sandbox veya canlı ileti yok.
+
+### 26 Kasım 2026 — Broadcast oluştur/gönder hız sınırı (WIP)
+
+Toplu ileti taslak oluşturma ve send uçlarında 5/dk IP rate limit eklendi; tenant/şube kontrolleri korunur. SHA `ed27badba35691b58d8d4c2cf6f13ef80934f9af` push/`ls-remote` doğrulandı. Statik diff dışında test/build/canlı gönderim yok.

@@ -211,3 +211,9 @@ Yalnız `git diff --check`; test, build, gerçek ileti veya provider çağrısı
 `POST /api/payments/finances/reminders/send` endpointi IP bazında 5/dk; body'deki borç kimlikleri 1–100 aralığına sınırlandı. `finance_compat_service` kayıtlı veli, seçili tenant/şube ve `receive_notifications` koşullarını korur. SCS360 SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` normal push/`ls-remote` ile doğrulandı.
 
 Sadece `git diff --check`; test/build/gerçek sağlayıcı gönderimi yok. Dağıtık rate limit, reverse-proxy IP güven zinciri, finansal bildirimler için kanal/amaç hukuki dayanağı, eski verilerin saklama/silme ve canlı KVKK/güvenlik kabulü açık. WIP.
+
+### 26 Kasım 2026 — Broadcast send abuse azaltımı (WIP)
+
+`POST /api/communications/broadcast-jobs` ve `.../{job_id}/send` endpointleri IP başına 5/dk ile sınırlandı; send service mevcut tenant/branch hedef, kayıtlı adres ve veli tercih kontrollerini sürdürür. Kod `ed27badba35691b58d8d4c2cf6f13ef80934f9af` normal push/`ls-remote` ile doğrulandı.
+
+Yalnız `git diff --check`; test/build/gerçek provider yok. Paylaşılan limiter deposu, reverse proxy IP zinciri, yüksek alıcı sayısı davranışı, kanal rızası ve retention/silme kabulü açık. WIP, KVKK veya canlı hazırlık kararı değildir.

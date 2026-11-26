@@ -1167,3 +1167,7 @@ Makbuz e-posta/SMS/WhatsApp kuyruk uçları IP başına 10/dk ile sınırlandı 
 ### 26 Kasım 2026 — Finansal hatırlatma batch/rate sınırı (WIP)
 
 `POST /api/payments/finances/reminders/send` IP başına 5/dk ile sınırlandı; `invoice_ids` uzunluğu 500'den 100'e indirildi. Servisteki mevcut tenant/şube ve bildirim tercihine göre veli seçimi değişmedi. SHA `0491db2dfbc472befc902d5e6bda530e45d7e3bb` normal push/`ls-remote` ile doğrulandı. Yalnız statik `git diff --check`; test/build/DB/provider runtime yok. WIP; gerçek rate-limit deposu/IP güveni, kanal bazlı hukuki dayanak ve canlı/KVKK kabulü açık.
+
+### 26 Kasım 2026 — Broadcast queue endpoint rate limit (WIP)
+
+Toplu ileti taslağı oluşturma ve gönderim-kuyruğa-alma endpointleri IP başına 5/dk ile sınırlandı. Mevcut draft/idempotency ve tenant/branch hedef kontrolleri değişmedi. SHA `ed27badba35691b58d8d4c2cf6f13ef80934f9af` normal push/`ls-remote` ile doğrulandı. Yalnız statik `git diff --check`; test/build/provider runtime yok. Dağıtık rate limiter/proxy IP kabulü ve izin/retention süreçleri açık; WIP.
