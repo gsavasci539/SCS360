@@ -335,3 +335,8 @@ Audit olayında kimlik numarasının yalnız var olup olmadığını belirtmek i
 ### 26 Kasım 2026 — Duyuru/bildirim alıcı kapsamı daraltıldı (WIP)
 
 Atanmamış sıradan personel, kurum geneli duyuru/bildirim oluşturamaz veya legacy branchless kuyruk ve alıcı adreslerini okuyamaz; detay, sonuç, tekrar deneme ve silme uçları da dal kapsamına bağlıdır. Kurum yöneticisi, kurum sahibi ve açık Root workspace kurum-geneli erişimi korur. SQLite test sonucu 3 PASS, 3 PostgreSQL varyantı SKIP; provider gönderimi kapalıydı. Kod SHA cc4bb12f03c2b79f11b6ed63ca6df1d165678c8f. Diğer özel SQL yolları, production, TCKN veri yaşam döngüsü ve KVKK/hukuk kabulü halen açık.
+
+
+### 26 Kasım 2026 — Outbox alıcı geçmişinin dal kapsamı (WIP)
+
+Sıradan personel ve dal/ilişki kapsamındaki kullanıcılar artık kurum geneli branchless outbox job kayıtlarının alıcı adreslerini göremez, tekrar kuyruğa alamaz veya silemez. Kurum-geneli yetki korunur. İzole SQLite sonucu: 2 PASS, 2 PostgreSQL varyantı SKIP. Kod SHA 7004fe20c2fbe118e8d60348221d56c6e4bf5777. Canlı bildirim/provider ve KVKK/hukuk/işletim kabulü yapılmadı.

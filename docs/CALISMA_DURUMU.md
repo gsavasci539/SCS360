@@ -1370,3 +1370,10 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 Şubesi atanmamış sıradan personel artık kurum geneli duyuru/bildirim kuyruğu oluşturamaz; branchless eski duyuru ve bildirimleri, alıcı adreslerini veya sonuç/tekrar/silme işlemlerini de göremez. Duyuru listesi/hedefleri ve bildirim şube seçenekleri erişilebilir dallarla sınırlandı. Tek şubeli kullanıcı için dal otomatik seçilir; birden fazla dalda seçim gerekir. Kurum yöneticisi, kurum sahibi ve açık Root kurum çalışma alanının yetkisi korunur. Aynı regresyonda provider hata ayrıntısının istemciye sızmaması da doğrulandı.
 
 `test_announcement_workspace.py`: **3 PASS, 3 PostgreSQL varyantı SKIP**; testler geçici SQLite ve kapalı bildirim teslimatıyla çalıştı. Kod SHA `cc4bb12f03c2b79f11b6ed63ca6df1d165678c8f` normal push ve `ls-remote` ile doğrulandı. Sıradaki somut iş: özel Core SQL uçlarında boş dal/tenant kapsamı taramasını sürdürmek. Bu checkpoint tüm bildirim kanalları, prod runtime, TCKN yaşam döngüsü veya KVKK/hukuk kabulü değildir.
+
+
+### 26 Kasım 2026 — Bildirim outbox alıcıları şube kapsamına alındı (WIP)
+
+Outbox liste/sayım/detay/tekrar deneme/silme sorguları sıradan hesaplarda yalnız atanmış veya güvenli ilişki kapsamıyla bulunan şubeleri kullanıyor. Branchless eski bildirimler alıcı adresleriyle birlikte sıradan personelden gizleniyor; boş atamalı kullanıcı da artık erişilebilir branchless kayıt bulamıyor. Açık kurum-geneli yetkiler korunuyor.
+
+Hedefli `test_outbox_hides_branchless_recipients_from_non_wide_users` ve mevcut kalıcı retry testi: **2 PASS, 2 PostgreSQL varyantı SKIP**, geçici SQLite; gerçek gönderim yok. Kod SHA `7004fe20c2fbe118e8d60348221d56c6e4bf5777` normal push ve `ls-remote` ile doğrulandı. Sıradaki somut iş: kalan Core SQL alıcı/geçmiş yollarında dal kapsamı denetimini sürdürmek. Bu WIP, tüm bildirim sisteminin, provider'ın, production'ın veya KVKK'nın kabulü değildir.
