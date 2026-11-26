@@ -657,3 +657,8 @@ Eski `/api/parent/notices` adaptörü teacher rolünü yalnız şubeyle sınırl
 ### Güvenlik WIP — Backend API CSP (26.11.2026)
 
 API başarı ve hata yanıtları ile CSRF ret yanıtlarına içerik çalıştırmayan CSP eklendi (`default-src 'none'`, `frame-ancestors 'none'`, `base-uri 'none'`, `form-action 'none'`, `object-src 'none'`). Uygulama içi ve Nginx kaynak ayarları canlı edge başlıklarının dağıtıldığını kanıtlamaz. Test/build/deploy yapılmadı; canlı header/security.txt kontrolü ve KVKK/TCKN operasyon kabulleri açık.
+
+
+### Güvenlik WIP — TCKN görüntülemede yeniden doğrulama (26.11.2026)
+
+Kurum vergi/kimlik numarası API reveal'u her defasında mevcut parolayı doğrular; Web formu parolayı maskeleyip istek sonrası temizler, kapanma sırasında açık isteği iptal eder. İstek şeması unknown field kabul etmez. Bu değişiklik için test/build çalıştırılmadı; kabul değildir. Eski istemci çağrısı uyumluluğu doğrulanmadı. KVKK işleme amacı/dayanağı, provider/HTTPS ve production kabulü açık.

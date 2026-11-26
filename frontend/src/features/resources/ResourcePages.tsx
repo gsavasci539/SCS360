@@ -12,6 +12,7 @@ import {
   ErrorState,
   Field,
   LoadingState,
+  Modal,
   PageHeader,
 } from "../../components/ui";
 import { ExcelImport } from "../../components/ExcelImport";
@@ -1615,15 +1616,23 @@ export function ResourceFormPage({
       >
     >({});
   const [revealedTaxNumber, setRevealedTaxNumber] = useState<string | null>(null);
+  const [revealDialogOpen, setRevealDialogOpen] = useState(false);
+  const [revealingTaxNumber, setRevealingTaxNumber] = useState(false);
+  const revealPasswordInput = useRef<HTMLInputElement | null>(null);
   const revealRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     revealRequest.current?.abort();
     revealRequest.current = null;
+    revealPasswordInput.current && (revealPasswordInput.current.value = "");
+    setRevealDialogOpen(false);
     setRevealedTaxNumber(null);
   }, [id]);
 
-  useEffect(() => () => revealRequest.current?.abort(), []);
+  useEffect(() => () => {
+    revealRequest.current?.abort();
+    if (revealPasswordInput.current) revealPasswordInput.current.value = "";
+  }, []);
 
   useEffect(() => {
     if (!revealedTaxNumber) return;
@@ -1975,22 +1984,35 @@ export function ResourceFormPage({
       }
     };
 
-  const revealTaxNumber = async () => {
-    if (!id || resourceKey !== "organizations") return;
-    if (!window.confirm("Kurumun vergi/kimlik numarası görüntülenecek ve erişim denetim kaydına alınacak. Devam edilsin mi?")) return;
+  const closeTaxRevealDialog = () => {
+    setRevealDialogOpen(false);
+    revealRequest.current?.abort();
+    if (revealPasswordInput.current) revealPasswordInput.current.value = "";
+  };
+
+  const revealTaxNumber = async (currentPassword: string) => {
+    if (!id || resourceKey !== "organizations" || !currentPassword || revealingTaxNumber) return;
     setServerError("");
+    setRevealingTaxNumber(true);
     revealRequest.current?.abort();
     const controller = new AbortController();
     revealRequest.current = controller;
     try {
       const response = await api.post<ApiResponse<{ tax_number: string | null }>>(
-        `/organizations/${id}/tax-identifier/reveal`, { purpose: "BUSINESS_RECORD" }, { signal: controller.signal },
+        `/organizations/${id}/tax-identifier/reveal`,
+        { purpose: "BUSINESS_RECORD", current_password: currentPassword },
+        { signal: controller.signal },
       );
-      if (!controller.signal.aborted) setRevealedTaxNumber(response.data.data.tax_number);
+      if (!controller.signal.aborted) {
+        setRevealedTaxNumber(response.data.data.tax_number);
+        closeTaxRevealDialog();
+      }
     } catch (error) {
       if (!controller.signal.aborted) setServerError(apiMessage(error));
     } finally {
+      if (revealPasswordInput.current) revealPasswordInput.current.value = "";
       if (revealRequest.current === controller) revealRequest.current = null;
+      setRevealingTaxNumber(false);
     }
   };
 
@@ -2062,8 +2084,8 @@ export function ResourceFormPage({
                     <button type="button" className="btn btn-secondary" onClick={() => setRevealedTaxNumber(null)}>Gizle</button>
                   </div>
                 ) : (
-                  <button type="button" className="btn btn-secondary" onClick={revealTaxNumber} disabled={loading || isSubmitting}>
-                    Denetim kaydıyla görüntüle
+                  <button type="button" className="btn btn-secondary" onClick={() => { setServerError(""); setRevealDialogOpen(true); }} disabled={loading || isSubmitting}>
+                    Parolayı doğrulayarak görüntüle
                   </button>
                 )}
               </Field>
@@ -2159,6 +2181,38 @@ export function ResourceFormPage({
           </button>
         </div>
       </form>
+      <Modal
+        open={revealDialogOpen}
+        title="Vergi/kimlik numarası görüntüleme"
+        description="Güncel parolanız doğrulanır ve erişim denetim kaydına alınır. Değer 30 saniye sonra gizlenir."
+        onClose={closeTaxRevealDialog}
+        actions={<>
+          <button type="button" className="btn btn-secondary" onClick={closeTaxRevealDialog} disabled={revealingTaxNumber}>Vazgeç</button>
+          <button type="button" className="btn btn-primary" onClick={() => void revealTaxNumber(revealPasswordInput.current?.value ?? "")} disabled={revealingTaxNumber}>
+            {revealingTaxNumber ? "Doğrulanıyor…" : "Doğrula ve görüntüle"}
+          </button>
+        </>}
+      >
+        <Field label="Mevcut parola" required>
+          <input
+            ref={revealPasswordInput}
+            type="password"
+            name="current_password"
+            required
+            autoComplete="current-password"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={4096}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void revealTaxNumber(revealPasswordInput.current?.value ?? "");
+              }
+            }}
+          />
+        </Field>
+        {serverError && <p role="alert" className="form-error">{serverError}</p>}
+      </Modal>
     </>
   );
 }

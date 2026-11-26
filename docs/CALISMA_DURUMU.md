@@ -1397,3 +1397,8 @@ Dosya kapsamı helper'ı `all` klasörüne erişimi kurum-geneli tenant rollerin
 ### 26 Kasım 2026 — API yanıtlarında dar CSP (WIP)
 
 `SecurityHeadersMiddleware`, `/api/` başarı ve hata yanıtlarına `default-src 'none'`, `frame-ancestors 'none'`, `base-uri 'none'`, `form-action 'none'` ve `object-src 'none'` CSP uygular. CSRF reddi yanıtı da kapsanır. Frontend/edge Nginx kaynak başlıkları mevcut; önceki canlı gözlem bunların dış hostta görünmediğini gösterdi. Test veya canlı yeniden kontrol/deploy yapılmadı. WIP; canlı başlıklar, Server sürümünün gizlenmesi, onaylı security.txt iletişim bilgisi, TCKN yaşam döngüsü ve KVKK/operasyon kabulü açıktır.
+
+
+### 26 Kasım 2026 — TCKN görüntülemede parola doğrulaması (WIP)
+
+Kurum TCKN/VKN reveal isteği, owner/platform yetkisi ve 5/dk sınırına ek olarak oturum sahibinin güncel parolasını doğrular; istek şeması beklenmeyen alanları reddeder. Web ekranı geçici password input'u kullanır, istek bitince alanı temizler ve görüntüleme isteği kapatılırsa iptal eder. Regresyon testleri çalıştırılmadı; bu nedenle davranış kabul edilmiş sayılmaz. Sağlayıcı/provider gerekliliği, TCKN işleme şartı, canlı HTTPS/edge, KVKK ve bağımsız güvenlik değerlendirmesi açık.

@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 from typing import Literal
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 
 
 class OrganizationBase(BaseModel):
@@ -32,7 +32,10 @@ class OrganizationUpdate(BaseModel):
 
 
 class TaxIdentifierRevealRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     purpose: Literal["BUSINESS_RECORD", "TAX_FILING", "PAYMENT_PROVIDER_SETUP"]
+    current_password: str = Field(..., min_length=1, max_length=4096)
 
 
 class OrganizationResponse(BaseModel):

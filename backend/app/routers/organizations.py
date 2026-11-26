@@ -13,6 +13,7 @@ from app.core.exceptions import ForbiddenException, ConflictException
 from app.core.permissions import PermissionChecker
 from app.core.rate_limit import limiter
 from app.core.responses import paginate, success_response
+from app.core.security import verify_password
 from app.core.tenant import TenantContext
 from app.infrastructure.models.models import AuditAction, AuditLog, Branch, Organization, Student, User
 from app.infrastructure.repositories.base import BaseRepository
@@ -151,10 +152,13 @@ async def reveal_organization_tax_identifier(
     request: Request,
     body: TaxIdentifierRevealRequest,
     tenant: TenantContext = Depends(PermissionChecker("org.read")),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     if not can_read_tax_number(tenant):
         raise ForbiddenException()
+    if not verify_password(body.current_password, user.password_hash):
+        raise ForbiddenException("Kimlik doğrulaması başarısız")
     org = await BaseRepository(db, tenant).get_by_id(org_id, Organization)
     value = org.tax_number
     db.add(AuditLog(organization_id=org.id, user_id=tenant.user_id,

@@ -349,3 +349,8 @@ Dashboard ve rapor endpointlerinde sıradan/ilişki kapsamlı hesapların boş b
 ## 26 Kasım 2026 — API yanıt CSP kapsamı (WIP)
 
 FastAPI `SecurityHeadersMiddleware` şimdi `/api/` yanıtlarına ve CSRF reddi yanıtlarına `default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'; object-src 'none'` gönderir. Bu, JSON/API yüzeyinde tarayıcı içeriği çalıştırmayı kapatan savunma katmanıdır; frontend CSP ve public edge Nginx yapılandırmasının yerini almaz. Bu değişiklik için test/build çalıştırılmadı ve canlı alan adı tekrar ölçülmedi. Daha önce kaydedilen canlı gözlemde güvenlik başlıkları görünmüyordu ve `security.txt` SPA HTML dönüyordu. Onaylı güvenlik iletişim adresi olmadan `security.txt` uydurulmayacak; edge sunucu başlıklarının gerçek dağıtımı ayrıca doğrulanmalı. Bu WIP, güvenlik garantisi veya KVKK uyum beyanı değildir.
+
+
+## 26 Kasım 2026 — TCKN reveal için parola yeniden doğrulaması (WIP)
+
+`/api/organizations/{id}/tax-identifier/reveal` owner/platform yetkisi ve hız sınırına ek olarak isteği yapan kullanıcının güncel parolasını doğrular. Pydantic şeması ek alanları reddeder. Web parolayı type=password alanında alır, bu işlemin body’siyle gönderir, istek tamamlanınca alanı temizler; pencere kapatılınca bekleyen fetch'i iptal eder. Audit kaydı yalnız görüntüleme olayı/amaç/değer varlığı tutar, parola ve numarayı içermez. Regresyon/entegrasyon/UI testleri, build ve canlı kontrol çalıştırılmadı; değişiklik WIP'tir ve eski istemcilerin request body uyumluluğu doğrulanmadı. Parola yeniden doğrulaması çalınmış/aktif oturum riskini azaltır, XSS veya istemci belleği riskini tamamen kaldırmaz.
