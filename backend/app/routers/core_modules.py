@@ -1359,10 +1359,14 @@ async def student_payments(
     tenant: TenantContext = Depends(PermissionChecker("finance.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    await BaseRepository(db, tenant).get_by_id(student_id, Student)
+    student = await BaseRepository(db, tenant).get_by_id(student_id, Student)
     result = await db.execute(
         select(Payment)
-        .where(Payment.student_id == student_id)
+        .where(
+            Payment.student_id == student_id,
+            Payment.organization_id == student.organization_id,
+            Payment.branch_id == student.branch_id,
+        )
         .order_by(Payment.payment_date.desc())
     )
     payments = result.scalars().all()

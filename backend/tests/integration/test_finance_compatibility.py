@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -7,8 +8,8 @@ from sqlalchemy import select
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
-from app.infrastructure.models.models import (Branch, Debt, NotificationJob, NotificationStatus, Parent, Permission,
-    Role, User, Payment, Receipt, ReceiptStatus)
+from app.infrastructure.models.models import (Branch, Debt, DebtStatus, DebtType, NotificationJob, NotificationStatus,
+    Parent, PaymentMethod, Permission, Role, User, Payment, Receipt, ReceiptStatus)
 
 
 def auth(user):
@@ -88,6 +89,7 @@ async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(f
         json={"invoice_id": invoice["id"], "amount": "10.00", "payment_method": "CASH"})
     assert collected.status_code == 200, collected.text
     receipt_id = collected.json()["data"]["receipt_id"]
+    payment_id = collected.json()["data"]["payment_id"]
 
     async with sessions() as db:
         restricted_branch = Branch(organization_id=data["org"].id, name="Restricted receipts branch")
@@ -110,12 +112,24 @@ async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(f
         branch_user = User(first_name="Branch", last_name="Finance", email="branch-finance@test.invalid",
             password_hash="unused", organization_id=data["org"].id, roles=[branch_role], branches=[restricted_branch])
         db.add_all([foreign_user, branch_user])
+        await db.flush()
+        corrupt_debt = Debt(organization_id=data["other_branch"].organization_id, branch_id=data["other_branch"].id,
+            student_id=data["children"][0].id, debt_type=DebtType.EDUCATION, amount=Decimal("5.00"),
+            paid_amount=Decimal("0.00"), status=DebtStatus.UNPAID, due_date=date.today())
+        db.add(corrupt_debt)
+        await db.flush()
+        db.add(Payment(organization_id=data["other_branch"].organization_id, branch_id=data["other_branch"].id,
+            student_id=data["children"][0].id, debt_id=corrupt_debt.id, amount=Decimal("1.00"),
+            payment_method=PaymentMethod.CASH, received_by=foreign_user.id))
         await db.commit()
 
     branch_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(branch_user))
     assert branch_list.status_code == 200 and branch_list.json()["data"]["items"] == []
     foreign_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(foreign_user))
     assert foreign_list.status_code == 200 and foreign_list.json()["data"]["items"] == []
+    student_payments = await client.get(f"/api/students/{data['children'][0].id}/payments", headers=auth(data["accountant"]))
+    assert student_payments.status_code == 200
+    assert [row["id"] for row in student_payments.json()["data"]] == [payment_id]
 
     foreign_headers = auth(foreign_user)
     paths = (
