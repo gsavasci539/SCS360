@@ -1332,3 +1332,9 @@ Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'n
 - `org_admin`, `owner` ve Root'un açık kurum workspace'i kurum geneli şube kapsamını koruyor; `branch_manager` boş atamada tüm şubeye açılmıyor. Şubesiz normal kullanıcının branchless toplu ileti alıcı raporu boş dönüyor; kullanıcı-şube Core sorgusu da yetkili dal kümesini uyguluyor. Veli/öğretmen ilişki kapsamı önceki checkpoint'teki erişilebilir öğrenci dallarına bağlı.
 - İzole SQLite hedefli küme `test_branch_isolation.py`, `test_permission_contract.py`, `test_broadcast_outbox.py`: **15 PASS, 5 PostgreSQL varyantı SKIP**; gerçek sağlayıcı/üretim ortamı yok. Kod SHA `90a689e028032f7beba87b7f5ff7e8577e1a0d6f` normal push/`ls-remote` ile doğrulandı.
 - Sıradaki somut iş: Core SQL kullanan diğer API yollarını şube kapsamı açısından taramak; tüm uygulama/kabul kapsamı tamamlanmadı. WIP, KVKK veya canlı kabulü değildir.
+
+### 26 Kasım 2026 — Şubesiz kart/cihaz/içe aktarma uçları reddediliyor (WIP)
+
+- Kart numarası, RFID kartı, cihaz ve veri içe aktarma router'larına ortak `require_assigned_branch` dependency eklendi. `owner`, `org_admin`, açık Root workspace ve süper yönetici korunuyor; şubesi olmayan sıradan hesaplar bu dal-bağımlı API'lere giremiyor.
+- Geçici SQLite: `test_branchless_staff_cannot_open_device_configuration` **1 PASS**; `test_branch_isolation.py` + branch lifecycle + student-number import hedef kümesi **12 PASS, 5 PostgreSQL varyantı SKIP**. Canlı DB/cihaz/provider kullanılmadı. Kod SHA `c2787481d8bd4968a02785d0980f6b4f04775bcf` normal push/`ls-remote` ile doğrulandı.
+- Sonraki somut iş: diğer özel Core sorgularında aynı boş-scope varsayımını uçtan uca taramak ve branch-bound read/write kabulünü genişletmek. Bu WIP, tüm uçların kabulü veya KVKK/canlı hazır beyanı değildir.
