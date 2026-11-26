@@ -444,3 +444,7 @@ Rate-limit route için eksik `Request`/ortak `limiter` importları düzeltildi. 
 ### 26 Kasım — Chatbot içerik erişim olayları (WIP)
 
 Audit metnini listeleme, feedback güncelleme ve eğitim dataset export artık `audit_logs` tablosuna içerik kopyalamayan aktör/kurum/olay özeti yazar; IP de tutulduğu için onaylı retention ve log erişim politikası gerekir. Audit liste 20/dk, feedback update 10/dk ile sınırlandı. Statik diff kontrolü; test/build/DB runtime yok. SCS360 SHA `8d908baa04f58da9378491ba309b4ba17490e4c9` normal push/`ls-remote` ile doğrulandı. Kalıcılık, rollback, 429 ve saklama/silme kabulü açık.
+
+### 26 Kasım — Parola reset brute-force sınırı (WIP)
+
+`POST /auth/reset-password` ortak rate-limit deposunda IP başına 5/dakika ile sınırlandı. Statik diff kontrolü dışında test/build/runtime yapılmadı. SCS360 `codex/source-sync-20261111` SHA `ee930a857a335b530ef5ebe046bc752a59ba0427` push/`ls-remote` ile doğrulandı. Dağıtık rate limit, 429, proxy IP ve reset token expiry/runtime kabulü açık.

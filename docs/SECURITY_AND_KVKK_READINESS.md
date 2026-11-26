@@ -119,3 +119,9 @@ Rate-limit export commitinde router seviyesinde `Request` ve `limiter` importlar
 Ham audit listesi okuma, geri bildirim güncelleme ve dataset dışa aktarımında ortak `audit_logs` tablosuna metin içermeyen olay kaydı eklenir. Kayıt aktörü, seçili kurumu, olay türünü, sayım/format bilgisini ve istemci IP’sini içerir; ham soru/yanıt veya düzeltme metni kopyalanmaz. GET liste 20/dk, geri bildirim PUT 10/dk rate-limit alır. `git diff --check` geçti; test/build çalıştırılmadı. SCS360 `codex/source-sync-20261111` SHA `8d908baa04f58da9378491ba309b4ba17490e4c9` normal push/`ls-remote` ile doğrulandı.
 
 Bu olaylar aynı uygulama DB’sinde tutulur; değiştirilemez log, bağımsız SIEM veya retention politikası değildir. IP kişisel veridir. Erişim izinleri, saklama/silme süresi, yedeklerden silme ve fail-closed davranışı onaylı süreç ve geçici DB testleriyle doğrulanmadı; WIP, KVKK/canlı kabulü değildir.
+
+### 26 Kasım 2026 — Parola reset token endpoint rate-limit (WIP)
+
+`POST /auth/reset-password` artık ortak rate-limit deposu ile IP başına 5 istek/dakika sınırında. Auth router’da önceden var olan staged olmayan oturum WIP’si bu commit’e alınmadı. `git diff --check` geçti; test/build/Redis runtime yok. SCS360 SHA `ee930a857a335b530ef5ebe046bc752a59ba0427` normal push/`ls-remote` ile doğrulandı.
+
+Rate-limit dağıtık runtime, proxy’nin istemci IP’sini güvenilir biçimde iletmesi, 429 başlıkları, token expiry/tek kullanımlılık, eski reset logları ve retention politikası doğrulanmadı. WIP; canlı veya KVKK kabulü değildir.
