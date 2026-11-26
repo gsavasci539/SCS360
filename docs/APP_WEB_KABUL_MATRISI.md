@@ -588,3 +588,7 @@ Salt okunur kontrol ana sayfada 200, Server sürüm başlığı ve yalnız gözl
 ### Güvenlik checkpoint'i — readiness bileşen bilgisini azaltma (WIP, 26.11.2026)
 
 `/api/ready` artık DB bileşen durumunu yanıta yazmaz. Sahte DB ile security hardening grubu 26 PASS. Kod SHA `f4d9946443221e34e2f039aab6d8f43e62b8474a` remote dalda doğrulandı; deploy yapılmadı. Canlı header/security.txt ve runtime kabulü açık.
+
+### Güvenlik checkpoint'i — create audit'te TCKN çözülmüyor (WIP, 26.11.2026)
+
+Kurum oluşturma audit'i artık şifreli vergi kimlik değerini çözmeden input varlığıyla üretiliyor; test getter'ın hiç okunmadığını doğruladı: 1 PASS, 1 PostgreSQL SKIP. Kod `7a68b6feaeb142990a70d2a841d429d0263f3a8c`, test `d8e219da4827f78ec3e6497fb27fd994621fb92b` remote dalda doğrulandı. KVKK veya tam TCKN akışı kabulü değildir.

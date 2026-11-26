@@ -309,3 +309,7 @@ HTTPS HEAD `https://scs360.com.tr/` 200 yanıtladı; gözlenen başlıklarda `Se
 ### 26 Kasım 2026 — Public readiness yanıtı veri minimizasyonu (WIP)
 
 `/api/ready` yanıtı artık `database: connected` bileşen bilgisini döndürmez; readiness sonucu genel kalır. `test_security_hardening.py`: **26 PASS**; yeni test sahte DB oturumu kullanır. Kod SHA `f4d9946443221e34e2f039aab6d8f43e62b8474a` remote dalda doğrulandı. Bu kod production'a deploy edilmedi; dış Nginx/HTTPS ve security.txt canlı açığı sürüyor. WIP/KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Kurum oluştururken TCKN çözümlemesini atlama (WIP)
+
+Audit olayında kimlik numarasının yalnız var olup olmadığını belirtmek için yeni yazılmış şifreli değeri tekrar çözme kaldırıldı; istek DTO'sundaki presence kontrolü yeterli. Regresyon, kurum oluşturma sırasında Organization.tax_number getter'ını bilerek hata verecek şekilde monkeypatch edip endpoint'in buna başvurmadığını doğruluyor. Geçici test: **1 PASS, 1 PostgreSQL varyantı SKIP**. Kod `7a68b6feaeb142990a70d2a841d429d0263f3a8c`, test `d8e219da4827f78ec3e6497fb27fd994621fb92b` normal push/`ls-remote` ile doğrulandı. Bu, diğer TCKN okuma yolları, migration/yedek/anahtar ve KVKK kabulünü kapsamaz.

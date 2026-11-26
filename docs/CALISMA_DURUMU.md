@@ -1316,3 +1316,7 @@ Salt okunur HEAD `https://scs360.com.tr/`: 200, `Server: nginx/1.18.0 (Ubuntu)` 
 ### 26 Kasım 2026 — Readiness yanıtı altyapı ayrıntısını göstermiyor (WIP)
 
 Backend `/api/ready` başarılı yanıtından `database: connected` alanı çıkarıldı; readiness kontrolü korunuyor. Sahte DB oturumlu hedefli `test_security_hardening.py`: **26 PASS**. Kod checkpoint `f4d9946443221e34e2f039aab6d8f43e62b8474a` normal push/`ls-remote` ile doğrulandı. Deploy olmadığı için public origin'de etkili olduğu varsayılmamalı; canlı Nginx/security.txt kabulleri açık.
+
+### 26 Kasım 2026 — Kurum kaydında gereksiz TCKN çözme kaldırıldı (WIP)
+
+Create route audit için ORM getter'dan açık değeri okumak yerine input DTO'nun varlığını kullanıyor. Hedefli geçici test create sırasında getter'ın çağrılmasını engelleyerek **1 PASS, 1 PostgreSQL varyantı SKIP** verdi. Kod `7a68b6feaeb142990a70d2a841d429d0263f3a8c`, test `d8e219da4827f78ec3e6497fb27fd994621fb92b` remote dalda doğrulandı. Diğer veri akışları, provider, yedek/retention ve KVKK/canlı kabulü açık.
