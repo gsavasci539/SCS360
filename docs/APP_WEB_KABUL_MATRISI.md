@@ -571,4 +571,4 @@ Backend hata filtresi ve frontend development tanısı 11 haneli dizileri kesint
 
 ### Güvenlik checkpoint'i — SQL debug parametre maskeleme (WIP, 26.11.2026)
 
-SQLAlchemy engine `hide_parameters=True` ile oluşturuluyor. Hedefli unit regression 1 PASS; veritabanı/provider işlemi yok. Kod SHA `4cf69719f7cdea979a55760e74fc55d485388e7d` remote dalda doğrulanacak. Diğer log/telemetry çıkışları, prod ayarları ve KVKK/canlı kabulü açık.
+SQLAlchemy engine `hide_parameters=True` ile oluşturuluyor. `test_security_hardening.py`: 24 PASS; bu test grubu gerçek DB/provider kullanmadı. Kod SHA `525667eef329d5d5ede988d5b818ab51d064acb7` remote dalda doğrulandı. Diğer log/telemetry çıkışları, prod ayarları ve KVKK/canlı kabulü açık.

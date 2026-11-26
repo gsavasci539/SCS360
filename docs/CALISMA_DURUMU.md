@@ -1299,4 +1299,4 @@ Backend hata yanıtlarındaki ve frontend development diagnostic context/message
 
 ### 26 Kasım 2026 — SQL loglarında parametreleri gizleme (WIP)
 
-Development SQL echo korunarak SQLAlchemy engine için `hide_parameters=True` eklendi; böylece sorgu parametre değerleri debug SQL loglarına yazılmaz. `backend/tests/unit/test_database_security.py`: **1 PASS** (yalnız engine ayarını doğrulayan unit test; DB/provider kullanılmadı). Kod checkpoint `4cf69719f7cdea979a55760e74fc55d485388e7d` normal push/`ls-remote` ile doğrulanacak. Bu tek başına tüm uygulama loglarının güvenli olduğunu veya KVKK/canlı kabulünü göstermez.
+Development SQL echo korunarak SQLAlchemy engine için `hide_parameters=True` eklendi; böylece sorgu parametre değerleri debug SQL loglarına yazılmaz. `backend/tests/unit/test_security_hardening.py`: **24 PASS** (DB/provider kullanılmadı). Kod checkpoint `525667eef329d5d5ede988d5b818ab51d064acb7` normal push/`ls-remote` ile doğrulandı. Bu tek başına tüm uygulama loglarının güvenli olduğunu veya KVKK/canlı kabulünü göstermez.
