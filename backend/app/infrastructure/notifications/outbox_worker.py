@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -9,38 +8,12 @@ from sqlalchemy.orm import selectinload
 
 from app.core.database import AsyncSessionLocal
 from app.infrastructure.models.models import NotificationJob, NotificationStatus
-from app.infrastructure.notifications.base import ProviderResult
+from app.infrastructure.notifications.base import ProviderResult, safe_provider_error, safe_provider_response
 from app.infrastructure.notifications.dispatcher import NotificationDispatcher
 
 logger = logging.getLogger("scs360.worker")
 dispatcher = NotificationDispatcher()
 POLL_INTERVAL = 10
-SAFE_PROVIDER_RESPONSE_KEYS = {"status", "code", "provider_id", "delivery_status"}
-SAFE_PROVIDER_ERROR = "Bildirim sağlayıcısı isteği tamamlayamadı"
-SAFE_PROVIDER_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
-
-
-def _safe_provider_response(response):
-    """Persist only bounded delivery diagnostics, never an arbitrary provider payload."""
-    if not isinstance(response, dict):
-        return None
-    safe = {}
-    for key in SAFE_PROVIDER_RESPONSE_KEYS:
-        value = response.get(key)
-        if key == "status" and isinstance(value, int) and not isinstance(value, bool) and 100 <= value <= 599:
-            safe[key] = value
-        elif key == "delivery_status" and isinstance(value, str) and value in {"ACCEPTED", "REJECTED", "PENDING"}:
-            safe[key] = value
-        elif key in {"code", "provider_id"} and isinstance(value, str) and SAFE_PROVIDER_ID.fullmatch(value):
-            safe[key] = value
-    messages = response.get("messages")
-    if isinstance(messages, list):
-        message_ids = [item["id"] for item in messages
-            if isinstance(item, dict) and isinstance(item.get("id"), str)
-            and SAFE_PROVIDER_ID.fullmatch(item["id"])]
-        if message_ids:
-            safe["provider_message_ids"] = message_ids[:20]
-    return safe or None
 
 
 def claimable(now):
@@ -76,8 +49,8 @@ async def process_pending_jobs(session_factory=None, delivery=None):
                     except Exception as exc:
                         logger.warning("notification_provider_failed error_type=%s", type(exc).__name__)
                         result = ProviderResult(success=False, message="Bildirim sağlayıcısı yanıt vermedi")
-                    recipient.provider_response = _safe_provider_response(result.response)
-                    recipient.error_message = None if result.success else SAFE_PROVIDER_ERROR
+                    recipient.provider_response = safe_provider_response(result.response)
+                    recipient.error_message = safe_provider_error(None if result.success else result.message)
                     recipient.status = NotificationStatus.SENT if result.success else NotificationStatus.FAILED
                     if result.success:
                         recipient.sent_at = datetime.now(UTC)

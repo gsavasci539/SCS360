@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy import func, or_, select, update
 
 from app.core.exceptions import ConflictException, NotFoundException
+from app.infrastructure.notifications.base import safe_provider_error
 from app.infrastructure.models.models import NotificationJob, NotificationRecipient, NotificationStatus
 from app.infrastructure.repositories.base import BaseRepository
 
@@ -28,7 +29,7 @@ def serialize(recipient, job):
         "status": recipient.status.value,
         "sent_at": recipient.sent_at.isoformat() if recipient.sent_at else None,
         "scheduled_at": job.scheduled_at.isoformat(), "created_at": job.created_at.isoformat(),
-        "error_message": recipient.error_message, "retry_count": job.retry_count}
+        "error_message": safe_provider_error(recipient.error_message), "retry_count": job.retry_count}
 
 
 def filtered(tenant, channel, status, search, branch_id):

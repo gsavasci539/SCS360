@@ -17,6 +17,7 @@ from app.core.integration_config import IntegrationUpdate
 from app.core.permissions import PermissionChecker
 from app.core.responses import success_response
 from app.core.tenant import TenantContext
+from app.infrastructure.notifications.base import safe_provider_error
 from app.infrastructure.models.models import (
     Announcement,
     AnnouncementAudience,
@@ -765,7 +766,7 @@ async def announcement_results(
                 "sent": sum(r.status == NotificationStatus.SENT for r in job_recipients),
                 "failed": sum(r.status == NotificationStatus.FAILED for r in job_recipients),
                 "pending": sum(r.status == NotificationStatus.PENDING for r in job_recipients),
-                "error": next((r.error_message for r in job_recipients if r.error_message), None),
+                "error": safe_provider_error(next((r.error_message for r in job_recipients if r.error_message), None)),
             }
         )
     return success_response(results)
@@ -1394,7 +1395,7 @@ async def get_notification(
                 {
                     "address": recipient.recipient_address,
                     "status": recipient.status.value,
-                    "error": recipient.error_message,
+                    "error": safe_provider_error(recipient.error_message),
                 }
                 for recipient in recipients
             ],

@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.core.responses import success_response
 from app.core.permissions import PermissionChecker
 from app.core.tenant import TenantContext
+from app.infrastructure.notifications.base import safe_provider_error, safe_provider_response
 from app.domain.entities import User, Branch, Class
 from app.application.services import broadcast_service
 from app.core.exceptions import ConflictException, ValidationException
@@ -248,7 +249,8 @@ async def get_delivery_reports(
     rows = (await db.execute(query.order_by(NotificationRecipient.created_at.desc()).offset(offset).limit(limit))).all()
     return success_response([{"id": str(row.id), "broadcast_job_id": str(job.reference_id),
         "recipient_phone": row.recipient_address, "recipient_name": row.recipient_name, "status": row.status.value,
-        "provider_response": row.provider_response, "error_message": row.error_message,
+        "provider_response": safe_provider_response(row.provider_response),
+        "error_message": safe_provider_error(row.error_message),
         "sent_at": row.sent_at.isoformat() if row.sent_at else None, "delivered_at": None,
         "created_at": row.created_at.isoformat()} for row, job in rows])
 
