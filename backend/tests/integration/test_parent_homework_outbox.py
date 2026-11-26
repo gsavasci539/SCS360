@@ -197,6 +197,47 @@ async def test_outbox_retry_is_durable_and_success_requires_provider_confirmatio
 
 
 @pytest.mark.asyncio
+async def test_outbox_hides_branchless_recipients_from_non_wide_users(portal_db):
+    sessions, data = portal_db
+    async with sessions() as db:
+        branchless = NotificationJob(organization_id=data["org"].id,
+            channel=NotificationChannel.EMAIL, body="Whole-school message", subject="Legacy broadcast",
+            scheduled_at=datetime.now(UTC), created_by=data["user"].id)
+        assigned = NotificationJob(organization_id=data["org"].id, branch_id=data["branch"].id,
+            channel=NotificationChannel.EMAIL, body="Branch message", subject="Branch delivery",
+            scheduled_at=datetime.now(UTC), created_by=data["user"].id)
+        db.add_all([branchless, assigned]); await db.flush()
+        branchless_recipient = NotificationRecipient(notification_job_id=branchless.id,
+            recipient_address="sensitive-whole-school@test.invalid")
+        assigned_recipient = NotificationRecipient(notification_job_id=assigned.id,
+            recipient_address="branch-recipient@test.invalid")
+        db.add_all([branchless_recipient, assigned_recipient]); await db.commit()
+        branchless_recipient_id = branchless_recipient.id
+
+    unassigned = TenantContext(user_id=uuid4(), organization_id=data["org"].id)
+    branch_user = TenantContext(user_id=data["teacher"].id, organization_id=data["org"].id,
+        branch_ids=[data["branch"].id])
+    institution_admin = TenantContext(user_id=data["user"].id, organization_id=data["org"].id,
+        role_slugs={"org_admin"})
+    async with sessions() as db:
+        assert await outbox_service.records(db, unassigned) == []
+        assert await outbox_service.count(db, unassigned, None, None, None, None) == 0
+        for action in (outbox_service.get, outbox_service.retry, outbox_service.remove):
+            with pytest.raises(NotFoundException):
+                await action(db, unassigned, branchless_recipient_id)
+
+        branch_rows = await outbox_service.records(db, branch_user)
+        assert [row["recipient"] for row in branch_rows] == ["branch-recipient@test.invalid"]
+        with pytest.raises(NotFoundException):
+            await outbox_service.get(db, branch_user, branchless_recipient_id)
+
+        # Explicit institution-wide roles retain access to institution-wide jobs.
+        admin_rows = await outbox_service.records(db, institution_admin)
+        assert {row["recipient"] for row in admin_rows} == {
+            "sensitive-whole-school@test.invalid", "branch-recipient@test.invalid"}
+
+
+@pytest.mark.asyncio
 async def test_checkout_verifies_provider_result_and_callback_is_idempotent(portal_db):
     import hashlib
     import hmac

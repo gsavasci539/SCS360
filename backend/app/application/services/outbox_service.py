@@ -9,15 +9,18 @@ from app.infrastructure.models.models import NotificationJob, NotificationRecipi
 from app.infrastructure.repositories.base import BaseRepository
 
 
-def scoped(tenant, branch_id=None):
-    repo = BaseRepository(None, tenant)
+def scoped(db, tenant, branch_id=None):
+    repo = BaseRepository(db, tenant)
     query = repo._branch_filter(repo._org_filter(
         select(NotificationRecipient, NotificationJob).join(NotificationJob,
             NotificationJob.id == NotificationRecipient.notification_job_id), NotificationJob), NotificationJob)
-    # Branchless outbox rows may contain all-organization recipients; do not
-    # treat them as readable by every branch-scoped operator.
-    if tenant.branch_ids:
-        query = query.where(NotificationJob.branch_id.in_(tenant.branch_ids))
+    # Branchless outbox rows may contain all-organization recipients. Restrict
+    # non-wide users to explicitly assigned or relationship-accessible branches.
+    if not tenant.has_institution_wide_branch_access:
+        from app.core.tenant_guard import scope_filters
+
+        branches, _, _, _ = scope_filters(tenant, db.info.get("accessible_student_ids"))
+        query = query.where(NotificationJob.branch_id.in_(branches))
     return query.where(NotificationJob.branch_id == branch_id) if branch_id else query
 
 
@@ -32,8 +35,8 @@ def serialize(recipient, job):
         "error_message": safe_provider_error(recipient.error_message), "retry_count": job.retry_count}
 
 
-def filtered(tenant, channel, status, search, branch_id):
-    query = scoped(tenant, branch_id)
+def filtered(db, tenant, channel, status, search, branch_id):
+    query = scoped(db, tenant, branch_id)
     if channel:
         query = query.where(NotificationJob.channel == channel)
     if status:
@@ -45,19 +48,19 @@ def filtered(tenant, channel, status, search, branch_id):
 
 
 async def records(db, tenant, channel=None, status=None, search=None, *, branch_id=None, limit=None, offset=0):
-    query = filtered(tenant, channel, status, search, branch_id)
+    query = filtered(db, tenant, channel, status, search, branch_id)
     rows = (await db.execute(query.order_by(NotificationRecipient.created_at.desc(), NotificationRecipient.id)
         .limit(limit).offset(offset))).all()
     return [serialize(*row) for row in rows]
 
 
 async def count(db, tenant, channel, status, search, branch_id):
-    query = filtered(tenant, channel, status, search, branch_id)
+    query = filtered(db, tenant, channel, status, search, branch_id)
     return int(await db.scalar(select(func.count()).select_from(query.with_only_columns(NotificationRecipient.id).subquery())))
 
 
 async def get(db, tenant, identifier, branch_id=None):
-    row = (await db.execute(scoped(tenant, branch_id).where(NotificationRecipient.id == identifier)
+    row = (await db.execute(scoped(db, tenant, branch_id).where(NotificationRecipient.id == identifier)
         .execution_options(populate_existing=True))).one_or_none()
     if row is None:
         raise NotFoundException("Gönderim kaydı bulunamadı")
