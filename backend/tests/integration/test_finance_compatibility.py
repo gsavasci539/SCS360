@@ -7,7 +7,7 @@ from sqlalchemy import select
 from test_material_files import materials_client  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
 from app.core.security import create_access_token
-from app.infrastructure.models.models import (Debt, NotificationJob, NotificationStatus, Parent, Permission,
+from app.infrastructure.models.models import (Branch, Debt, NotificationJob, NotificationStatus, Parent, Permission,
     Role, User, Payment, Receipt, ReceiptStatus)
 
 
@@ -63,7 +63,7 @@ async def test_legacy_collection_pdf_and_delete_use_the_canonical_ledger(finance
     pdf_path = f"/api/payments/finances/payments/{payment_id}/receipt-pdf"
     pdf = await client.get(pdf_path, headers=auth(data["accountant"]))
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF-")
-    assert pdf.headers["content-type"] == "application/pdf" and pdf.headers["cache-control"] == "private, no-store"
+    assert pdf.headers["content-type"] == "application/pdf" and pdf.headers["cache-control"] == "no-store, max-age=0"
     assert (await client.put(f"/api/payments/{payment_id}", headers=auth(data["accountant"]), json={"amount": "12.00"})).status_code == 422
     updated = await client.put(f"/api/payments/{payment_id}", headers=auth(data["accountant"]), json={"notes": "Muhasebe notu"})
     assert updated.status_code == 200, updated.text
@@ -79,6 +79,59 @@ async def test_legacy_collection_pdf_and_delete_use_the_canonical_ledger(finance
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF-")
     printed = await client.get(f'/api/receipts/{response.json()["data"]["receipt_id"]}/print', headers=auth(data["accountant"]))
     assert "İPTAL EDİLMİŞ MAKBUZ" in printed.text
+
+
+async def test_receipt_detail_exports_and_notification_queue_are_tenant_scoped(finance_client):
+    client, sessions, data = finance_client
+    invoice = (await generate(client, data))["invoices"][0]
+    collected = await client.post("/api/payments/finances/payments/collect", headers=auth(data["accountant"]),
+        json={"invoice_id": invoice["id"], "amount": "10.00", "payment_method": "CASH"})
+    assert collected.status_code == 200, collected.text
+    receipt_id = collected.json()["data"]["receipt_id"]
+
+    async with sessions() as db:
+        restricted_branch = Branch(organization_id=data["org"].id, name="Restricted receipts branch")
+        db.add(restricted_branch)
+        await db.flush()
+        permissions = []
+        for code in ("receipt.read", "receipt.write"):
+            permission = (await db.execute(select(Permission).where(Permission.code == code))).scalar_one_or_none()
+            if permission is None:
+                permission = Permission(code=code, name=code, module="receipt")
+                db.add(permission)
+                await db.flush()
+            permissions.append(permission)
+        foreign_role = Role(name="Foreign finance", slug="accountant", organization_id=data["other_branch"].organization_id,
+            permissions=permissions)
+        foreign_user = User(first_name="Foreign", last_name="Finance", email="foreign-finance@test.invalid",
+            password_hash="unused", organization_id=data["other_branch"].organization_id, roles=[foreign_role])
+        branch_role = Role(name="Branch finance", slug="accountant", organization_id=data["org"].id,
+            permissions=[permission for permission in permissions if permission.code == "receipt.read"])
+        branch_user = User(first_name="Branch", last_name="Finance", email="branch-finance@test.invalid",
+            password_hash="unused", organization_id=data["org"].id, roles=[branch_role], branches=[restricted_branch])
+        db.add_all([foreign_user, branch_user])
+        await db.commit()
+
+    branch_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(branch_user))
+    assert branch_list.status_code == 200 and branch_list.json()["data"]["items"] == []
+    foreign_list = await client.get(f"/api/receipts?student_id={data['children'][0].id}", headers=auth(foreign_user))
+    assert foreign_list.status_code == 200 and foreign_list.json()["data"]["items"] == []
+
+    foreign_headers = auth(foreign_user)
+    paths = (
+        ("GET", f"/api/receipts/{receipt_id}"),
+        ("GET", f"/api/receipts/{receipt_id}/pdf"),
+        ("GET", f"/api/receipts/{receipt_id}/print"),
+        ("POST", f"/api/receipts/{receipt_id}/send-email"),
+        ("POST", f"/api/receipts/{receipt_id}/send-sms"),
+        ("POST", f"/api/receipts/{receipt_id}/send-whatsapp"),
+    )
+    for method, path in paths:
+        response = await client.request(method, path, headers=foreign_headers)
+        assert response.status_code == 404, f"{method} {path}: {response.status_code} {response.text[:300]}"
+
+    async with sessions() as db:
+        assert (await db.execute(select(NotificationJob).where(NotificationJob.reference_id == UUID(receipt_id)))).scalars().all() == []
 
 
 async def test_reminders_queue_real_recipients_and_never_claim_sent(finance_client):

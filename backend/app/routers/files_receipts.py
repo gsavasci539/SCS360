@@ -6,7 +6,7 @@ from zipfile import BadZipFile, ZipFile
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -68,13 +68,20 @@ def _validate_upload(file: UploadFile, content: bytes) -> None:
 
 async def _build_receipt_context(db: AsyncSession, receipt: Receipt, *, include_parent: bool = True) -> dict:
     payment = (
-        await db.execute(select(Payment).where(Payment.id == receipt.payment_id))
+        await db.execute(select(Payment).where(
+            Payment.id == receipt.payment_id,
+            Payment.organization_id == receipt.organization_id,
+            Payment.student_id == receipt.student_id,
+        ))
     ).scalar_one_or_none()
     
     # Use receipt.student_id if payment not found
     student_id = payment.student_id if payment else receipt.student_id
     student = (
-        await db.execute(select(Student).where(Student.id == student_id))
+        await db.execute(select(Student).where(
+            Student.id == student_id,
+            Student.organization_id == receipt.organization_id,
+        ))
     ).scalar_one_or_none()
     
     org = (
@@ -85,23 +92,29 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt, *, include_
     branch = None
     if receipt.branch_id:
         branch_result = await db.execute(
-            select(Branch).where(Branch.id == str(receipt.branch_id))
+            select(Branch).where(Branch.id == receipt.branch_id, Branch.organization_id == receipt.organization_id)
         )
         branch = branch_result.scalar_one_or_none()
     if not branch and student and student.branch_id:
         branch_result = await db.execute(
-            select(Branch).where(Branch.id == str(student.branch_id))
+            select(Branch).where(Branch.id == student.branch_id, Branch.organization_id == receipt.organization_id)
         )
         branch = branch_result.scalar_one_or_none()
     
     receiver = None
     if payment and payment.received_by:
         receiver = (
-            await db.execute(select(User).where(User.id == payment.received_by))
+            await db.execute(select(User).where(
+                User.id == payment.received_by,
+                User.organization_id == receipt.organization_id,
+            ))
         ).scalar_one_or_none()
     elif receipt.issued_by:
         receiver = (
-            await db.execute(select(User).where(User.id == receipt.issued_by))
+            await db.execute(select(User).where(
+                User.id == receipt.issued_by,
+                User.organization_id == receipt.organization_id,
+            ))
         ).scalar_one_or_none()
 
     parent_name = ""
@@ -109,7 +122,11 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt, *, include_
         parent_result = await db.execute(
             select(Parent)
             .join(StudentParent, StudentParent.parent_id == Parent.id)
-            .where(StudentParent.student_id == student.id, StudentParent.is_primary.is_(True))
+            .where(
+                StudentParent.student_id == student.id,
+                StudentParent.is_primary.is_(True),
+                Parent.organization_id == receipt.organization_id,
+            )
             .limit(1)
         )
         parent = parent_result.scalar_one_or_none()
@@ -143,6 +160,11 @@ async def _build_receipt_context(db: AsyncSession, receipt: Receipt, *, include_
         "remaining_debt": str(receipt.remaining_debt) if receipt.remaining_debt is not None else "0.00",
         "received_by": f"{receiver.first_name} {receiver.last_name}" if receiver else "Sistem",
     }
+
+
+async def _get_receipt_for_tenant(db: AsyncSession, tenant: TenantContext, receipt_id: UUID) -> Receipt:
+    """Resolve a receipt only inside the authenticated tenant and branch scope."""
+    return await BaseRepository(db, tenant).get_by_id(receipt_id, Receipt)
 
 
 @router.get("/api/students/{student_id}/files")
@@ -276,14 +298,13 @@ async def list_receipts(
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """List receipts with optional student filter"""
-    from app.repositories.receipt_repository import ReceiptRepository
-    
-    repo = ReceiptRepository()
-    
+    query = select(Receipt).where(Receipt.organization_id == tenant.organization_id)
     if student_id:
-        receipts = await repo.get_by_student(db, student_id, skip, limit)
-    else:
-        receipts = await repo.get_by_organization(db, tenant.organization_id, skip, limit)
+        query = query.where(Receipt.student_id == student_id)
+    if tenant.branch_ids and not tenant.is_super_admin and not tenant.is_organization_owner:
+        query = query.where(or_(Receipt.branch_id.in_(tenant.branch_ids), Receipt.branch_id.is_(None)))
+    result = await db.execute(query.offset(skip).limit(limit))
+    receipts = result.scalars().all()
     
     return success_response([
         {
@@ -301,28 +322,12 @@ async def list_receipts(
 
 @router.get("/api/receipts/{receipt_id}")
 async def get_receipt(
-    receipt_id: str,
+    receipt_id: UUID,
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
     """Get receipt details"""
-    # Try with hyphens first
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    # If not found, try without hyphens
-    if not receipt:
-        receipt_id_clean = receipt_id.replace("-", "")
-        receipt_result = await db.execute(
-            select(Receipt).where(Receipt.id == receipt_id_clean)
-        )
-        receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-    
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     context = await _build_receipt_context(db, receipt)
     
     return success_response({
@@ -344,14 +349,7 @@ async def download_receipt_pdf(
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     return await receipt_pdf_response(db, receipt)
 
 
@@ -372,14 +370,7 @@ async def print_receipt(
     tenant: TenantContext = Depends(PermissionChecker("receipt.read")),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-    
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     raw_ctx = await _build_receipt_context(db, receipt)
     ctx = {key: escape(str(value), quote=True) for key, value in raw_ctx.items()}
     ctx["receipt_title"] = "İPTAL EDİLMİŞ MAKBUZ" if raw_ctx.get("status") == "CANCELLED" else "TAHSİLAT MAKBUZU"
@@ -675,16 +666,13 @@ async def send_receipt_email(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-    
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     payment = (
-        await db.execute(select(Payment).where(Payment.id == receipt.payment_id))
+        await db.execute(select(Payment).where(
+            Payment.id == receipt.payment_id,
+            Payment.organization_id == receipt.organization_id,
+            Payment.student_id == receipt.student_id,
+        ))
     ).scalar_one_or_none()
     
     if not payment:
@@ -696,6 +684,7 @@ async def send_receipt_email(
             .join(StudentParent, StudentParent.parent_id == Parent.id)
             .where(
                 StudentParent.student_id == payment.student_id,
+                Parent.organization_id == receipt.organization_id,
                 Parent.email.isnot(None),
                 Parent.receive_notifications.is_(True),
             )
@@ -724,16 +713,13 @@ async def send_receipt_sms(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-    
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     payment = (
-        await db.execute(select(Payment).where(Payment.id == receipt.payment_id))
+        await db.execute(select(Payment).where(
+            Payment.id == receipt.payment_id,
+            Payment.organization_id == receipt.organization_id,
+            Payment.student_id == receipt.student_id,
+        ))
     ).scalar_one_or_none()
     
     if not payment:
@@ -745,6 +731,7 @@ async def send_receipt_sms(
             .join(StudentParent, StudentParent.parent_id == Parent.id)
             .where(
                 StudentParent.student_id == payment.student_id,
+                Parent.organization_id == receipt.organization_id,
                 Parent.receive_notifications.is_(True),
             )
             .limit(1)
@@ -773,16 +760,13 @@ async def send_receipt_whatsapp(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db, scope="function"),
 ):
-    receipt_result = await db.execute(
-        select(Receipt).where(Receipt.id == receipt_id)
-    )
-    receipt = receipt_result.scalar_one_or_none()
-    
-    if not receipt:
-        raise NotFoundException("Makbuz bulunamadı")
-    
+    receipt = await _get_receipt_for_tenant(db, tenant, receipt_id)
     payment = (
-        await db.execute(select(Payment).where(Payment.id == receipt.payment_id))
+        await db.execute(select(Payment).where(
+            Payment.id == receipt.payment_id,
+            Payment.organization_id == receipt.organization_id,
+            Payment.student_id == receipt.student_id,
+        ))
     ).scalar_one_or_none()
     
     if not payment:
@@ -794,6 +778,7 @@ async def send_receipt_whatsapp(
             .join(StudentParent, StudentParent.parent_id == Parent.id)
             .where(
                 StudentParent.student_id == payment.student_id,
+                Parent.organization_id == receipt.organization_id,
                 Parent.receive_notifications.is_(True),
             )
             .limit(1)

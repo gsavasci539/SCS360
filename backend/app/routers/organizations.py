@@ -121,7 +121,11 @@ async def create_organization(
     # new unlimited school account without a platform-configured membership.
     db.add(OrganizationSubscription(organization_id=org.id, admin_status="ACTIVE"))
     await flush_registry(db, "Kurum üyelik kaydı oluşturulamadı")
-    return success_response(org_to_dict(org, reveal_tax_number=True), "Kurum oluşturuldu")
+    if org.tax_number:
+        db.add(AuditLog(organization_id=org.id, user_id=user.id, action=AuditAction.CREATE,
+            entity_type="organization.tax_identifier", entity_id=org.id,
+            new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_CREATED"}))
+    return success_response(org_to_dict(org), "Kurum oluşturuldu")
 
 
 @router.get("/api/organizations/{org_id}")
@@ -166,8 +170,7 @@ async def update_organization(
             entity_type="organization.tax_identifier", entity_id=org.id,
             new_values={"event": "ORGANIZATION_TAX_IDENTIFIER_UPDATED"}))
     await flush_registry(db, "Bu kurum adı zaten kullanımda")
-    reveal_tax_number = can_read_tax_number(tenant) or (tax_number_supplied and bool(changes["tax_number"]))
-    return success_response(org_to_dict(org, reveal_tax_number=reveal_tax_number), "Kurum güncellendi")
+    return success_response(org_to_dict(org, reveal_tax_number=can_read_tax_number(tenant)), "Kurum güncellendi")
 
 
 @router.delete("/api/organizations/{org_id}")
