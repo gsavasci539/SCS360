@@ -179,3 +179,9 @@ Legacy `POST /api/notifications/send` artık IP bazında `5/minute` rate-limit u
 Legacy manuel gönderim endpointi, dışarıdan girilen e-posta/telefon adreslerinin kurum/şube içindeki kayıtlı iletişimlerle eşleşmesini zorunlu kılar. Veli tarafında `receive_notifications` kontrol edilir; personel kayıtlı şube scope'unda aranır. Kayıtlı iletişim adı esas alınır, normalizasyondan sonra tekrar adresler kaldırılır; açık şubedeki personel listesi kurum geneline genişlemez. Kod SHA `56d4dba1ce50eff716e7a8f68e7c593259717e69` push/`ls-remote` ile doğrulandı.
 
 Yalnız statik `git diff --check`; test/build veya sağlayıcı gönderimi yapılmadı. Diğer iletişim/broadcast/ödeme uyumluluk uçları, kanal bazlı hukuki dayanak/rıza, veri retention ve silme, canlı HTTPS/proxy ayarı ve KVKK uyum değerlendirmesi kabul edilmedi. WIP; canlıya hazır veya KVKK uyumlu ilan edilemez. Sonraki somut iş diğer bildirim alıcı uçlarını denetlemek ve izole geçici DB regresyonlarıdır.
+
+### 26 Kasım 2026 — Kuyruklanan manuel bildirim scope koruması (WIP)
+
+`POST /api/notifications` recipient çözümlemesi tenant'a bağlandı. İstemciden kurum fallback'i kaldırıldı; explicit seçili kurum gerekli. Belirli şube, hem veli-öğrenci ilişki sorgusuna hem branch-aware staff scope'una uygulanır; çoklu şubeye atanmış aktör şubesiz kurum-geneli iş açamaz. Veli tercihi korunur, adresler tekilleştirilir ve iş boyutu 500 alıcı/10.000 karakter/5 istek-dk ile sınırlandırılır. Kaynak `2e82c25dd1f8db7f437aaddc50d5e4872897ac01` normal push/`ls-remote` ile doğrulandı.
+
+Yalnız `git diff --check`; test, build, DB veya sağlayıcı runtime yapılmadı. Oluşan kuyruk işlerinde tenant/branch regressions ve planlanmış dispatch, ayrıca alternatif bildirim uçları ve kanal rızası incelemesi yapılmalı. Hukuki dayanak, aydınlatma, retention/silme, canlı altyapı ve KVKK uyumu kabul edilmedi; WIP, canlıya hazır ilan edilemez.

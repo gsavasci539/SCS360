@@ -484,3 +484,7 @@ Yeni ve geçmiş bildirim kayıtlarının response’ları ortak güvenli alıc�
 ### 26 Kasım 2026 — Manuel bildirim alıcı allowlist'i (WIP)
 
 Manuel `POST /api/notifications/send` yalnız seçili kurum/şubedeki kayıtlı veli/personel iletişim adreslerini kabul eder; veli kayıtlarında bildirim tercihi aranır, kişi adı DB kaydından alınır ve normalize tekrarlar tekilleştirilir. Seçili şube, personel scope'una da uygulanır. Kod SHA `56d4dba1ce50eff716e7a8f68e7c593259717e69` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check` yapıldı; test/build/provider/DB runtime ve KVKK/canlı kabul yok. Sıradaki iş diğer bildirim üretim uçlarında alıcı allowlist ve kanal opt-in incelemesi; sonra geçici DB regresyonları.
+
+### 26 Kasım 2026 — Bildirim kuyruğu tenant/şube kapsamı (WIP)
+
+`POST /api/notifications` açık kurum bağlamı ister; şube kullanıcılarında tek atanmış şube varsayılanı veya çoklu atamada seçili atanmış şube kullanılır. Veli alıcıları aktif kurum öğrenci bağı ve bildirim tercihinden, personel alıcıları branch-aware staff scope'tan çözülür; 500 alıcı ve 10.000 karakter sınırı, 5/dk IP limiti uygulanır. SCS360 kod SHA `2e82c25dd1f8db7f437aaddc50d5e4872897ac01` push/`ls-remote` ile doğrulandı. Test/build/provider/canlı doğrulama yok; WIP.
