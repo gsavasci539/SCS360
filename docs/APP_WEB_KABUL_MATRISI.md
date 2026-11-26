@@ -550,3 +550,5 @@ Borç seçenekleri/öğrenci etiketleri, kalan borç toplamı ve iptal edilen ma
 ### TCKN rutin API yanıtlarında gizli (WIP, 26.11.2026)
 
 Kurum listesi/detayı ve create/update yanıtları vergi/kimlik numarasını artık açık taşımıyor. Ayrı, owner/platform-admin yetkili, sabit amaç kodlu ve 5/dakika sınırlı reveal POST'u numarayı ayrı döndürüyor; audit kaydı yalnız amaç ve değer bulunma bilgisini içeriyor. Yönetim formu kullanıcı onayı ister, açık değeri en fazla 30 saniye gösterir ve gizleme kontrolü sunar. İzole backend testi 2 PASS/2 PostgreSQL SKIP; frontend davranış testi 5 PASS. Canlı veri, gerçek numara veya sağlayıcı kullanılmadı. WIP; yasal dayanak, aydınlatma, retention/erasure, sağlayıcı veri aktarımı ve canlı kabul ayrı açık maddelerdir.
+
+Açık kimlik numarası isteği route değişiminde iptal edilir; bu UI düzeltmesinin targeted testi **5 PASS**, code SHA `e92660627976c10f063e1cae7d956a75aefef270` remote branch'te doğrulandı.
