@@ -1155,3 +1155,7 @@ Statik `git diff --check` dışında test/build/DB/provider runtime yok. İzole 
 ### 26 Kasım 2026 — Bildirim formu şube DTO/API eşleştirmesi (WIP)
 
 Frontend bildirim formu artık `branch_id` gönderebilir. Backend `GET /api/notifications/branch-options`, yalnız seçili kurumun aktif şubelerini ve varsa aktörün atanmış şubelerini döndürür; yazma izni gerektirir. Çok şubeli kullanıcıya form şube seçimi sunar; backend yine payload şubesini bağımsız doğrular. SCS360 kod SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` normal push/`ls-remote` ile doğrulandı. Yalnız statik diff check; frontend/backend test, build veya live API yok. Sıradaki iş UI/API DTO doğrulaması ve diğer notification uçları; WIP.
+
+### 26 Kasım 2026 — Opsiyonel şube payload düzeltmesi (WIP)
+
+Bildirim formu “Kurum geneli” seçeneğindeki boş şube değerini API'ye `branch_id: null` olarak gönderir; backend'in `UUID | null` DTO'suyla uyumlu kalır. SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` ile doğrulandı. Yalnız `git diff --check`, UI/API testi çalıştırılmadı; WIP.

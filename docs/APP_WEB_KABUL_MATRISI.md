@@ -496,3 +496,7 @@ Gecikmiş borç bildirimi endpointi `5/dk` ile sınırlandı; 100'den çok debt 
 ### 26 Kasım 2026 — Bildirim oluşturma şube seçimi (WIP)
 
 Web bildirim modalı, yazma yetkisiyle sınırlı `/notifications/branch-options` API'sinden şube seçenekleri alıp `branch_id` payload alanını gönderir. Çoklu atanmış şubesi olan kullanıcıda seçim zorunlu; backend veri kapsamını tekrar doğrular. Kaynak SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` push/`ls-remote` doğrulandı. Test/build/canlı API kabulü yapılmadı; WIP.
+
+### 26 Kasım 2026 — Opsiyonel şube DTO düzeltmesi (WIP)
+
+Kurum geneli bildirim formu artık boş branch seçimini `branch_id: null` gönderir; backend UUID/null payload ile uyumludur. Kaynak SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` ile doğrulandı. Test/build/canlı API yok.

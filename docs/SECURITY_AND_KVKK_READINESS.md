@@ -195,3 +195,7 @@ Sadece `git diff --check`; test/build/send/provider runtime yok. İzole DB regre
 ### 26 Kasım 2026 — Notification branch picker/API kapsamı (WIP)
 
 Web composer için yeni `GET /api/notifications/branch-options` yalnız aktif şube kimlik/adlarını seçili kurum ve kullanıcının atanmış şube kimlikleriyle sınırlar; permission `notification.write`. Frontend modal gerekli durumda branch seçimini zorunlu tutup seçimi `POST /api/notifications` payload'ına ekler; backend scope kontrolü ayrıca kalır. SCS360 SHA `8a0a6991aa5ac2862c32bb59763594c090a008b7` normal push/`ls-remote` doğrulandı. Yalnız `git diff --check`; React/API contract testleri ve canlı doğrulama yok. Sıradaki somut iş geçici DB ve frontend DTO regresyonları; KVKK/canlı kabul değildir.
+
+### 26 Kasım 2026 — Bildirim branch payload null uyumu (WIP)
+
+Frontend, opsiyonel branch seçiminin boş stringini API POST öncesi `null`'a çevirerek `UUID | null` backend DTO'suna uyar. SCS360 SHA `0dcfa5f23a42d6dd3c6d5f894abedbf6977dc799` normal push/`ls-remote` doğrulandı. Statik diff dışında test/build/API runtime yapılmadı; WIP.
