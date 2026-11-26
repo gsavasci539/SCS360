@@ -452,3 +452,7 @@ Audit metnini listeleme, feedback güncelleme ve eğitim dataset export artık `
 ### 26 Kasım — Reset token proxy erişim logları (WIP)
 
 Yeni linkte fragment token HTTP isteğine gitmez; legacy query linki için frontend/public exact `/reset-password` konumlarında access logging kapalı ve public Referrer-Policy no-referrer. Statik diff kontrolü geçti; Nginx runtime/TLS testi yok. SCS360 SHA `78ffa647f4347fff43cb1f0bf509971be48a02fb` push/`ls-remote` ile doğrulandı. Error/mail logs ve eski kayıtlar açık.
+
+### 26 Kasım — Bildirim sağlayıcısı hata verisi (WIP)
+
+Outbox worker artık kalıcı `provider_response` alanına allowlist ile süzülmüş sınırlı durum/kod/opaque mesaj kimliği yazar ve başarısız gönderimde sabit genel hata döndürür. Traceback, iş kimliği ve istisna mesajı loglanmaz. `git diff --check` dışında test/build/runtime yok. SCS360 `codex/source-sync-20261111` SHA `f8947cf9bb0061394d25d5cbb3858c8d8cd265e8` push/`ls-remote` doğrulandı. İzole test, API alıcı scope incelemesi, geçmiş kayıt/log retention-silme, sağlayıcı ve canlı ingress kabulü açık; canlı/KVKK onayı değildir.

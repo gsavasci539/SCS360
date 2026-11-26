@@ -131,3 +131,9 @@ Rate-limit dağıtık runtime, proxy’nin istemci IP’sini güvenilir biçimde
 Public Nginx ve frontend Nginx exact `/reset-password` SPA rotasında access logu kapatır; public vhost `Referrer-Policy: no-referrer` ile URL sızıntı yüzeyini daraltır. Yeni tokenlar fragment’tedir; legacy query-tokenlar geçici uyumlulukta kalır. `git diff --check` geçti; `nginx -t`, container veya TLS edge testi yapılmadı. SCS360 SHA `78ffa647f4347fff43cb1f0bf509971be48a02fb` normal push/`ls-remote` ile doğrulandı.
 
 Nginx error logları, e-posta link tracking/redirectleri, önceden yazılmış loglar ve üretim ingress davranışı bu değişiklikle doğrulanmış ya da temizlenmiş değildir. WIP; canlı ve KVKK kabulü değildir.
+
+### 26 Kasım 2026 — Bildirim sağlayıcısı yanıt ve hata verisini daraltma (WIP)
+
+Outbox katmanı sağlayıcının serbest `response` nesnesini doğrudan kalıcılaştırmaz; yalnız HTTP status, kısa kod, izin verilen teslim durumu ve biçim kontrollü opaque provider/message ID alanları tutulur. Başarısız gönderimde sağlayıcı hata gövdesi yerine sabit genel hata mesajı saklanır. Sağlayıcı ve worker hata yolları traceback, iş kimliği veya exception metni yazmaz; yalnız sabit olay etiketi ile exception sınıfı kalır. Bu, yeni log/yanıt üretimini daraltır; eski DB/yedek/log kayıtlarını silmez ve API yetkisini/retention politikasını değiştirmez.
+
+Yalnız `git diff --check` yapıldı; test/build/provider/runtime doğrulaması yok. SCS360 `codex/source-sync-20261111` SHA `f8947cf9bb0061394d25d5cbb3858c8d8cd265e8` normal push ve `ls-remote` ile doğrulandı. İzole testte hata/yanıt sızıntısı ve retry/durum kurtarma, bildirim API alıcı kapsamı, retention/silme, üretim logları, sağlayıcı sözleşmesi ve KVKK süreçleri açık kalır. WIP; canlıya hazır, sızdırmaz veya KVKK uyumlu kabulü değildir.
