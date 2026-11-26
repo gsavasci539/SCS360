@@ -14,7 +14,10 @@ from app.core.tenant import TenantContext
 from app.repositories.device_repository import DeviceRepository
 from app.infrastructure.models.models import Device
 
-router = APIRouter(prefix="/api/devices", tags=["Devices"])
+from app.core.branch_scope import require_assigned_branch
+
+router = APIRouter(prefix="/api/devices", tags=["Devices"],
+    dependencies=[Depends(require_assigned_branch)])
 
 
 class DeviceCreate(BaseModel):

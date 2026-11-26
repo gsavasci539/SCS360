@@ -13,7 +13,10 @@ from app.core.responses import success_response
 from app.domain.entities.user import User
 from app.core.tenant import TenantContext
 
-router = APIRouter(prefix="/api/import", tags=["Import"])
+from app.core.branch_scope import require_assigned_branch
+
+router = APIRouter(prefix="/api/import", tags=["Import"],
+    dependencies=[Depends(require_assigned_branch)])
 
 
 async def parse_excel_file(file: UploadFile) -> list[dict]:

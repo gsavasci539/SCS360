@@ -5,6 +5,8 @@ import uuid
 from sqlalchemy.dialects import sqlite
 
 from app.core.tenant_guard import scope_filters
+from app.core.branch_scope import ensure_assigned_branch
+from app.core.exceptions import ForbiddenException
 from app.core.tenant import TenantContext
 
 
@@ -73,3 +75,16 @@ def test_institution_admin_is_wide_but_branch_manager_without_assignments_is_not
         branch_ids=[], role_slugs={"branch_manager"})
     assert admin.can_access_branch(uuid.uuid4())
     assert not branch_manager.can_access_branch(uuid.uuid4())
+
+
+def test_branch_bound_routes_reject_unassigned_non_admin_users():
+    unassigned = TenantContext(user_id=uuid.uuid4(), organization_id=uuid.uuid4(),
+        branch_ids=[], role_slugs={"staff"})
+    branch_manager = TenantContext(user_id=uuid.uuid4(), organization_id=uuid.uuid4(),
+        branch_ids=[], role_slugs={"branch_manager"})
+    for tenant in (unassigned, branch_manager):
+        try:
+            ensure_assigned_branch(tenant)
+        except ForbiddenException:
+            continue
+        raise AssertionError("unassigned user unexpectedly entered branch-bound route")

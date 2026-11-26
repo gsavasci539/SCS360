@@ -16,7 +16,10 @@ from app.repositories.rfid_card_repository import RfidCardRepository
 from app.repositories.card_number_repository import CardNumberRepository
 from app.infrastructure.models.models import RfidCard
 
-router = APIRouter(prefix="/api/rfid-cards", tags=["RFID Cards"])
+from app.core.branch_scope import require_assigned_branch
+
+router = APIRouter(prefix="/api/rfid-cards", tags=["RFID Cards"],
+    dependencies=[Depends(require_assigned_branch)])
 
 
 class RFIDCardCreate(BaseModel):

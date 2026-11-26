@@ -6,13 +6,32 @@ from sqlalchemy import select
 from test_saas_platform import platform_client  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
-from app.infrastructure.models.models import Branch, Student
+from app.infrastructure.models.models import Branch, Permission, Role, Student, User
 from app.core.tenant import TenantContext
 from app.core.exceptions import ValidationException
 
 
 def auth(data):
     return {**headers(data["root"]), "X-SCS360-Organization-Id": str(data["org"].id)}
+
+
+async def test_branchless_staff_cannot_open_device_configuration(platform_client):
+    client, sessions, data = platform_client
+    async with sessions() as db:
+        permission = (await db.execute(select(Permission).where(Permission.code == "settings.read"))).scalar_one_or_none()
+        if permission is None:
+            permission = Permission(code="settings.read", name="Read settings", module="settings")
+            db.add(permission)
+            await db.flush()
+        role = Role(name="Unassigned settings reader", slug="staff", organization_id=data["org"].id,
+            permissions=[permission])
+        reader = User(organization_id=data["org"].id, email="unassigned-config-reader@test.invalid",
+            first_name="Unassigned", last_name="Reader", password_hash="unused", roles=[role])
+        db.add(reader)
+        await db.commit()
+
+    response = await client.get("/api/devices", headers=headers(reader))
+    assert response.status_code == 403, response.text
 
 
 async def test_populated_branch_cannot_be_deleted_and_deactivation_keeps_its_history_visible(platform_client):

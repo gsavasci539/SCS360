@@ -13,7 +13,10 @@ from app.core.tenant import TenantContext
 from app.repositories.card_number_repository import CardNumberRepository
 from app.infrastructure.models.models import CardNumber
 
-router = APIRouter(prefix="/api/card-numbers", tags=["Card Numbers"])
+from app.core.branch_scope import require_assigned_branch
+
+router = APIRouter(prefix="/api/card-numbers", tags=["Card Numbers"],
+    dependencies=[Depends(require_assigned_branch)])
 
 
 class CardNumberCreate(BaseModel):
