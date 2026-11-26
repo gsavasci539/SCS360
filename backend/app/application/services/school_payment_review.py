@@ -13,7 +13,8 @@ from app.application.services.school_checkout_service import apply_verified, utc
 from app.core.exceptions import ConflictException, ForbiddenException, NotFoundException, ValidationException
 from app.core.responses import paginate
 from app.core.student_access import accessible_student_ids
-from app.infrastructure.models.models import (AuditAction, AuditLog, Branch, Debt, DebtStatus, PaymentCheckout,
+from app.core.tenant_guard import scope_filters
+from app.infrastructure.models.models import (AuditAction, AuditLog, Debt, DebtStatus, PaymentCheckout,
     Receipt, SchoolPaymentMerchant, Student)
 
 EVENT = "SCHOOL_PAYMENT_REVIEW_COMPLETED"
@@ -27,15 +28,16 @@ def require_access(tenant, write=False):
 
 async def scoped(db, tenant):
     require_access(tenant)
-    debt, branches = Debt.__table__, Branch.__table__
-    allowed = and_(debt.c.organization_id == tenant.organization_id,
-        debt.c.branch_id.in_(select(branches.c.id).where(branches.c.organization_id == tenant.organization_id)))
+    debt = Debt.__table__
     children = await accessible_student_ids(db, tenant)
+    branch_query, _, _, _ = scope_filters(tenant, children)
+    allowed = and_(debt.c.organization_id == tenant.organization_id,
+        debt.c.branch_id.in_(branch_query))
     if tenant.branch_ids:
         allowed = and_(allowed, debt.c.branch_id.in_(tenant.branch_ids))
     if children is not None:
         allowed = and_(allowed, debt.c.student_id.in_(children))
-    if not tenant.branch_ids and children is None:
+    if tenant.has_institution_wide_branch_access:
         allowed = or_(allowed, debt.c.id.is_(None))
     return select(PaymentCheckout).outerjoin(debt, debt.c.id == PaymentCheckout.debt_id).where(
         PaymentCheckout.organization_id == tenant.organization_id, allowed)

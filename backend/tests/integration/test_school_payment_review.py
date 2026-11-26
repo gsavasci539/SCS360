@@ -7,6 +7,8 @@ from sqlalchemy import func, select
 
 from app.infrastructure.models.models import (AuditAction, AuditLog, Branch, Debt, DebtType, NotificationJob,
     Payment, PaymentCheckout, Receipt, Role, Student, User, UserRole)
+from app.application.services.school_payment_review import listing as scoped_review_listing
+from app.core.tenant import TenantContext
 from test_school_checkout_durability import school_checkout_client, payment, start, callback  # noqa: F401
 from test_school_payment_merchants import merchant_client, body as merchant_body, configure  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
@@ -140,6 +142,21 @@ async def test_branch_review_uses_whole_student_balance_and_cannot_read_other_br
     async with sessions() as db:
         assert (await db.execute(select(Receipt))).scalar_one().remaining_debt == 200
         assert (await db.get(Debt, sibling.id)).paid_amount == 0
+
+
+async def test_unassigned_finance_reader_cannot_list_institution_review_records(review_client):
+    _, sessions, data, _ = review_client
+    unassigned = TenantContext(user_id=data["finance"].id, organization_id=data["org"].id,
+        permissions={"finance.read"}, role_slugs={"staff"}, branch_ids=[])
+    institution_wide = TenantContext(user_id=data["user"].id, organization_id=data["org"].id,
+        permissions={"finance.read"}, role_slugs={"owner"}, branch_ids=[])
+    async with sessions() as db:
+        db.info["tenant_context"] = unassigned
+        hidden = await scoped_review_listing(db, unassigned, page=1, page_size=50)
+        db.info["tenant_context"] = institution_wide
+        visible = await scoped_review_listing(db, institution_wide, page=1, page_size=50)
+    assert hidden["total"] == 0 and hidden["items"] == []
+    assert visible["total"] == 1 and visible["items"][0]["id"] == data["checkout_id"]
 
 
 def selected_root(data, organization_id=None):

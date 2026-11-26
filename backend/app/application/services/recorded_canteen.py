@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.core.dates import school_day_bounds, school_today
 from app.core.exceptions import AppException, ForbiddenException, ValidationException
 from app.core.student_access import accessible_student_ids, parent_student_ids
+from app.core.tenant_guard import scope_filters
 from app.domain.entities.canteen import CanteenOrder, CanteenWalletTransaction
 from app.infrastructure.models.models import Branch, Student
 
@@ -66,13 +67,15 @@ async def get_recorded_canteen_summary(
 
 
 async def _read_summary(db, tenant, start, end, now, today, student_id):
+    ids = await parent_student_ids(db, tenant.user_id, tenant.organization_id) if _parent_mode(tenant) else await accessible_student_ids(db, tenant)
+    branch_query, _, _, _ = scope_filters(tenant, ids)
     students = select(Student.id).join(Branch, Branch.id == Student.branch_id).where(
         Student.organization_id == tenant.organization_id, Student.deleted_at.is_(None),
         Branch.organization_id == tenant.organization_id, Branch.deleted_at.is_(None),
+        Student.branch_id.in_(branch_query),
     )
     if tenant.branch_ids:
         students = students.where(Student.branch_id.in_(tenant.branch_ids))
-    ids = await parent_student_ids(db, tenant.user_id, tenant.organization_id) if _parent_mode(tenant) else await accessible_student_ids(db, tenant)
     if ids is not None:
         students = students.where(Student.id.in_(ids))
     if student_id is not None:
@@ -99,9 +102,8 @@ async def _read_summary(db, tenant, start, end, now, today, student_id):
         CanteenOrder.student_id.in_(students), CanteenOrder.status == "COMPLETED",
         CanteenOrder.order_date >= start, CanteenOrder.order_date < end,
         CanteenOrder.order_date <= today, CanteenOrder.created_at <= now,
-        or_(CanteenOrder.branch_id.is_(None), CanteenOrder.branch_id.in_(select(Branch.id).where(
-            Branch.organization_id == tenant.organization_id, Branch.deleted_at.is_(None),
-        ))),
+        (or_(CanteenOrder.branch_id.is_(None), CanteenOrder.branch_id.in_(branch_query))
+         if tenant.has_institution_wide_branch_access else CanteenOrder.branch_id.in_(branch_query)),
     )
     if tenant.branch_ids:
         orders_query = orders_query.where(or_(CanteenOrder.branch_id.is_(None), CanteenOrder.branch_id.in_(tenant.branch_ids)))

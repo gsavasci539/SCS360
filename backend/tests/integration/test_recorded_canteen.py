@@ -87,6 +87,21 @@ async def test_completed_only_institution_branch_and_deleted_student_boundaries(
     assert result["catalog_orders"]["amount"] == "5.00" and result["order_count"] == 1
 
 
+async def test_unassigned_canteen_reader_sees_no_ledger_or_branchless_order(canteen_db):
+    sessions, data = canteen_db
+    async with sessions() as db:
+        db.add_all([movement(data["children"][0], "12"), order(data, "8"), order(data, "5", branch_id=None)])
+        await db.commit()
+        unassigned = tenant(data, role_slugs={"staff"}, branch_ids=[])
+        institution_wide = tenant(data)
+        hidden = await get_recorded_canteen_summary(db, unassigned)
+        visible = await get_recorded_canteen_summary(db, institution_wide)
+    assert hidden["sales_amount"] is None and hidden["sale_record_count"] == 0
+    assert hidden["catalog_orders"]["amount"] is None and hidden["order_count"] == 0
+    assert visible["sales_amount"] == "12.00" and visible["catalog_orders"]["amount"] == "13.00"
+    assert visible["order_count"] == 2
+
+
 async def test_parent_purpose_and_selected_child_never_expand_to_other_students(canteen_db):
     sessions, data = canteen_db
     parent = tenant(data, user_id=data["user"].id, role_slugs={"parent"},
@@ -209,7 +224,7 @@ async def test_validation_and_policy_remain_specific_and_sql_failure_is_sanitize
         with pytest.raises(ValidationException):
             await get_recorded_canteen_summary(db, tenant(data), student_id="malformed")
         with pytest.raises(ForbiddenException):
-            await get_recorded_canteen_summary(db, tenant(data, permissions={"finance.read"}))
+            await get_recorded_canteen_summary(db, tenant(data, permissions={"finance.read"}, role_slugs={"staff"}))
         with pytest.raises(ForbiddenException):
             await get_recorded_canteen_summary(db, tenant(data, organization_id=None, is_super_admin=True))
         async def fail(*_args, **_kwargs):
