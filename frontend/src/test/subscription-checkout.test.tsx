@@ -4,7 +4,7 @@ import { SubscriptionCheckout, subscriptionPaymentUrl } from "../features/saas/S
 import { PaymentReview } from "../features/saas/PaymentReview";
 import { api } from "../lib/api";
 
-vi.mock("../lib/api", () => ({ api: { post: vi.fn() }, apiMessage: () => "Ödeme isteği tamamlanamadı" }));
+vi.mock("../lib/api", () => ({ api: { get: vi.fn(), post: vi.fn() }, apiMessage: () => "Ödeme isteği tamamlanamadı" }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 const invoice = { id: "invoice", package_name: "Okul", amount: "100.00", currency: "TRY", status: "PENDING", can_checkout: true };
 
@@ -16,6 +16,12 @@ it("ödeme bağlantısı yalnız sağlayıcının HTTPS alan adında açılır",
 it("zaman aşımı aynı kimlikle tekrar edilir ve istemci ödeme tutarını belirlemez", async () => {
   vi.mocked(api.post).mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce({ data: { data: { checkout_url: "https://sandbox-api.iyzipay.com/checkoutform/test", status: "PENDING" } } });
   render(<SubscriptionCheckout invoice={invoice} onClose={vi.fn()} onRefresh={vi.fn()} />);
+  const identity = screen.getByLabelText("Kimlik veya vergi numarası");
+  expect(identity).toHaveAttribute("type", "password");
+  fireEvent.click(screen.getByRole("button", { name: "Kimlik numarasını göster" }));
+  expect(identity).toHaveAttribute("type", "text");
+  fireEvent.click(screen.getByRole("button", { name: "Kimlik numarasını gizle" }));
+  expect(identity).toHaveAttribute("type", "password");
   for (const [label, value] of [["Kimlik veya vergi numarası", "11111111111"], ["Telefon", "+905000000000"], ["Fatura adresi", "Test adresi"], ["Şehir", "Istanbul"], ["Ülke", "Turkey"]]) fireEvent.change(screen.getByLabelText(label), { target: { value } });
   const form = screen.getByRole("form", { name: "Üyelik ödeme bilgileri" });
   fireEvent.submit(form); await screen.findByRole("alert");
@@ -36,8 +42,12 @@ it("mevcut ödeme yeni tahsilat açmadan devam eder ve güvensiz bağlantıyı r
 });
 
 it("Root iade kaydında ödeme göndermez ve zaman aşımı sonrası aynı uzlaştırmayı tekrarlar", async () => {
-  const done = vi.fn(); vi.mocked(api.post).mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce({ data: { data: {} } });
-  render(<PaymentReview invoice={{ ...invoice, provider_paid_amount: "100.00", provider_currency: "TRY" }} onDone={done} onClose={vi.fn()} />);
+  const done = vi.fn();
+  const target = { ...invoice, organization_id: "org-one", plan_id: "plan-one", provider_paid_amount: "100.00", provider_currency: "TRY" };
+  const saved = { ...target, status: "REFUNDED", checkout_status: "REFUNDED" };
+  vi.mocked(api.post).mockRejectedValueOnce(new Error("timeout")).mockResolvedValueOnce({ data: { success: true, data: saved } });
+  vi.mocked(api.get).mockResolvedValueOnce({ data: { success: true, data: [saved] } });
+  render(<PaymentReview invoice={target} onDone={done} onClose={vi.fn()} />);
   fireEvent.change(screen.getByLabelText("Uzlaştırma işlemi"), { target: { value: "REFUND_RECORDED" } });
   fireEvent.change(screen.getByLabelText("Doğrulanan iade referansı"), { target: { value: "CHECKED-EXTERNAL-REFUND" } });
   fireEvent.change(screen.getByLabelText("Kontrol açıklaması"), { target: { value: "Banka panelinde doğrulandı" } });

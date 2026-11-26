@@ -106,7 +106,7 @@ async def test_checkout_reserves_once_encrypts_token_and_binds_retries_to_buyer(
     assert all(row.status_code in {200, 202} for row in responses), [row.text for row in responses]
     retry = await client.post(path, headers=auth, json=body)
     assert retry.status_code == 200 and retry.json()["data"]["checkout_url"].startswith("https://sandbox-api.iyzipay.com/"), retry.text
-    assert gateway.calls == 1 and retry.headers["cache-control"] == "no-store"
+    assert gateway.calls == 1 and "no-store" in retry.headers.get("cache-control", "")
     changed = await client.post(path, headers=auth, json={**body, "phone": "+905111111111"})
     assert changed.status_code == 409, changed.text
     assert (await client.post(path, headers=auth, json={**body, "amount": "1.00"})).status_code == 422

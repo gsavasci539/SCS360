@@ -1,13 +1,15 @@
 from uuid import uuid4
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
+from cryptography.fernet import Fernet
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from test_saas_platform import platform_client  # noqa: F401
 from test_material_files import materials_client, headers  # noqa: F401
 from test_parent_homework_outbox import portal_db  # noqa: F401
-from app.infrastructure.models.models import Branch, Organization, Permission, Role, Student, User
+from app.infrastructure.models.models import AuditLog, Branch, Organization, Permission, Role, Student, User
 
 
 def scoped(data):
@@ -91,6 +93,46 @@ async def test_country_and_tax_office_persist_and_optional_field_clears(platform
     assert read["country"] == "Türkiye" and read["tax_office"] == "Kadıköy"
     cleared = await client.put(path, headers=scoped(data), json={"tax_office": " "})
     assert cleared.status_code == 200 and cleared.json()["data"]["tax_office"] is None
+
+
+async def test_tax_identifier_is_not_listed_and_detail_access_is_owner_scoped_and_audited(platform_client, monkeypatch):
+    import app.infrastructure.models.models as model_module
+
+    client, sessions, data = platform_client
+    key = Fernet.generate_key().decode("ascii")
+    monkeypatch.setattr(model_module, "get_settings", lambda: SimpleNamespace(ORGANIZATION_TAX_NUMBER_ENCRYPTION_KEY=key))
+    sentinel = "TCKN-SENSITIVE-SENTINEL"
+    path = f'/api/organizations/{data["org"].id}'
+    saved = await client.put(path, headers=headers(data["root"]), json={"tax_number": sentinel})
+    assert saved.status_code == 200 and saved.json()["data"]["tax_number"] == sentinel
+
+    listed = await client.get("/api/organizations", headers=headers(data["root"]))
+    assert listed.status_code == 200
+    assert all(row["tax_number"] is None for row in listed.json()["data"]["items"])
+
+    async with sessions() as db:
+        read_permission = Permission(code="org.read", name="Organization read", module="org")
+        reader_role = Role(organization_id=data["org"].id, slug="staff", name="Staff",
+            permissions=[read_permission])
+        reader = User(organization_id=data["org"].id, email="tax-reader@test.invalid", first_name="Tax",
+            last_name="Reader", password_hash="unused", roles=[reader_role])
+        owner_role = Role(organization_id=data["org"].id, slug="owner", name="Owner",
+            permissions=[read_permission])
+        owner = User(organization_id=data["org"].id, email="tax-owner@test.invalid", first_name="Tax",
+            last_name="Owner", password_hash="unused", roles=[owner_role])
+        db.add_all([reader, owner]); await db.commit()
+
+    hidden = await client.get(path, headers=headers(reader))
+    assert hidden.status_code == 200 and hidden.json()["data"]["tax_number"] is None
+    revealed = await client.get(path, headers=headers(owner))
+    assert revealed.status_code == 200 and revealed.json()["data"]["tax_number"] == sentinel
+    async with sessions() as db:
+        events = (await db.execute(select(AuditLog).where(
+            AuditLog.entity_type == "organization.tax_identifier.read",
+            AuditLog.entity_id == data["org"].id,
+        ))).scalars().all()
+        assert len(events) == 1
+        assert sentinel not in str(events[0].new_values)
 
 
 async def test_branch_counts_real_roster_excludes_deleted_and_corrupt_cross_school_links(platform_client):

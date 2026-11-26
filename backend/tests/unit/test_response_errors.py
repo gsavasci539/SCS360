@@ -20,6 +20,20 @@ async def test_ambiguous_legacy_identifier_is_a_conflict_without_exposing_data()
     assert "private SQL" not in response.body.decode()
 
 
+async def test_unhandled_exception_log_does_not_include_sensitive_exception_message(caplog):
+    import logging
+    from starlette.requests import Request
+    from app.core.middleware import generic_exception_handler
+
+    caplog.set_level(logging.ERROR)
+    request = Request({"type": "http", "method": "POST", "path": "/api/checkout", "headers": []})
+    request.state.request_id = "test-request"
+    response = await generic_exception_handler(request, RuntimeError("TCKN-SENSITIVE-SENTINEL"))
+    assert response.status_code == 500
+    assert "TCKN-SENSITIVE-SENTINEL" not in caplog.text
+    assert "RuntimeError" in caplog.text and "test-request" in caplog.text
+
+
 async def test_actual_application_handlers_treat_ambiguous_identifiers_as_http_conflicts():
     from fastapi import FastAPI
     from httpx import ASGITransport, AsyncClient

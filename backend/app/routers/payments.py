@@ -392,7 +392,7 @@ async def get_payment_receipt_pdf(
 @router.post("/finances/reminders/send")
 @limiter.limit("5/minute")
 async def send_payment_reminders(
-    reminder: ReminderSendCreate, db: AsyncSession = Depends(get_db, scope="function"),
+    request: Request, reminder: ReminderSendCreate, db: AsyncSession = Depends(get_db, scope="function"),
     current_user: User = Depends(get_current_user),
     tenant: TenantContext = Depends(PermissionChecker("finance.write")),
 ):

@@ -264,3 +264,9 @@ SaaS abonelik ödeme formundaki kimlik/vergi numarası artık varsayılan maskel
 ## Beklenmeyen backend hatalarında log minimizasyonu — 26 Kasım 2026 WIP
 
 Global 500 hata yolunda traceback ve exception metni yerine yalnız hata sınıfı, path ve request ID loglanır. SQL/provider exception metinleri hassas alan veya sağlayıcı payload parçaları içerebileceğinden bu log minimizasyonu riski azaltır; log platformu erişimi/retention'ı, APM ve diğer logger'lar ayrıca incelenmelidir. Test çalıştırılmadı; WIP.
+
+### 26 Kasım 2026 — İzole güvenlik regresyonları ve canlı gözlem (WIP)
+
+Geçici/izole test sonuçları: backend error/log + tax identifier unit **7 PASS**; organization/branch/subscription regression **20 PASS, 17 SKIP**; tax identifier list/detail role+audit test **1 PASS, 1 SKIP**; frontend SaaS checkout **4 PASS**. No production database, provider, message, payment, or device was used. The SlowAPI payment reminder endpoint now declares its `Request` argument, and the subscription test checks for the `no-store` directive without assuming a single Cache-Control serialization.
+
+Read-only public check remains HTTP 200 with an exposed `nginx/1.18.0 (Ubuntu)` Server header and only `X-Content-Type-Options: nosniff` among the checked security headers; HSTS/CSP/frame/referrer/permissions were not observed. `/.well-known/security.txt` still serves SPA HTML, not a security contact record. No deploy was made. The approved monitored security contact is unknown, so no contact was fabricated. Unstaged auth/CSRF, Nginx, and limiter WIP remains excluded; specifically the auth WIP's local/session storage token path needs security review before acceptance. Remote starting SHA `802401cbc02f0e16fec314c44dbb971d169d1282`; final pushed SHA to be recorded when complete. This is WIP only, not a live-readiness or KVKK-compliance determination.

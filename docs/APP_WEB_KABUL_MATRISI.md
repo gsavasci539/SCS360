@@ -359,6 +359,12 @@ Yayın doğrulandı (normal push/ls-remote): codex/source-sync-20261111 Mobile f
 
 - Web cookie oturumu WIP: backend HttpOnly access/refresh cookie uçları, CSRF+Origin doğrulaması, frontend token depolamama ve refresh akışı eklendi. Android bearer auth değişmedi. Backend 4/4, frontend 27/27, TypeScript, compileall ve Ruff geçti. Dış firewall/TLS/WAF, dağıtık rate limit, pentest ve KVKK işletme kabulü açık. Kaynak SHA yayın sonrası kaydedilecek.
 - Nginx başlıkları WIP: HSTS, eşit CSP (`object-src 'none'` dahil) ve proxy upstream sürüm başlığı gizleme kaynakta eklendi. Canlı alan adı/edge config doğrulanmadı. `security.txt`, gerçek ve izlenen bildirim kanalı belirlenmediği için açık.
+
+### 26 Kasım 2026 — Kimlik verisi ve checkout kabul testleri (WIP)
+
+İzole backend: **7 birim PASS**, ilgili tenant/şube/checkout regresyonları **20 PASS / 17 SKIP**, kurum tax identifier liste dışı/owner read+audit senaryosu **1 PASS / 1 SKIP**. İzole frontend checkout: **4 PASS** (kimlik alanı varsayılan maskesi/göster-gizle ve ödeme/iade readback). SlowAPI reminder endpoint importundaki eksik `Request` parametresi düzeltildi; checkout `Cache-Control` assertion'ı `no-store` direktifi varlığını kontrol ediyor. Bu testler geçici DB/fixture ve component testidir; provider, cihaz veya prod acceptance değildir.
+
+Canlı salt-okunur HEAD/GET gözlemi: HTTP 200, `Server: nginx/1.18.0 (Ubuntu)`, `X-Content-Type-Options: nosniff`; bu yanıtta HSTS/CSP/frame/referrer/permissions başlıkları görülmedi. `/.well-known/security.txt` SPA HTML döndürüyor. Deployment yapılmadı. Onaylı izlenen güvenlik iletişim adresi, gerçek TLS/edge başlıkları ve auth/CSRF WIP incelemesi açık. Remote başlangıç SHA `802401cbc02f0e16fec314c44dbb971d169d1282`; final push SHA bu kayıt tamamlanınca eklenecek. **WIP; canlıya hazır, eksiksiz siber güvenlik veya KVKK uyumu kabulü değildir.**
 - Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `7892eb31aad20e3847cc40f89fa877cf158aa402`. Canlı edge'e dağıtım veya güvenlik kabulü değildir.
 - Paylaşımlı Redis rate-limit WIP: üretim başlangıcı authenticated shared store olmadan reddediliyor; Compose servisi özel iç ağda ve dış portsuz. İzole config 17/17, YAML kontrolü ve backend/frontend auditleri geçti. İlk dev audit Black CVE-2026-114134 buldu; 26.10.1 ile giderildi. Docker yok; gerçek ortak sayaç doğrulanmadı.
 - Normal push/`ls-remote` doğrulandı: SCS360 `codex/source-sync-20261111` SHA `436938cc9e2ea71ff36802885aa3bc3232738306`. Gerçek Redis/Docker ve üretim kabulü değildir.
